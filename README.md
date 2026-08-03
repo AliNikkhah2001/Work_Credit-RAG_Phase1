@@ -302,6 +302,106 @@ sequenceDiagram
     API-->>Client: stream response chunk to UI
 ```
 
+
+
+### 6.3 High level state flow
+
+```mermaid
+flowchart LR
+    User[User] --> FE[Streamlit Frontend]
+    FE --> API[FastAPI /v1/chat]
+    API --> Agent[LangGraph Agent]
+    Agent --> Retriever[Retrieval Service]
+    Retriever --> VS[(Vector Store\npgvector)]
+    Retriever --> LLM[LLM Router]
+    LLM --> LLMProvider[LLM Provider\n(e.g., OpenAI)]
+    Agent --> ConvRepo[Conversation Repository]
+    ConvRepo --> DB[(PostgreSQL)]
+    API --> ConvRepo
+    API --> Schemas[Pydantic Schemas]
+    FE --> Metrics[Prometheus]
+    API --> Metrics
+    Agent -.-> Tracer[Langfuse Tracer]
+```
+### 6.4 High level project directory structure 
+
+```mermaid
+graph TD
+    A[FitHub] --> B[.env.example]
+    A --> C[.gitignore]
+    A --> D[.pre-commit-config.yaml]
+    A --> E[README.md]
+    A --> F[Makefile]
+    A --> G[pyproject.toml]
+    A --> H[uv.lock]
+    A --> I[docker-compose.yml]
+    
+    A --> J[data/]
+    J --> J1[raw_documents/]
+    J --> J2[embeddings/]
+    
+    A --> K[models/]
+    K --> K1[model_registry/]
+    
+    A --> L[scripts/]
+    L --> L1[seed_data.py]
+    L --> L2[run_ragas_eval.py]
+    
+    A --> M[src/]
+    M --> N[app/]
+    N --> N1[main.py]
+    
+    N --> O[core/]
+    O --> O1[config.py]
+    O --> O2[logging.py]
+    O --> O3[exceptions.py]
+    
+    N --> P[api/]
+    P --> P1[deps.py]
+    P --> P2[router.py]
+    P --> P3[v1/]
+    P3 --> P4[chat.py]
+    P3 --> P5[conv.py]
+    
+    N --> Q[services/]
+    Q --> Q1[agent/]
+    Q1 --> Q2[graph.py]
+    Q1 --> Q3[state.py]
+    Q --> Q4[retrieval/]
+    Q4 --> Q5[vector_store.py]
+    Q4 --> Q6[strategies/]
+    Q --> Q7[llm/]
+    Q7 --> Q8[router.py]
+    Q7 --> Q9[factory.py]
+    
+    N --> R[db/]
+    R --> R1[session.py]
+    R --> R2[models/]
+    R2 --> R3[conversation.py]
+    R2 --> R4[message.py]
+    R --> R5[repositories/]
+    R5 --> R6[conversation_repo.py]
+    
+    N --> S[schemas/]
+    S --> S1[chat.py]
+    S --> S2[conversation.py]
+    
+    N --> T[monitoring/]
+    T --> T1[metrics.py]
+    T --> T2[tracer.py]
+    
+    A --> U[tests/]
+    U --> U1[conftest.py]
+    U --> U2[unit/]
+    U --> U3[integration/]
+    
+    A --> V[frontend/]
+    V --> V1[app.py]
+    V --> V2[requirements.txt]
+'''
+
+
+
 ---
 
 ## 7. 🧪 Technology Stack Reference
@@ -370,9 +470,9 @@ gantt
     section Phase 1 (Current)
     Core LangGraph + pgvector + FastAPI :active, p1, 2026-07-16, 2026-08-15
     section Phase 2
-    GraphRAG (Neo4j) + Hybrid Reranking :p2, 2026-08-16, 2026-09-30
+    GraphRAG (Neo4j) + Hybrid Reranking :p2, 2026-08-16, 2028-09-30
     section Phase 3
-    Auto-scaling KEDA + MCP Protocol    :p3, 2026-10-01, 2026-11-15
+    Auto-scaling KEDA + MCP Protocol    :p3, 2026-10-01, 2029-11-15
 ```
 
 ---
