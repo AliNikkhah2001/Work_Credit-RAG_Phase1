@@ -342,14 +342,15 @@ sequenceDiagram
 ```mermaid
 flowchart LR
     User[User] --> FE[Streamlit Frontend]
-    FE --> API[FastAPI /v1/chat]
+    FE --> API[FastAPI API]
     API --> Agent[LangGraph Agent]
     Agent --> Retriever[Retrieval Service]
-    Retriever --> VS[(Vector Store\npgvector)]
+    Retriever --> VS[Vector Store]
+    VS --> DB[PostgreSQL]
     Retriever --> LLM[LLM Router]
-    LLM --> LLMProvider[LLM Provider\n(e.g., OpenAI)]
+    LLM --> Provider[LLM Provider]
     Agent --> ConvRepo[Conversation Repository]
-    ConvRepo --> DB[(PostgreSQL)]
+    ConvRepo --> DB
     API --> ConvRepo
     API --> Schemas[Pydantic Schemas]
     FE --> Metrics[Prometheus]
