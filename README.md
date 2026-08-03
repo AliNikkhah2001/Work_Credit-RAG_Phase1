@@ -1,104 +1,49 @@
-<div align="center">
 
 # 🧠 RAG Agent Platform
+
 ### *Production-Ready, Self-Hosted Agentic AI with Native Data Sovereignty*
 
-[![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115%2B-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-[![LangGraph](https://img.shields.io/badge/LangGraph-0.2%2B-FF6F00?style=for-the-badge&logo=langchain&logoColor=white)](https://langchain-ai.github.io/langgraph/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16%2B%20%2B%20pgvector-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://postgresql.org)
-[![vLLM](https://img.shields.io/badge/vLLM-Inference-76B900?style=for-the-badge&logo=nvidia&logoColor=white)](https://vllm.ai)
-[![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://docker.com)
-
-[![GitHub Stars](https://img.shields.io/github/stars/your-org/rag-agent-platform?style=social)](https://github.com/your-org/rag-agent-platform/stargazers)
-[![GitHub Forks](https://img.shields.io/github/forks/your-org/rag-agent-platform?style=social)](https://github.com/your-org/rag-agent-platform/network/members)
-[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg?style=flat-square)](LICENSE)
-[![CI Build](https://img.shields.io/github/actions/workflow/status/your-org/rag-agent-platform/ci.yml?branch=main&style=flat-square&logo=github)](https://github.com/your-org/rag-agent-platform/actions)
-[![Coverage](https://img.shields.io/badge/Coverage-88%25-brightgreen?style=flat-square&logo=pytest)](https://pytest.org)
-
-<br />
+![License](https://img.shields.io/badge/License-MIT-blue.svg)
+![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.115%2B-009688?logo=fastapi&logoColor=white)
+![LangGraph](https://img.shields.io/badge/LangGraph-0.2%2B-1C3C3C?logo=langchain&logoColor=white)
+![Status](https://img.shields.io/badge/Status-Planning_%26_Blueprint-yellow)
 
 ---
 
 ## ⚡ Tech Stack & Libraries Matrix
 
-*(GitHub renders this table natively)*
+| Layer | Technology | Badge |
+| :--- | :--- | :--- |
+| **Runtime** | Python 3.11+ | ![Python](https://raw.githubusercontent.com/devicons/devicon/master/icons/python/python-original.svg) |
+| **API Layer** | FastAPI | ![FastAPI](https://raw.githubusercontent.com/devicons/devicon/master/icons/fastapi/fastapi-original.svg) |
+| **Agent Loop** | LangGraph | ![LangGraph](https://raw.githubusercontent.com/github/explore/80688e429a7d4ef2fca1e82350fe8e3517d3494d/topics/langchain/langchain.png) |
+| **Vector DB** | PostgreSQL + pgvector | ![PostgreSQL](https://raw.githubusercontent.com/devicons/devicon/master/icons/postgresql/postgresql-original.svg) |
+| **Caching** | Redis | ![Redis](https://raw.githubusercontent.com/devicons/devicon/master/icons/redis/redis-original.svg) |
+| **LLM Serving** | vLLM / Ollama | ![vLLM](https://img.shields.io/badge/vLLM-0.6%2B-00C7B7) |
+| **Metrics** | Prometheus + Grafana | ![Prometheus](https://raw.githubusercontent.com/devicons/devicon/master/icons/prometheus/prometheus-original.svg) |
+| **LLM Tracing** | Langfuse | ![Langfuse](https://langfuse.com/langfuse-icon.png) |
+| **Data Versioning** | DVC | ![DVC](https://dvc.org/img/dvc-with-name-base.svg) |
+| **Model Registry** | MLflow | ![MLflow](https://raw.githubusercontent.com/devicons/devicon/master/icons/apache/apache-original.svg) |
+| **Package Manager** | uv (Astral) | ![uv](https://astral.sh/assets/uv-logo-raw.svg) |
+| **Orchestration** | Docker + K8s | ![Docker](https://raw.githubusercontent.com/devicons/devicon/master/icons/docker/docker-original.svg) |
 
-<table>
-  <tr>
-    <td align="center" width="160">
-      <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/python/python-original.svg" width="48" height="48" alt="Python" />
-      <br><b>Python 3.11+</b>
-      <br><sub>Core Runtime</sub>
-    </td>
-    <td align="center" width="160">
-      <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/fastapi/fastapi-original.svg" width="48" height="48" alt="FastAPI" />
-      <br><b>FastAPI</b>
-      <br><sub>Async API Layer</sub>
-    </td>
-    <td align="center" width="160">
-      <img src="https://raw.githubusercontent.com/github/explore/80688e429a7d4ef2fca1e82350fe8e3517d3494d/topics/langchain/langchain.png" width="48" height="48" alt="LangGraph" />
-      <br><b>LangGraph</b>
-      <br><sub>Agent Loop</sub>
-    </td>
-    <td align="center" width="160">
-      <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/postgresql/postgresql-original.svg" width="48" height="48" alt="PostgreSQL" />
-      <br><b>pgvector</b>
-      <br><sub>Vector Search</sub>
-    </td>
-  </tr>
-  <tr>
-    <td align="center" width="160">
-      <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/redis/redis-original.svg" width="48" height="48" alt="Redis" />
-      <br><b>Redis</b>
-      <br><sub>Caching & State</sub>
-    </td>
-    <td align="center" width="160">
-      <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/prometheus/prometheus-original.svg" width="48" height="48" alt="Prometheus" />
-      <br><b>Prometheus</b>
-      <br><sub>Metrics Stack</sub>
-    </td>
-    <td align="center" width="160">
-      <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/grafana/grafana-original.svg" width="48" height="48" alt="Grafana" />
-      <br><b>Grafana</b>
-      <br><sub>Observability</sub>
-    </td>
-    <td align="center" width="160">
-      <img src="https://langfuse.com/langfuse-icon.png" width="48" height="48" alt="Langfuse" />
-      <br><b>Langfuse</b>
-      <br><sub>LLM Tracing</sub>
-    </td>
-  </tr>
-  <tr>
-    <td align="center" width="160">
-      <img src="https://dvc.org/img/dvc-with-name-base.svg" width="48" height="48" alt="DVC" />
-      <br><b>DVC</b>
-      <br><sub>Data Versioning</sub>
-    </td>
-    <td align="center" width="160">
-      <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/apache/apache-original.svg" width="48" height="48" alt="MLflow" />
-      <br><b>MLflow</b>
-      <br><sub>Model Registry</sub>
-    </td>
-    <td align="center" width="160">
-      <img src="https://astral.sh/uv/assets/uv-logo-raw.svg" width="48" height="48" alt="uv" />
-      <br><b>uv</b>
-      <br><sub>Package Manager</sub>
-    </td>
-    <td align="center" width="160">
-      <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/docker/docker-original.svg" width="48" height="48" alt="Docker" />
-      <br><b>Docker</b>
-      <br><sub>Orchestration</sub>
-    </td>
-  </tr>
-</table>
-
-</div>
-
-<br />
+---
 
 > [!IMPORTANT]
 > **Production-Ready RAG Blueprint:** This repository houses a clean, scalable, and fully deterministic RAG agent baseline built with **LangGraph**, **pgvector**, **FastAPI**, and enterprise observability hooks.
+
+---
+
+## 📸 System In Action
+
+```text
++-----------------------------------------------------------------------+
+| [User Query] -> (LangGraph Agent) -> [Hybrid Search (Vector + BM25)]  |
+|                                                                       |
+| [Streamed Response] <- (vLLM Engine) <- [Reranked Context Blocks]     |
++-----------------------------------------------------------------------+
+```
 
 ---
 
@@ -121,123 +66,333 @@
 
 This repository is a **production-ready, self-hosted Retrieval-Augmented Generation (RAG) Agent platform**. It bridges the gap between simple semantic search and production autonomy by using a **LangGraph-driven agentic feedback loop** with hybrid search, streaming dynamic memory, and end-to-end data control.
 
+### Key Highlights
+
+- **Deterministic Deployment**: Locked dependencies via `uv` and enforced pre-commit validation.
+- **Deep Observability**: Out-of-the-box infrastructure metrics with Prometheus/Grafana, paired with LLM call tracing via Langfuse.
+- **Modularity First**: Loose coupling via repository, strategy, and factory patterns for easy component swapping.
+
 ---
 
 ## 2. 🛠 Tool Architecture Decisions
 
 <details>
-<summary><b>🔍 Click to Expand Architecture Decisions</b></summary>
+<summary><b>🔍 Expand Tool Comparisons & Decisions</b></summary>
 
-<br />
+### Model Versioning: MLflow vs. DVC
 
-### MLflow vs. DVC
-| Scope | Decision | Purpose |
+| Aspect | **MLflow** | **DVC** |
 | :--- | :--- | :--- |
-| **MLflow** | **Select** | Tracks **Experiments & Prompts**, parameters, and LLM evaluations. |
-| **DVC** | **Select** | Versions **Raw Document Files & Vector Artifacts** natively in Git via remote storage. |
+| **Scope** | Full ML Lifecycle (Tracking, Registry, Serving) | Data Version Control + Pipeline Orchestration |
+| **Strengths** | Tracks LLM prompts, parameters, metrics. Native LangChain/LangGraph integration. | Versions massive datasets (PDFs, embeddings) without storing blobs in Git. |
+| **Weaknesses** | Heavy for simple model storage. Does not handle large data files efficiently. | No built-in experiment tracking. |
+| **Decision** | **Use Both.** MLflow handles **Experiment Tracking** (prompts, token costs) and **Model Registry**. DVC handles **Data Versioning** (raw documents, chunked text, and embedding indices). |
 
-### Langfuse vs. Prometheus + Grafana
-| Scope | Decision | Purpose |
+### Observability: Langfuse vs. Prometheus vs. Grafana
+
+| Aspect | **Langfuse** | **Prometheus + Grafana** |
 | :--- | :--- | :--- |
-| **Langfuse** | **Select** | Handles **LLM Tracing**, Token Costing, and RAG Scoring. |
-| **Prometheus** | **Select** | Handles **System Metrics**, hardware health, RPS, and Latencies. |
+| **Scope** | LLM-specific Observability (Traces, Costs, Scoring) | System Infrastructure Metrics (CPU, Memory, Request Latency) |
+| **Strengths** | Tracks prompt templates, generation latency, token usage per user. | Industry standard for collecting time-series metrics and visualizing dashboards. |
+| **Decision** | **Use Both.** Langfuse handles the **Tracing** (What did the LLM see?). Prometheus+Grafana handles the **System** (How much load can the API take?) for SLOs. |
 
+### Data Migration: Alembic vs. DVC
+
+| Aspect | **Alembic** | **DVC** |
+| :--- | :--- | :--- |
+| **Scope** | Relational Database Schema Migrations (SQLAlchemy). | Versioning large binary/text files outside Git. |
+| **Decision** | **Use Both.** Alembic tracks **Table Structures**. DVC tracks **Data Files**. They serve entirely different purposes.
 </details>
 
 ---
 
 ## 3. 🏗️ Design Patterns
 
-- 🏬 **Repository Pattern:** (`app/db/repositories/`) Isolates database access operations from business logic.
-- ⚙️ **Service Layer Pattern:** (`app/services/`) Encapsulates application workflows and business rules.
-- 🎯 **Strategy Pattern:** (`app/services/retrieval/strategies/`) Enables runtime swapping between vector, keyword, and hybrid search pipelines.
-- 🏭 **Factory Pattern:** (`app/services/llm/factory.py`) Instantiates LLM providers dynamically based on context.
-- 🔌 **Dependency Injection:** (`app/api/deps.py`) Injects database sessions safely into FastAPI routes.
+- 🏬 **Repository Pattern** (`app/db/repositories/`): Isolates database access operations from business logic.
+- ⚙️ **Service Layer Pattern** (`app/services/`): Encapsulates application workflows and business rules.
+- 🎯 **Strategy Pattern** (`app/services/retrieval/strategies/`): Enables runtime swapping between vector, keyword, and hybrid search pipelines.
+- 🏭 **Factory Pattern** (`app/services/llm/factory.py`): Instantiates and configures LLM providers dynamically based on context.
+- 🔌 **Dependency Injection** (`app/api/deps.py`): Injects database sessions and service layers cleanly into FastAPI routes.
 
 ---
 
 ## 4. 📂 Project File Structure
 
-*(Compiled Visual Hierarchy)*
-
-* 📁 **`rag-agent-platform/`**
-  * 📄 `.env.example` — *Environment variable templates*
-  * 📄 `.pre-commit-config.yaml` — *Code quality verification suite*
-  * 📄 `docker-compose.yml` — *Local infrastructure stack*
-  * 📄 `pyproject.toml` — *Project metadata & tool configs*
-  * 📄 `uv.lock` — *Locked dependency state*
-  * 📁 **`data/`** *(Managed via DVC)*
-    * 📁 **`raw_documents/`** — *Source document repository*
-    * 📁 **`embeddings/`** — *Local embedding index cache*
-  * 📁 **`scripts/`**
-    * 📄 `seed_data.py` — *Database seed routines*
-  * 📁 **`tests/`**
-    * 📄 `conftest.py` — *Pytest fixtures and mocks*
-    * 📁 **`unit/`** & 📁 **`integration/`**
-  * 📁 **`src/`**
-    * 📁 **`app/`**
-      * 📄 `main.py` — *Application lifecycle & entrypoint*
-      * 📁 **`core/`**
-        * 📄 `config.py` — *Pydantic Settings*
-        * 📄 `logging.py` — *Structlog setup*
-      * 📁 **`api/`**
-        * 📄 `deps.py` — *FastApi Dependency Injection*
-        * 📁 **`v1/`**
-          * 📄 `chat.py` & 📄 `conv.py` — *Endpoints*
-      * 📁 **`services/`**
-        * 📁 **`agent/`**
-          * 📄 `graph.py` — *LangGraph compiler & engine*
-          * 📄 `state.py` — *Graph state definitions*
-        * 📁 **`retrieval/`** — *Search strategies & vector drivers*
-        * 📁 **`llm/`** — *LLM provider factory and routers*
-      * 📁 **`db/`**
-        * 📄 `session.py` — *Async SQLAlchemy engine*
-        * 📁 **`models/`** — *ORM Models*
-        * 📁 **`repositories/`** — *Data access abstractions*
-      * 📁 **`monitoring/`**
-        * 📄 `metrics.py` & 📄 `tracer.py` — *Prometheus & Langfuse bindings*
+```text
+.
+├── .env.example                 # Template for required env vars
+├── .gitignore                   # Standard Python + OS + IDE
+├── .pre-commit-config.yaml      # Ruff, mypy, trailing-whitespace checks
+├── README.md                    # This file
+├── Makefile                     # Shortcuts: dev, docker-up, test, migrate
+├── pyproject.toml               # Build system, dependencies, ruff/mypy configs
+├── uv.lock                      # Exact dependency versions
+├── docker-compose.yml           # Postgres+pgvector, Redis, (optional) Grafana
+├── data/                        # Managed by DVC (gitignored)
+│   ├── raw_documents/
+│   └── embeddings/
+├── models/                      # Managed by MLflow (gitignored)
+│   └── model_registry/
+├── scripts/                     # One-off scripts
+│   ├── seed_data.py
+│   └── run_ragas_eval.py
+├── src/                         # Main application source
+│   └── app/
+│       ├── __init__.py
+│       ├── main.py              # FastAPI app creation & lifespan
+│       ├── core/                # Cross-cutting concerns
+│       │   ├── config.py        # Pydantic Settings
+│       │   ├── logging.py       # Structlog configuration
+│       │   └── exceptions.py
+│       ├── api/                 # HTTP Layer
+│       │   ├── deps.py          # Depends (DB session, current user)
+│       │   ├── router.py        # Routes aggregator
+│       │   └── v1/              # Version 1 endpoints
+│       │       ├── chat.py      # POST /chat/stream
+│       │       └── conv.py      # CRUD for conversations
+│       ├── services/            # Business Logic Layer
+│       │   ├── agent/           # LangGraph integration
+│       │   │   ├── graph.py
+│       │   │   └── state.py
+│       │   ├── retrieval/       # RAG logic
+│       │   │   ├── vector_store.py
+│       │   │   └── strategies/  # Strategy Pattern
+│       │   └── llm/             # LLM clients
+│       │       ├── router.py
+│       │       └── factory.py
+│       ├── db/                  # Data Access Layer
+│       │   ├── session.py
+│       │   ├── models/          # SQLAlchemy ORM models
+│       │   │   ├── conversation.py
+│       │   │   └── message.py
+│       │   └── repositories/    # Repository Pattern
+│       │       └── conversation_repo.py
+│       ├── schemas/             # Pydantic v2 DTOs
+│       │   ├── chat.py
+│       │   └── conversation.py
+│       └── monitoring/          # Prometheus/Langfuse instrumentation
+│           ├── metrics.py
+│           └── tracer.py
+├── tests/                       # Testing
+│   ├── conftest.py
+│   ├── unit/
+│   └── integration/
+└── frontend/                    # Minimal Streamlit UI
+    ├── app.py
+    └── requirements.txt
+```
 
 ---
 
 ## 5. 🗄️ Database Schema
 
-*(GitHub will automatically compile this Mermaid block into a visual Entity-Relationship Diagram)*
+Below is the entity-relationship model for conversation history, documents, chunks, and user feedback.
 
 ```mermaid
 erDiagram
-    CONVERSATION {
+    conversations {
         uuid id PK
-        string title
+        string title "Auto-generated title"
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    messages {
+        uuid id PK
+        uuid conversation_id FK "CASCADE"
+        string role "user, assistant, system"
+        text content
+        jsonb metadata "Tokens, citations"
         timestamp created_at
     }
 
-    MESSAGE {
+    documents {
         uuid id PK
-        uuid conversation_id FK
-        string role
+        string name
+        string source_path
+        string hash "SHA-256 Content Hash"
+        timestamp ingested_at
+    }
+
+    chunks {
+        uuid id PK
+        uuid document_id FK "CASCADE"
+        integer chunk_index
         text content
+        vector embedding "(1536) pgvector"
         jsonb metadata
     }
 
-    DOCUMENT {
+    feedback {
         uuid id PK
-        string name
-        string hash
+        uuid message_id FK "CASCADE"
+        integer score "1 to 5, or -1/1"
+        text comment
+        timestamp created_at
     }
 
-    CHUNK {
-        uuid id PK
-        uuid document_id FK
-        text content
-        vector embedding
-    }
+    conversations ||--o{ messages : "has"
+    messages ||--o{ feedback : "receives"
+    documents ||--o{ chunks : "contains"
+```
 
-    FEEDBACK {
-        uuid id PK
-        uuid message_id FK
-        integer score
-    }
+---
 
-    CONVERSATION ||--o{ MESSAGE : "has"
-    MESSAGE ||--o{ FEEDBACK : "receives"
-    DOCUMENT ||--o{ CHUNK : "contains"
+## 6. 🔄 Data Flow & System Diagrams
+
+### 6.1 High-Level Architecture
+
+```mermaid
+flowchart LR
+    subgraph Presentation["Client Layer"]
+        UI["Streamlit / React UI"]
+    end
+
+    subgraph Backend["FastAPI Backend Container"]
+        direction TB
+        API["FastAPI Handlers"]
+        SVC["Service Layer"]
+        AG["LangGraph Agent"]
+        RET["Retrieval Engine"]
+        VDB[("pgvector Store")]
+    end
+
+    subgraph Observability["Telemetry Stack"]
+        PROM["Prometheus"]
+        GRAFANA["Grafana"]
+        LANGFUSE["Langfuse Tracing"]
+    end
+
+    UI --> API
+    API --> SVC
+    SVC --> AG
+    AG --> RET
+    RET --> VDB
+    
+    SVC -.->|System Metrics| PROM
+    SVC -.->|Execution Traces| LANGFUSE
+    PROM -.-> GRAFANA
+```
+
+### 6.2 Agent Sequence & Request Lifecycle
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Client as Client Application
+    participant API as FastAPI Router
+    participant SVC as Agent Service
+    participant LG as LangGraph Engine
+    participant VDB as pgvector Store
+    participant LLM as Inference API / vLLM
+
+    Client->>API: POST /api/v1/chat/stream
+    API->>SVC: stream_chat(payload)
+    SVC->>LG: execute_graph(state)
+    
+    loop Agentic Retrieval Iteration
+        LG->>VDB: hybrid_search(query, top_k)
+        VDB-->>LG: return relevant chunks
+        LG->>LLM: evaluate context & generate
+        LLM-->>LG: return token stream / tool calls
+    end
+    
+    LG-->>SVC: stream response tokens
+    SVC-->>API: yield NDJSON frame
+    API-->>Client: stream response chunk to UI
+```
+
+---
+
+## 7. 🧪 Technology Stack Reference
+
+> [!TIP]
+> The platform is built using modern Python practices, leveraging `uv` for fast dependency management and full async compatibility.
+
+- **Application Server**: FastAPI 0.115+
+- **Orchestration**: LangGraph 0.2+ & LangChain
+- **Storage & Vector Engine**: PostgreSQL 16+ with `pgvector` extension
+- **Caching**: Redis 7+
+- **Model Inference**: vLLM / Ollama / OpenAI Async Client
+- **Observability**: Prometheus, Grafana, & Langfuse
+- **Package Management**: `uv` by Astral
+
+---
+
+## 8. 🚀 Step-by-Step Setup & CI/CD Workflow
+
+### Quick Start (Local Environment)
+
+1. **Clone the Repository**
+   ```bash
+   git clone https://github.com/your-org/rag-agent-platform.git
+   cd rag-agent-platform
+   ```
+
+2. **Initialize Python Environment with `uv`**
+   ```bash
+   uv venv
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+   uv sync --extra dev --extra monitoring
+   ```
+
+3. **Configure Pre-Commit Hooks**
+   ```bash
+   pre-commit install
+   ```
+
+4. **Launch Local Services Stack**
+   ```bash
+   make docker-up
+   ```
+
+5. **Apply Database Schema Migrations**
+   ```bash
+   alembic upgrade head
+   ```
+
+6. **Start Application Server**
+   ```bash
+   make dev
+   ```
+   > Server running at `http://localhost:8000`. OpenAPI docs available at `http://localhost:8000/docs`.
+
+---
+
+## 9. 🗺️ Project Roadmap
+
+```mermaid
+gantt
+    title RAG Agent Platform Development Plan
+    dateFormat  YYYY-MM-DD
+    section Phase 0
+    System Blueprint & Foundation      :done, p0, 2026-07-01, 2026-07-15
+    section Phase 1 (Current)
+    Core LangGraph + pgvector + FastAPI :active, p1, 2026-07-16, 2026-08-15
+    section Phase 2
+    GraphRAG (Neo4j) + Hybrid Reranking :p2, 2026-08-16, 2026-09-30
+    section Phase 3
+    Auto-scaling KEDA + MCP Protocol    :p3, 2026-10-01, 2026-11-15
+```
+
+---
+
+## 10. 👤 Author & Maintainer
+
+<img src="https://github.com/github.png" width="100;" alt="Author Avatar"/>
+
+**Project Author**  
+👋 Hi, I'm the Lead Architect behind this RAG Platform!  
+Building high-performance, agentic, enterprise-grade AI systems with clean code, data sovereignty, and robust telemetry.
+
+<p>
+    <a href="https://github.com/your-username"><img src="https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white" alt="GitHub" /></a>
+    <a href="https://linkedin.com/in/your-profile"><img src="https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white" alt="LinkedIn" /></a>
+    <a href="https://twitter.com/your-handle"><img src="https://img.shields.io/badge/X-000000?style=for-the-badge&logo=x&logoColor=white" alt="X / Twitter" /></a>
+    <a href="mailto:you@domain.com"><img src="https://img.shields.io/badge/Email-D14836?style=for-the-badge&logo=gmail&logoColor=white" alt="Email" /></a>
+</p>
+
+### ⭐ Don't forget to star this repository if you find it helpful!
+
+[Back to top](#-rag-agent-platform)
+```
