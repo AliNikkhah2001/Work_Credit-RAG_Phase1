@@ -302,7 +302,40 @@ sequenceDiagram
     API-->>Client: stream response chunk to UI
 ```
 
+```mermaid
 
+sequenceDiagram
+    participant User
+    participant FE as Frontend
+    participant API as FastAPI
+    participant Agent as LangGraph
+    participant Retriever as Retrieval
+    participant VS as Vector Store
+    participant LLM as LLM Router
+    participant DB as PostgreSQL
+
+    User->>FE: Send message
+    FE->>API: POST chat stream
+    API->>Agent: Process request
+    
+    alt Need Context
+        Agent->>Retriever: Query documents
+        Retriever->>VS: Similarity search
+        VS-->>Retriever: Relevant chunks
+        Retriever-->>Agent: Context
+    end
+    
+    Agent->>LLM: Generate response
+    LLM-->>Agent: LLM output
+    
+    Agent->>DB: Save conversation
+    DB-->>Agent: Confirmation
+    
+    Agent-->>API: Stream response
+    API-->>FE: Stream tokens
+    FE-->>User: Display response
+    
+```
 
 ### 6.3 High level state flow
 
@@ -326,80 +359,79 @@ flowchart LR
 ### 6.4 High level project directory structure 
 
 ```mermaid
-graph TD
-    A[FitHub] --> B[.env.example]
-    A --> C[.gitignore]
-    A --> D[.pre-commit-config.yaml]
-    A --> E[README.md]
-    A --> F[Makefile]
-    A --> G[pyproject.toml]
-    A --> H[uv.lock]
-    A --> I[docker-compose.yml]
+flowchart TD
+    Root[Project Root] --> Env[env.example]
+    Root --> Gitignore[gitignore]
+    Root --> Precommit[pre-commit-config.yaml]
+    Root --> Readme[README.md]
+    Root --> Makefile[Makefile]
+    Root --> Pyproject[pyproject.toml]
+    Root --> Uvlock[uv.lock]
+    Root --> Docker[docker-compose.yml]
     
-    A --> J[data/]
-    J --> J1[raw_documents/]
-    J --> J2[embeddings/]
+    Root --> Data[data]
+    Data --> Raw[raw_documents]
+    Data --> Embeddings[embeddings]
     
-    A --> K[models/]
-    K --> K1[model_registry/]
+    Root --> Models[models]
+    Models --> Registry[model_registry]
     
-    A --> L[scripts/]
-    L --> L1[seed_data.py]
-    L --> L2[run_ragas_eval.py]
+    Root --> Scripts[scripts]
+    Scripts --> Seed[seed_data.py]
+    Scripts --> Eval[run_ragas_eval.py]
     
-    A --> M[src/]
-    M --> N[app/]
-    N --> N1[main.py]
+    Root --> Src[src]
+    Src --> App[app]
+    App --> Main[main.py]
     
-    N --> O[core/]
-    O --> O1[config.py]
-    O --> O2[logging.py]
-    O --> O3[exceptions.py]
+    App --> Core[core]
+    Core --> Config[config.py]
+    Core --> Logging[logging.py]
+    Core --> Exceptions[exceptions.py]
     
-    N --> P[api/]
-    P --> P1[deps.py]
-    P --> P2[router.py]
-    P --> P3[v1/]
-    P3 --> P4[chat.py]
-    P3 --> P5[conv.py]
+    App --> Api[api]
+    Api --> Deps[deps.py]
+    Api --> ApiRouter[router.py]
+    Api --> V1[v1]
+    V1 --> Chat[chat.py]
+    V1 --> Conv[conv.py]
     
-    N --> Q[services/]
-    Q --> Q1[agent/]
-    Q1 --> Q2[graph.py]
-    Q1 --> Q3[state.py]
-    Q --> Q4[retrieval/]
-    Q4 --> Q5[vector_store.py]
-    Q4 --> Q6[strategies/]
-    Q --> Q7[llm/]
-    Q7 --> Q8[router.py]
-    Q7 --> Q9[factory.py]
+    App --> Services[services]
+    Services --> Agent[agent]
+    Agent --> Graph[graph.py]
+    Agent --> State[state.py]
+    Services --> Retrieval[retrieval]
+    Retrieval --> VectorStore[vector_store.py]
+    Retrieval --> Strategies[strategies]
+    Services --> Llm[llm]
+    Llm --> LlmRouter[router.py]
+    Llm --> Factory[factory.py]
     
-    N --> R[db/]
-    R --> R1[session.py]
-    R --> R2[models/]
-    R2 --> R3[conversation.py]
-    R2 --> R4[message.py]
-    R --> R5[repositories/]
-    R5 --> R6[conversation_repo.py]
+    App --> Db[db]
+    Db --> Session[session.py]
+    Db --> DbModels[models]
+    DbModels --> Conversation[conversation.py]
+    DbModels --> Message[message.py]
+    Db --> Repositories[repositories]
+    Repositories --> ConvRepo[conversation_repo.py]
     
-    N --> S[schemas/]
-    S --> S1[chat.py]
-    S --> S2[conversation.py]
+    App --> Schemas[schemas]
+    Schemas --> ChatSchema[chat.py]
+    Schemas --> ConvSchema[conversation.py]
     
-    N --> T[monitoring/]
-    T --> T1[metrics.py]
-    T --> T2[tracer.py]
+    App --> Monitoring[monitoring]
+    Monitoring --> Metrics[metrics.py]
+    Monitoring --> Tracer[tracer.py]
     
-    A --> U[tests/]
-    U --> U1[conftest.py]
-    U --> U2[unit/]
-    U --> U3[integration/]
+    Root --> Tests[tests]
+    Tests --> Conftest[conftest.py]
+    Tests --> Unit[unit]
+    Tests --> Integration[integration]
     
-    A --> V[frontend/]
-    V --> V1[app.py]
-    V --> V2[requirements.txt]
-'''
-
+    Root --> Frontend[frontend]
+    Frontend --> AppFront[app.py]
+    Frontend --> ReqFront[requirements.txt]
+```
 
 
 ---
