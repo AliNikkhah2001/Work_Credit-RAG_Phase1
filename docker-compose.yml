@@ -1,0 +1,178 @@
+# ============================================================
+# RAG Agent Platform — Full Stack Docker Compose
+# ============================================================
+
+services:
+  # ─── PostgreSQL + pgvector ────────────────────────────────
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: rag_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: rag
+    ports:
+      - "5433:5432"  # Changed to avoid conflicts
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d rag"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - rag_network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ─── Redis ─────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: rag_redis
+    ports:
+      - "6380:6379"  # Changed to avoid conflicts
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - rag_network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ─── Backend (FastAPI App) ────────────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rag_backend
+    # ─── VOLUME MOUNTS FOR HOT RELOAD ──────────────────────
+    volumes:
+      - ./src:/app/src  # Mount source code (no rebuild needed)
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/rag
+      REDIS_URL: redis://redis:6379/0
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      ACCESS_CODE: ${ACCESS_CODE}
+      ACCESS_CODE_SEED: ${ACCESS_CODE_SEED}
+      SUPER_SECRET_KEY: ${SUPER_SECRET_KEY}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-text-embedding-3-small}
+    ports:
+      - "8080:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - rag_network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ─── Frontend (ChatGPT-Next-Web) ──────────────────────────
+  frontend:
+    image: yidadaa/chatgpt-next-web:latest
+    container_name: rag_frontend
+    environment:
+      BASE_URL: http://host.docker.internal:8080
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      NEXT_PUBLIC_ACCESS_CODE: ${ACCESS_CODE:-test123}
+      NEXT_PUBLIC_ANALYTICS_ID: ""
+      NEXT_PUBLIC_DISABLE_GPT4: ""
+    ports:
+      - "8081:3000"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - rag_network
+    extra_hosts:
+      - "backend:host-gateway"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ─── Grafana (Optional) ────────────────────────────────────
+  grafana:
+    image: grafana/grafana-oss:latest
+    container_name: rag_grafana
+    ports:
+      - "8082:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+    restart: unless-stopped
+    networks:
+      - rag_network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    profiles:
+      - observability
+
+  # ─── pgAdmin (Optional) ────────────────────────────────────
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: rag_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@rag.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "8083:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    networks:
+      - rag_network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    profiles:
+      - admin
+
+# ─── Volumes ─────────────────────────────────────────────────
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  grafana_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+
+# ─── Networks ────────────────────────────────────────────────
+networks:
+  rag_network:
+    driver: bridge
