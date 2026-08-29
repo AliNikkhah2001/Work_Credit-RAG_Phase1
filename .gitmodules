@@ -1,0 +1,16 @@
+[submodule "components/knowledgebase"]
+	path = components/knowledgebase
+	url = https://github.com/AliNikkhah2001/Work_RAG-KB.git
+	branch = master
+[submodule "components/server-setup"]
+	path = components/server-setup
+	url = https://github.com/AliNikkhah2001/Work_RAG-Server-Setup.git
+	branch = main
+[submodule "components/guardrails"]
+	path = components/guardrails
+	url = https://github.com/AliNikkhah2001/Work_RAG-Guardrails.git
+	branch = main
+[submodule "components/orchestrator"]
+	path = components/orchestrator
+	url = https://github.com/AliNikkhah2001/Work_RAG-Orchestrator.git
+	branch = main
