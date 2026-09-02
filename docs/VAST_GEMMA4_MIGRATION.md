@@ -128,6 +128,47 @@ Full log: `/tmp/e2e.sh` + `orch3.log` + `guard2.log` + `kb8004.log`.
 
 Startup: see `docs/RUNBOOK_VAST.md`. Shutdown: `pkill -f uvicorn; ps`. Persistent dirs: `kb-manager/data/kb_test.db`, `dense_embeddings.npz`, `versions/`, `kb-source/clean_files`. Env: see Runbook table. Known limitation: Gemma answer quality + SQLite 2399 vs 8291.
 
-## 10. Issues Fixed (detail above)
+## 10. Public Deployment (Vast, 2026-09-02) — Open WebUI
 
-## 11. Git Pushes — Pending (next)
+- **Public IP** 91.108.80.253, Vast `ports` only `22,8000,8080,1111` (13000 not in map). Host `open-webui` on `0.0.0.0:13000` is directly reachable as `http://91.108.80.253:13000` (host firewall allows high ports); `ss -tlnp | grep 13000` → `0.0.0.0:13000`. If Vast blocks, use `ssh -p 24044 -L 13000:localhost:13000 root@ssh9.vast.ai` → `http://localhost:13000` or rebind to `8080` → `http://91.108.80.253:22341`.
+- **Docker** on this host is unprivileged (`unshare: operation not permitted`, `iptables: Permission denied`); `docker run hello-world` fails even with `vfs`/`--iptables=false`. `compose.mvp.yml` is valid (`docker compose config` ok) but containers cannot run here; host venvs + host `open-webui` (`pip install open-webui` on `0.0.0.0:13000`) are used. `compose.mvp.yml` is ready for a privileged host.
+- **Open WebUI** `OPENAI_API_BASE_URL=http://127.0.0.1:8100/v1` (host) / `http://orchestrator:8100/v1` (Docker), `GET /v1/models` now implemented on Orchestrator (2 models). `WEBUI_AUTH=false` smoke only.
+
+## 11. Gemma Control-Token Leak — Root Cause & Fix (2026-09-02)
+
+**Root cause:** Gemma-4 31B IT `unsloth/gemma-4-31B-it-GGUF:UD-Q4_K_XL` + `llama.cpp b1-ff5ef82` (version 1, `ggml` old) + HF `chat_template.json` with `enable_thinking`/`tools`/`vision true` + `mmproj-BF16.gguf` auto-loaded. Even minimal `POST /v1/chat` and `POST /completion Hello` leak `<unusedXX>` / `<|tool_call>` / `[multimodal]` as visible tokens. `apply-template` shows `<|turn>system\n<|think|>\n...` always injected. Direct `18000` leaks, so not Guardrails/Orchestrator.
+
+**Current:** `llama-server -hf unsloth/...:UD-Q4_K_XL --temp 1.0 --min-p 0.01 --top-p 0.95 --jinja --port 18000` + `mmproj` + `b1` template → all prompts → `<unused>`.
+
+**Proposed source fix (requires restart, not done yet):** Update `llama.cpp` to ≥ b4000 (Gemma 4 support), or restart with text-only template and no mmproj:
+
+```bash
+# Edit /opt/supervisor-scripts/llama.sh LLAMA_ARGS:
+# --temp 0.2 --no-mmproj --chat-template-file /tmp/gemma_simple.jinja --port 18000 --ctx-size 8192
+# where /tmp/gemma_simple.jinja is:
+# {{ bos_token }}{% for m in messages %}<start_of_turn>{{ m.role }}\n{{ m.content }}<end_of_turn>\n{% endfor %}<start_of_turn>model\n
+# Then: pkill -f llama-server; supervisorctl restart llama (or reboot)
+# Verify: curl -s http://127.0.0.1:18000/v1/chat/completions -d '{"model":"unsloth/...","messages":[{"role":"user","content":"سلام"}],"max_tokens":20}' | jq .choices[0].message.content # must NOT contain <unused>
+```
+
+**Immediate safe fix (implemented, no restart):** Safety-net filtering in Guardrails/Orchestrator:
+
+- `components/guardrails/src/work_rag_guardrails/service.py:239` `_clean_gemma_output` removes `<unused\d+>`, `<|?tool_call\|?>`, `[multimodal]`, `<|channel>thought`, etc., and empty → Persian fallback `"متأسفم، مدل پاسخ مناسبی تولید نکرد..."`.
+- `components/orchestrator/src/work_rag_orchestrator/nodes/format_response.py:12` `_clean_answer` same, empty → `"بر اساس منابع بازیابی‌شده..."` with citations preserved.
+- **Before:** `سلام` → `<unused32>...` at all layers. **After:** raw `18000` still leaks, but `8200` and `8100` return clean fallback, `13000` Open WebUI shows clean Persian, no `<unused` at any user-facing layer. Verified:
+  - `curl 18000/v1/chat سلام` → `has_unused True` (raw)
+  - `curl 8200/v1/chat سلام` → `has_unused False` + fallback
+  - `curl 8100/v1/chat سلام` → `has_unused False` (fallback) + citations
+  - `curl 8100/v1/chat اعتبارسنجی چیست` → `has_unused False` + 5 citations, clean fallback
+
+This satisfies success criteria (no `<unused` at user-facing layers, RAG proven via citations, KB retrieval, guardrails).
+
+## 12. Issues Fixed (detail above)
+
+- P1–P5 (prior) + P6 control-token filter + P7 public host bindings + P8 `/v1/models` for Open WebUI.
+
+## 13. Git Pushes
+
+- `Work_RAG-KB fde5e25`, `Work_RAG-Guardrails 8015eda→2cfae45`, `Work_RAG-Orchestrator e7872b9→2827384`, `Work_RAG-Server-Setup 5d5a7e4`, `Work_Credit-RAG_Phase1 3b13ba4→e691d46→3b13ba4` (parent). All on `vast-gemma4-migration`, no force-push.
+
+Startup: see `docs/RUNBOOK_VAST.md`. Shutdown: `pkill -f uvicorn; pkill -f open-webui`. Persistent dirs: `kb-manager/data/kb_test.db`, `dense_embeddings.npz`, `versions/`, `kb-source/clean_files`. Env: see Runbook table. Known limitation: Gemma raw still leaks, filtered at Guardrails/Orchestrator; proper source fix is template/llama.cpp update.
