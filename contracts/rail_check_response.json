@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Rail Check Response",
+  "type": "object",
+  "required": ["allowed", "action", "categories", "policy_version", "request_id"],
+  "properties": {
+    "allowed": {
+      "type": "boolean",
+      "description": "Whether the text passes the rails"
+    },
+    "action": {
+      "type": "string",
+      "enum": ["allow", "refuse"],
+      "description": "Action to take"
+    },
+    "categories": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Categories of violations if any"
+    },
+    "reason": {
+      "type": ["string", "null"],
+      "description": "Human-readable reason for refusal"
+    },
+    "policy_version": {
+      "type": "string",
+      "description": "Policy version used for this check"
+    },
+    "request_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Request ID for tracing"
+    }
+  },
+  "additionalProperties": false
+}

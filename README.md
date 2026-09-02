@@ -10,15 +10,15 @@ Umbrella repository for a self-hosted, Persian-capable conversational RAG platfo
 |---|---|---|---|---|
 | `components/server-setup` | [Work_RAG-Server-Setup](https://github.com/AliNikkhah2001/Work_RAG-Server-Setup) | H200/Vast provisioning, local model and embedding services, Gemma manager, Open WebUI, infra | `main` | `5d5a7e4` |
 | `components/knowledgebase` | [Work_RAG-KB](https://github.com/AliNikkhah2001/Work_RAG-KB) | KB ingestion, maintenance, versioning, hybrid retrieval (BM25+dense+RRF+cross-encoder), KB web UI | `master` | `fde5e25` (KB) / `3ae7b1e` |
-| `components/guardrails` | [Work_RAG-Guardrails](https://github.com/AliNikkhah2001/Work_RAG-Guardrails) | NeMo Guardrails policy service and guarded Gemma gateway | `main` | `0abd5e3` |
+| `components/guardrails` | [Work_RAG-Guardrails](https://github.com/AliNikkhah2001/Work_RAG-Guardrails) | NeMo Guardrails policy service and guarded Gemma gateway | `main` | `1e9a1cd` |
 | `components/orchestrator` | [Work_RAG-Orchestrator](https://github.com/AliNikkhah2001/Work_RAG-Orchestrator) | LangGraph workflow and public OpenAI-compatible chat API | `main` | `9b85561` |
 
 Each gitlink is pinned to an exact commit. Updating a component requires a component-repository commit followed by a parent-repository commit that advances the corresponding gitlink.
 
 ```bash
 git submodule status --recursive
-# 0abd5e3... components/guardrails (heads/vast-gemma4-migration)
-# fde5e25...       components/knowledgebase (heads/vast-gemma4-migration)
+# 1e9a1cd... components/guardrails (heads/vast-gemma4-migration)
+# b1bb648...       components/knowledgebase (heads/vast-gemma4-migration)
 # 9b85561...       components/orchestrator (heads/vast-gemma4-migration)
 # 5d5a7e4...       components/server-setup (heads/vast-gemma4-migration)
 ```
@@ -68,7 +68,7 @@ KB_DB_URL="sqlite+aiosqlite://$PWD/components/knowledgebase/kb-manager/data/kb_t
   KB_WEB_HOST=127.0.0.1 KB_WEB_PORT=8004 \
   /tmp/kb-venv/bin/python -m uvicorn kb_manager.web.app:app --host 127.0.0.1 --port 8004 &
 
-# 2. Guardrails (0abd5e3, with HurtLex allowlist 9 lemmas + enable_thinking:false)
+# 2. Guardrails (1e9a1cd, with HurtLex allowlist 11 lemmas + enable_thinking:false)
 PYTHONPATH=components/guardrails/src \
   GUARDRAILS_HOST=127.0.0.1 GUARDRAILS_PORT=8200 \
   UPSTREAM_LLM_BASE_URL=http://127.0.0.1:18000/v1 \
@@ -94,13 +94,13 @@ curl -s http://127.0.0.1:18000/v1/models | jq .data[0].id
 
 Docker (privileged host): `LLM_BASE_URL=http://host.docker.internal:18000/v1 docker compose -f compose.mvp.yml up --build -d` — only `13000` is public.
 
-## Status — Vast `vast-gemma4-migration` (pushed 2026-09-02, parent `422365d` → next, pins: guardrails `0abd5e3`, orchestrator `9b85561`, KB `fde5e25`, server-setup `5d5a7e4`)
+## Status — Vast `vast-gemma4-migration` (pushed 2026-09-02, parent `422365d` → next, pins: guardrails `1e9a1cd`, orchestrator `9b85561`, KB `b1bb648`, server-setup `5d5a7e4`)
 
-Live on Vast VM `49624249` (`ssh9.vast.ai:24044`, `91.108.80.253`), `2× RTX 6000 Ada 49 Gi (595.58.03, CUDA 13.2)`, `96× EPYC 7443`, `503 Gi RAM`, `100 Gi disk`. `env | grep proxy` empty. Gemma at `http://127.0.0.1:18000/v1` (`/opt/llama-new`, not supervisor-managed yet). `ss -tlnp` shows `0.0.0.0:18000 (llama-new)`, `127.0.0.1:8004/8200/8100`, `0.0.0.0:13000`. Guardrails `0abd5e3` (allowlist 9 lemmas) + Orchestrator `9b85561` (Persian prompt) live via host venvs (`8200` pid `85170`, `8100` pid `85178`); Docker `compose.mvp.yml` ready for privileged hosts but this Vast host is unprivileged (`unshare` denied).
+Live on Vast VM `49624249` (`ssh9.vast.ai:24044`, `91.108.80.253`), `2× RTX 6000 Ada 49 Gi (595.58.03, CUDA 13.2)`, `96× EPYC 7443`, `503 Gi RAM`, `100 Gi disk`. `env | grep proxy` empty. Gemma at `http://127.0.0.1:18000/v1` (`/opt/llama-new`, not supervisor-managed yet). `ss -tlnp` shows `0.0.0.0:18000 (llama-new)`, `127.0.0.1:8004/8200/8100`, `0.0.0.0:13000`. Guardrails `1e9a1cd` (allowlist 11 lemmas, profanity len>2) + Orchestrator `9b85561` (Persian prompt) live via host venvs (`8200` pid `85170`, `8100` pid `85178`); Docker `compose.mvp.yml` ready for privileged hosts but this Vast host is unprivileged (`unshare` denied).
 
 - **Gemma — FIXED at source (was `<unused*>` leak):** `unsloth/gemma-4-31B-it-GGUF:UD-Q4_K_XL` (30.6 B, 18.8 GiB) now on `llama.cpp 0.3.0-dev (build 1, 0f3a71b, 2026-09-02, /opt/llama-new/bin/llama-server)` with `--no-mmproj --jinja --ctx-size 8192 --temp 0.2` (`LD_LIBRARY_PATH=/opt/llama-new/lib`). `POST /v1/chat/completions` with `chat_template_kwargs:{"enable_thinking":false}` → clean Persian, `has_unused False`, `reasoning_content` empty. Verified 5 prompts sequential: `سلام`→`سلام! چطور می‌توانم…` (35 chars), `Hello` (32), `اعتبارسنجی چیست` (311), `چگونه گزارش اعتباری...` (323), `یک پاسخ کوتاه...` (19). Old `b1-ff5ef82` + `mmproj-BF16.gguf` always injected `<unused*>`/`<|tool_call|>` even for `Hello`.
 
-- **Guardrails — FIXED false positives (was HurtLex `حذف`/`بخشی`/`پستی`):** `0abd5e3` sends `chat_template_kwargs:{"enable_thinking":false}` and uses `kb/hurtlex_allowlist.json` (9 lemmas: `حذف, بخشی, تامین مالی, اشتغال, پست, پستی, مصرف, هدف, نادرست`). Before fix, RAG prompt with KB context `درخواست حذف سابقه منفی قدیمی` was blocked at **input** as `hate:حذف` and `چگونه می‌توان گزارش چک را مجدداً دریافت کرد؟` as `hate:پستی` before Gemma, so both returned `content_filter` with 0 citations. After fix, 6/6 credit queries + 6/6 user samples (`سلام`, `اعتبارسنجی چیست`, `مدت زمان انقضای گزارش چک`, `چگونه می‌توان گزارش چک را مجدداً...`, `چرا یکی از وام...`, `رتبه چه فرقی...`) all `stop` with 5 citations, Persian only, `input allowed true`, `output allowed true`, genuine hate/profanity/PII/secret still blocked (19 regression tests).
+- **Guardrails — FIXED false positives (was HurtLex `حذف`/`بخشی`/`پستی`/`مهم`/`ضعیف` + profanity `ان`):** `1e9a1cd` sends `chat_template_kwargs:{"enable_thinking":false}` and uses `kb/hurtlex_allowlist.json` (11 lemmas: `حذف, بخشی, تامین مالی, اشتغال, پست, پستی, مصرف, هدف, نادرست, مهم, ضعیف`) plus `check_profanity_fa` now `len(w)>2` (so `ان` len 2 no longer flags `اثر ان را` in KB chunks). Before fix, RAG prompt with KB context `درخواست حذف سابقه منفی قدیمی` was blocked at **input** as `hate:حذف`, `جدول نوع تماس` as `hate:مهم`, `تفاوت شرکت شما با رقبایتان...` as `profanity:ان`, and 6 expected answers with `رتبه اعتباری ضعیف` as `hate:ضعیف`. After fix, 20/20 KB evaluation `ok` (was 18/20), 0/120 input blocked (was 2), 0/120 output blocked (was 6), and 6/6 credit + 6/6 user samples all `stop` with 5 citations, Persian only, genuine hate/profanity/PII/secret still blocked (22 regression tests).
 
 - **KB Manager:** `POST /search/api` → `final_results` after BM25+MiniLM384+RRF+mmarco; `GET /health`/`ready`; `0.0.0.0:8000` (Docker) / `127.0.0.1:8004` (host). DB `977 MiB`, `69 docs`, `2399 chunks` (5 XLSX fail `No valid sheets` vs prod 8291, expected).
 
@@ -170,11 +170,11 @@ Open `http://91.108.80.253:13000` (or `http://localhost:13000` via `ssh -p 24044
 - [x] **Orchestrator** LangGraph 5 nodes, `MAX_CHUNKS 3` `MAX_CHARS 4000`, `upstream_llm_model` env, `max_tokens 512`, `GET /v1/models` for Open WebUI, `0.0.0.0:8100`
 - [x] **Gemma source fix** — built `llama.cpp 0f3a71b` at `/opt/llama-new` (`--no-mmproj --jinja`), `supervisorctl stop llama` + manual `LD_LIBRARY_PATH=... /opt/llama-new/bin/llama-server --port 18000 ...` (pid `64871` → now `80957`), verified 5 prompts `has_unused False`
 - [x] **Control-token filter** — `_clean_gemma_output` / `_clean_answer` as defensive (now not masking, source is clean)
-- [x] **HurtLex allowlist** — `kb/hurtlex_allowlist.json` 8 lemmas (`حذف,بخشی,تامین مالی,اشتغال,پست,مصرف,هدف,نادرست`) with evidence from 30 benign texts audit; `actions.py` `load_hurtlex_allowlist()` + `check_hurtlex_fa` skips allowlisted, logs matches, `check_hurtlex_fa_strict` kept; 18 new regression tests (10 benign, 8 malicious) all pass; RAG 6/6 now `stop` with 5 citations
+- [x] **HurtLex allowlist** — `kb/hurtlex_allowlist.json` 11 lemmas (`حذف,بخشی,تامین مالی,اشتغال,پست,پستی,مصرف,هدف,نادرست,مهم,ضعیف`) with evidence from 30+120 audit; `actions.py` `load_hurtlex_allowlist()` + `check_hurtlex_fa` skips allowlisted, logs matches, `check_hurtlex_fa_strict` kept, `check_profanity_fa` now `len>2` (fixes `ان` false positive on KB chunks like `اثر ان را`); 22 new regression tests (11 benign incl. `پستی`/`مهم`/`ضعیف`, 11 malicious) all pass; RAG 20/20 `ok` (was 18/20), 0/120 input blocked (was 2), 0/120 output blocked (was 6)
 - [x] **Compose** `compose.mvp.yml` (no `gemma-manager`, only `13000` public, `host-gateway`), `deploy/docker-compose.vast.yml` overlay, host venvs verified
 - [x] **Docs** `docs/VAST_GEMMA4_MIGRATION.md` §1-17 (root causes, fixes, verification), `docs/RUNBOOK_VAST.md` (startup, health, env, port table, Known Issues fixed), `README` Status
 - [x] **Public URL** `http://91.108.80.253:13000` → `0.0.0.0:13000` verified `curl 127.0.0.1:13000` 200, `ss -tlnp` shows `0.0.0.0:13000`
-- [x] **Commits** parent `422365d` (guardrails `e59b300` → `0abd5e3` + orchestrator `9b85561` Persian prompt), guardrails `0abd5e3` (9 lemmas), orchestrator `9b85561`, KB `fde5e25`, server-setup `5d5a7e4` — all pushed to `vast-gemma4-migration`, no force-push, 6/6 user samples now Persian with 5 citations
+- [x] **Commits** parent `422365d` (guardrails `e59b300` → `0abd5e3` + orchestrator `9b85561` Persian prompt), guardrails `1e9a1cd` (9 lemmas), orchestrator `9b85561`, KB `b1bb648`, server-setup `5d5a7e4` — all pushed to `vast-gemma4-migration`, no force-push, 6/6 user samples now Persian with 5 citations
 
 ### Pending ⏳
 

@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "KB Retrieval Result",
+  "type": "object",
+  "required": ["chunk_id", "document_id", "title", "heading", "content", "score"],
+  "properties": {
+    "chunk_id": {"type": "string"},
+    "document_id": {"type": "string"},
+    "title": {"type": "string"},
+    "heading": {"type": "string"},
+    "content": {"type": "string"},
+    "score": {"type": "number"}
+  },
+  "additionalProperties": false
+}
