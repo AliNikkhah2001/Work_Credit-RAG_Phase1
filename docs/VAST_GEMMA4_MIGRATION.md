@@ -230,33 +230,40 @@ Direct `check_hurtlex_fa` on the augmented prompt:
 
 All are legitimate financial terms; HurtLex conservative was built for general social media hate, not credit reporting.
 
-**Policy (Phase 3 — smallest safe):**
+**Policy (Phase 3 — smallest safe, updated 2026-09-02 with 9 lemmas):**
 - Keep profanity (`persian_swear.json`), PII (`check_pii_ir`), secret (`sk-`, `api_key`) **strict** — no allowlist.
-- For HurtLex, add explicit reviewed allowlist `kb/hurtlex_allowlist.json` (8 lemmas, normalized): `حذف, بخشی, تامین مالی, اشتغال, پست, مصرف, هدف, نادرست` with evidence. Preserve exact-word matching (`\b...\b`) and log matches for audit.
+- For HurtLex, add explicit reviewed allowlist `kb/hurtlex_allowlist.json` (9 lemmas, normalized): `حذف, بخشی, تامین مالی, اشتغال, پست, پستی, مصرف, هدف, نادرست` with evidence. `پستی` added after user sample `چگونه می‌توان گزارش چک را مجدداً دریافت کرد؟` was blocked as `hate:پستی` (KB context contains `پستی`). Preserve exact-word matching (`\b...\b`) and log matches for audit.
 - Implement `load_hurtlex_allowlist()` and `check_hurtlex_fa` that skips allowlisted lemmas; keep `check_hurtlex_fa_strict` for hostile input audit. Applied to both input and output checks for MVP (so trusted KB context does not trigger), but strict version remains available.
 - Separate INPUT/OUTPUT conceptually: a word that warrants caution in user input does not justify discarding a factual generated answer; for MVP allowlist covers both, and `check_output_persian` remains the primary gate.
 
-**Code (ownership: guardrails):**
-- `kb/hurtlex_allowlist.json` — 8 lemmas with `_comment`, `evidence`, `policy`.
+**Code (ownership: guardrails + orchestrator):**
+- `kb/hurtlex_allowlist.json` — 9 lemmas with `_comment`, `evidence`, `policy` (added `پستی`).
 - `src/work_rag_guardrails/actions.py` — `load_hurtlex_allowlist()`, `check_hurtlex_fa` now checks `w not in allowlist` and logs `HurtLex match: lemma=...`, plus `check_hurtlex_fa_strict`.
+- `src/work_rag_orchestrator/nodes/build_context.py` — Persian-only system prompt: `شما دستیار هوشمند اعتبارسنجی ایران (ICS) هستید... فقط بر اساس [Context]... همیشه به فارسی پاسخ دهید... برای سلام با لحنی دوستانه... منابع را با [1],[2] ارجاع دهید`. Fixes English fallback `The provided context does not contain...` to Persian `بر اساس اطلاعات موجود در پایگاه دانش، پاسخی یافت نشد.` (commit `9b85561`).
 - No change to `service.py` logic except that `check_input_persian`/`check_output_persian` now benefit from allowlist; Gemma `enable_thinking:false` remains.
 
-**Regression (Phase 4):** `tests/test_hurtlex_allowlist.py` — 18 tests:
-- Benign must allow: failing raw sentence, `بخشی` benign, `حذف` benign, `تامین مالی`, `اشتغال`, `پست`, `مصرف`, `هدف`, `نادرست`, ZWNJ-normalized `حذف`.
+**Regression (Phase 4):** `tests/test_hurtlex_allowlist.py` — 19 tests (was 18, added `پستی`):
+- Benign must allow: failing raw sentence, `بخشی` benign, `حذف` benign, `تامین مالی`, `اشتغال`, `پست`, `پستی`, `مصرف`, `هدف`, `نادرست`, ZWNJ-normalized `حذف`.
 - Malicious must still block: explicit hate `حرامزاده`, `احمق`, profanity `آشغال`/`اسکل`, PII `کد ملی 1234567891`, secret `sk-`, non-allowlisted hate `خائن`, strict vs allowlist difference for `حذف`.
-- All 18 pass; existing 6 pass, 5 pre-existing failures unchanged.
+- All 19 pass; existing 6 pass, 5 pre-existing failures unchanged.
 
-**RAG after fix (Phase 5):** Guardrails restarted with `e59b300` (pid 80120/80957):
-- `چگونه می‌توانم گزارش اعتباری خود را دریافت کنم؟` → `finish stop`, 5 citations, real answer `با توجه به متن ارائه شده، اطلاعات کافی... امکان اخذ گزارش اعتبارسنجی وجود ندارد [1],[2],[3].` `has_unused False`
-- 5 additional credit questions all `stop` with 5 citations:
-  - `اعتبارسنجی چیست` → real definition with `[2],[3]`, 5 citations
-  - `امتیاز اعتباری چگونه محاسبه می‌شود؟` → 5 citations
+**RAG after fix (Phase 5 — updated with Persian prompt and 9 lemmas, pids 85170/85178):**
+- `چگونه می‌توانم گزارش اعتباری خود را دریافت کنم؟` → `finish stop`, 5 citations, real answer `بر اساس اطلاعات موجود در پایگاه دانش، تعریف دقیقی... امکان اخذ گزارش اعتبارسنجی وجود ندارد [1],[2],[3].` `has_unused False`
+- 5 additional credit questions all `stop` with 5 citations (Persian):
+  - `اعتبارسنجی چیست` → `تعریف دقیق اعتبارسنجی در متن‌های ارائه شده موجود نیست اما به موارد زیر اشاره شده است: ... [2],[3]` 5 citations
+  - `امتیاز اعتباری چگونه محاسبه می‌شود؟` → `تعریف دقیق و جامع نحوه محاسبه امتیاز اعتباری...` 5 citations
   - `چگونه می‌توانم درخواست حذف سابقه منفی قدیمی...` → `سوابق تا پنج سال باقی می‌مانند...` 5 citations (was blocked before)
   - `بخشی از اطلاعات اعتباری من ناقص است...` → `برای پیگیری اصلاح اطلاعات نادرست... [1],[2],[3]` 5 citations (was blocked before as `hate:نادرست`)
-  - `تامین مالی از طریق تسهیلات بانکی...` → 5 citations
-- All have `input allowed true`, `output allowed true`, no `<unused`/`tool` tokens.
+  - `تامین مالی از طریق تسهیلات بانکی...` → `بر اساس اطلاعات موجود در پایگاه دانش، پاسخی برای این سوال یافت نشد.` 5 citations (was English before prompt fix)
+- **User samples (6) now all Persian, no hate, 5 citations:**
+  - `سلام` → `سلام. چطور می‌توانم به شما کمک کنم؟` 5 citations (was fallback)
+  - `مدت زمان انقضای گزارش چک چقدر است؟` → `تاریخ انقضای گزارش چک یک روز کاری است... [1],[2],[3]` 5 citations
+  - `چگونه می‌توان گزارش چک را مجدداً دریافت کرد؟` → `بر اساس اطلاعات موجود... انقضای گزارش چک یک روز کاری است... [1],[2]` 5 citations (was `hate:پستی`)
+  - `چرا یکی از وام هایی که دارم قسطشون رو میدم، توی گزارش اعتباری من نیست؟` → `بر اساس اطلاعات موجود در پایگاه دانش، پاسخی برای این سوال یافت نشد.` 5 citations (was English)
+  - `رتبه چه فرقی با امتیاز داره؟` → `بر اساس اطلاعات موجود در پایگاه دانش، پاسخی برای این سوال یافت نشد.` 5 citations (was English)
+- All have `input allowed true`, `output allowed true`, no `<unused`/`tool` tokens, no English fallback.
 
-**Citation handling (Phase 6):** `orchestrator/nodes/format_response.py` — when `blocked=true`, returns `finish content_filter` with `citations=[]` and preserves `retrieved_chunks` internally for diagnostics; when allowed, returns `stop` with 5 citations. Verified: genuine hate `تو حرامزاده هستی` → blocked with 0 citations; allowlisted `حذف` → 5 citations preserved. No false positive now erases retrieval.
+**Citation handling (Phase 6):** `orchestrator/nodes/format_response.py` — when `blocked=true`, returns `finish content_filter` with `citations=[]` and preserves `retrieved_chunks` internally for diagnostics; when allowed, returns `stop` with 5 citations. Verified: genuine hate `تو حرامزاده هستی` → blocked with 0 citations; allowlisted `حذف`/`پستی` → 5 citations preserved. No false positive now erases retrieval.
 
 ## 16. Next — Make Persistent + Re-verify
 
@@ -264,8 +271,8 @@ All are legitimate financial terms; HurtLex conservative was built for general s
 2. Consider removing duplicate fallback in orchestrator if guardrails owns concern (currently defensive).
 3. Update `docs/RUNBOOK_VAST.md` known issues: now documents allowlist, not raw leak.
 
-## 17. Git Pushes (updated)
+## 17. Git Pushes (updated 2026-09-02)
 
-- `Work_RAG-KB fde5e25`, `Work_RAG-Guardrails 3f20bed→e59b300` (hurtlex allowlist), `Work_RAG-Orchestrator 743b2c7`, `Work_RAG-Server-Setup 5d5a7e4`, `Work_Credit-RAG_Phase1 43f547b→...` (parent pin updated). All on `vast-gemma4-migration`, no merge to `main` yet.
+- `Work_RAG-KB fde5e25`, `Work_RAG-Guardrails 3f20bed→e59b300→0abd5e3` (hurtlex allowlist 8→9 lemmas, add پستی), `Work_RAG-Orchestrator 743b2c7→9b85561` (Persian prompt), `Work_RAG-Server-Setup 5d5a7e4`, `Work_Credit-RAG_Phase1 43f547b→09115e5→422365d→...` (parent pins updated). All on `vast-gemma4-migration`, no merge to `main` yet. Guardrails tests `19 passed` (benign+malicious), orchestrator `9 passed`, KB `32 passed`.
 
 Startup: see `docs/RUNBOOK_VAST.md`. Shutdown: `pkill -f uvicorn; pkill -f open-webui`. Persistent dirs: `kb-manager/data/kb_test.db`, `dense_embeddings.npz`, `versions/`, `kb-source/clean_files`. Env: see Runbook table. Known limitation: `llama-new` is manual, not supervisor-managed.
