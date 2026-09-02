@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Rail Check Request",
+  "type": "object",
+  "required": ["stage", "text", "request_id"],
+  "properties": {
+    "stage": {
+      "type": "string",
+      "enum": ["input", "output"],
+      "description": "Which rail stage to check"
+    },
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 10000,
+      "description": "Text to check against rails"
+    },
+    "request_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Request ID for tracing"
+    }
+  },
+  "additionalProperties": false
+}
