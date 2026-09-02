@@ -171,4 +171,43 @@ This satisfies success criteria (no `<unused` at user-facing layers, RAG proven 
 
 - `Work_RAG-KB fde5e25`, `Work_RAG-Guardrails 8015eda→2cfae45`, `Work_RAG-Orchestrator e7872b9→2827384`, `Work_RAG-Server-Setup 5d5a7e4`, `Work_Credit-RAG_Phase1 3b13ba4→e691d46→3b13ba4` (parent). All on `vast-gemma4-migration`, no force-push.
 
-Startup: see `docs/RUNBOOK_VAST.md`. Shutdown: `pkill -f uvicorn; pkill -f open-webui`. Persistent dirs: `kb-manager/data/kb_test.db`, `dense_embeddings.npz`, `versions/`, `kb-source/clean_files`. Env: see Runbook table. Known limitation: Gemma raw still leaks, filtered at Guardrails/Orchestrator; proper source fix is template/llama.cpp update.
+ Startup: see `docs/RUNBOOK_VAST.md`. Shutdown: `pkill -f uvicorn; pkill -f open-webui`. Persistent dirs: `kb-manager/data/kb_test.db`, `dense_embeddings.npz`, `versions/`, `kb-source/clean_files`. Env: see Runbook table. Known limitation prior to §14: Gemma raw still leaked, filtered at Guardrails/Orchestrator; source fix now in §14.
+
+## 14. Gemma Source Fix — Applied 2026-09-02 (new llama.cpp + enable_thinking=false)
+
+**Build:** cloned `https://github.com/ggml-org/llama.cpp` at `0f3a71b` (2026-09-02), built with `cmake -DGGML_CUDA=1` + `libcublas-dev-12-9` on CUDA 13.2 → `/opt/llama-new` (`version: 0.3.0-dev build 1`, `libllama-server-impl.so`, `libggml-cuda.so`). Old was `b1-ff5ef82` (b8763, version 1, 2026-04-12) at `/opt/llama.cpp/cuda-12.8`.
+
+**Runtime:** stopped supervisor `llama` (`supervisorctl stop llama`, `port 18000 free`), started new binary manually:
+
+```bash
+LD_LIBRARY_PATH=/opt/llama-new/lib:/usr/local/cuda/lib64 \
+  /opt/llama-new/bin/llama-server \
+  -hf unsloth/gemma-4-31B-it-GGUF:UD-Q4_K_XL \
+  --port 18000 --host 0.0.0.0 --ctx-size 8192 --temp 0.2 --no-mmproj --jinja \
+  > /tmp/llama_new.log 2>&1 &
+```
+
+`--no-mmproj` avoids loading `mmproj-BF16.gguf` vision tower (was auto-loaded); `--jinja` uses HF `chat_template.json` natively. Supervisor script `/opt/supervisor-scripts/llama.sh` already had `--temp 0.2 --no-mmproj --chat-template-file /tmp/gemma_simple.jinja`; for persistence replace its `LLAMA_ARGS` with the new binary path or update `supervisorctl` to exec `/opt/llama-new/bin/llama-server`.
+
+**Verification (raw 18000, 5 prompts sequential, with `chat_template_kwargs:{"enable_thinking":false}`):**
+
+```
+سلام → "سلام! چطور می‌توانم به شما کمک کنم؟" has_unused False len 35 reasoning_len 0
+Hello → "Hello! How can I help you today?" has_unused False len 32
+اعتبارسنجی چیست → 311 chars Persian definition has_unused False
+چگونه گزارش اعتباری خود را دریافت کنم؟ → 323 chars about بانک مرکزی / سیبما has_unused False
+یک پاسخ کوتاه فارسی بده → "در خدمتم. بفرمایید!" has_unused False
+```
+
+With `enable_thinking:true` (default), content is `""` and thinking goes to `reasoning_content` — correct Gemma-4 behavior; with `false`, content is clean and `reasoning_content` empty. Without the flag, old template always leaked `<unused*>` regardless.
+
+**Code change (ownership: guardrails):** `components/guardrails/src/work_rag_guardrails/service.py:_call_upstream` now sends `chat_template_kwargs:{"enable_thinking":False}` → `POST http://127.0.0.1:18000/v1/chat/completions`. Commit `3f20bed` on `vast-gemma4-migration`, pushed. `_clean_gemma_output` retained as defensive validation only; orchestrator `_clean_answer` similarly defensive. No generic fallback is used to mask broken output — empty after cleaning now surfaces as upstream-generation failure (to be logged) rather than fabricated Persian.
+
+**Stack after fix:** `curl 18000/v1/chat` clean; `curl 8200/v1/chat سلام` and `curl 8100/v1/chat سلام` should return real model text (not fallback) + citations; `curl 8100/v1/chat اعتبارسنجی چیست` returns real Persian + 5 citations. Full-stack E2E pending reinstall/restart of guardrails venv with new pin.
+
+## 15. Next — Make Persistent + Re-verify
+
+1. Reinstall guardrails/orchestrator venvs (`pip install -e .`), restart `8200`/`8100`, run 5 raw + `8200`/`8100`/RAG + `13000` checks.
+2. Make `/opt/llama-new` persistent via `supervisorctl` (edit `/opt/supervisor-scripts/llama.sh` `LLAMA_ARGS` and `LD_LIBRARY_PATH`).
+3. Remove duplicate fallback in orchestrator if guardrails owns concern, add regression test for `<unused`.
+4. Update `docs/RUNBOOK_VAST.md` known issues: raw no longer leaks when correctly called.

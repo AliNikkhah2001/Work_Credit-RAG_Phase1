@@ -65,15 +65,17 @@ Inspect the pinned component revisions:
 git submodule status --recursive
 ```
 
-## Current verified boundaries (Vast `vast-gemma4-migration` at `e691d46`, live 2026-09-02)
+## Status — Vast `vast-gemma4-migration` (pushed 2026-09-02, pins: guardrails `3f20bed`, orchestrator `743b2c7`, KB `3ae7b1e`, server-setup `5d5a7e4`)
 
-- **Gemma:** external llama-server at `http://127.0.0.1:18000/v1` (`unsloth/gemma-4-31B-it-GGUF:UD-Q4_K_XL`, 30.6 B, host pid 676). No gemma-manager on Vast; Guardrails uses `LLM_BASE_URL=http://host.docker.internal:18000/v1` + `host-gateway`.
-- **Open WebUI:** `0.0.0.0:13000:8080` (`ghcr.io/open-webui/open-webui:main`), `OPENAI_API_BASE_URL=http://orchestrator:8100/v1` (Docker) / `http://127.0.0.1:8100/v1` (host), requires Orchestrator `GET /v1/models` (now implemented, returns Vast model + alias).
-- **KB Manager:** `POST /search/api` (`query`, `top_k`) → `final_results` after BM25, dense MiniLM 384, RRF, cross-encoder mmarco; `GET /health`+`/ready` now present; bind `0.0.0.0:8000` (Docker) / `127.0.0.1:8004` on Vast host (caddy occupies `*:8000`).
-- **Guardrails:** `GET /health`, `GET /ready` (upstream reachable), `POST /v1/rails/check`, `POST /v1/chat/completions` (guarded Gemma); deterministic Persian rails (host) + `host.docker.internal:18000`.
-- **Orchestrator:** LangGraph `validate_input → retrieve → build_context → guarded_generate → format_response`; `GET /health`, `GET /ready` (deps), `GET /v1/models`, `POST /v1/chat/completions` (public OpenAI-compatible + `rag.citations`).
+Live on Vast VM (2× RTX 6000 Ada, 503 Gi RAM, `91.108.80.253`, Gemma at `http://127.0.0.1:18000/v1`). Full stack verified via host venvs (`8004`/`8200`/`8100`/`13000`); Docker `compose.mvp.yml` is ready for privileged hosts but this Vast host is unprivileged (`unshare` denied) so host fallback is used.
 
-Integrated stack is `compose.mvp.yml` (no gemma-manager, only `0.0.0.0:13000` public, others `expose` internal, `host.docker.internal:host-gateway` for Gemma). Host fallback uses venvs on `8004/8200/8100/13000`.
+- **Gemma — FIXED at source (was `<unused*>` leak):** `unsloth/gemma-4-31B-it-GGUF:UD-Q4_K_XL` (30.6 B, 18.8 GiB) now on **llama.cpp 0.3.0-dev (build 1, `0f3a71b`, CUDA 12, `2026-09-02` build at `/opt/llama-new/bin/llama-server`)** with `--no-mmproj --jinja --ctx-size 8192 --temp 0.2`. Raw `POST /v1/chat/completions` with `chat_template_kwargs:{"enable_thinking":false}` returns **clean content, no `<unused*>`/`<|tool_call|>`** — verified 5 sequential prompts (`سلام` → `سلام! چطور می‌توانم…`, `Hello`, `اعتبارسنجی چیست`, `چگونه گزارش اعتباری…`, `یک پاسخ کوتاه…`) all `has_unused False` and `reasoning_content` empty. Without the flag, thinking leaks to `reasoning_content` (model behavior, not a bug). Old binary was `b1-ff5ef82` (b8763) with `mmproj` auto-loaded — that combo always injected `<unused*>`. No `gemma-manager` on Vast; Docker reaches Gemma via `host.docker.internal:18000` + `host-gateway`.
+- **Open WebUI:** `0.0.0.0:13000:8080` (`ghcr.io/open-webui/open-webui:main`), `OPENAI_API_BASE_URL=http://orchestrator:8100/v1` (Docker) / `http://127.0.0.1:8100/v1` (host); requires Orchestrator `GET /v1/models` (implemented, returns `unsloth/gemma-4-31B-it-GGUF:UD-Q4_K_XL` + alias).
+- **KB Manager:** `POST /search/api` (`query`, `top_k`) → `final_results` after BM25 + dense MiniLM 384 + RRF + cross-encoder mmarco; `GET /health`+`/ready` present; bind `0.0.0.0:8000` (Docker) / `127.0.0.1:8004` on Vast host (caddy occupies `*:8000`). DB `kb-manager/data/kb_test.db` 977 MiB, 69 docs, 2399 chunks.
+- **Guardrails:** `GET /health`, `GET /ready` (upstream reachable), `POST /v1/rails/check`, `POST /v1/chat/completions` (guarded Gemma). Sends `chat_template_kwargs:{"enable_thinking":false}` to Gemma (commit `3f20bed`) so source is clean; retains `_clean_gemma_output` as defensive validation only (no longer masks broken output with generic fallback). Deterministic Persian rails, `host.docker.internal:18000`.
+- **Orchestrator:** LangGraph `validate_input → retrieve → build_context → guarded_generate → format_response`; `GET /health`, `GET /ready` (deps), `GET /v1/models`, `POST /v1/chat/completions` (public OpenAI-compatible + `rag.citations`). Keeps `_clean_answer` as defensive only.
+
+Integrated stack is `compose.mvp.yml` (no `gemma-manager`, only `0.0.0.0:13000` public, others `expose` internal, `host.docker.internal:host-gateway` for Gemma). Host fallback uses venvs on `8004`/`8200`/`8100`/`13000`. See `docs/RUNBOOK_VAST.md` (startup, health, public URL `http://91.108.80.253:13000` or `8080→22341`, env) and `docs/VAST_GEMMA4_MIGRATION.md` §11–14 (root cause + source fix + verification).
 
 ## Ownership rule
 
