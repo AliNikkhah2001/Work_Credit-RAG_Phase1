@@ -1,0 +1,1222 @@
+[
+  {
+    "idx": 1,
+    "query": "راستی، آیا می‌شه گزارش‌های مصرف را به‌صورت خودکار در سیستم خود ذخیره کرد؟",
+    "expected_answer": "بله، اما دسترسی فقط برای کاربران مجاز داخلی و با کنترل محرمانگی است.",
+    "expected_chunks": [
+      "f20d6521-05c8-4151-a6fa-fc871a146b53"
+    ],
+    "rag_content": "بر اساس اطلاعات موجود در پایگاه دانش، پاسخی برای این سوال یافت نشد.",
+    "finish_reason": "stop",
+    "citations": [
+      {
+        "chunk_id": "9fae639d-c2c7-4c0a-9f2e-48689531a05d",
+        "document_id": "3272fcf8-6b7b-42eb-9db7-7f87795a1bf5",
+        "title": "DataProvidersQuestions",
+        "heading": "Sheet: Sheet1"
+      },
+      {
+        "chunk_id": "8b0be085-0085-4c7b-ac62-be8975bd48c4",
+        "document_id": "483420ca-877d-4d00-8f76-edbde4547868",
+        "title": "EtebaritoProblems",
+        "heading": "Sheet: Sheet1"
+      },
+      {
+        "chunk_id": "8ca0240f-af78-49c6-bb43-23a3b25f08a4",
+        "document_id": "3272fcf8-6b7b-42eb-9db7-7f87795a1bf5",
+        "title": "DataProvidersQuestions",
+        "heading": "Sheet: Sheet1"
+      },
+      {
+        "chunk_id": "60af746f-e51a-44c9-b155-cf8659798105",
+        "document_id": "483420ca-877d-4d00-8f76-edbde4547868",
+        "title": "EtebaritoProblems",
+        "heading": "Sheet: Sheet1"
+      },
+      {
+        "chunk_id": "69dfd5cc-1a8c-4919-9520-069f1169869f",
+        "document_id": "483420ca-877d-4d00-8f76-edbde4547868",
+        "title": "EtebaritoProblems",
+        "heading": "Sheet: Sheet1"
+      }
+    ],
+    "citations_count": 5,
+    "guardrails_input": {
+      "allowed": true,
+      "action": "allow",
+      "categories": [],
+      "reason": null,
+      "policy_version": "mvp-1",
+      "request_id": "eval"
+    },
+    "tags": [
+      "ok"
+    ],
+    "is_blocked": false,
+    "has_unused": false,
+    "is_english": false,
+    "is_fallback": false,
+    "category": "factual",
+    "difficulty": "hard",
+    "format": "conversational"
+  },
+  {
+    "idx": 2,
+    "query": "یه سوال داشتم، جدول نوع تماس (Type Of Contact) شامل چه مواردی است؟",
+    "expected_answer": "نوع تماس مشتری شامل تلفن، موبایل، فکس، ایمیل و وب‌سایت است. این داده‌ها برای ارتباط مستقیم و اعتبارسنجی هویتی استفاده می‌شوند.",
+    "expected_chunks": [
+      "5656d2ea-f5e9-4655-beca-98cb85151d79"
+    ],
+    "rag_content": "جدول نوع تماس (Type Of Contact) شامل تلفن، موبایل، فکس، ایمیل و وب‌سایت است [1]، [2].",
+    "finish_reason": "stop",
+    "citations": [
+      {
+        "chunk_id": "5f2770ef-1b10-411f-9067-c6ed2b1e2204",
+        "document_id": "3272fcf8-6b7b-42eb-9db7-7f87795a1bf5",
+        "title": "DataProvidersQuestions",
+        "heading": "Sheet: Sheet1"
+      },
+      {
+        "chunk_id": "f36f878c-645c-40d0-86cf-97dda6b0c54a",
+        "document_id": "3272fcf8-6b7b-42eb-9db7-7f87795a1bf5",
+        "title": "DataProvidersQuestions",
+        "heading": "Sheet: Sheet1"
+      },
+      {
+        "chunk_id": "a679986f-48e3-4af8-bb91-c73cfb697abd",
+        "document_id": "3272fcf8-6b7b-42eb-9db7-7f87795a1bf5",
+        "title": "DataProvidersQuestions",
+        "heading": "Sheet: Sheet1"
+      },
+      {
+        "chunk_id": "04e759be-76a7-4736-a639-f9cafc4cca5c",
+        "document_id": "3272fcf8-6b7b-42eb-9db7-7f87795a1bf5",
+        "title": "DataProvidersQuestions",
+        "heading": "Sheet: Sheet1"
+      },
+      {
+        "chunk_id": "fd90a264-fa2f-4e39-b255-57a36e694814",
+        "document_id": "3272fcf8-6b7b-42eb-9db7-7f87795a1bf5",
+        "title": "DataProvidersQuestions",
+        "heading": "Sheet: Sheet1"
+      }
+    ],
+    "citations_count": 5,
+    "guardrails_input": {
+      "allowed": true,
+      "action": "allow",
+      "categories": [],
+      "reason": null,
+      "policy_version": "mvp-1",
+      "request_id": "eval"
+    },
+    "tags": [
+      "ok"
+    ],
+    "is_blocked": false,
+    "has_unused": false,
+    "is_english": false,
+    "is_fallback": false,
+    "category": "factual",
+    "difficulty": "hard",
+    "format": "conversational"
+  },
+  {
+    "idx": 3,
+    "query": "می‌خواهم بدانم آیا پس از امضای توافق‌نامه شرکت به حضور فیزیکی نماینده شرکت در دفتر نیاز اعتبارسنجی ایران وجود دارد؟؟",
+    "expected_answer": "خیر، تمام فرآیند قابل انجام غیرحضوری است مگر در شرایط خاص اعلام‌شده.",
+    "expected_chunks": [
+      "a2ede6da-08ad-414c-ac55-c97246938e6c"
+    ],
+    "rag_content": "بر اساس اطلاعات موجود در پایگاه دانش، پاسخی برای این سوال یافت نشد.",
+    "finish_reason": "stop",
+    "citations": [
+      {
+        "chunk_id": "241e027b-3877-4807-a97f-3f95297f8ad6",
+        "document_id": "278d8cd3-19d1-40f6-ad49-a0d5d69bed9d",
+        "title": "IndividualAndCompanyQuestions_Part4",
+        "heading": "Sheet: Sheet1"
+      },
+      {
+        "chunk_id": "f42d6299-98b9-4b87-a1c5-e0bff157e56f",
+        "document_id": "536000c0-debf-4a5d-ab71-d690b7bf3bb0",
+        "title": "ChequeQuestions (2)",
+        "heading": "Sheet: چت‌بات-سوال و جواب"
+      },
+      {
+        "chunk_id": "fab34f0e-277e-46aa-bbb4-f83eba89e087",
+        "document_id": "26d26901-6419-4190-b3fc-6114e52f4095",
+        "title": "ChequeQuestions",
+        "heading": "Sheet: چت‌بات-سوال و جواب"
+      },
+      {
+        "chunk_id": "cb33b5f1-1363-4b4f-8e7d-1cff43db6246",
+        "document_id": "536000c0-debf-4a5d-ab71-d690b7bf3bb0",
+        "title": "ChequeQuestions (2)",
+        "heading": "Sheet: چت‌بات-سوال و جواب"
+      },
+      {
+        "chunk_id": "34675551-a2e0-492e-a1d4-ffe4745a31c2",
+        "document_id": "26d26901-6419-4190-b3fc-6114e52f4095",
+        "title": "ChequeQuestions",
+        "heading": "Sheet: چت‌بات-سوال و جواب"
+      }
+    ],
+    "citations_count": 5,
+    "guardrails_input": {
+      "allowed": true,
+      "action": "allow",
+      "categories": [],
+      "reason": null,
+      "policy_version": "mvp-1",
+      "request_id": "eval"
+    },
+    "tags": [
+      "ok"
+    ],
+    "is_blocked": false,
+    "has_unused": false,
+    "is_english": false,
+    "is_fallback": false,
+    "category": "factual",
+    "difficulty": "medium",
+    "format": "paraphrase"
+  },
+  {
+    "idx": 4,
+    "query": "ممکن است توضیح دهید که بر اساس اسناد آیا مالی اعتبارسنجی خروجی در می‌گیرن؟ . لطفاً دقیق توضیح دهید.",
+    "expected_answer": "خیر، فقط محکومیت‌های مالی اعلام شده توسط قوه قضائیه در گزارش اعتباری درج می شود. البته ممکن است در آینده اطلاعات محکومیت های غیر مالی نیز در گزارش و امتیاز اعتباری موثر باشد.",
+    "expected_chunks": [
+      "666b1679-d2fe-4dff-83d2-d11be5aa595c"
+    ],
+    "rag_content": "بر اساس اطلاعات موجود در پایگاه دانش، پاسخی برای این سوال یافت نشد.",
+    "finish_reason": "stop",
+    "citations": [
+      {
+        "chunk_id": "5d47eb4a-a0f1-49d0-8503-78f760ae9080",
+        "document_id": "4ac10124-e34b-4ffd-9f49-b54cf6f41495",
+        "title": "سوال وجواب",
+        "heading": "Sheet: چت‌بات-سوال و جواب"
+      },
+      {
+        "chunk_id": "cc9c08cd-63ed-42b6-b7c2-de35fd5ba063",
+        "document_id": "4ac10124-e34b-4ffd-9f49-b54cf6f41495",
+        "title": "سوال وجواب",
+        "heading": "Sheet: چت‌بات-سوال و جواب"
+      },
+      {
+        "chunk_id": "26608786-d32f-4a95-ae0f-c4678c5c538c",
+        "document_id": "26d26901-6419-4190-b3fc-6114e52f4095",
+        "title": "ChequeQuestions",
+        "heading": "Sheet: چت‌بات-سوال و جواب"
+      },
+      {
+        "chunk_id": "393e4ceb-0669-4ea7-93ce-68dab14c6fa7",
+        "document_id": "536000c0-debf-4a5d-ab71-d690b7bf3bb0",
+        "title": "ChequeQuestions (2)",
+        "heading": "Sheet: چت‌بات-سوال و جواب"
+      },
+      {
+        "chunk_id": "168139aa-b218-47ca-92be-eea7c08acb32",
+        "document_id": "483420ca-877d-4d00-8f76-edbde4547868",
+        "title": "EtebaritoProblems",
+        "heading": "Sheet: Sheet1"
+      }
+    ],
+    "citations_count": 5,
+    "guardrails_input": {
+      "allowed": true,
+      "action": "allow",
+      "categories": [],
+      "reason": null,
+      "policy_version": "mvp-1",
+      "request_id": "eval"
+    },
+    "tags": [
+      "ok"
+    ],
+    "is_blocked": false,
+    "has_unused": false,
+    "is_english": false,
+    "is_fallback": false,
+    "category": "factual",
+    "difficulty": "hard",
+    "format": "reworded"
+  },
+  {
+    "idx": 5,
+    "query": "لطفاً بگویید در عمل اگر در زلزله یا تسویه بدهی بلایای آسیب میبینه؟ . اگر جزئیات دارید در میان بگذارید.",
+    "expected_answer": "درصورت حادثه و یا اتفاق غیرمترقبه با هماهنگی سازمان های مذکور، تاخیرهای خود را توجیه نمایید و پس از اخذ تاییده آن ها وارسال اطلاعات بروز شده به شرکت اعتبارسنجی ایران گزارش اعتباری اصلاح می شود.",
+    "expected_chunks": [
+      "682e8963-4760-4f69-a777-98a693d9b33c"
+    ],
+    "rag_content": "اگر بانک معافیت عمومی اعلام کند، تأخیرها در پرداخت بدهی در زمان زلزله یا بلایای طبیعی ثبت نشده و در نتیجه در رتبه و امتیاز شما تأثیری نخواهد داشت [1].",
+    "finish_reason": "stop",
+    "citations": [
+      {
+        "chunk_id": "d696f32b-5296-4b3d-b2fd-3aed226d5a0c",
+        "document_id": "7c3fa29b-4ffe-46e0-8adf-960f9ffa8276",
+        "title": "IndividualAndCompanyQuestions_Part1",
+        "heading": "Sheet: بخش اول"
+      },
+      {
+        "chunk_id": "beb32be0-8503-41d3-9aba-170a9003f9c3",
+        "document_id": "df72e7a7-aa73-48fc-a616-ed24266bd692",
+        "title": "IndividualAndCompanyQuestions_Part3 (2)",
+        "heading": "Sheet: Sheet1"
+      },
+      {
+        "chunk_id": "59272fdc-18de-4ac6-9f88-f596c7446e5d",
+        "document_id": "1c5281c2-6afa-4592-ab82-2af590a0aaa3",
+        "title": "IndividualAndCompanyQuestions_Part3 (3)",
+        "heading": "Sheet: Sheet1"
+      },
+      {
+        "chunk_id": "38f42180-4289-4f4f-85c8-48c06652082c",
+        "document_id": "f5776d97-23b4-40b3-b260-9c006623ecbc",
+        "title": "IndividualAndCompanyQuestions_Part3",
+        "heading": "Sheet: Sheet1"
+      },
+      {
+        "chunk_id": "fdc4182a-1824-49c6-87e9-7ebdf158a48d",
+        "document_id": "e66e9c80-8a73-4e8f-a9db-3e50aab8a6a2",
+        "title": "Temp",
+        "heading": ""
+      }
+    ],
+    "citations_count": 5,
+    "guardrails_input": {
+      "allowed": true,
+      "action": "allow",
+      "categories": [],
+      "reason": null,
+      "policy_version": "mvp-1",
+      "request_id": "eval"
+    },
+    "tags": [
+      "ok"
+    ],
+    "is_blocked": false,
+    "has_unused": false,
+    "is_english": false,
+    "is_fallback": false,
+    "category": "factual",
+    "difficulty": "hard",
+    "format": "reworded"
+  },
+  {
+    "idx": 6,
+    "query": "ببخشید، مسئولیت بانک‌ها و موسسات اعتباری در ارسال داده چیست . لطفاً دقیق توضیح دهید.",
+    "expected_answer": "موسسات اعتباری باید اطلاعات قراردادها و تسهیلات را مطابق چارچوب بانک مرکزی ارائه دهند و نسخه‌ای از داده‌ها را به صورت سامانه‌ای به بانک مرکزی ارسال کنند.",
+    "expected_chunks": [
+      "f8f3bcd6-073a-48b4-b61f-88aab5ed7ff2"
+    ],
+    "rag_content": "تعریف دقیق در متن‌های ارائه شده موجود نیست اما به موارد زیر اشاره شده است: موسسات اعتباری باید اطلاعات قراردادی را ارسال کنند [1]. همچنین، داده‌های ارسالی باید دقیق، به‌روز و مطابق با استانداردهای جداول و فیلدها باشند [1].",
+    "finish_reason": "stop",
+    "citations": [
+      {
+        "chunk_id": "a38a2191-a704-44d5-a9eb-381e12f528ee",
+        "document_id": "3272fcf8-6b7b-42eb-9db7-7f87795a1bf5",
+        "title": "DataProvidersQuestions",
+        "heading": "Sheet: Sheet1"
+      },
+      {
+        "chunk_id": "a01ca205-c0db-4004-8c31-cd6cac28c70d",
+        "document_id": "3272fcf8-6b7b-42eb-9db7-7f87795a1bf5",
+        "title": "DataProvidersQuestions",
+        "heading": "Sheet: Sheet1"
+      },
+      {
+        "chunk_id": "dc8cfab1-e0c6-4928-b6a9-467ed834587d",
+        "document_id": "3272fcf8-6b7b-42eb-9db7-7f87795a1bf5",
+        "title": "DataProvidersQuestions",
+        "heading": "Sheet: Sheet1"
+      },
+      {
+        "chunk_id": "0e8bb0b7-fb11-4e4e-b1b2-faa2cba08e7b",
+        "document_id": "3272fcf8-6b7b-42eb-9db7-7f87795a1bf5",
+        "title": "DataProvidersQuestions",
+        "heading": "Sheet: Sheet1"
+      },
+      {
+        "chunk_id": "8744fb70-3e49-486f-9728-031387af35c2",
+        "document_id": "3272fcf8-6b7b-42eb-9db7-7f87795a1bf5",
+        "title": "DataProvidersQuestions",
+        "heading": "Sheet: Sheet1"
+      }
+    ],
+    "citations_count": 5,
+    "guardrails_input": {
+      "allowed": true,
+      "action": "allow",
+      "categories": [],
+      "reason": null,
+      "policy_version": "mvp-1",
+      "request_id": "eval"
+    },
+    "tags": [
+      "ok"
+    ],
+    "is_blocked": false,
+    "has_unused": false,
+    "is_english": false,
+    "is_fallback": false,
+    "category": "factual",
+    "difficulty": "hard",
+    "format": "conversational"
+  },
+  {
+    "idx": 7,
+    "query": "تفاوت شرکت شما با رقبایتان (شرکت مرآت یا حافظ سامان ایرانیان، اسم رقبا) چیست؟",
+    "expected_answer": "تفاوت اصلی شرکت ما با سایر نهادهایی که در حوزه ارزیابی اعتبار فعالیت می‌کنند این است که شرکت اعتبارسنجی ایران تنها شرکت دارای مجوز رسمی از بانک مرکزی برای ارائه گزارش اعتبارسنجی است. بنابراین: 1. داده‌های شرکت بر پایه پایگاه داده ملی شبکه بانکی کشور است، 2. مدل‌ها، فرایندها و استانداردها تحت نظارت مستقیم بانک مرکزی و وزارت امور اقتصادی و دارایی طراحی می‌شود، 3. دامنه اطلاعات گزارش اعتباری ما گسترده‌تر و مبتنی بر تعاملات رسمی شبکه بانکی است، 4. و خروجی‌های ما وظیفه حاکمیتی و ملی در نظام اعتبارسنجی کشور دارند. شرکت‌هایی مانند مرآت یا حافظ سامان ایرانیان در حوزه‌های محدودتری فعالیت دارند و جایگاه قانونی و دامنه داده‌هایشان با نقش ملی شرکت اعتبارسنجی ایران متفاوت است.",
+    "expected_chunks": [
+      "89f5ade1-dd5e-474b-9cce-9f16472110a5"
+    ],
+    "rag_content": "بر اساس اطلاعات موجود در پایگاه دانش، پاسخی برای این سوال یافت نشد.",
+    "finish_reason": "stop",
+    "citations": [
+      {
+        "chunk_id": "f76cfd29-b31a-444e-856b-cb15ee351315",
+        "document_id": "9a285c1d-c163-43a3-80a8-b3a7952264f9",
+        "title": "Company_CRM_Questions",
+        "heading": ""
+      },
+      {
+        "chunk_id": "337c0aae-b555-495b-ba32-6c7f3a10cc2b",
+        "document_id": "9a285c1d-c163-43a3-80a8-b3a7952264f9",
+        "title": "Company_CRM_Questions",
+        "heading": ""
+      },
+      {
+        "chunk_id": "942def7f-226e-49b3-a234-8919f8f5bdd7",
+        "document_id": "9a285c1d-c163-43a3-80a8-b3a7952264f9",
+        "title": "Company_CRM_Questions",
+        "heading": ""
+      },
+      {
+        "chunk_id": "966153ee-09e7-4d5e-a52e-17959bd7ff80",
+        "document_id": "9a285c1d-c163-43a3-80a8-b3a7952264f9",
+        "title": "Company_CRM_Questions",
+        "heading": ""
+      },
+      {
+        "chunk_id": "e3e2fd7d-b645-4460-a492-d83f97b2fc58",
+        "document_id": "9a285c1d-c163-43a3-80a8-b3a7952264f9",
+        "title": "Company_CRM_Questions",
+        "heading": ""
+      }
+    ],
+    "citations_count": 5,
+    "guardrails_input": {
+      "allowed": true,
+      "action": "allow",
+      "categories": [],
+      "reason": null,
+      "policy_version": "mvp-1",
+      "request_id": "eval"
+    },
+    "tags": [
+      "ok"
+    ],
+    "is_blocked": false,
+    "has_unused": false,
+    "is_english": false,
+    "is_fallback": false,
+    "category": "factual",
+    "difficulty": "medium",
+    "format": "typo"
+  },
+  {
+    "idx": 8,
+    "query": "آیا امکان دارد یک شرکت با سابقه منفی در گزارش اعتباری، پس از تغییر مدیریت و سهامداران، امتیاز اعتباری و رتبه اعتباری جدیدی دریافت کند",
+    "expected_answer": "خیر، با وجود تغییر در مدیریت و جابجایی سهامداران، سوابق منفی ثبت‌شده مربوط به پنج سال گذشته شرکت همچنان در گزارش‌ اعتباری باقی می‌ماند. در واقع، این تغییرات ساختاری قادر نخواهند بود که اثرات نامطلوب پیشین را از سوابق رسمی حذف کنند و بنابراین این سابقه منفی به‌عنوان بخشی از تاریخچه عملکرد 5 ساله  شرکت به شمار می‌رود. همچنین، در حال حاضر، تغییر ساختار شرکت و تغییر اشخاص مرتبط در امتیاز اعتباری شرکت را تغییر نخواهد داد، ولی این موضوع ممکن است در صورت افزایش دقت سنجش ریسک اعتباری، در نسخه های آتی امتیاز اعتبارسنجی اشخاص حقوقی موثر باشد.",
+    "expected_chunks": [
+      "df1f756a-557e-4cbc-b904-e3c650ab983d"
+    ],
+    "rag_content": "در حال حاضر تغییر مدیرعامل، اعضای هیات‌مدیره و دیگر تغییرات مشابه تأثیری بر رتبه و امتیاز اعتباری شرکت ندارد و تنها رفتار مالی شرکت ملاک است، هرچند ممکن است در نسخه‌های آتی این موضوع تاثیرگذار باشد [1]، [2].",
+    "finish_reason": "stop",
+    "citations": [
+      {
+        "chunk_id": "60e9ed52-034c-49b3-811e-497e2ed572ed",
+        "document_id": "278d8cd3-19d1-40f6-ad49-a0d5d69bed9d",
+        "title": "IndividualAndCompanyQuestions_Part4",
+        "heading": "Sheet: Sheet1"
+      },
+      {
+        "chunk_id": "40c19b64-5158-4526-85ec-ff8d878c5c28",
+        "document_id": "278d8cd3-19d1-40f6-ad49-a0d5d69bed9d",
+        "title": "IndividualAndCompanyQuestions_Part4",
+        "heading": "Sheet: Sheet1"
+      },
+      {
+        "chunk_id": "b442bdb5-15d2-45ca-ab58-09724aafec42",
+        "document_id": "57598b34-17c0-4c14-9f57-4ebc2a3f3956",
+        "title": "IndividualAndCompanyQuestions_Part2 (5)",
+        "heading": "Sheet: Sheet1"
+      },
+      {
+        "chunk_id": "e899226c-5a87-4325-9f65-87fdb179455f",
+        "document_id": "4ac10124-e34b-4ffd-9f49-b54cf6f41495",
+        "title": "سوال وجواب",
+        "heading": "Sheet: چت‌بات-سوال و جواب"
+      },
+      {
+        "chunk_id": "ec3d6fef-7dd9-4877-aaf9-660ed9ebc4db",
+        "document_id": "1c5281c2-6afa-4592-ab82-2af590a0aaa3",
+        "title": "IndividualAndCompanyQuestions_Part3 (3)",
+        "heading": "Sheet: Sheet1"
+      }
+    ],
+    "citations_count": 5,
+    "guardrails_input": {
+      "allowed": true,
+      "action": "allow",
+      "categories": [],
+      "reason": null,
+      "policy_version": "mvp-1",
+      "request_id": "eval"
+    },
+    "tags": [
+      "ok"
+    ],
+    "is_blocked": false,
+    "has_unused": false,
+    "is_english": false,
+    "is_fallback": false,
+    "category": "factual",
+    "difficulty": "easy",
+    "format": "verbatim"
+  },
+  {
+    "idx": 9,
+    "query": "محکومیت غیر مالی قوه قضاییه عدم تاثیر",
+    "expected_answer": "خیر، فقط محکومیت‌های مالی اعلام شده توسط قوه قضائیه در گزارش اعتباری درج می شود. البته ممکن است در آینده اطلاعات محکومیت های غیر مالی نیز در گزارش و امتیاز اعتباری موثر باشد.",
+    "expected_chunks": [
+      "666b1679-d2fe-4dff-83d2-d11be5aa595c"
+    ],
+    "rag_content": "بر اساس اطلاعات موجود در پایگاه دانش، تعریف دقیقی برای «محکومیت غیر مالی قوه قضاییه» ارائه نشده است، اما اشاره شده است که در حال حاضر محکومیت‌های مالی تأثیری بر امتیاز چک ندارند [1]، [2]، [3].",
+    "finish_reason": "stop",
+    "citations": [
+      {
+        "chunk_id": "495643e6-37ea-4138-bfc3-fe2e1f1c7e6a",
+        "document_id": "26d26901-6419-4190-b3fc-6114e52f4095",
+        "title": "ChequeQuestions",
+        "heading": "Sheet: چت‌بات-سوال و جواب"
+      },
+      {
+        "chunk_id": "39deac9b-670e-417c-967a-eb7b6a8cde96",
+        "document_id": "536000c0-debf-4a5d-ab71-d690b7bf3bb0",
+        "title": "ChequeQuestions (2)",
+        "heading": "Sheet: چت‌بات-سوال و جواب"
+      },
+      {
+        "chunk_id": "b9857627-f0c0-4aad-b2fd-711b78b89b0a",
+        "document_id": "4ac10124-e34b-4ffd-9f49-b54cf6f41495",
+        "title": "سوال وجواب",
+        "heading": "Sheet: چت‌بات-سوال و جواب"
+      },
+      {
+        "chunk_id": "54a0b5fa-4572-4463-be5b-d2d76e0dd84b",
+        "document_id": "d84cca83-2c6d-422c-a7a3-b078c955e429",
+        "title": "فایل خام",
+        "heading": ""
+      },
+      {
+        "chunk_id": "c3444691-c316-4728-8f4e-412fda71b1f4",
+        "document_id": "df72e7a7-aa73-48fc-a616-ed24266bd692",
+        "title": "IndividualAndCompanyQuestions_Part3 (2)",
+        "heading": "Sheet: Sheet1"
+      }
+    ],
+    "citations_count": 5,
+    "guardrails_input": {
+      "allowed": true,
+      "action": "allow",
+      "categories": [],
+      "reason": null,
+      "policy_version": "mvp-1",
+      "request_id": "eval"
+    },
+    "tags": [
+      "ok"
+    ],
+    "is_blocked": false,
+    "has_unused": false,
+    "is_english": false,
+    "is_fallback": false,
+    "category": "factual",
+    "difficulty": "hard",
+    "format": "keyword_only"
+  },
+  {
+    "idx": 10,
+    "query": "ممکن است توضیح دهید که در عمل امتیاز کسانی بوده چک که اند تحت تاثیر قرار میگیرد؟ (سوال است) . اگر جزئیات دارید در میان بگذارید.",
+    "expected_answer": "با توجه مسئولیت شخص صادر کننده چک در تامین وجه چک، امتیاز اعتباری چک شخص صادر کننده چک متاثر از نحوه وصول چک می باشد. با توجه به این که نفرات زنجیره انتقال پس از صادر کننده چک، هیچ نقشی در نقد یا برگشت شدن چک ندارند، در نتیجه در امتیاز اعتباری چک این اشخاص نیز تاثیری ندارد. هرچند که از لحاظ حقوقی کسانی که در زنجیره انتقال قرار دارند، مسئولیت تضامنی دارند اما این موضوع در امتیاز چک برای انتقال دهندگان لحاظ نمیشود.",
+    "expected_chunks": [
+      "c6449ee7-82f1-4036-add8-68f727fbd673"
+    ],
+    "rag_content": "بر اساس اطلاعات موجود در پایگاه دانش، پاسخ به این سوال به صورت ناقص ذکر شده است و تنها اشاره شده است که امتیاز کسانی که در زنجیره انتقال چک بوده‌اند، تحت تاثیر قرار نمی‌گیرد [1]، [2]، [3]. جزئیات بیشتری در متن‌های ارائه شده موجود نیست.",
+    "finish_reason": "stop",
+    "citations": [
+      {
+        "chunk_id": "b6b044d7-7a1d-4d5e-8137-d986e8ca71fb",
+        "document_id": "536000c0-debf-4a5d-ab71-d690b7bf3bb0",
+        "title": "ChequeQuestions (2)",
+        "heading": "Sheet: چت‌بات-سوال و جواب"
+      },
+      {
+        "chunk_id": "b18e984b-3f69-42f5-b8b5-92c1aa01a673",
+        "document_id": "26d26901-6419-4190-b3fc-6114e52f4095",
+        "title": "ChequeQuestions",
+        "heading": "Sheet: چت‌بات-سوال و جواب"
+      },
+      {
+        "chunk_id": "dd8ada8d-ef3a-4fae-9c68-d86e86570b22",
+        "document_id": "4ac10124-e34b-4ffd-9f49-b54cf6f41495",
+        "title": "سوال وجواب",
+        "heading": "Sheet: چت‌بات-سوال و جواب"
+      },
+      {
+        "chunk_id": "0446aff9-8611-436f-83b3-e84d51d2c9c0",
+        "document_id": "26d26901-6419-4190-b3fc-6114e52f4095",
+        "title": "ChequeQuestions",
+        "heading": "Sheet: چت‌بات-سوال و جواب"
+      },
+      {
+        "chunk_id": "ea15300d-ffe7-4797-bd64-68c9ed5dfdc2",
+        "document_id": "536000c0-debf-4a5d-ab71-d690b7bf3bb0",
+        "title": "ChequeQuestions (2)",
+        "heading": "Sheet: چت‌بات-سوال و جواب"
+      }
+    ],
+    "citations_count": 5,
+    "guardrails_input": {
+      "allowed": true,
+      "action": "allow",
+      "categories": [],
+      "reason": null,
+      "policy_version": "mvp-1",
+      "request_id": "eval"
+    },
+    "tags": [
+      "ok"
+    ],
+    "is_blocked": false,
+    "has_unused": false,
+    "is_english": false,
+    "is_fallback": false,
+    "category": "factual",
+    "difficulty": "hard",
+    "format": "reworded"
+  },
+  {
+    "idx": 11,
+    "query": "آیا داده‌های مالیاتی در تعیین اعتبار اهمیت دارد",
+    "expected_answer": "بله. اطلاعات اظهارنامه‌ها، بدهی مالیاتی و سابقه پرداخت مالیات نشان‌دهنده ثبات مالی و رفتار اقتصادی فرد یا شرکت است و اثر مستقیم در رتبه و امتیاز اعتباری شخص دارد.",
+    "expected_chunks": [
+      "f4534de3-de8e-4b25-9e9c-bcdfd2562aa2"
+    ],
+    "rag_content": "بله، داده‌های مالیاتی در تعیین اعتبار اهمیت دارند [1]. این اطلاعات شامل مواردی همچون اظهارنامه‌ها، بدهی مالیاتی و سابقه است [1]. همچنین، مواردی مانند سطح درآمد ابرازی و نظم در پرداخت مالیات در تعیین ریسک اعتباری نقش دارند [2].",
+    "finish_reason": "stop",
+    "citations": [
+      {
+        "chunk_id": "a7ddafff-9c51-467d-9737-91b35885d01d",
+        "document_id": "3272fcf8-6b7b-42eb-9db7-7f87795a1bf5",
+        "title": "DataProvidersQuestions",
+        "heading": "Sheet: Sheet1"
+      },
+      {
+        "chunk_id": "f0b29611-f800-4be3-a83f-e0cb1aeadc9a",
+        "document_id": "3272fcf8-6b7b-42eb-9db7-7f87795a1bf5",
+        "title": "DataProvidersQuestions",
+        "heading": "Sheet: Sheet1"
+      },
+      {
+        "chunk_id": "0132339b-772f-4168-8ed9-e9d7aec1afb4",
+        "document_id": "4ac10124-e34b-4ffd-9f49-b54cf6f41495",
+        "title": "سوال وجواب",
+        "heading": "Sheet: چت‌بات-سوال و جواب"
+      },
+      {
+        "chunk_id": "f62953a3-928c-4bcc-b3d4-3548cf2549be",
+        "document_id": "3272fcf8-6b7b-42eb-9db7-7f87795a1bf5",
+        "title": "DataProvidersQuestions",
+        "heading": "Sheet: Sheet1"
+      },
+      {
+        "chunk_id": "13562ac5-301e-4daa-a2de-4d1f189f853b",
+        "document_id": "4ac10124-e34b-4ffd-9f49-b54cf6f41495",
+        "title": "سوال وجواب",
+        "heading": "Sheet: چت‌بات-سوال و جواب"
+      }
+    ],
+    "citations_count": 5,
+    "guardrails_input": {
+      "allowed": true,
+      "action": "allow",
+      "categories": [],
+      "reason": null,
+      "policy_version": "mvp-1",
+      "request_id": "eval"
+    },
+    "tags": [
+      "ok"
+    ],
+    "is_blocked": false,
+    "has_unused": false,
+    "is_english": false,
+    "is_fallback": false,
+    "category": "factual",
+    "difficulty": "easy",
+    "format": "verbatim"
+  },
+  {
+    "idx": 12,
+    "query": "شاخص اعتماد ریسک پایین موسسات مالی خوش حسابی",
+    "expected_answer": "رتبه اعتباری در واقع شاخص اعتماد مالی شماست و نقش مستقیم در تصمیم‌گیری بانک‌ها، مؤسسات مالی و حتی برخی شرکت‌های خدماتی دارد. هرچه رتبه بالاتر باشد، نشان‌دهنده‌ی ریسک پایین‌تر و خوش‌حسابی بیشتر است؛ در نتیجه، فرد واجد شرایط تسهیلات با شرایط بهترو در بسیاری موارد فرآیند ساده‌تر دریافت اعتبار خواهد بود. در مقابل، رتبه اعتباری ضعیف می‌تواند باعث رد درخواست وام یا نیاز به وثیقه‌های سنگین‌تر شود.",
+    "expected_chunks": [
+      "dfaf0c4e-91bd-433f-b2e7-cf9f48fd2ece"
+    ],
+    "rag_content": "بر اساس اطلاعات موجود در پایگاه دانش، پاسخی برای این سوال یافت نشد.",
+    "finish_reason": "stop",
+    "citations": [
+      {
+        "chunk_id": "cc9c08cd-63ed-42b6-b7c2-de35fd5ba063",
+        "document_id": "4ac10124-e34b-4ffd-9f49-b54cf6f41495",
+        "title": "سوال وجواب",
+        "heading": "Sheet: چت‌بات-سوال و جواب"
+      },
+      {
+        "chunk_id": "197412bd-5ec4-45b8-82eb-da4cec84928a",
+        "document_id": "e66e9c80-8a73-4e8f-a9db-3e50aab8a6a2",
+        "title": "Temp",
+        "heading": ""
+      },
+      {
+        "chunk_id": "e6874c22-0213-4f69-84b9-09aafe110235",
+        "document_id": "536000c0-debf-4a5d-ab71-d690b7bf3bb0",
+        "title": "ChequeQuestions (2)",
+        "heading": "Sheet: چت‌بات-سوال و جواب"
+      },
+      {
+        "chunk_id": "2f26db72-1d5d-4687-ae47-37c5b768401f",
+        "document_id": "26d26901-6419-4190-b3fc-6114e52f4095",
+        "title": "ChequeQuestions",
+        "heading": "Sheet: چت‌بات-سوال و جواب"
+      },
+      {
+        "chunk_id": "f7f56ee3-d4d0-429a-9a78-de3def122180",
+        "document_id": "4ac10124-e34b-4ffd-9f49-b54cf6f41495",
+        "title": "سوال وجواب",
+        "heading": "Sheet: چت‌بات-سوال و جواب"
+      }
+    ],
+    "citations_count": 5,
+    "guardrails_input": {
+      "allowed": true,
+      "action": "allow",
+      "categories": [],
+      "reason": null,
+      "policy_version": "mvp-1",
+      "request_id": "eval"
+    },
+    "tags": [
+      "ok"
+    ],
+    "is_blocked": false,
+    "has_unused": false,
+    "is_english": false,
+    "is_fallback": false,
+    "category": "factual",
+    "difficulty": "hard",
+    "format": "keyword_only"
+  },
+  {
+    "idx": 13,
+    "query": "ممکن است توضیح دهید که همان‌طور که اشاره شد آیا تعیین مالیاتی اعتبار دارد؟؟",
+    "expected_answer": "بله. اطلاعات اظهارنامه‌ها، بدهی مالیاتی و سابقه پرداخت مالیات نشان‌دهنده ثبات مالی و رفتار اقتصادی فرد یا شرکت است و اثر مستقیم در رتبه و امتیاز اعتباری شخص دارد.",
+    "expected_chunks": [
+      "f4534de3-de8e-4b25-9e9c-bcdfd2562aa2"
+    ],
+    "rag_content": "بر اساس اطلاعات موجود در پایگاه دانش، تعریف دقیقی برای «تعیین مالیاتی اعتبار» ارائه نشده است اما به موارد زیر اشاره شده است: * اطلاعات مالیاتی شامل مواردی همچون سطح درآمد ابرازی، نظم در پرداخت مالیات و بدهی مالیاتی در تعیین ریسک اعتباری نقش دارند [2]. * سوابق مالیاتی در کنار سایر عوامل، تأثیرگذار هستند اما نقش آن‌ها در محاسبه امتیاز چک به‌مراتب کمتر از عوامل اصلی است [3]. * همچنین اشاره شده است که دسترسی به احراز مشاغل افراد از طریق داده‌های مالیاتی در دست برنامه‌ریزی است و در نسخه‌های بعدی اعمال خواهد شد [1].",
+    "finish_reason": "stop",
+    "citations": [
+      {
+        "chunk_id": "0132339b-772f-4168-8ed9-e9d7aec1afb4",
+        "document_id": "4ac10124-e34b-4ffd-9f49-b54cf6f41495",
+        "title": "سوال وجواب",
+        "heading": "Sheet: چت‌بات-سوال و جواب"
+      },
+      {
+        "chunk_id": "f0b29611-f800-4be3-a83f-e0cb1aeadc9a",
+        "document_id": "3272fcf8-6b7b-42eb-9db7-7f87795a1bf5",
+        "title": "DataProvidersQuestions",
+        "heading": "Sheet: Sheet1"
+      },
+      {
+        "chunk_id": "13562ac5-301e-4daa-a2de-4d1f189f853b",
+        "document_id": "4ac10124-e34b-4ffd-9f49-b54cf6f41495",
+        "title": "سوال وجواب",
+        "heading": "Sheet: چت‌بات-سوال و جواب"
+      },
+      {
+        "chunk_id": "2c247045-c388-4e4f-a832-71947a16dd0c",
+        "document_id": "536000c0-debf-4a5d-ab71-d690b7bf3bb0",
+        "title": "ChequeQuestions (2)",
+        "heading": "Sheet: چت‌بات-سوال و جواب"
+      },
+      {
+        "chunk_id": "69661994-7150-4243-aa70-71831848c1ed",
+        "document_id": "26d26901-6419-4190-b3fc-6114e52f4095",
+        "title": "ChequeQuestions",
+        "heading": "Sheet: چت‌بات-سوال و جواب"
+      }
+    ],
+    "citations_count": 5,
+    "guardrails_input": {
+      "allowed": true,
+      "action": "allow",
+      "categories": [],
+      "reason": null,
+      "policy_version": "mvp-1",
+      "request_id": "eval"
+    },
+    "tags": [
+      "ok"
+    ],
+    "is_blocked": false,
+    "has_unused": false,
+    "is_english": false,
+    "is_fallback": false,
+    "category": "factual",
+    "difficulty": "hard",
+    "format": "reworded"
+  },
+  {
+    "idx": 14,
+    "query": "آیا اطلاعات شخصی من در گزراش اعتباری نمایش داده میشود؟",
+    "expected_answer": "بله، در گزارش اعتبارسنجی اطلاعات هویتی شما (مانند نام، کد ملی و تاریخ تولد) به همراه جزئیات مربوط به تسهیلات، تعهدات مالی و سوابق بازپرداخت درج می‌شود. با این حال، این اطلاعات کاملاً محرمانه است و تنها خود شما یا نهادهای مالی مجاز (با کسب اجازه قانونی) امکان دسترسی به آن را دارند.",
+    "expected_chunks": [
+      "b7500c97-327b-49d7-b36a-64318e45548a"
+    ],
+    "rag_content": "بر اساس اطلاعات موجود در پایگاه دانش، پاسخی برای این سوال یافت نشد.",
+    "finish_reason": "stop",
+    "citations": [
+      {
+        "chunk_id": "ed0f3345-b236-4695-99ea-2f11a18b413b",
+        "document_id": "7c3fa29b-4ffe-46e0-8adf-960f9ffa8276",
+        "title": "IndividualAndCompanyQuestions_Part1",
+        "heading": "Sheet: بخش اول"
+      },
+      {
+        "chunk_id": "301ab01b-9650-4750-8cf5-b545af88d6d5",
+        "document_id": "3272fcf8-6b7b-42eb-9db7-7f87795a1bf5",
+        "title": "DataProvidersQuestions",
+        "heading": "Sheet: Sheet1"
+      },
+      {
+        "chunk_id": "4429bf38-59ff-4d8a-b3f8-7e40c9c6a147",
+        "document_id": "896a0aec-74fd-44a7-ab08-1ec868bf7563",
+        "title": "IndividualAndCompanyQuestions_Part2 (4)",
+        "heading": "Sheet: Sheet1"
+      },
+      {
+        "chunk_id": "ffc9bea7-e611-4d52-812c-393c064a5f03",
+        "document_id": "57598b34-17c0-4c14-9f57-4ebc2a3f3956",
+        "title": "IndividualAndCompanyQuestions_Part2 (5)",
+        "heading": "Sheet: Sheet1"
+      },
+      {
+        "chunk_id": "37612a39-6691-4731-9cdd-081ec21ce28a",
+        "document_id": "57598b34-17c0-4c14-9f57-4ebc2a3f3956",
+        "title": "IndividualAndCompanyQuestions_Part2 (5)",
+        "heading": "Sheet: Sheet1"
+      }
+    ],
+    "citations_count": 5,
+    "guardrails_input": {
+      "allowed": true,
+      "action": "allow",
+      "categories": [],
+      "reason": null,
+      "policy_version": "mvp-1",
+      "request_id": "eval"
+    },
+    "tags": [
+      "ok"
+    ],
+    "is_blocked": false,
+    "has_unused": false,
+    "is_english": false,
+    "is_fallback": false,
+    "category": "factual",
+    "difficulty": "medium",
+    "format": "typo"
+  },
+  {
+    "idx": 15,
+    "query": "راستی، آیا پس از امضای قرارداد نیاز به حضور فیزیکی نماینده شرکت در دفتر شرکت اعتبارسنجی ایران وجود دارد . اگر جزئیات دارید در میان بگذارید.",
+    "expected_answer": "خیر، تمام فرآیند قابل انجام غیرحضوری است مگر در شرایط خاص اعلام‌شده.",
+    "expected_chunks": [
+      "a2ede6da-08ad-414c-ac55-c97246938e6c"
+    ],
+    "rag_content": "بر اساس اطلاعات موجود در پایگاه دانش، پاسخی برای این سوال یافت نشد.",
+    "finish_reason": "stop",
+    "citations": [
+      {
+        "chunk_id": "8ef9cd0f-101b-4dc7-9b8b-852a01379e4d",
+        "document_id": "4ac10124-e34b-4ffd-9f49-b54cf6f41495",
+        "title": "سوال وجواب",
+        "heading": "Sheet: چت‌بات-سوال و جواب"
+      },
+      {
+        "chunk_id": "241e027b-3877-4807-a97f-3f95297f8ad6",
+        "document_id": "278d8cd3-19d1-40f6-ad49-a0d5d69bed9d",
+        "title": "IndividualAndCompanyQuestions_Part4",
+        "heading": "Sheet: Sheet1"
+      },
+      {
+        "chunk_id": "4429bf38-59ff-4d8a-b3f8-7e40c9c6a147",
+        "document_id": "896a0aec-74fd-44a7-ab08-1ec868bf7563",
+        "title": "IndividualAndCompanyQuestions_Part2 (4)",
+        "heading": "Sheet: Sheet1"
+      },
+      {
+        "chunk_id": "ffc9bea7-e611-4d52-812c-393c064a5f03",
+        "document_id": "57598b34-17c0-4c14-9f57-4ebc2a3f3956",
+        "title": "IndividualAndCompanyQuestions_Part2 (5)",
+        "heading": "Sheet: Sheet1"
+      },
+      {
+        "chunk_id": "3f739c01-d1bd-418b-a5ab-a7549b6c06b1",
+        "document_id": "278d8cd3-19d1-40f6-ad49-a0d5d69bed9d",
+        "title": "IndividualAndCompanyQuestions_Part4",
+        "heading": "Sheet: Sheet1"
+      }
+    ],
+    "citations_count": 5,
+    "guardrails_input": {
+      "allowed": true,
+      "action": "allow",
+      "categories": [],
+      "reason": null,
+      "policy_version": "mvp-1",
+      "request_id": "eval"
+    },
+    "tags": [
+      "ok"
+    ],
+    "is_blocked": false,
+    "has_unused": false,
+    "is_english": false,
+    "is_fallback": false,
+    "category": "factual",
+    "difficulty": "hard",
+    "format": "conversational"
+  },
+  {
+    "idx": 16,
+    "query": "آیا در گزارش اعتبارسنجی چک، اطلاعات املاک و اسکان و کدپستی مربوط به شخص درج میشود؟",
+    "expected_answer": "در حال حاضر، در گزارش  اعتبارسنجی چک‌  اطلاعات هویتی تنها شامل نام و نام خانوادگی و کد ملی  می‌باشد و اطلاعات اسکان ، و کد پستی درج نمی شود",
+    "expected_chunks": [
+      "d31f5d31-0d98-44bc-8772-ea1185981596"
+    ],
+    "rag_content": "در حال حاضر خیر، اما این اطلاعات در آینده ارائه خواهد شد [1]، [2]، [3].",
+    "finish_reason": "stop",
+    "citations": [
+      {
+        "chunk_id": "03ba2d0b-fe67-4ec3-ad01-228b72381f38",
+        "document_id": "536000c0-debf-4a5d-ab71-d690b7bf3bb0",
+        "title": "ChequeQuestions (2)",
+        "heading": "Sheet: چت‌بات-سوال و جواب"
+      },
+      {
+        "chunk_id": "6f17f183-f1f5-48e7-b264-e6b9332fada4",
+        "document_id": "4ac10124-e34b-4ffd-9f49-b54cf6f41495",
+        "title": "سوال وجواب",
+        "heading": "Sheet: چت‌بات-سوال و جواب"
+      },
+      {
+        "chunk_id": "8012fbe4-016f-4bb2-bb66-4b64fda6e479",
+        "document_id": "26d26901-6419-4190-b3fc-6114e52f4095",
+        "title": "ChequeQuestions",
+        "heading": "Sheet: چت‌بات-سوال و جواب"
+      },
+      {
+        "chunk_id": "2a0c1fea-4368-44e2-9c9d-b90d29bf6019",
+        "document_id": "536000c0-debf-4a5d-ab71-d690b7bf3bb0",
+        "title": "ChequeQuestions (2)",
+        "heading": "Sheet: چت‌بات-سوال و جواب"
+      },
+      {
+        "chunk_id": "79c918d3-c572-4dc3-80da-9eb0bb5e861f",
+        "document_id": "26d26901-6419-4190-b3fc-6114e52f4095",
+        "title": "ChequeQuestions",
+        "heading": "Sheet: چت‌بات-سوال و جواب"
+      }
+    ],
+    "citations_count": 5,
+    "guardrails_input": {
+      "allowed": true,
+      "action": "allow",
+      "categories": [],
+      "reason": null,
+      "policy_version": "mvp-1",
+      "request_id": "eval"
+    },
+    "tags": [
+      "ok"
+    ],
+    "is_blocked": false,
+    "has_unused": false,
+    "is_english": false,
+    "is_fallback": false,
+    "category": "factual",
+    "difficulty": "medium",
+    "format": "typo"
+  },
+  {
+    "idx": 17,
+    "query": "ببخشید، آیا داده‌های مالیاتی در تعیین اعتبار اهمیت دارد . لطفاً دقیق توضیح دهید.",
+    "expected_answer": "بله. اطلاعات اظهارنامه‌ها، بدهی مالیاتی و سابقه پرداخت مالیات نشان‌دهنده ثبات مالی و رفتار اقتصادی فرد یا شرکت است و اثر مستقیم در رتبه و امتیاز اعتباری شخص دارد.",
+    "expected_chunks": [
+      "f4534de3-de8e-4b25-9e9c-bcdfd2562aa2"
+    ],
+    "rag_content": "بله، داده‌های مالیاتی در تعیین اعتبار اهمیت دارند [1]. این اطلاعات شامل موارد زیر است: * **نقش در تعیین ریسک اعتباری:** سطح درآمد ابرازی، نظم در پرداخت مالیات و میزان بدهی مالیاتی در تعیین ریسک اعتباری نقش دارند [2]. * **موارد مورد بررسی:** اطلاعات مربوط به اظهارنامه‌ها، بدهی مالیاتی و سابقه فرد مورد توجه است [1]. همچنین اشاره شده است که دسترسی به داده‌های مالیاتی جهت احراز مشاغل افراد در دست برنامه‌ریزی قرار دارد و در نسخه‌های بعدی اعمال خواهد شد [3].",
+    "finish_reason": "stop",
+    "citations": [
+      {
+        "chunk_id": "a7ddafff-9c51-467d-9737-91b35885d01d",
+        "document_id": "3272fcf8-6b7b-42eb-9db7-7f87795a1bf5",
+        "title": "DataProvidersQuestions",
+        "heading": "Sheet: Sheet1"
+      },
+      {
+        "chunk_id": "f0b29611-f800-4be3-a83f-e0cb1aeadc9a",
+        "document_id": "3272fcf8-6b7b-42eb-9db7-7f87795a1bf5",
+        "title": "DataProvidersQuestions",
+        "heading": "Sheet: Sheet1"
+      },
+      {
+        "chunk_id": "0132339b-772f-4168-8ed9-e9d7aec1afb4",
+        "document_id": "4ac10124-e34b-4ffd-9f49-b54cf6f41495",
+        "title": "سوال وجواب",
+        "heading": "Sheet: چت‌بات-سوال و جواب"
+      },
+      {
+        "chunk_id": "13562ac5-301e-4daa-a2de-4d1f189f853b",
+        "document_id": "4ac10124-e34b-4ffd-9f49-b54cf6f41495",
+        "title": "سوال وجواب",
+        "heading": "Sheet: چت‌بات-سوال و جواب"
+      },
+      {
+        "chunk_id": "2c247045-c388-4e4f-a832-71947a16dd0c",
+        "document_id": "536000c0-debf-4a5d-ab71-d690b7bf3bb0",
+        "title": "ChequeQuestions (2)",
+        "heading": "Sheet: چت‌بات-سوال و جواب"
+      }
+    ],
+    "citations_count": 5,
+    "guardrails_input": {
+      "allowed": true,
+      "action": "allow",
+      "categories": [],
+      "reason": null,
+      "policy_version": "mvp-1",
+      "request_id": "eval"
+    },
+    "tags": [
+      "ok"
+    ],
+    "is_blocked": false,
+    "has_unused": false,
+    "is_english": false,
+    "is_fallback": false,
+    "category": "factual",
+    "difficulty": "hard",
+    "format": "conversational"
+  },
+  {
+    "idx": 18,
+    "query": "تامین کنندگان اطلاعات پایگاه داده داده اعتباری اعتبارسنجی ریسک",
+    "expected_answer": "اطلاعات دعاوی مالی، احکام قطعی مرتبط با جرایم اقتصادی، توقیف‌ها یا ممنوعیت‌ها از طریق مسیرهای قانونی ، از طریق قوه قضاییه به پایگاه داده اعتباری ارسال می‌شود تا از این اطلاعات جهت سنجش ریسک شخص استفاد شود.",
+    "expected_chunks": [
+      "44be29cb-0591-4213-b5d9-87f2debf4ded"
+    ],
+    "rag_content": "بر اساس اطلاعات موجود در پایگاه دانش، موارد زیر در رابطه با این کلیدواژه‌ها اشاره شده است: * تأمین‌کنندگان اطلاعات با ارسال داده‌های اعتباری به پایگاه داده، تصویر کامل‌تری از ریسک اعتباری فرد ایجاد می‌کنند [1]. * در نظام اعتبارسنجی، نهاد اعتبارسنجی تنها «مصرف‌کننده» داده است و نه «مالک داده»؛ بنابراین هرگونه تغییر در داده‌ها باید توسط دستگاه مربوطه (تأمین‌کننده) اعمال شود [2]. * داده‌های تأمین‌کنندگان بسته به نوعشان بر مدل‌های امتیاز اعتباری تأثیر مستقیم دارند [2]. * همچنین داده‌هایی که از مسیرهای قانونی به پایگاه داده ارسال می‌شوند، برای مشخص شدن ریسک حقوقی فرد (مانند جرائم) مورد استفاده قرار می‌گیرند [3].",
+    "finish_reason": "stop",
+    "citations": [
+      {
+        "chunk_id": "b531aaea-0c46-476c-b3c5-b2457ab059ea",
+        "document_id": "3272fcf8-6b7b-42eb-9db7-7f87795a1bf5",
+        "title": "DataProvidersQuestions",
+        "heading": "Sheet: Sheet1"
+      },
+      {
+        "chunk_id": "37bd24e6-7ac2-41c0-94a7-11156ff53416",
+        "document_id": "3272fcf8-6b7b-42eb-9db7-7f87795a1bf5",
+        "title": "DataProvidersQuestions",
+        "heading": "Sheet: Sheet1"
+      },
+      {
+        "chunk_id": "19e30e2e-5790-4891-bcab-d234f5803d2e",
+        "document_id": "3272fcf8-6b7b-42eb-9db7-7f87795a1bf5",
+        "title": "DataProvidersQuestions",
+        "heading": "Sheet: Sheet1"
+      },
+      {
+        "chunk_id": "5ff4ca6a-c464-4e9f-81fd-fee898330281",
+        "document_id": "3272fcf8-6b7b-42eb-9db7-7f87795a1bf5",
+        "title": "DataProvidersQuestions",
+        "heading": "Sheet: Sheet1"
+      },
+      {
+        "chunk_id": "1f8459ea-6a4e-49d4-952c-b58ad802e3e9",
+        "document_id": "3272fcf8-6b7b-42eb-9db7-7f87795a1bf5",
+        "title": "DataProvidersQuestions",
+        "heading": "Sheet: Sheet1"
+      }
+    ],
+    "citations_count": 5,
+    "guardrails_input": {
+      "allowed": true,
+      "action": "allow",
+      "categories": [],
+      "reason": null,
+      "policy_version": "mvp-1",
+      "request_id": "eval"
+    },
+    "tags": [
+      "ok"
+    ],
+    "is_blocked": false,
+    "has_unused": false,
+    "is_english": false,
+    "is_fallback": false,
+    "category": "factual",
+    "difficulty": "hard",
+    "format": "keyword_only"
+  },
+  {
+    "idx": 19,
+    "query": "لطفاً بگویید آیا می‌توان گزارش‌های مصرف را خود خودکار در سیستم به‌صورت ذخیره کرد؟؟",
+    "expected_answer": "بله، اما دسترسی فقط برای کاربران مجاز داخلی و با کنترل محرمانگی است.",
+    "expected_chunks": [
+      "f20d6521-05c8-4151-a6fa-fc871a146b53"
+    ],
+    "rag_content": "بر اساس اطلاعات موجود در پایگاه دانش، پاسخی برای این سوال یافت نشد.",
+    "finish_reason": "stop",
+    "citations": [
+      {
+        "chunk_id": "8b0be085-0085-4c7b-ac62-be8975bd48c4",
+        "document_id": "483420ca-877d-4d00-8f76-edbde4547868",
+        "title": "EtebaritoProblems",
+        "heading": "Sheet: Sheet1"
+      },
+      {
+        "chunk_id": "9fae639d-c2c7-4c0a-9f2e-48689531a05d",
+        "document_id": "3272fcf8-6b7b-42eb-9db7-7f87795a1bf5",
+        "title": "DataProvidersQuestions",
+        "heading": "Sheet: Sheet1"
+      },
+      {
+        "chunk_id": "69dfd5cc-1a8c-4919-9520-069f1169869f",
+        "document_id": "483420ca-877d-4d00-8f76-edbde4547868",
+        "title": "EtebaritoProblems",
+        "heading": "Sheet: Sheet1"
+      },
+      {
+        "chunk_id": "60b45f68-ba98-4a54-ac41-d89ab396aa9e",
+        "document_id": "1c5281c2-6afa-4592-ab82-2af590a0aaa3",
+        "title": "IndividualAndCompanyQuestions_Part3 (3)",
+        "heading": "Sheet: Sheet1"
+      },
+      {
+        "chunk_id": "f414e3e5-2ba3-4a89-96b9-8fb76cab5f1f",
+        "document_id": "df72e7a7-aa73-48fc-a616-ed24266bd692",
+        "title": "IndividualAndCompanyQuestions_Part3 (2)",
+        "heading": "Sheet: Sheet1"
+      }
+    ],
+    "citations_count": 5,
+    "guardrails_input": {
+      "allowed": true,
+      "action": "allow",
+      "categories": [],
+      "reason": null,
+      "policy_version": "mvp-1",
+      "request_id": "eval"
+    },
+    "tags": [
+      "ok"
+    ],
+    "is_blocked": false,
+    "has_unused": false,
+    "is_english": false,
+    "is_fallback": false,
+    "category": "factual",
+    "difficulty": "medium",
+    "format": "paraphrase"
+  },
+  {
+    "idx": 20,
+    "query": "آیا می‌توان گزراش‌های مصرف را به‌صورت خودکار در سیستم خود ذخیره کرد؟",
+    "expected_answer": "بله، اما دسترسی فقط برای کاربران مجاز داخلی و با کنترل محرمانگی است.",
+    "expected_chunks": [
+      "f20d6521-05c8-4151-a6fa-fc871a146b53"
+    ],
+    "rag_content": "بر اساس اطلاعات موجود در پایگاه دانش، پاسخی برای این سوال یافت نشد.",
+    "finish_reason": "stop",
+    "citations": [
+      {
+        "chunk_id": "07bc6a21-0522-4144-afc7-f421078e730a",
+        "document_id": "b279e863-1038-489c-b5a1-395126860c45",
+        "title": "APIQuestion",
+        "heading": ""
+      },
+      {
+        "chunk_id": "bb2e21b8-446c-4697-94e1-2d15feaf379d",
+        "document_id": "bfa4b34c-0c39-4153-87b9-25e381353787",
+        "title": "Copy of ReasonCodeIndualMain-chatbot",
+        "heading": ""
+      },
+      {
+        "chunk_id": "34c2c5be-f2df-4aa3-8b71-4b6195525c26",
+        "document_id": "26261dbd-8140-4cf3-994e-93b1cd0cd843",
+        "title": "ReasonCode_IndividualMain-chatbot (4)",
+        "heading": ""
+      },
+      {
+        "chunk_id": "ab65fb80-a936-4b47-ab54-40cf4809e557",
+        "document_id": "4faa8f00-a1e8-4634-a7de-d51633b1c007",
+        "title": "ReasonCode_IndividualMain-chatbot (3)",
+        "heading": ""
+      },
+      {
+        "chunk_id": "eca690c3-fd89-4ac2-8168-34c4ace4e653",
+        "document_id": "60dbcb69-6dc9-4ee8-a15e-9a15fd900bc9",
+        "title": "chatbot-companyreason (2)",
+        "heading": ""
+      }
+    ],
+    "citations_count": 5,
+    "guardrails_input": {
+      "allowed": true,
+      "action": "allow",
+      "categories": [],
+      "reason": null,
+      "policy_version": "mvp-1",
+      "request_id": "eval"
+    },
+    "tags": [
+      "ok"
+    ],
+    "is_blocked": false,
+    "has_unused": false,
+    "is_english": false,
+    "is_fallback": false,
+    "category": "factual",
+    "difficulty": "medium",
+    "format": "typo"
+  }
+]
