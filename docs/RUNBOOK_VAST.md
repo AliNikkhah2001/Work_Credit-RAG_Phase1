@@ -160,7 +160,7 @@ OPENAI_API_BASE_URL=http://orchestrator:8100/v1 (Docker) / http://127.0.0.1:8100
 - Docker on this host is unprivileged (`unshare: operation not permitted`, `iptables: Permission denied`) → `docker run` fails even with `--storage-driver=vfs`. Host venvs are used; `compose.mvp.yml` is ready for a privileged host.
 - KB SQLite 977 MiB 2399 chunks < prod 8291 (5 XLSX fail `No valid sheets`).
 - **Gemma — fixed at source 2026-09-02:** was leaking `<unused*>` on old `llama.cpp b1-ff5ef82` + `mmproj` auto-load. Now on `0.3.0-dev 0f3a71b` (`/opt/llama-new`, `--no-mmproj --jinja`) and `chat_template_kwargs:{"enable_thinking":false}` (guardrails `3f20bed`) raw returns clean Persian (`has_unused False` on 5 prompts). With `enable_thinking:true` thinking goes to `reasoning_content` (model behavior). Guardrails `_clean_gemma_output` is now defensive only. If you see `<unused>`, ensure you are hitting `127.0.0.1:18000` with the new binary (`LD_LIBRARY_PATH=/opt/llama-new/lib`) and that guardrails was reinstalled.
-- HurtLex conservative still flags "بخشی" for English queries — allowlist tuning pending.
+- **HurtLex — fixed via allowlist 2026-09-02 (guardrails `e59b300`):** conservative lexicon flagged `حذف, بخشی, تامین مالی, اشتغال, پست, مصرف, هدف, نادرست` as `hate` (e.g., `چگونه می‌توانم گزارش اعتباری...` was blocked at input as `hate:حذف` because KB context contains `درخواست حذف سابقه منفی قدیمی`, so RAG returned 0 citations). Now `kb/hurtlex_allowlist.json` allowlists these 8 legitimate credit terms (exact-word `\b...\b`, normalized, logged). Profanity/PII/secret remain strict. After fix, 6/6 credit queries return `stop` with 5 citations; genuine hate like `حرامزاده`/`احمق` still blocked.
 
 ## Logs / Troubleshooting
 

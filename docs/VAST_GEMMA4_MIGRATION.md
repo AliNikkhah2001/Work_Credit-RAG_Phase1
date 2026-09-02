@@ -205,9 +205,67 @@ With `enable_thinking:true` (default), content is `""` and thinking goes to `rea
 
 **Stack after fix:** `curl 18000/v1/chat` clean; `curl 8200/v1/chat سلام` and `curl 8100/v1/chat سلام` should return real model text (not fallback) + citations; `curl 8100/v1/chat اعتبارسنجی چیست` returns real Persian + 5 citations. Full-stack E2E pending reinstall/restart of guardrails venv with new pin.
 
-## 15. Next — Make Persistent + Re-verify
+## 15. HurtLex False Positive — Root Cause & Fix (2026-09-02, guardrails `e59b300`)
 
-1. Reinstall guardrails/orchestrator venvs (`pip install -e .`), restart `8200`/`8100`, run 5 raw + `8200`/`8100`/RAG + `13000` checks.
-2. Make `/opt/llama-new` persistent via `supervisorctl` (edit `/opt/supervisor-scripts/llama.sh` `LLAMA_ARGS` and `LD_LIBRARY_PATH`).
-3. Remove duplicate fallback in orchestrator if guardrails owns concern, add regression test for `<unused`.
-4. Update `docs/RUNBOOK_VAST.md` known issues: raw no longer leaks when correctly called.
+**Evidence (Phase 1):** For normal in-scope query `چگونه می‌توانم گزارش اعتباری خود را دریافت کنم؟`:
+- input guardrail `allowed=true` for original query (user text alone)
+- **But** `guarded_completion` input check on augmented prompt (KB context + question) was `blocked=true` `hate:حذف` because KB chunks contain `درخواست حذف سابقه منفی قدیمی از گزارش اعتباری شرکت` — the word `حذف` is in `hurtlex_fa_conservative.json` (line 329) as hate, yet in ICS domain it means legitimate “delete/correct negative record”.
+- Raw Gemma before output rails (when called directly with same prompt) was **clean**: `با توجه به متن ارائه شده، در صورتی که سوابق مالی مستقل کافی... امکان اخذ گزارش اعتبارسنجی وجود ندارد [1],[2],[3].` — `has_unused False`, `check_hurtlex_fa` on this raw was `False`, but the input block prevented Gemma from being called at all, so orchestrator returned `content_filter` with 0 citations.
+
+Direct `check_hurtlex_fa` on the augmented prompt:
+- `matched_lemma=حذف` `normalized_text='...درخواست حذف سابقه منفی قدیمی...'` `matching_span=(304,308)` `surrounding='...درخواست حذف سابقه منفی قدیمی...'`
+
+**Audit (Phase 2):** 30 benign texts (10 KB chunks + 5 bench Q + 5 RAG answers + 10 credit phrases) run through `check_hurtlex_fa`:
+- `حذف:2`, `بخشی:1`, `تامین مالی:1`, `اشتغال:1`, `پست:1`, `مصرف:1`, `هدف:1` — all false positives. Later Phase 5 found `نادرست:1` (`برای پیگیری اصلاح اطلاعات نادرست...`).
+
+| # | text | matched lemma | expected | actual (before) |
+|---|---|---|---|---|
+| 7 | KB chunk: هدف از دریافت تسهیلات | هدف | allowed | blocked |
+| 11 | Bench Q: گزارش‌های مصرف | مصرف | allowed | blocked |
+| 22 | Credit: درخواست حذف سابقه منفی | حذف | allowed | blocked |
+| 24 | Credit: بخشی از اطلاعات | بخشی | allowed | blocked |
+| 25 | Credit: تامین مالی | تامین مالی | allowed | blocked |
+| 26 | Credit: اشتغال | اشتغال | allowed | blocked |
+| 27 | Credit: پست سازمانی | پست | allowed | blocked |
+
+All are legitimate financial terms; HurtLex conservative was built for general social media hate, not credit reporting.
+
+**Policy (Phase 3 — smallest safe):**
+- Keep profanity (`persian_swear.json`), PII (`check_pii_ir`), secret (`sk-`, `api_key`) **strict** — no allowlist.
+- For HurtLex, add explicit reviewed allowlist `kb/hurtlex_allowlist.json` (8 lemmas, normalized): `حذف, بخشی, تامین مالی, اشتغال, پست, مصرف, هدف, نادرست` with evidence. Preserve exact-word matching (`\b...\b`) and log matches for audit.
+- Implement `load_hurtlex_allowlist()` and `check_hurtlex_fa` that skips allowlisted lemmas; keep `check_hurtlex_fa_strict` for hostile input audit. Applied to both input and output checks for MVP (so trusted KB context does not trigger), but strict version remains available.
+- Separate INPUT/OUTPUT conceptually: a word that warrants caution in user input does not justify discarding a factual generated answer; for MVP allowlist covers both, and `check_output_persian` remains the primary gate.
+
+**Code (ownership: guardrails):**
+- `kb/hurtlex_allowlist.json` — 8 lemmas with `_comment`, `evidence`, `policy`.
+- `src/work_rag_guardrails/actions.py` — `load_hurtlex_allowlist()`, `check_hurtlex_fa` now checks `w not in allowlist` and logs `HurtLex match: lemma=...`, plus `check_hurtlex_fa_strict`.
+- No change to `service.py` logic except that `check_input_persian`/`check_output_persian` now benefit from allowlist; Gemma `enable_thinking:false` remains.
+
+**Regression (Phase 4):** `tests/test_hurtlex_allowlist.py` — 18 tests:
+- Benign must allow: failing raw sentence, `بخشی` benign, `حذف` benign, `تامین مالی`, `اشتغال`, `پست`, `مصرف`, `هدف`, `نادرست`, ZWNJ-normalized `حذف`.
+- Malicious must still block: explicit hate `حرامزاده`, `احمق`, profanity `آشغال`/`اسکل`, PII `کد ملی 1234567891`, secret `sk-`, non-allowlisted hate `خائن`, strict vs allowlist difference for `حذف`.
+- All 18 pass; existing 6 pass, 5 pre-existing failures unchanged.
+
+**RAG after fix (Phase 5):** Guardrails restarted with `e59b300` (pid 80120/80957):
+- `چگونه می‌توانم گزارش اعتباری خود را دریافت کنم؟` → `finish stop`, 5 citations, real answer `با توجه به متن ارائه شده، اطلاعات کافی... امکان اخذ گزارش اعتبارسنجی وجود ندارد [1],[2],[3].` `has_unused False`
+- 5 additional credit questions all `stop` with 5 citations:
+  - `اعتبارسنجی چیست` → real definition with `[2],[3]`, 5 citations
+  - `امتیاز اعتباری چگونه محاسبه می‌شود؟` → 5 citations
+  - `چگونه می‌توانم درخواست حذف سابقه منفی قدیمی...` → `سوابق تا پنج سال باقی می‌مانند...` 5 citations (was blocked before)
+  - `بخشی از اطلاعات اعتباری من ناقص است...` → `برای پیگیری اصلاح اطلاعات نادرست... [1],[2],[3]` 5 citations (was blocked before as `hate:نادرست`)
+  - `تامین مالی از طریق تسهیلات بانکی...` → 5 citations
+- All have `input allowed true`, `output allowed true`, no `<unused`/`tool` tokens.
+
+**Citation handling (Phase 6):** `orchestrator/nodes/format_response.py` — when `blocked=true`, returns `finish content_filter` with `citations=[]` and preserves `retrieved_chunks` internally for diagnostics; when allowed, returns `stop` with 5 citations. Verified: genuine hate `تو حرامزاده هستی` → blocked with 0 citations; allowlisted `حذف` → 5 citations preserved. No false positive now erases retrieval.
+
+## 16. Next — Make Persistent + Re-verify
+
+1. Make `/opt/llama-new` persistent via `supervisorctl` (edit `/opt/supervisor-scripts/llama.sh` `LLAMA_ARGS` and `LD_LIBRARY_PATH`) — still manual `nohup` now.
+2. Consider removing duplicate fallback in orchestrator if guardrails owns concern (currently defensive).
+3. Update `docs/RUNBOOK_VAST.md` known issues: now documents allowlist, not raw leak.
+
+## 17. Git Pushes (updated)
+
+- `Work_RAG-KB fde5e25`, `Work_RAG-Guardrails 3f20bed→e59b300` (hurtlex allowlist), `Work_RAG-Orchestrator 743b2c7`, `Work_RAG-Server-Setup 5d5a7e4`, `Work_Credit-RAG_Phase1 43f547b→...` (parent pin updated). All on `vast-gemma4-migration`, no merge to `main` yet.
+
+Startup: see `docs/RUNBOOK_VAST.md`. Shutdown: `pkill -f uvicorn; pkill -f open-webui`. Persistent dirs: `kb-manager/data/kb_test.db`, `dense_embeddings.npz`, `versions/`, `kb-source/clean_files`. Env: see Runbook table. Known limitation: `llama-new` is manual, not supervisor-managed.
