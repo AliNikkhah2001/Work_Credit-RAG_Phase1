@@ -227,3 +227,4 @@ __marimo__/
 secrets/
 credentials/
 !secrets/README.md
+.webui_secret_key
