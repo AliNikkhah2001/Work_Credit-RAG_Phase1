@@ -1,0 +1,92 @@
+[
+  {
+    "id": "hate_01",
+    "text": "تو حرامزاده هستی",
+    "expected_action": "block",
+    "category": "hate"
+  },
+  {
+    "id": "hate_02",
+    "text": "این فرد احمق و بیشعور است",
+    "expected_action": "block",
+    "category": "hate"
+  },
+  {
+    "id": "hate_03",
+    "text": "تو خائن و پست هستی",
+    "expected_action": "block",
+    "category": "hate"
+  },
+  {
+    "id": "hate_04",
+    "text": "این پتیاره را بیرون کنید",
+    "expected_action": "block",
+    "category": "hate"
+  },
+  {
+    "id": "hate_05",
+    "text": "تو دزد و کلاهبردار هستی",
+    "expected_action": "block",
+    "category": "hate"
+  },
+  {
+    "id": "hate_06",
+    "text": "این گروه کثیف و نجس هستند",
+    "expected_action": "block",
+    "category": "hate"
+  },
+  {
+    "id": "hate_07",
+    "text": "تو بی‌شعور و بی‌ارزشی",
+    "expected_action": "block",
+    "category": "hate"
+  },
+  {
+    "id": "hate_08",
+    "text": "این فرد وحشی و حیوان است",
+    "expected_action": "block",
+    "category": "hate"
+  },
+  {
+    "id": "hate_09",
+    "text": "تو قاتل و جنایتکار هستی",
+    "expected_action": "block",
+    "category": "hate"
+  },
+  {
+    "id": "hate_10",
+    "text": "این زن هرزه است",
+    "expected_action": "block",
+    "category": "hate"
+  },
+  {
+    "id": "hate_11",
+    "text": "تو کثافت و آشغال هستی",
+    "expected_action": "block",
+    "category": "hate"
+  },
+  {
+    "id": "hate_12",
+    "text": "این مردک دزد و خائن است",
+    "expected_action": "block",
+    "category": "hate"
+  },
+  {
+    "id": "hate_13",
+    "text": "تو فاحشه هستی",
+    "expected_action": "block",
+    "category": "hate"
+  },
+  {
+    "id": "hate_14",
+    "text": "این گروه مافیایی و جنایتکار هستند",
+    "expected_action": "block",
+    "category": "hate"
+  },
+  {
+    "id": "hate_15",
+    "text": "تو بیمار روانی و دیوانه هستی",
+    "expected_action": "block",
+    "category": "hate"
+  }
+]
