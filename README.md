@@ -11,7 +11,7 @@ Umbrella repository for a self-hosted, Persian-capable conversational RAG platfo
 | `components/server-setup` | [Work_RAG-Server-Setup](https://github.com/AliNikkhah2001/Work_RAG-Server-Setup) | H200/Vast provisioning, local model and embedding services, Gemma manager, Open WebUI, infra | `main` | `5d5a7e4` |
 | `components/knowledgebase` | [Work_RAG-KB](https://github.com/AliNikkhah2001/Work_RAG-KB) | KB ingestion, maintenance, versioning, hybrid retrieval (BM25+dense+RRF+cross-encoder), KB web UI | `master` | `8b8f6e5` |
 | `components/guardrails` | [Work_RAG-Guardrails](https://github.com/AliNikkhah2001/Work_RAG-Guardrails) | Deterministic Persian rails + risk scoring + semantic interface (v2) | `main` | `6ce319f` |
-| `components/orchestrator` | [Work_RAG-Orchestrator](https://github.com/AliNikkhah2001/Work_RAG-Orchestrator) | LangGraph workflow and public OpenAI-compatible chat API | `main` | `9b85561` |
+| `components/orchestrator` | [Work_RAG-Orchestrator](https://github.com/AliNikkhah2001/Work_RAG-Orchestrator) | LangGraph workflow and public OpenAI-compatible chat API | `main` | `cdb6e7d` |
 
 Each gitlink is pinned to an exact commit. Updating a component requires a component-repository commit followed by a parent-repository commit that advances the corresponding gitlink.
 
@@ -19,7 +19,7 @@ Each gitlink is pinned to an exact commit. Updating a component requires a compo
 git submodule status --recursive
 # 6ce319f... components/guardrails (heads/vast-gemma4-migration)
 # 8b8f6e5...       components/knowledgebase (heads/vast-gemma4-migration)
-# 9b85561...       components/orchestrator (heads/vast-gemma4-migration)
+# cdb6e7d...       components/orchestrator (heads/vast-gemma4-migration)
 # 5d5a7e4...       components/server-setup (heads/vast-gemma4-migration)
 ```
 
@@ -94,9 +94,9 @@ curl -s http://127.0.0.1:18000/v1/models | jq .data[0].id
 
 Docker (privileged host): `LLM_BASE_URL=http://host.docker.internal:18000/v1 docker compose -f compose.mvp.yml up --build -d` — only `13000` is public.
 
-## Status — Vast `vast-gemma4-migration` (pushed 2026-09-02, parent `422365d` → next, pins: guardrails `6ce319f`, orchestrator `9b85561`, KB `8b8f6e5`, server-setup `5d5a7e4`)
+## Status — Vast `vast-gemma4-migration` (pushed 2026-09-02, parent `422365d` → next, pins: guardrails `6ce319f`, orchestrator `cdb6e7d`, KB `8b8f6e5`, server-setup `5d5a7e4`)
 
-Live on Vast VM `49624249` (`ssh9.vast.ai:24044`, `91.108.80.253`), `2× RTX 6000 Ada 49 Gi (595.58.03, CUDA 13.2)`, `96× EPYC 7443`, `503 Gi RAM`, `100 Gi disk`. `env | grep proxy` empty. Gemma at `http://127.0.0.1:18000/v1` (`/opt/llama-new`, not supervisor-managed yet). `ss -tlnp` shows `0.0.0.0:18000 (llama-new)`, `127.0.0.1:8004/8200/8100`, `0.0.0.0:13000`. Guardrails `6ce319f` (allowlist 15 lemmas, profanity len>2, risk+observability+semantic) + Orchestrator `9b85561` (Persian prompt) live via host venvs (`8200` pid `85170`, `8100` pid `85178`); Docker `compose.mvp.yml` ready for privileged hosts but this Vast host is unprivileged (`unshare` denied).
+Live on Vast VM `49624249` (`ssh9.vast.ai:24044`, `91.108.80.253`), `2× RTX 6000 Ada 49 Gi (595.58.03, CUDA 13.2)`, `96× EPYC 7443`, `503 Gi RAM`, `100 Gi disk`. `env | grep proxy` empty. Gemma at `http://127.0.0.1:18000/v1` (`/opt/llama-new`, not supervisor-managed yet). `ss -tlnp` shows `0.0.0.0:18000 (llama-new)`, `127.0.0.1:8004/8200/8100`, `0.0.0.0:13000`. Guardrails `6ce319f` (allowlist 15 lemmas, profanity len>2, risk+observability+semantic) + Orchestrator `cdb6e7d` (Persian prompt) live via host venvs (`8200` pid `85170`, `8100` pid `85178`); Docker `compose.mvp.yml` ready for privileged hosts but this Vast host is unprivileged (`unshare` denied).
 
 - **Gemma — FIXED at source (was `<unused*>` leak):** `unsloth/gemma-4-31B-it-GGUF:UD-Q4_K_XL` (30.6 B, 18.8 GiB) now on `llama.cpp 0.3.0-dev (build 1, 0f3a71b, 2026-09-02, /opt/llama-new/bin/llama-server)` with `--no-mmproj --jinja --ctx-size 8192 --temp 0.2` (`LD_LIBRARY_PATH=/opt/llama-new/lib`). `POST /v1/chat/completions` with `chat_template_kwargs:{"enable_thinking":false}` → clean Persian, `has_unused False`, `reasoning_content` empty. Verified 5 prompts sequential: `سلام`→`سلام! چطور می‌توانم…` (35 chars), `Hello` (32), `اعتبارسنجی چیست` (311), `چگونه گزارش اعتباری...` (323), `یک پاسخ کوتاه...` (19). Old `b1-ff5ef82` + `mmproj-BF16.gguf` always injected `<unused*>`/`<|tool_call|>` even for `Hello`.
 
@@ -104,7 +104,7 @@ Live on Vast VM `49624249` (`ssh9.vast.ai:24044`, `91.108.80.253`), `2× RTX 600
 
 - **KB Manager:**:** `POST /search/api` → `final_results` after BM25+MiniLM384+RRF+mmarco; `GET /health`/`ready`; `0.0.0.0:8000` (Docker) / `127.0.0.1:8004` (host). DB `977 MiB`, `69 docs`, `2399 chunks` (5 XLSX fail `No valid sheets` vs prod 8291, expected).
 
-- **Orchestrator — FIXED prompt language (was English fallback):** `9b85561` Persian-only system prompt: `شما دستیار هوشمند اعتبارسنجی ایران (ICS) هستید... فقط بر اساس متن‌های [Context]... همیشه به فارسی پاسخ دهید... برای سلام با لحنی دوستانه... منابع را با [1],[2] ارجاع دهید`. Before, out-of-context like `چرا یکی از وام...` and `رتبه چه فرقی...` returned English `The provided context does not contain...`; now all return Persian `بر اساس اطلاعات موجود در پایگاه دانش، پاسخی یافت نشد.` with 5 citations. Handles `سلام` as greeting. Graph `validate_input → retrieve → build_context → guarded_generate → format_response`; `_clean_answer` defensive only; when genuinely blocked, `content_filter` with `citations:[]`, for allowlisted benign citations preserved.
+- **Orchestrator — FIXED prompt language (was English fallback):** `cdb6e7d` Persian-only system prompt: `شما دستیار هوشمند اعتبارسنجی ایران (ICS) هستید... فقط بر اساس متن‌های [Context]... همیشه به فارسی پاسخ دهید... برای سلام با لحنی دوستانه... منابع را با [1],[2] ارجاع دهید`. Before, out-of-context like `چرا یکی از وام...` and `رتبه چه فرقی...` returned English `The provided context does not contain...`; now all return Persian `بر اساس اطلاعات موجود در پایگاه دانش، پاسخی یافت نشد.` with 5 citations. Handles `سلام` as greeting. Graph `validate_input → retrieve → build_context → guarded_generate → format_response`; `_clean_answer` defensive only; when genuinely blocked, `content_filter` with `citations:[]`, for allowlisted benign citations preserved.
 
 - **Open WebUI:** `0.0.0.0:13000:8080`, `OPENAI_API_BASE_URL=http://orchestrator:8100/v1`, needs `GET /v1/models` (implemented).
 
@@ -171,7 +171,7 @@ Open `http://91.108.80.253:13000` (or `http://localhost:13000` via `ssh -p 24044
 - [x] **Gemma source fix** — built `llama.cpp 0f3a71b` at `/opt/llama-new` (`--no-mmproj --jinja`), `supervisorctl stop llama` + manual `LD_LIBRARY_PATH=... /opt/llama-new/bin/llama-server --port 18000 ...` (pid `64871` → now `80957`), verified 5 prompts `has_unused False`
 - [x] **Control-token filter** — `_clean_gemma_output` / `_clean_answer` as defensive (now not masking, source is clean)
 - [x] **HurtLex allowlist** — `kb/hurtlex_allowlist.json` **15 lemmas** (`حذف,بخشی,تامین مالی,اشتغال,پست,پستی,مصرف,هدف,نادرست,مهم,ضعیف,خسته,شرح,دسته,جزئی`) with evidence from 30+120 audit (v7 `2077` chunks); `actions.py` `load_hurtlex_allowlist()` + `check_hurtlex_fa` skips allowlisted, logs `HurtLex match`, `check_hurtlex_fa_strict` kept, `check_profanity_fa` now `len>2` (fixes `ان` on KB chunk `اثر ان را`); **26 tests** `test_hurtlex_allowlist.py` (15 benign incl. `پستی`/`مهم`/`ضعیف`/`خسته`/`شرح`/`دسته`/`جزئی` + 11 malicious `حرامزاده`/`احمق`/`آشغال`/`خائن`/`PII`/`secret`) all pass; RAG **20/20 `ok`** (was `18/20`), `0/120` input blocked (was `2`), `0/120` output blocked (was `6`), `eval/results/baseline.json` `76/82` `0 FP` `25ms`
-- [x] **Prompt & orchestrator** — `9b85561` Persian-only `شما دستیار هوشمند...` + `cdb6e7d` `MAX_CHUNKS 5` `6000 chars` for v7 `2077` chunks; fixes English fallback `The provided...` → Persian `بر اساس اطلاعات موجود...` for `چرا یکی از وام...`/`رتبه چه فرقی...`; `6/6` user samples + `7` v7 samples all `stop` 5 citations Persian, no `hate:دسته`
+- [x] **Prompt & orchestrator** — `cdb6e7d` Persian-only `شما دستیار هوشمند...` (`MAX_CHUNKS 5` `6000 chars` for v7 `2077` chunks); fixes English fallback `The provided...` → Persian `بر اساس اطلاعات موجود...` for `چرا یکی از وام...`/`رتبه چه فرقی...`; `6/6` user samples + `7` v7 samples all `stop` 5 citations Persian, no `hate:دسته`
 - [x] **Compose** `compose.mvp.yml` (no `gemma-manager`, only `13000` public, `host-gateway`), `deploy/docker-compose.vast.yml` overlay, host venvs verified (`8200` `107731`, `8100` `106583`, `8004` `100146` v7)
 - [x] **KB v7** — `b1bb648` → `8b8f6e5` (`kb-source 1ef3b4b`, `1405-05-31` 34 docs, `data/kb_1405.db` `986M` `2077` chunks: `585 QA`/`982 body`/`499 reason_detail`/`11 parent`, `TestQuestions_IVA` `15`); `eval/kb_rag_evaluation_20samples.json` + `eval/FINDINGS.md` + `eval/README.md` saved, `0/120` input/output blocked after fix
 - [x] **Docs** `docs/VAST_GEMMA4_MIGRATION.md` §15-17 (HurtLex 11→15, Persian prompt v2, 20-sample eval, 6 user samples), `docs/RUNBOOK_VAST.md` Known Issues (allowlist 15), `docs/GUARDRAILS_V2_PLAN.md` (risk scoring, observability, semantic interface, thresholds, rollback), `README` Status/Samples/Verification, `eval/` framework (`5` datasets `82` samples, `baseline.json`)
