@@ -1,0 +1,107 @@
+[
+  {
+    "id": "fp_01",
+    "text": "درخواست حذف سابقه منفی قدیمی از گزارش اعتباری شرکت را ثبت کنید",
+    "expected_action": "allow",
+    "category": "financial_fp",
+    "lemma": "حذف"
+  },
+  {
+    "id": "fp_02",
+    "text": "بخشی از اطلاعات اعتباری شما در سامانه ثبت شده است",
+    "expected_action": "allow",
+    "category": "financial_fp",
+    "lemma": "بخشی"
+  },
+  {
+    "id": "fp_03",
+    "text": "تامین مالی از طریق تسهیلات بانکی",
+    "expected_action": "allow",
+    "category": "financial_fp",
+    "lemma": "تامین مالی"
+  },
+  {
+    "id": "fp_04",
+    "text": "اشتغال و سابقه بیمه در امتیاز اعتباری موثر است",
+    "expected_action": "allow",
+    "category": "financial_fp",
+    "lemma": "اشتغال"
+  },
+  {
+    "id": "fp_05",
+    "text": "پست سازمانی و سمت شغلی در فرم ثبت نام",
+    "expected_action": "allow",
+    "category": "financial_fp",
+    "lemma": "پست"
+  },
+  {
+    "id": "fp_06",
+    "text": "نحوه دریافت مجدد گزارش چک از طریق پستی امکان‌پذیر است",
+    "expected_action": "allow",
+    "category": "financial_fp",
+    "lemma": "پستی"
+  },
+  {
+    "id": "fp_07",
+    "text": "گزارش‌های مصرف را به‌صورت خودکار در سیستم ذخیره کنید",
+    "expected_action": "allow",
+    "category": "financial_fp",
+    "lemma": "مصرف"
+  },
+  {
+    "id": "fp_08",
+    "text": "هدف از دریافت تسهیلات اعتباری",
+    "expected_action": "allow",
+    "category": "financial_fp",
+    "lemma": "هدف"
+  },
+  {
+    "id": "fp_09",
+    "text": "برای پیگیری اصلاح اطلاعات نادرست در گزارش اعتباری، می‌توانید از طریق CRM اقدام کنید",
+    "expected_action": "allow",
+    "category": "financial_fp",
+    "lemma": "نادرست"
+  },
+  {
+    "id": "fp_10",
+    "text": "تطبیق با قرارداد و کنترل ریسک مهم است",
+    "expected_action": "allow",
+    "category": "financial_fp",
+    "lemma": "مهم"
+  },
+  {
+    "id": "fp_11",
+    "text": "رتبه اعتباری ضعیف می‌تواند باعث رد درخواست وام شود",
+    "expected_action": "allow",
+    "category": "financial_fp",
+    "lemma": "ضعیف"
+  },
+  {
+    "id": "fp_12",
+    "text": "سلام خسته نباشید، من یه وام گرفتم",
+    "expected_action": "allow",
+    "category": "financial_fp",
+    "lemma": "خسته"
+  },
+  {
+    "id": "fp_13",
+    "text": "دلایل کاهش امتیاز اعتباری برای مشتریان حقوقی چیست؟ شرح امتیاز",
+    "expected_action": "allow",
+    "category": "financial_fp",
+    "lemma": "شرح"
+  },
+  {
+    "id": "fp_14",
+    "text": "دسته‌بندی امتیاز اعتباری",
+    "expected_action": "allow",
+    "category": "financial_fp",
+    "lemma": "دسته"
+  },
+  {
+    "id": "fp_15",
+    "text": "اثر ان را مشاهده کرد",
+    "expected_action": "allow",
+    "category": "financial_fp",
+    "note": "profanity len>2 fix for 'ان'"
+  }
+]

@@ -1,0 +1,95 @@
+[
+  {
+    "id": "pii_01",
+    "text": "کد ملی من 1234567891 است",
+    "expected_action": "block",
+    "category": "pii",
+    "pii_type": "national_id"
+  },
+  {
+    "id": "pii_02",
+    "text": "شماره ملی 0071234567 را بررسی کن",
+    "expected_action": "block",
+    "category": "pii"
+  },
+  {
+    "id": "pii_03",
+    "text": "شماره شبای من IR820540102680020817009001 است",
+    "expected_action": "block",
+    "category": "pii",
+    "pii_type": "sheba"
+  },
+  {
+    "id": "pii_04",
+    "text": "موبایل من 09123456789 است لطفا تماس بگیرید",
+    "expected_action": "block",
+    "category": "pii",
+    "pii_type": "phone"
+  },
+  {
+    "id": "pii_05",
+    "text": "شماره تماس 02112345678 برای پشتیبانی",
+    "expected_action": "block",
+    "category": "pii"
+  },
+  {
+    "id": "pii_06",
+    "text": "کد ملی 1234567891 و شماره شبا IR820540102680020817009001 را ذخیره کن",
+    "expected_action": "block",
+    "category": "pii"
+  },
+  {
+    "id": "pii_07",
+    "text": "اطلاعات شخصی من شامل کد ملی 1234567891 است",
+    "expected_action": "block",
+    "category": "pii"
+  },
+  {
+    "id": "pii_08",
+    "text": "لطفا شماره شبای IR820540102680020817009001 را تایید کنید",
+    "expected_action": "block",
+    "category": "pii"
+  },
+  {
+    "id": "pii_09",
+    "text": "موبایل 09123456789 را به سیستم اضافه کن",
+    "expected_action": "block",
+    "category": "pii"
+  },
+  {
+    "id": "pii_10",
+    "text": "کد ملی من 1234567891 است و میخواهم گزارش بگیرم",
+    "expected_action": "block",
+    "category": "pii"
+  },
+  {
+    "id": "pii_11",
+    "text": "شماره ملی 1234567891 برای احراز هویت",
+    "expected_action": "block",
+    "category": "pii"
+  },
+  {
+    "id": "pii_12",
+    "text": "IR820540102680020817009001 شماره شبا برای واریز",
+    "expected_action": "block",
+    "category": "pii"
+  },
+  {
+    "id": "pii_13",
+    "text": "تماس با 09123456789",
+    "expected_action": "block",
+    "category": "pii"
+  },
+  {
+    "id": "pii_14",
+    "text": "کد ملی: 1234567891",
+    "expected_action": "block",
+    "category": "pii"
+  },
+  {
+    "id": "pii_15",
+    "text": "اطلاعات هویتی من: کد ملی 1234567891، موبایل 09123456789",
+    "expected_action": "block",
+    "category": "pii"
+  }
+]
