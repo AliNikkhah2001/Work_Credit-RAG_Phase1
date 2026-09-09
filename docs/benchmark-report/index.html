@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Work Credit RAG — Agent Behaviour & Benchmark Report</title>
+<link rel="stylesheet" href="style.css"></head>
+<body><main>
+<h1>Work Credit RAG — Agent Behaviour &amp; Benchmark Report</h1>
+<p class="sub">Persian credit-scoring RAG agent · 120-question bank (6 wording formats) ·
+model <code>unsloth/gemma-4-31B-it-GGUF</code> · run 2026-09-09</p>
+<p>Sources: <a href="https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1">parent repo</a> ·
+<a href="llm_answer_benchmark_v4.json">bench JSON (Q8)</a> · <a href="llm_judge_v4.json">judge JSON (Q8)</a> ·
+<a href="llm_answer_benchmark_v3.json">bench JSON (Q4)</a> · <a href="llm_judge_v3.json">judge JSON (Q4)</a></p>
+
+<h2>1. Summary</h2>
+<div class="cards">
+        <div class="card"><h3>v2 (Q4, pre-tweak)</h3>
+        <div class="bignum">0.602</div><div class="lbl">mean similarity</div>
+        <div class="bignum">0.685</div><div class="lbl">median similarity</div>
+        <div class="row"><span>sim&gt;0.5</span><b>76%</b></div>
+        <div class="row"><span>sim&gt;0.7</span><b>43%</b></div>
+        <div class="row"><span>mean citations</span><b>1.442</b></div>
+        <div class="row"><span>max citations</span><b>2</b></div>
+        <div class="row"><span>finish stop</span><b>120/120</b></div>
+        <div class="row"><span>judge pass</span><b>49%</b></div>
+        </div>
+
+        <div class="card"><h3>v3 (Q4, tweaked prompt)</h3>
+        <div class="bignum">0.621</div><div class="lbl">mean similarity</div>
+        <div class="bignum">0.691</div><div class="lbl">median similarity</div>
+        <div class="row"><span>sim&gt;0.5</span><b>79%</b></div>
+        <div class="row"><span>sim&gt;0.7</span><b>44%</b></div>
+        <div class="row"><span>mean citations</span><b>1.617</b></div>
+        <div class="row"><span>max citations</span><b>2</b></div>
+        <div class="row"><span>finish stop</span><b>120/120</b></div>
+        <div class="row"><span>judge pass</span><b>47%</b></div>
+        </div>
+
+        <div class="card"><h3>v4 (Q8, tweaked prompt)</h3>
+        <div class="bignum">0.620</div><div class="lbl">mean similarity</div>
+        <div class="bignum">0.675</div><div class="lbl">median similarity</div>
+        <div class="row"><span>sim&gt;0.5</span><b>78%</b></div>
+        <div class="row"><span>sim&gt;0.7</span><b>42%</b></div>
+        <div class="row"><span>mean citations</span><b>1.617</b></div>
+        <div class="row"><span>max citations</span><b>2</b></div>
+        <div class="row"><span>finish stop</span><b>120/120</b></div>
+        <div class="row"><span>judge pass</span><b>45%</b></div>
+        </div></div>
+
+<h2>2. Run comparison</h2>
+<table><tr><th>metric</th><th>v2 (Q4, pre-tweak)</th><th>v3 (Q4, tweaked prompt)</th><th>v4 (Q8, tweaked prompt)</th></tr><tr><td>n</td><td>120</td><td>120</td><td>120</td></tr><tr><td>mean_similarity</td><td>0.6018</td><td>0.621</td><td>0.6197</td></tr><tr><td>median_similarity</td><td>0.6846</td><td>0.6912</td><td>0.6748</td></tr><tr><td>similarity&gt;0.5</td><td>0.7583</td><td>0.7917</td><td>0.7833</td></tr><tr><td>similarity&gt;0.7</td><td>0.4333</td><td>0.4417</td><td>0.425</td></tr><tr><td>mean_citations</td><td>1.442</td><td>1.617</td><td>1.617</td></tr><tr><td>max_citations</td><td>2</td><td>2</td><td>2</td></tr><tr><td>low_similarity_lt0.5</td><td>29</td><td>25</td><td>26</td></tr><tr><td>errors</td><td>0</td><td>0</td><td>0</td></tr><tr><td>finish_reasons</td><td>{&quot;stop&quot;: 120}</td><td>{&quot;stop&quot;: 120}</td><td>{&quot;stop&quot;: 120}</td></tr></table>
+
+<h2>3. Answer statistics</h2>
+<h3>Similarity distribution (answer vs ground truth)</h3>
+<img src="plots/similarity_hist_v4.png" alt="similarity histogram">
+<h3>Wording robustness (same info, different phrasing)</h3>
+<img src="plots/format_means_v4.png" alt="per-format means">
+<h3>Citation counts (cap = 2)</h3>
+<img src="plots/citations_v4.png" alt="citation counts">
+<h3>LLM-as-judge scores</h3>
+<img src="plots/judge_v4.png" alt="judge scores">
+
+<h2>4. QA samples (live)</h2>
+<table><tr><th>question</th><th>agent answer (truncated)</th><th>citations</th><th>finish</th></tr><tr><td>سلام</td><td>سلام، در خدمت شما هستم. چگونه می‌توانم به شما کمک کنم؟</td><td>1</td><td>stop</td></tr><tr><td>اعتبارسنجی چیست؟</td><td>اعتبارسنجی فرآیندی است که در آن از داده‌های اعتباری برای تحلیل ریسک، تعیین امتیاز اعتباری و ارائه خدمات مشاوره‌ای استفاده می‌شود [2]. همچنین در موارد خاص، مانند بررسی چک‌های ضمانت، استفاده از گزارش‌های اعتبارسنجی به عنوان یک اقدام استاندارد برای کاهش ریسک وصول نشدن مبالغ تسهیلات به کار می‌رود [3]. در مجموع، اعتبارسنجی ابزاری برای ارزیابی دقیق ریسک مالی و تصمیم‌گیری informed در granting تسهیلات است.</td><td>2</td><td>stop</td></tr><tr><td>امتیاز اعتباری چگونه محاسبه می‌شود؟</td><td>محاسبه امتیاز اعتباری بر اساس ترکیبی از عوامل مختلف صورت می‌گیرد که اولویت آن‌ها به شرح زیر است: * **عوامل کلیدی:** در محاسبه امتیاز چک، سوابق مربوط به چک‌ها نقش تعیین‌کننده‌ای دارند [3]. * **سایر عوامل مؤثر:** مواردی نظیر سوابق تسهیلاتی، تراکنش‌ها، وضعیت مالیاتی و سن فرد نیز در محاسبه امتیاز اثرگذار هستند، هرچند تأثیر آن‌ها در مقایسه با سوابق چک کمتر است [2، 3]. به طور کلی، امتیاز اعتباری از تحلیل جامع سوابق مالی و تعهدات فرد استخراج می‌شود.</td><td>1</td><td>stop</td></tr><tr><td>چگونه می‌توانم درخواست حذف سابقه منفی قدیمی از گزارش اعتباری شرکت را ثبت کنم؟</td><td>در مورد حذف سوابق منفی در گزارش اعتباری، نکته زیر حائز اهمیت است: * سوابق منفی تا مدت پنج سال در سیستم باقی می‌مانند و پس از گذشت این بازه زمانی، به‌طور خودکار حذف می‌شوند [1]. بنابراین، برای حذف سوابق قدیمی نیازی به ثبت درخواست نیست و این فرآیند پس از پنج سال انجام می‌شود.</td><td>1</td><td>stop</td></tr><tr><td>ببخشید، مسئولیت بانک‌ها در قبال گزارش اعتباری چیست؟</td><td>مسئولیت بانک‌ها در فرآیند اعتبارسنجی شامل موارد زیر است: * **تأمین و ارائه داده‌ها:** بانک‌ها نقش محوری و اساسی در جمع‌آوری، تجمیع و ارائه اطلاعات دارند که این داده‌ها در تعیین رتبه نهایی اعتباری تأثیرگذار هستند [1]. * **دقت در ارسال اطلاعات:** موسسات اعتباری موظف‌اند داده‌های ارسالی را به‌صورت دقیق، به‌روز و مطابق با استانداردهای تعیین‌شده ارائه دهند [2]. در مجموع، بانک‌ها متولی اصلی فراهم کردن زیرساخت‌های اطلاعاتی برای محاسبه دقیق رتبه اعتباری کاربران هستند.</td><td>2</td><td>stop</td></tr><tr><td>تفاوت رتبه اعتباری با امتیاز اعتباری چیست؟</td><td>در مورد تفاوت رتبه و امتیاز اعتباری، نکات زیر قابل توجه است: * **رتبه اعتباری:** معیارهای پذیرش و شرایط مربوط به رتبه اعتباری در هر بانک متفاوت است و تعیین آن در اختیار هر بانک می‌باشد [2]. * **محاسبه در صورت نبود سابقه:** در گزارش‌های مربوط به چک، اگر فردی طی ۵ سال گذشته هیچ سابقه چک پاس‌شده یا برگشتی نداشته باشد، هیچ رتبه یا امتیاز اعتباری برای او محاسبه نمی‌شود و فاقد رتبه اعتباری تلقی می‌گردد [5]. به طور کلی، رتبه اعتباری بر اساس معیارهای متغیر هر بانک ارزیابی می‌شود و برای افرادی که سابقه چک ندارند، هیچ‌یک از این دو شاخص محاسبه نمی‌شود.</td><td>2</td><td>stop</td></tr></table>
+
+<h2>5. Findings</h2>
+<h3>Faithfulness &amp; correctness</h3>
+<ul>
+<li>Dominant failure mode is <b>false abstention</b> (~18% pre-tweak): the agent said
+“no answer found” despite 5 retrieved chunks. No polarity flips (بله↔خیر) observed — failures are omission, not inversion.</li>
+<li>Mid-range answers sometimes <b>pad with retrieved-but-unasked context</b> (1–2 extra bullets not in ground truth).</li>
+<li>After the abstention-threshold prompt tweak, previously abstained questions (e.g. «چرا امتیاز اعتباری… مهم است؟») return grounded answers with 1 citation.</li>
+</ul>
+<h3>Citations</h3>
+<ul>
+<li>100% of answers cite ≤ 2 sources; metadata returns only chunks actually referenced <code>[n]</code> in the text (fallback: top-1 chunk).</li>
+<li>No invalid markers observed (no <code>[0]</code>/<code>[6+]</code>); one pre-tweak answer cited 3 markers in text while metadata correctly truncated to 2.</li>
+</ul>
+<h3>Tone &amp; identity</h3>
+<ul>
+<li>Answers are Persian-only, professional, and structured (intro + 1–3 points + closing). The agent answers as the Iranian credit scoring company AI agent.</li>
+<li>Greeting rule tightened: «ببخشید» no longer triggers a سلام.</li>
+</ul>
+<h3>Wording robustness</h3>
+<ul>
+<li><code>reworded</code> is weakest (mean ~0.55, 30% below 0.5); <code>keyword_only</code> strongest (~0.65). Retrieval returns 5 chunks in all cases — failures come from 5 distractors, not empty retrieval.</li>
+<li>Fix applied: light Persian normalization + politeness-filler strip in <code>retrieve.py</code> before KB search.</li>
+</ul>
+<h3>Guardrails</h3>
+<ul>
+<li>Two false positives found by the benchmark and fixed: <code>profanity:کردن</code> (common verb in swear list → removed bare forms, vulgar phrases like «کس کردن» still blocked) and <code>hate:پلیس</code> (police records are a legit credit data source → allowlisted).</li>
+<li>Blocked-answer rate went 5/120 → 0/120.</li>
+</ul>
+<h3>Memory</h3>
+<ul>
+<li>The agent is <b>stateless</b>: it does not remember previous turns, neither across requests nor within multi-turn <code>messages</code> (only the latest user message is used as the query). Short-term history is not implemented in the MVP graph.</li>
+</ul>
+
+<h2>6. Lowest-similarity cases</h2>
+<table><tr><th>question</th><th>sim</th><th>format</th><th>answer (truncated)</th></tr><tr><td>آیا می‌توان گزراش‌های مصرف را به‌صورت خودکار در سیستم خود ذخیره کرد؟</td><td>0.156</td><td>typo</td><td>بر اساس اطلاعات موجود در پایگاه دانش، پاسخی برای این سوال یافت نشد.…</td></tr><tr><td>لطفاً بگویید در عمل آیا در مصرف به‌صورت خودکار می‌توان خود کرد؟ . اگر </td><td>0.163</td><td>reworded</td><td>با توجه به اطلاعات موجود، در صورت بروز خطا در تراکنش یا شارژ اشتباه، برای بازگشت وجه نیاز است با شماره ۰۲۱۴۱۵۲۲۲۲۲ تماس بگیرید تا اقدامات لازم انجام شود [3]. بن…</td></tr><tr><td>راستی، آیا می‌شه گزارش‌های مصرف را به‌صورت خودکار در سیستم خود ذخیره ک</td><td>0.199</td><td>conversational</td><td>در رابطه با ذخیره‌سازی داده‌ها، نکات زیر قابل توجه است: * تأمین‌کنندگان داده موظف هستند رکوردهای ارسالی را در پایگاه داده خود نگهداری کنند تا در صورت بروز هرگون…</td></tr><tr><td>آیا می‌توان گزارش‌های مصرف را به‌صورت خودکار در سیستم خود ذخیره کرد</td><td>0.204</td><td>verbatim</td><td>در رابطه با ذخیره‌سازی داده‌ها، نکات زیر قابل توجه است: * تامین‌کنندگان داده موظف هستند رکوردهای ارسالی را در پایگاه داده خود نگهداری کنند تا در صورت بروز هرگون…</td></tr><tr><td>تفاوت شرکت شما با رقبایتان (شرکت مرآت یا حافظ سامان ایرانیان، اسم رقبا</td><td>0.226</td><td>typo</td><td>بر اساس اطلاعات موجود در پایگاه دانش، پاسخی برای این سوال یافت نشد.…</td></tr><tr><td>در این باره بگویید که طبق متن تفاوت شرکت شما (شرکت مرآت یا حافظ ایرانی</td><td>0.226</td><td>reworded</td><td>بر اساس اطلاعات موجود در پایگاه دانش، پاسخی برای این سوال یافت نشد.…</td></tr><tr><td>تفاوت شرکت شما حافظ رقبایتان (شرکت مرآت یا با سامان ایرانیان، اسم رقبا</td><td>0.226</td><td>paraphrase</td><td>بر اساس اطلاعات موجود در پایگاه دانش، پاسخی برای این سوال یافت نشد.…</td></tr><tr><td>تفاوت شرکت شما با رقبایتان (شرکت مرآت یا حافظ سامان ایرانیان، اسم رقبا</td><td>0.226</td><td>verbatim</td><td>بر اساس اطلاعات موجود در پایگاه دانش، پاسخی برای این سوال یافت نشد.…</td></tr></table>
+
+<h2>7. Judge failures (sample)</h2>
+<table><tr><th>question</th><th>judge scores</th><th>rationale</th></tr><tr><td>راستی، آیا می‌شه گزارش‌های مصرف را به‌صورت خودکار در سیستم خود ذخیره ک</td><td>f2 c1 t4</td><td>The agent completely missed the core answer regarding automatic storage and access control, instead discussing data provider obligations.</td></tr><tr><td>می‌خواهم بدانم آیا پس از امضای توافق‌نامه شرکت به حضور فیزیکی نماینده </td><td>f5 c1 t5</td><td>The agent failed to retrieve the answer provided in the ground truth, resulting in a &#x27;not found&#x27; response.</td></tr><tr><td>ممکن است توضیح دهید که بر اساس اسناد آیا مالی اعتبارسنجی خروجی در می‌گ</td><td>f1 c1 t5</td><td>The agent completely misunderstood the question and provided an irrelevant answer about AI models instead of addressing financial judgments.</td></tr><tr><td>لطفاً بگویید در عمل اگر در زلزله یا تسویه بدهی بلایای آسیب میبینه؟ . ا</td><td>f2 c2 t5</td><td>The agent describes bank exemptions, whereas the ground truth specifies a process of justifying delays via organizations and updating the credit report.</td></tr><tr><td>تفاوت شرکت شما با رقبایتان (شرکت مرآت یا حافظ سامان ایرانیان، اسم رقبا</td><td>f5 c1 t5</td><td>The agent failed to retrieve the available information from the ground truth and provided a &#x27;not found&#x27; response.</td></tr><tr><td>محکومیت غیر مالی قوه قضاییه عدم تاثیر</td><td>f1 c1 t4</td><td>The agent contradicts the ground truth by stating financial convictions have no effect, whereas the ground truth explicitly states only financial convictions ar</td></tr><tr><td>شاخص اعتماد ریسک پایین موسسات مالی خوش حسابی</td><td>f2 c2 t5</td><td>The agent provides general risk management methods instead of defining the &#x27;Credit Score&#x27; (رتبه اعتباری) as specified in the ground truth.</td></tr><tr><td>آیا اطلاعات شخصی من در گزراش اعتباری نمایش داده میشود؟</td><td>f2 c2 t5</td><td>The agent fails to answer the specific question about personal identity information, instead discussing data retention and provider filters.</td></tr></table>
+
+<h2>8. Reproduce</h2>
+<pre>python eval/run_llm_answer_benchmark.py --out eval/results/llm_answer_benchmark_v3.json
+python eval/run_llm_judge.py eval/results/llm_answer_benchmark_v3.json --out eval/results/llm_judge_v3.json
+python eval/make_plots.py --bench eval/results/llm_answer_benchmark_v3.json --judge eval/results/llm_judge_v3.json --outdir eval/results/plots --tag v3
+python eval/build_report_site.py</pre>
+</main></body></html>

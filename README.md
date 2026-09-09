@@ -157,7 +157,53 @@ done
 
 ### 5. Open WebUI
 
-Open `http://91.108.80.253:13000` (or `http://localhost:13000` via `ssh -p 24044 -L 13000:localhost:13000 root@ssh9.vast.ai`) → chat with any above Persian question → answer with citations `[1][2][3]`.
+Open `http://91.108.80.253:13000` (or `http://localhost:13000` via `ssh -p 24044 -L 13000:localhost:13000 root@ssh9.vast.ai`) → chat with any above Persian question → answer with citations `[1][2]` (max 2 since 2026-09-09).
+
+## Agent Behaviour & Benchmark Report (2026-09-09)
+
+Full interactive version with plots: [`docs/benchmark-report/`](docs/benchmark-report/) (GitHub Pages — enable Pages from `/docs` in repo settings).
+
+**Method.** All 120 questions from `components/knowledgebase/kb-manager/data/test_questions.json` (20 underlying topics × 6 wording formats: `verbatim, paraphrase, reworded, typo, conversational, keyword_only` — same information, different wording) were asked to the live agent (`POST :8100/v1/chat/completions`, temp 0). For each answer we measured cosine similarity to the ground-truth `expected_answer` with the KB embedding model (`paraphrase-multilingual-MiniLM-L12-v2`), citation counts, and finish reasons. A second pass used Gemma itself as LLM-judge (question + ground truth + agent answer → 1–5 scores for faithfulness/correctness/tone/citation + pass/fail). Three parallel analysis agents audited faithfulness, citations/tone, and wording robustness. Scripts: `eval/run_llm_answer_benchmark.py`, `eval/run_llm_judge.py`, `eval/make_plots.py`, `eval/build_report_site.py`.
+
+**Results (120 questions, 0 errors).**
+
+| metric | v2 Q4 pre-tweak | v3 Q4 tweaked prompt | v4 Q8 tweaked prompt |
+|---|---|---|---|
+| mean similarity | 0.602 | 0.621 | 0.620 |
+| median similarity | 0.685 | 0.691 | 0.675 |
+| sim > 0.5 | 76% | 79% | 78% |
+| sim > 0.7 | 43% | 44% | 43% |
+| mean / max citations | 1.44 / 2 | 1.62 / 2 | 1.62 / 2 |
+| answers citing ≤ 2 | 100% | 100% | 100% |
+| finish `stop` | 120/120 | 120/120 | 120/120 |
+| judge pass rate | 49% | 47% | 45% |
+| judge faithfulness / correctness / tone / citation | 4.08 / 3.21 / 4.86 / 4.98 | 3.77 / 3.24 / 4.83 / 4.94 | 3.65 / 3.14 / 4.90 / 4.95 |
+
+![similarity distribution](eval/results/plots/similarity_hist_v4.png)
+![wording robustness](eval/results/plots/format_means_v4.png)
+![citation counts](eval/results/plots/citations_v4.png)
+![Q8 vs Q4 per-question similarity](eval/results/plots/v3-vs-v4.png)
+
+**QA samples (live, Persian).**
+
+- Q: `سلام` → A: `سلام، در خدمت شما هستم. چگونه می‌توانم به شما کمک کنم؟` (1 citation, stop)
+- Q: `اعتبارسنجی چیست؟` → A: `اعتبارسنجی فرآیندی است که در آن از داده‌های اعتباری برای تحلیل ریسک، تعیین امتیاز اعتباری و ارائه خدمات مشاوره‌ای استفاده می‌شود [2]…` (2 citations, stop)
+- Q: `امتیاز اعتباری چگونه محاسبه می‌شود؟` → A: `محاسبه امتیاز اعتباری بر اساس ترکیبی از عوامل مختلف صورت می‌گیرد… در محاسبه امتیاز چک، سوابق مربوط به چک‌ها نقش تعیین‌کننده‌ای دارند [3]…` (1 citation, stop)
+- Q: `چگونه می‌توانم درخواست حذف سابقه منفی قدیمی از گزارش اعتباری شرکت را ثبت کنم؟` → A: `سوابق منفی تا مدت پنج سال در سیستم باقی می‌مانند و پس از گذشت این بازه زمانی، به‌طور خودکار حذف می‌شوند [1]…` (1 citation, stop)
+- Q: `ببخشید، مسئولیت بانک‌ها در قبال گزارش اعتباری چیست؟` → A (no سلام-misuse): `مسئولیت بانک‌ها در فرآیند اعتبارسنجی شامل موارد زیر است… [1]…` (2 citations, stop)
+- Q: `تفاوت رتبه اعتباری با امتیاز اعتباری چیست؟` → A: `رتبه اعتباری: معیارهای پذیرش… در اختیار هر بانک می‌باشد [2]…` (2 citations, stop)
+
+**Findings.**
+
+- *Faithfulness/correctness.* Dominant failure is **false abstention** (~18% pre-tweak: `پاسخی یافت نشد` despite 5 retrieved chunks); no بله↔خیر polarity flips — failures are omission, not inversion. Mid-range answers sometimes pad with retrieved-but-unasked bullets. One verified drift: for `محکومیت غیرمالی…` the agent generalized a check-score chunk into `محکومیت‌های مالی تأثیری بر امتیاز چک ندارند`, contradicting the ground truth (`فقط محکومیت‌های مالی… درج می‌شود`).
+- *Citations.* 100% of answers cite ≤ 2; `format_response` now returns **only chunks actually referenced `[n]`** in the text (fallback: top-1). No invalid markers (`[0]`/`[6+]`); one pre-tweak answer wrote 3 markers in text while metadata correctly truncated to 2 — fixed by a hard max-2 prompt rule.
+- *Tone/identity.* Persian-only, professional, intro + 1–3 points + closing. The agent answers as the Iranian credit scoring company AI agent (`شما دستیار هوشمند رسمی شرکت اعتبارسنجی ایران…`). Greeting rule tightened (`ببخشید` ≠ سلام).
+- *Wording robustness.* `reworded` weakest (mean ~0.55–0.57, 30% < 0.5), `keyword_only` strongest (~0.65). Retrieval always returns 5 chunks — failures come from 5 distractors, not empty retrieval. Fix applied: light Persian normalization + politeness-filler strip in `retrieve.py` before KB search.
+- *Guardrails.* Benchmark found 2 false positives, fixed per repo pattern: `profanity:کردن` (bare verb removed from `persian_swear.json`; vulgar phrases `کس کردن`/`شق کردن` still blocked) and `hate:پلیس` (allowlisted — police records are a legit credit data source). Blocked answers 5/120 → 0/120; genuine vulgar still blocked.
+- *Q8 vs Q4.* The bigger model (`UD-Q8_K_XL`, 35 GB, 39.7 GB VRAM) changes **nothing measurable** (mean 0.621 → 0.620): the pipeline is retrieval-bound, not model-bound. Q4 remains the efficient choice.
+- *Memory.* The agent is **stateless**: it does not remember previous turns, neither across requests nor within multi-turn `messages` (only the latest user message becomes the query). Verified in Persian (`اسم من علی است…` → `اسم من چیست؟` → `پاسخی یافت نشد`). Short-term history is not implemented in the MVP graph.
+
+Reproduce: `python eval/run_llm_answer_benchmark.py --out eval/results/llm_answer_benchmark_v4.json` → `python eval/run_llm_judge.py eval/results/llm_answer_benchmark_v4.json --out eval/results/llm_judge_v4.json` → `python eval/make_plots.py …` → `python eval/build_report_site.py`.
 
 ## Done vs Pending
 
