@@ -1,0 +1,82 @@
+# llama-server (CUDA) for the Work Credit RAG stack.
+#
+# Build context = REPO ROOT, e.g.:
+#   docker build -f deploy/docker/Dockerfile.llama -t rag-llama-server:local .
+# or via deploy/docker/docker-compose.yml (context: ../..).
+#
+# Two ways to get the binary:
+#   1. Default: clone llama.cpp at build time (ARG LLAMA_REF, a branch/tag name)
+#      and compile llama-server with GGML_CUDA=ON. Self-contained: needs only
+#      network access to github.com at build time, NOT the local tree.
+#   2. Prebuilt: pass a binary that lives INSIDE the build context, e.g.
+#        docker build -f deploy/docker/Dockerfile.llama \
+#          --build-arg LLAMA_SERVER_BIN=build/llama-server .
+#      The entrypoint runs the prebuilt binary when it is a real ELF executable,
+#      otherwise it falls back to the compiled one. The default value points at
+#      an in-repo text file on purpose: COPY always succeeds, and the entrypoint
+#      ignores it (not ELF) and uses the compiled binary.
+#
+# Runtime config (env): MODEL_PATH (GGUF, volume-mounted), LLAMA_PORT, CTX_SIZE,
+# LLAMA_TEMP, LLAMA_NGL, LLAMA_EXTRA_ARGS (appended verbatim).
+
+ARG CUDA_TAG=12.4.1-runtime-ubuntu22.04
+
+# ---------- builder: compile llama.cpp with CUDA support ----------
+FROM nvidia/cuda:12.4.1-devel-ubuntu22.04 AS builder
+ARG LLAMA_REF=master
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      git cmake g++ ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+WORKDIR /src
+# LLAMA_REF must be a branch or tag (shallow clone). Commit SHAs are not supported.
+RUN git clone --depth 1 --branch "${LLAMA_REF}" \
+      https://github.com/ggerganov/llama.cpp.git llama.cpp
+WORKDIR /src/llama.cpp
+RUN cmake -B build -DGGML_CUDA=ON -DLLAMA_CURL=OFF -DBUILD_SHARED_LIBS=OFF \
+ && cmake --build build --config Release -j --target llama-server \
+ && cp build/bin/llama-server /tmp/llama-server-built
+
+# ---------- runtime: minimal CUDA runtime + llama-server ----------
+FROM nvidia/cuda:${CUDA_TAG}
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      libcurl4 libgomp1 curl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+COPY --from=builder /tmp/llama-server-built /usr/local/bin/llama-server-built
+ARG LLAMA_SERVER_BIN=deploy/docker/.env.example
+COPY ${LLAMA_SERVER_BIN} /opt/llama-prebuilt/llama-server
+RUN chmod +x /usr/local/bin/llama-server-built \
+ && cat > /usr/local/bin/entrypoint.sh <<'EOF'
+#!/bin/bash
+# Prefer a prebuilt binary when one was COPYed in (ELF magic check),
+# otherwise use the binary compiled from source in the builder stage.
+set -e
+PREBUILT=/opt/llama-prebuilt/llama-server
+BIN=/usr/local/bin/llama-server-built
+if [ -f "$PREBUILT" ] && [ "$(head -c 4 "$PREBUILT" | od -An -tx1 | tr -d ' \n')" = "7f454c46" ]; then
+  echo "[entrypoint] using prebuilt llama-server ($PREBUILT)"
+  BIN="$PREBUILT"
+else
+  echo "[entrypoint] using compiled llama-server"
+fi
+: "${MODEL_PATH:=/models/model.gguf}"
+: "${LLAMA_PORT:=18000}"
+: "${CTX_SIZE:=8192}"
+: "${LLAMA_TEMP:=0.2}"
+: "${LLAMA_NGL:=999}"
+exec "$BIN" --model "$MODEL_PATH" --host 0.0.0.0 --port "$LLAMA_PORT" \
+  --ctx-size "$CTX_SIZE" --temp "$LLAMA_TEMP" --no-mmproj --jinja -ngl "$LLAMA_NGL" \
+  ${LLAMA_EXTRA_ARGS}
+EOF
+RUN chmod +x /usr/local/bin/entrypoint.sh
+ENV MODEL_PATH=/models/model.gguf \
+    LLAMA_PORT=18000 \
+    CTX_SIZE=8192 \
+    LLAMA_TEMP=0.2 \
+    LLAMA_NGL=999 \
+    LLAMA_EXTRA_ARGS=""
+EXPOSE 18000
+HEALTHCHECK --interval=15s --timeout=10s --start-period=3m --retries=30 \
+  CMD curl -sf http://127.0.0.1:18000/health || exit 1
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

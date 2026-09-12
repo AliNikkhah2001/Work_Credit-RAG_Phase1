@@ -1,0 +1,342 @@
+# Dockerized Work Credit RAG Phase 1 — privileged CUDA host with NVIDIA Container Toolkit.
+# Mirrors deploy/vast/start.sh (same services, ports, env, startup order).
+#
+# Run from THIS directory (deploy/docker):
+#   cp .env.example .env   # then set MODEL_FILE to your Gemma GGUF on the host
+#   docker compose up -d --build
+#
+# Port policy: ONLY the WebUI publishes a host port by default (13000).
+# Everything else is reachable via Docker DNS on the `rag` network (expose).
+# To publish internal ports for debugging, uncomment the marked `ports:` blocks
+# or drop the snippet from README "Ports & debug" into docker-compose.override.yml
+# (auto-loaded by Compose) — never expose llama-server (18000) publicly.
+#
+# No secrets are committed: every tunable uses ${VAR:-default} (see .env.example).
+
+services:
+  # ---- Gemma 4 via llama.cpp (CUDA). Mirrors start.sh step 1:
+  # --model $MODEL --port 18000 --ctx-size 8192 --temp 0.2 --no-mmproj --jinja -ngl 999
+  llama-server:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.llama
+      args:
+        LLAMA_REF: ${LLAMA_REF:-master}
+        LLAMA_SERVER_BIN: ${LLAMA_SERVER_BIN:-deploy/docker/.env.example}
+    image: rag-llama-server:local
+    container_name: rag-llama-server
+    environment:
+      MODEL_PATH: ${MODEL_PATH:-/models/model.gguf}
+      LLAMA_PORT: 18000
+      CTX_SIZE: ${CTX_SIZE:-8192}
+      LLAMA_TEMP: ${LLAMA_TEMP:-0.2}
+      LLAMA_NGL: ${LLAMA_NGL:-999}
+      LLAMA_EXTRA_ARGS: ${LLAMA_EXTRA_ARGS:-}
+      NVIDIA_VISIBLE_DEVICES: all
+    volumes:
+      - type: bind
+        source: ${MODEL_FILE:-./models/model.gguf}
+        target: /models/model.gguf
+        read_only: true
+    expose:
+      - "18000"
+    # Debug only (see header): publish llama-server on loopback.
+    # ports:
+    #   - "127.0.0.1:18000:18000"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://127.0.0.1:18000/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 30
+      start_period: 180s
+    networks:
+      - rag
+    restart: unless-stopped
+
+  # ---- pgvector for the KB (start.sh step 0: postgres cluster with kb_manager DB).
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: rag-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: kb_manager
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ../../components/knowledgebase/kb-manager/scripts/init_db.sql:/docker-entrypoint-initdb.d/init_db.sql:ro
+    expose:
+      - "5432"
+    # Debug only: publish postgres on loopback.
+    # ports:
+    #   - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - rag
+    restart: unless-stopped
+
+  # ---- Knowledge base :8000 (start.sh step 2). KB_DB_URL must be set explicitly:
+  # without it kb-manager silently falls back to SQLite.
+  kb:
+    build:
+      context: ../../components/knowledgebase/kb-manager
+      dockerfile: Dockerfile
+    image: rag-kb:local
+    container_name: rag-kb
+    environment:
+      KB_DB_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/kb_manager
+      KB_WEB_HOST: 0.0.0.0
+      KB_WEB_PORT: 8000
+      HF_HOME: /models
+      HF_HUB_CACHE: /models
+      HF_HUB_OFFLINE: ${HF_HUB_OFFLINE:-0}
+    volumes:
+      - models:/models
+    expose:
+      - "8000"
+    # Debug only: publish KB on loopback.
+    # ports:
+    #   - "127.0.0.1:8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request, sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health').getcode()==200 else 1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
+    networks:
+      - rag
+    restart: unless-stopped
+
+  # ---- Guardrails :8200 (start.sh step 3).
+  guardrails:
+    build:
+      context: ../../components/guardrails
+      dockerfile: Dockerfile
+    image: rag-guardrails:local
+    container_name: rag-guardrails
+    environment:
+      GUARDRAILS_HOST: 0.0.0.0
+      GUARDRAILS_PORT: 8200
+      UPSTREAM_LLM_BASE_URL: http://llama-server:18000/v1
+      UPSTREAM_LLM_MODEL: ${LLM_MODEL:-unsloth/gemma-4-31B-it-GGUF:UD-Q4_K_XL}
+      UPSTREAM_LLM_API_KEY: ${LLM_API_KEY:-sk-local-dev}
+      LLM_BASE_URL: ${LLM_BASE_URL:-http://llama-server:18000/v1}
+      LLM_MODEL: ${LLM_MODEL:-unsloth/gemma-4-31B-it-GGUF:UD-Q4_K_XL}
+    expose:
+      - "8200"
+    # Debug only: publish guardrails on loopback.
+    # ports:
+    #   - "127.0.0.1:8200:8200"
+    depends_on:
+      llama-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; print(urllib.request.urlopen('http://127.0.0.1:8200/health').read())"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - rag
+    restart: unless-stopped
+
+  # ---- Langfuse v2 backing stores (mirrors compose.mvp.yml langfuse stack).
+  langfuse-db:
+    image: postgres:15
+    container_name: rag-langfuse-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${LANGFUSE_DB_PASSWORD:-postgres}
+      POSTGRES_DB: langfuse
+    volumes:
+      - langfuse_pgdata:/var/lib/postgresql/data
+    expose:
+      - "5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - rag
+    restart: unless-stopped
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:24
+    container_name: rag-clickhouse
+    environment:
+      CLICKHOUSE_DB: langfuse
+      CLICKHOUSE_USER: clickhouse
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-clickhouse}
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+    expose:
+      - "8123"
+      - "9000"
+    healthcheck:
+      test: ["CMD", "clickhouse-client", "--query", "SELECT 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - rag
+    restart: unless-stopped
+
+  langfuse:
+    image: ghcr.io/langfuse/langfuse:2
+    container_name: rag-langfuse
+    depends_on:
+      langfuse-db:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://postgres:${LANGFUSE_DB_PASSWORD:-postgres}@langfuse-db:5432/langfuse
+      NEXTAUTH_URL: http://langfuse:3000
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-langfuse-secret-change-me-in-production}
+      SALT: ${LANGFUSE_SALT:-langfuse-salt-change-me-in-production}
+      CLICKHOUSE_URL: http://clickhouse:9000
+      CLICKHOUSE_USER: clickhouse
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-clickhouse}
+      CLICKHOUSE_MIGRATION_URL: http://clickhouse:8123
+      LANGFUSE_CLOUD_REGION: ""
+      TELEMETRY_ENABLED: "false"
+      LANGFUSE_INIT_ORG_ID: org
+      LANGFUSE_INIT_PROJECT_ID: rag
+      LANGFUSE_INIT_PROJECT_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-pk-lf-docker-local}
+      LANGFUSE_INIT_PROJECT_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-sk-lf-docker-local}
+      LANGFUSE_INIT_USER_EMAIL: ${LANGFUSE_ADMIN_EMAIL:-admin@work-rag.local}
+      LANGFUSE_INIT_USER_PASSWORD: ${LANGFUSE_ADMIN_PASSWORD:-admin123}
+      LANGFUSE_INIT_USER_NAME: Admin
+    expose:
+      - "3000"
+    # Debug only: publish the Langfuse UI on loopback.
+    # ports:
+    #   - "127.0.0.1:3001:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/public/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    networks:
+      - rag
+    restart: unless-stopped
+
+  # ---- Orchestrator :8100 (start.sh step 5).
+  orchestrator:
+    build:
+      context: ../../components/orchestrator
+      dockerfile: Dockerfile
+    image: rag-orchestrator:local
+    container_name: rag-orchestrator
+    environment:
+      ORCHESTRATOR_HOST: 0.0.0.0
+      ORCHESTRATOR_PORT: 8100
+      KB_BASE_URL: http://kb:8000
+      GUARDRAILS_BASE_URL: http://guardrails:8200
+      UPSTREAM_LLM_MODEL: ${LLM_MODEL:-unsloth/gemma-4-31B-it-GGUF:UD-Q4_K_XL}
+      REQUEST_TIMEOUT_SECONDS: ${REQUEST_TIMEOUT_SECONDS:-120}
+      RETRIEVAL_TOP_K: ${RETRIEVAL_TOP_K:-5}
+      LANGFUSE_HOST: ${LANGFUSE_HOST:-http://langfuse:3000}
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-pk-lf-docker-local}
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-sk-lf-docker-local}
+      TRACE_ENABLED: ${TRACE_ENABLED:-true}
+    expose:
+      - "8100"
+    # Debug only: publish orchestrator on loopback.
+    # ports:
+    #   - "127.0.0.1:8100:8100"
+    depends_on:
+      kb:
+        condition: service_healthy
+      guardrails:
+        condition: service_healthy
+      langfuse:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; print(urllib.request.urlopen('http://127.0.0.1:8100/health').read())"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - rag
+    restart: unless-stopped
+
+  # ---- Fallback trace collector :3000 (start.sh step 4, components/tracing/app.py).
+  # Langfuse-compatible ingestion at POST /api/public/ingestion, JSONL trace log.
+  # Kept in the default stack as a fallback; point LANGFUSE_HOST at
+  # http://tracing-fallback:3000 if the langfuse stack is stopped.
+  tracing-fallback:
+    image: python:3.11-slim
+    container_name: rag-tracing-fallback
+    working_dir: /app
+    volumes:
+      - ../../components/tracing:/app:ro
+      - trace-data:/tmp
+    command: ["sh", "-c", "pip install --no-cache-dir fastapi uvicorn && python -m uvicorn app:app --host 0.0.0.0 --port 3000"]
+    expose:
+      - "3000"
+    # Debug only: publish the fallback collector on loopback.
+    # ports:
+    #   - "127.0.0.1:3002:3000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:3000/api/public/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - rag
+    restart: unless-stopped
+
+  # ---- Open WebUI (start.sh step 6). THE ONLY service publishing a host port
+  # by default. Bind to 0.0.0.0 only behind a firewall/tunnel; prefer
+  # 127.0.0.1:${WEBUI_PORT} via the debug override on shared hosts.
+  webui:
+    image: ${WEBUI_IMAGE:-ghcr.io/open-webui/open-webui:main}
+    container_name: rag-webui
+    ports:
+      - "${WEBUI_PORT:-13000}:8080"
+    environment:
+      WEBUI_AUTH: ${WEBUI_AUTH:-false}
+      WEBUI_NAME: Work RAG (Docker)
+      USE_OLLAMA_DOCKER: "false"
+      USE_CUDA_DOCKER: "false"
+      OPENAI_API_BASE_URL: http://orchestrator:8100/v1
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-sk-local-dev}
+      DATA_DIR: /app/backend/data
+    volumes:
+      - webui-data:/app/backend/data
+    depends_on:
+      orchestrator:
+        condition: service_healthy
+    networks:
+      - rag
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  models:
+  webui-data:
+  langfuse_pgdata:
+  clickhouse_data:
+  trace-data:
+
+networks:
+  rag:
+    driver: bridge
