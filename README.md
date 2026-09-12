@@ -205,6 +205,21 @@ Full interactive version with plots: [`docs/benchmark-report/`](docs/benchmark-r
 
 Reproduce: `python eval/run_llm_answer_benchmark.py --out eval/results/llm_answer_benchmark_v4.json` → `python eval/run_llm_judge.py eval/results/llm_answer_benchmark_v4.json --out eval/results/llm_judge_v4.json` → `python eval/make_plots.py …` → `python eval/build_report_site.py`.
 
+## Reranker backbones & shootout (2026-09-12, running)
+
+The pipeline is retrieval-bound (failures = distractor chunks, not empty retrieval), so the reranker is the highest-leverage model change. Candidates, all local CPU (see KB README for the full table + loader notes):
+
+| Model | Params | License | Note |
+|---|---|---|---|
+| `cross-encoder/mmarco-mMiniLMv2-L12-H384-v1` (current default) | 118M | Apache 2.0 | baseline |
+| `BAAI/bge-reranker-v2-m3` | 568M | MIT | m3 tops FaMTEB Persian rerank |
+| `jinaai/jina-reranker-v3` | 0.6B | Apache 2.0 | (v2 skipped: CC-BY-NC) |
+| `Qwen/Qwen3-Reranker-0.6B` / `4B` | 0.6B / 4B | Apache 2.0 | FlagEmbedding LLM head |
+| `BAAI/bge-reranker-v2-gemma` | 2.5B | Apache 2.0 | biggest SOTA in scope |
+| MiniCPM-layerwise / GTE-multilingual | 2.7B / 300M | Apache 2.0 | blocked (transformers-5 / rope bugs, documented in KB README) |
+
+Method: massive retrieval benchmark — all 800 QA pairs from `kb-manager/kb_manager/evaluation/datasets/eval_clean.json` (gold `expected_chunk_ids`) × every backbone (pool 30, top_k 5), parallel in-process CPU workers (`/tmp/opencode/bench_backbone.py`), hit/MRR/latency + ranx metrics → `eval/results/reranker_benchmark_*` + plots. Winner becomes the new default. Select manually anytime via `KB_RERANKER_MODEL`.
+
 ## Done vs Pending
 
 ### Done ✓
