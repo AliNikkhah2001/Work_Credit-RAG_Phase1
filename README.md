@@ -256,6 +256,16 @@ curl -s http://127.0.0.1:8100/v1/chat/completions -H 'Content-Type: application/
 # → finish stop, citations 5
 ```
 
+## UI panels
+
+Two observability UIs run alongside the pipeline (both on the `vast-deploy` branch; no Docker needed):
+
+- **Open WebUI** (`0.0.0.0:13000`, the chat frontend) — backend `OPENAI_API_BASE_URL=http://127.0.0.1:8100/v1`. Start: `DATA_DIR=/tmp/webui-data /tmp/webui-venv/bin/open-webui serve --host 0.0.0.0 --port 13000`.
+- **Langfuse v2** (`0.0.0.0:3001`, real trace UI built from source, Postgres-backed) — every orchestrator request lands as a trace (`input` → `output`, keyed by `X-Request-ID`). Setup/run: `bash deploy/vast/langfuse-v2.sh` (seeds admin + project keys into `/tmp/opencode/langfuse.env`, never committed). Point the orchestrator at it via `LANGFUSE_HOST=http://127.0.0.1:3001` + the seeded keys. A lightweight fallback collector (`components/tracing/app.py`, `:3000`, JSONL at `/tmp/langfuse_traces.jsonl`) remains for offline use.
+- **LangGraph Studio** (visual graph debugger for the `rag` graph) — serve: `bash deploy/vast/studio.sh` (API on `0.0.0.0:2024`), then open `https://smith.langchain.com/studio/?baseUrl=http://127.0.0.1:2024`. Studio run inputs must include `request_id`, e.g. `{"request_id":"studio-001","messages":[{"role":"user","content":"سلام"}]}`.
+
+On Vast.ai, ports are NAT-fixed at instance creation, so reach all panels via SSH tunnels, e.g. `ssh -p <ssh_port> root@<ssh_host> -L 13000:localhost:13000 -L 3001:localhost:3001 -L 2024:localhost:2024`. Full startup order (postgres → Gemma → KB → guardrails → collector → orchestrator → WebUI): `bash deploy/vast/start.sh`.
+
 ## Ownership rule
 
 - hardware, model lifecycle, infra → Server Setup
