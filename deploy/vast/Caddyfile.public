@@ -1,0 +1,45 @@
+# Public gateway: single-port reverse proxy for all RAG services.
+# Vast.ai NAT mappings are fixed at instance creation; point this at whichever
+# container port is mapped publicly on your instance (here :34169 was the
+# candidate, but on 50713720 it is held by Vast infra — use SSH tunnels there).
+# Run with the ai-dock caddy binary, e.g.:
+#   /opt/portal-aio/caddy_manager/caddy run --config deploy/vast/Caddyfile.public
+{
+	admin off
+}
+
+:34169 {
+	# Orchestrator OpenAI-compatible API + its health (must come before / catch-all)
+	handle /v1/* {
+		reverse_proxy 127.0.0.1:8100
+	}
+	handle /health {
+		reverse_proxy 127.0.0.1:8100
+	}
+	handle /ready {
+		reverse_proxy 127.0.0.1:8100
+	}
+
+	# KB manager
+	handle /kb/* {
+		uri strip_prefix /kb
+		reverse_proxy 127.0.0.1:8000
+	}
+
+	# Guardrails
+	handle /guard/* {
+		uri strip_prefix /guard
+		reverse_proxy 127.0.0.1:8200
+	}
+
+	# Langfuse fallback collector
+	handle /traces/* {
+		uri strip_prefix /traces
+		reverse_proxy 127.0.0.1:3000
+	}
+
+	# Open WebUI (root, websockets pass through)
+	handle {
+		reverse_proxy 127.0.0.1:13000
+	}
+}

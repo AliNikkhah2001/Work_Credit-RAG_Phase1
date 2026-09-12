@@ -172,3 +172,16 @@ docker compose -f compose.mvp.yml logs -f
 curl -s http://127.0.0.1:8100/v1/models | jq .  # Open WebUI uses this
 ```
 
+
+## Instance 50713720 (RTX 3090, 2026-09-12) — fresh bring-up notes
+
+- Image `vastai/tensorflow:2.19.0-cuda-12.4.1`, 1x RTX 3090 24GB, unprivileged → **no Docker** (host venvs in `/tmp/{kb,guard,orch,webui}-venv`, py3.11).
+- llama.cpp built from `/workspace/llama.cpp-src` → `/workspace/llama.cpp-src/build-cuda/bin/llama-server` (`GGML_CUDA=ON`, sm_86). Gemma 4 Q4_K_XL (18.8 GB) needs `HF_HUB_CACHE` + `HF_HOME` pointed at a real cache; `/workspace/.hf_home` is phantom dentries only.
+- VRAM 22.7/24 GB with `--ctx-size 8192`. If OOM under load, restart with `--ctx-size 4096`.
+- Postgres 14 + pgvector 0.8.6 (built from source). `kb_manager` DB migrated from `kb_1405.db` (34 docs / 2077 chunks). App needs `KB_DB_URL=postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/kb_manager` set explicitly (else silent SQLite fallback).
+- KB fix (uncommitted, working tree): `search_api` awaits `search_knowledge_base` directly instead of `asyncio.to_thread(...)` — the thread+hopping loop breaks the asyncpg pool (`attached to a different loop`). Also set `HF_HUB_CACHE` (hub 1.x reads `$HF_HOME/hub/`).
+- Port exposure: Vast NAT mappings are fixed at creation (here: 22, 1111, 6006, 8080, 8384, 34169 — all infra-held; `:34169` is bound by Vast infra outside the container). New direct mappings are impossible on a running instance. All RAG services bind `0.0.0.0` (`13000/8000/8100/8200/3000`; Gemma `:18000` stays `127.0.0.1` by design). Public access = SSH tunnels:
+  ```bash
+  ssh -p 34915 root@ssh7.vast.ai -L 13000:localhost:13000 -L 8100:localhost:8100 -L 8000:localhost:8000 -L 8200:localhost:8200 -L 3000:localhost:3000
+  ```
+  then open `http://localhost:13000` (Open WebUI, `WEBUI_AUTH=false`, backend `http://127.0.0.1:8100/v1`).
