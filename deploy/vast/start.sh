@@ -42,10 +42,13 @@ sleep 6
 
 echo "== 5. Orchestrator :8100 =="
 cd "$ROOT"
+# Tracing: real Langfuse v2 on :3001 (keys in /tmp/opencode/langfuse.env — never commit).
+# Falls back to the :3000 collector if LANGFUSE_HOST is unset (defaults apply).
 PYTHONPATH="$ROOT/components/orchestrator/src" KB_BASE_URL=http://127.0.0.1:8000 \
   GUARDRAILS_BASE_URL=http://127.0.0.1:8200 \
   UPSTREAM_LLM_MODEL=unsloth/gemma-4-31B-it-GGUF:UD-Q4_K_XL \
-  LANGFUSE_HOST=http://127.0.0.1:3000 \
+  LANGFUSE_HOST="${LANGFUSE_HOST:-http://127.0.0.1:3001}" \
+  LANGFUSE_PUBLIC_KEY="${LANGFUSE_PUBLIC_KEY:-}" LANGFUSE_SECRET_KEY="${LANGFUSE_SECRET_KEY:-}" \
   nohup /tmp/orch-venv/bin/python -m uvicorn work_rag_orchestrator.api:create_app --factory \
   --host 0.0.0.0 --port 8100 > /tmp/orch.log 2>&1 &
 sleep 10

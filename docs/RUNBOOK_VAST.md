@@ -185,3 +185,8 @@ curl -s http://127.0.0.1:8100/v1/models | jq .  # Open WebUI uses this
   ssh -p 34915 root@ssh7.vast.ai -L 13000:localhost:13000 -L 8100:localhost:8100 -L 8000:localhost:8000 -L 8200:localhost:8200 -L 3000:localhost:3000
   ```
   then open `http://localhost:13000` (Open WebUI, `WEBUI_AUTH=false`, backend `http://127.0.0.1:8100/v1`).
+
+## UI panels (instance 50713720, 2026-09-12)
+
+- **Langfuse v2 UI (real, self-hosted from source v2.95.12, no docker):** `http://127.0.0.1:3001/` (0.0.0.0:3001). Postgres `langfuse` DB. Seeded login `admin@local.test` (password + project keys in `/tmp/opencode/langfuse.env`, mode 600 — never commit). Orchestrator posts `trace-create` (input) + upsert (output) with Basic auth; SDK v4 is incompatible with v2 server (pydantic shape), so the direct-HTTP path in `tracing.py` is authoritative (v2 envelope: top-level `id` + ISO `timestamp`; updates via same-id `trace-create`, there is no `trace-update` in v2). SSH tunnel `-L 3001:localhost:3001` for browser. Fallback collector still on :3000 (history in `/tmp/langfuse_traces.jsonl`).
+- **LangGraph Studio:** API on `0.0.0.0:2024` (`langgraph dev`, graph `rag`, assistant `e55ae2ab-01af-5331-997f-113dcf644526`). Panel: `https://smith.langchain.com/studio/?baseUrl=http://127.0.0.1:2024` (tunnel `-L 2024:localhost:2024`). Runs must include `request_id` in input (API injects it in prod; Studio does not).
