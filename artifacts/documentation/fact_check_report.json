@@ -1,0 +1,198 @@
+{
+  "verified_claims": [
+    {
+      "claim": "Submodule composition: 4 components at specific paths with pinned commits",
+      "source": "README.md:9-16, .gitmodules",
+      "evidence": "git submodule status shows guardrails 6ce319f, knowledgebase 8b8f6e5, orchestrator cdb6e7d, server-setup 5d5a7e4 on vast-gemma4-migration"
+    },
+    {
+      "claim": "MVP architecture: Open WebUI :13000 → Orchestrator :8100 → KB :8000 + Guardrails :8200 → Gemma :18000",
+      "source": "README.md:31-36, AGENTS.md:18-30, deploy/vast/start.sh",
+      "evidence": "Service table in AGENTS.md matches; startup order postgres→Gemma→KB→guardrails→collector→orchestrator→WebUI"
+    },
+    {
+      "claim": "Orchestrator graph: validate_input → retrieve → build_context → guarded_generate → format_response",
+      "source": "components/orchestrator/README.md:13-21, components/orchestrator/src/work_rag_orchestrator/graph.py:14-40",
+      "evidence": "Graph.py matches exactly; conditional edge on blocked flag to format_refusal"
+    },
+    {
+      "claim": "KB Manager retrieval pipeline: BM25 + Dense (MiniLM-L12) + RRF (k=60) + Cross-encoder rerank (mmarco)",
+      "source": "components/knowledgebase/kb-manager/README.md:84-102, components/knowledgebase/kb-manager/kb_manager/web/routes/search.py",
+      "evidence": "Search.py implements all four stages; RRF k=60 in config; reranker model configurable via KB_RERANKER_MODEL"
+    },
+    {
+      "claim": "KB Manager v8: pgvector HNSW, 103 docs, 6593 chunks, GPU 18.4s avg latency",
+      "source": "components/knowledgebase/kb-manager/README.md:7-19, data/hnsw_benchmark_detailed.json",
+      "evidence": "Benchmark data file exists with GPU/CPU comparison; HNSW m16 ef_construction 64"
+    },
+    {
+      "claim": "Guardrails HurtLex allowlist: 19 lemmas with evidence",
+      "source": "components/guardrails/kb/hurtlex_allowlist.json",
+      "evidence": "JSON contains 19 entries in allowlist + normalized_allowlist + evidence object"
+    },
+    {
+      "claim": "Orchestrator MAX_CHUNKS=5, MAX_CONTEXT_CHARS=6000, HISTORY_MAX_CHARS=1500",
+      "source": "components/orchestrator/src/work_rag_orchestrator/nodes/build_context.py:13,121, components/orchestrator/src/work_rag_orchestrator/rewrite.py:27-28",
+      "evidence": "Constants defined and used in build_context and rewrite"
+    },
+    {
+      "claim": "Guardrails default upstream_llm_base_url = http://127.0.0.1:9000/v1 (config default), overridden by LLM_BASE_URL env to 18000 in production",
+      "source": "components/guardrails/src/work_rag_guardrails/config.py:25, deploy/vast/start.sh:31",
+      "evidence": "Settings class default is 9000; deploy script sets LLM_BASE_URL alias to 18000"
+    },
+    {
+      "claim": "KB Manager default web port 8000, overridden by KB_WEB_PORT env",
+      "source": "components/knowledgebase/kb-manager/kb_manager/config.py:107,166, run_server.py",
+      "evidence": "Config default 8000; root README quickstart uses 8004 for dev SQLite mode"
+    },
+    {
+      "claim": "Gemma model: unsloth/gemma-4-31B-it-GGUF:UD-Q4_K_XL, served via llama.cpp with --no-mmproj --jinja --ctx-size 8192 --temp 0.2",
+      "source": "README.md:101, AGENTS.md:22, deploy/vast/start.sh:16-18",
+      "evidence": "Llama-server command line in start.sh matches; model ID consistent across docs"
+    },
+    {
+      "claim": "Langfuse v2 on :3001, fallback collector on :3000, Studio API on :2024",
+      "source": "AGENTS.md:27-29, components/tracing/app.py, components/tracing/observe.py, deploy/vast/langfuse-v2.sh, deploy/vast/studio.sh",
+      "evidence": "All services defined in AGENTS.md service table; tracing app has /observe, /studio endpoints"
+    },
+    {
+      "claim": "Orchestrator is stateless: no conversation memory across requests, only latest user message used",
+      "source": "README.md:204, components/orchestrator/src/work_rag_orchestrator/rewrite.py:1-4, api.py:118",
+      "evidence": "rewrite.py comment 'No DB, no checkpointer'; api.py generates new request_id per request"
+    },
+    {
+      "claim": "Docker compose stack: 9 services, only WebUI published on 13000, debug via override file",
+      "source": "deploy/docker/README.md:15-27, 65-81",
+      "evidence": "docker-compose.yml defines all 9 services with expose only; override pattern documented"
+    },
+    {
+      "claim": "Benchmark: 120 questions (6 formats × 20), cosine similarity + LLM-judge, v4 results in root README table",
+      "source": "README.md:166-206, eval/README.md:20-26, eval/run_llm_answer_benchmark.py, eval/run_llm_judge.py",
+      "evidence": "Scripts exist; results tables match; plots generated in eval/results/plots/"
+    },
+    {
+      "claim": "Reranker shootout: 7 candidates evaluated, default mmarco-mMiniLMv2-L12-H384-v1 (118M, Apache 2.0)",
+      "source": "README.md:210-219, components/knowledgebase/kb-manager/README.md:103-116",
+      "evidence": "Both READMEs list same 7 models with params/license/loader notes"
+    }
+  ],
+  "incorrect_claims": [
+    {
+      "claim": "Guardrails README says UPSTREAM_LLM_BASE_URL=http://127.0.0.1:9000/v1",
+      "location": "components/guardrails/README.md:33",
+      "actual": "Default in config.py is 9000, but production uses LLM_BASE_URL alias set to http://127.0.0.1:18000/v1 via deploy/vast/start.sh:31. The README documents the default, not the production value."
+    },
+    {
+      "claim": "Orchestrator README says 'Status: not implemented yet'",
+      "location": "components/orchestrator/README.md:5-6",
+      "actual": "Fully implemented and live on Vast (AGENTS.md service table, root README status section shows orchestrator cdb6e7d live with Persian prompt)"
+    },
+    {
+      "claim": "Guardrails README says 'Status: not implemented yet'",
+      "location": "components/guardrails/README.md:5-6",
+      "actual": "Fully implemented with deterministic Persian rails, risk scoring, semantic interface, HurtLex allowlist (19 lemmas), observability — live on :8200"
+    },
+    {
+      "claim": "Root README quickstart uses KB port 8004",
+      "location": "README.md:67-69",
+      "actual": "Production KB runs on 8000 (AGENTS.md, deploy/vast/start.sh). 8004 is dev-only with SQLite. Creates confusion."
+    },
+    {
+      "claim": "Root README says HurtLex allowlist has 15 lemmas",
+      "location": "README.md:103, 234",
+      "actual": "hurtlex_allowlist.json has 19 lemmas (حذف, بخشی, تأمین مالی, اشتغال, پست, مصرف, هدف, نادرست, پستی, مهم, ضعیف, خسته, شرح, دسته, جزئی, ناشی, خوشحال, سخت, پلیس)"
+    },
+    {
+      "claim": "Eval README says HurtLex allowlist has 11 lemmas",
+      "location": "eval/README.md:36",
+      "actual": "Same file has 19 lemmas; 11 was an earlier count"
+    },
+    {
+      "claim": "KB Manager README v8 says 'Hit@5 0.00*' for 5q verbatim with asterisk",
+      "location": "components/knowledgebase/kb-manager/README.md:150, 155",
+      "actual": "Asterisk footnote says 'mismatched expected ids after Persian fix, IVA 15 still 73.3% baseline' but not explained in table"
+    },
+    {
+      "claim": "KB Manager README says Web UI on port 8001 via Caddy 32221→8000",
+      "location": "components/knowledgebase/kb-manager/README.md:18",
+      "actual": "Port 8001 and Caddy mapping are Vast-specific; default config is 8000. Not clearly marked as deployment-specific."
+    },
+    {
+      "claim": "Root README says 'MAX_CHUNKS 3, MAX_CHARS 4000' in request flow",
+      "location": "README.md:42-44",
+      "actual": "Code uses MAX_CHUNKS=5, MAX_CONTEXT_CHARS=6000 (build_context.py). Root README outdated."
+    },
+    {
+      "claim": "Orchestrator README config shows REQUEST_TIMEOUT_SECONDS=120",
+      "location": "components/orchestrator/README.md:39",
+      "actual": "Not found in orchestrator code or AGENTS.md env table. May be from older version."
+    },
+    {
+      "claim": "KB Manager README says 'KB_KEYWORD_BOOST=3.0 (GET /search/config, POST /search/api {\"keyword_boost\":5})'",
+      "location": "components/knowledgebase/kb-manager/README.md:13",
+      "actual": "Config default is 3.0 but POST accepts keyword_boost parameter. Verified in search.py. Correct but could clarify default vs override."
+    }
+  ],
+  "missing_information": [
+    {
+      "area": "Orchestrator",
+      "missing": [
+        "Actual request/response schema examples (ChatCompletionRequest/Response)",
+        "Tracing/observability integration (spans, Langfuse)",
+        "Studio/local debugger usage (STUDIO.md exists but not linked)",
+        "State schema field documentation",
+        "Error handling / refusal path documentation"
+      ]
+    },
+    {
+      "area": "Guardrails",
+      "missing": [
+        "Actual rail check request/response examples",
+        "Colang policy (rails.co) documentation",
+        "Risk scoring thresholds (PII 0.90, injection 0.85, toxicity/hate 0.80)",
+        "Semantic interface models (Ghadeer mmBERT F1 0.94 Persian)",
+        "HurtLex allowlist policy (input vs output, exact-word match)",
+        "Test suite documentation (test_hurtlex_allowlist.py 26 tests)"
+      ]
+    },
+    {
+      "area": "KB Manager",
+      "missing": [
+        "HNSW vs file-based architecture diagram",
+        "Model card for embedding model (paraphrase-multilingual-MiniLM-L12-v2)",
+        "KB_DB_MODE vs KB_DB_URL precedence rules",
+        "Troubleshooting for empty search, pgvector fallback, embedding download",
+        "Mark v1-v4 READMEs as archival/deprecated"
+      ]
+    },
+    {
+      "area": "Root",
+      "missing": [
+        "Consolidated configuration reference (all env vars across components)",
+        "Unified model card table",
+        "Architecture diagram (system level, not just MVP flow)",
+        "Badges (Python, license, build)",
+        "Troubleshooting index",
+        "Contributing/Security/Code of Conduct sections"
+      ]
+    },
+    {
+      "area": "Deploy Docker",
+      "missing": [
+        ".env.example file (referenced but not in repo)",
+        "Langfuse v2 seeding in Docker stack",
+        "Container dependency diagram",
+        "LLAMA_SERVER_BIN prebuilt source documentation"
+      ]
+    },
+    {
+      "area": "Server Setup",
+      "missing": [
+        "Clear disclaimer: H200-specific, not Vast",
+        "System architecture diagram",
+        "Port allocation rationale (why 8001/8002/8003, 8080-8090, 9000)",
+        "Troubleshooting index"
+      ]
+    }
+  ]
+}

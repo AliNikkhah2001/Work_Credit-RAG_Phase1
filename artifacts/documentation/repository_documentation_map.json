@@ -1,0 +1,44 @@
+{
+  "root_readme": "README.md",
+  "submodule_readmes": [
+    "components/server-setup/README.md",
+    "components/knowledgebase/kb-manager/README.md",
+    "components/knowledgebase/kb-source/README.md",
+    "components/guardrails/README.md",
+    "components/orchestrator/README.md"
+  ],
+  "documentation_files": [
+    "AGENTS.md",
+    "contracts/README.md",
+    "deploy/docker/README.md",
+    "eval/README.md",
+    "docs/RUNBOOK_VAST.md",
+    "docs/VAST_GEMMA4_MIGRATION.md",
+    "docs/MVP_INTEGRATION_PLAN.md",
+    "docs/GUARDRAILS_V2_PLAN.md",
+    "docs/RERANKER_MEMORY_TASK.md",
+    "docs/benchmark-report/",
+    "components/server-setup/docs/README.md",
+    "components/server-setup/docs/history/README.md",
+    "components/server-setup/docs/reports/README_runbook_outline.md",
+    "components/knowledgebase/kb-manager/versions/v1/README.md",
+    "components/knowledgebase/kb-manager/versions/v2/README.md",
+    "components/knowledgebase/kb-manager/versions/v4_retrieval/README.md",
+    "components/guardrails/kb/README.md",
+    "compose.mvp.yml",
+    "components/tracing/app.py",
+    "components/tracing/observe.py"
+  ],
+  "missing_documentation_sections": [
+    "components/tracing/README.md (new observe endpoints + studio UI)",
+    "components/orchestrator/STUDIO.md (exists but not indexed in map)",
+    "components/knowledgebase/kb-manager/docs/ (no README, transparency/benchmarks undocumented)",
+    "components/guardrails/config/ (no config.yml/rails.co documentation)",
+    "Root: CONTRIBUTING.md, CODE_OF_CONDUCT.md, SECURITY.md",
+    "Per-component: CHANGELOG.md or RELEASES.md",
+    "Installation: consolidated cross-platform guide (Vast + Docker + local)",
+    "Architecture: system-level Mermaid diagrams in root README",
+    "Models: unified model card table across all components",
+    "Troubleshooting: consolidated known-issues index"
+  ]
+}
