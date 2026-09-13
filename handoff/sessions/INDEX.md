@@ -1,0 +1,37 @@
+# Session index
+
+- 671 msgs — `ses_f6b058c02ffej8lpFUThWHsld0_find-chat-history-for-rag-agent-project.md`
+- 221 msgs — `ses_f6a50ebb5ffeHsJtLNMo7LEtg5_rag-agent-history-location-and-observabi.md`
+- 64 msgs — `ses_f6a52d486ffeKuQPQG2ppRetTT_flagembedding-big-model-loaders-general.md`
+- 40 msgs — `ses_f6a575ef9ffenaUjaoyJIMHrEG_kb-reranker-registry-code-general-subage.md`
+- 30 msgs — `ses_f6a97a23affe977umsOKmNDWKm_build-real-langfuse-v2-ui-general-subage.md`
+- 28 msgs — `ses_f6a575eeaffeM2uwbOgHGye6ef_orchestrator-memory-code-general-subagen.md`
+- 21 msgs — `ses_f6aea1199ffe0EIUQ3IBkDuBL2_explore-kb-pgvector-setup-explore-subage.md`
+- 18 msgs — `ses_f6ad8e88effer0fXVBgn30KyXr_create-py-venvs-install-deps-general-sub.md`
+- 17 msgs — `ses_f662eaa09ffek59tAqzqgrzmk3_commit-push-all-repos-general-subagent.md`
+- 15 msgs — `ses_f6ad8e8c3ffeKEoTAsrQxIu6Ya_build-llama-cpp-cuda-general-subagent.md`
+- 14 msgs — `ses_f6a50d05cffef0ThivrPDUeYeI_find-conversation-history-explore-subage.md`
+- 14 msgs — `ses_f6ae9f317ffeSmRPrDg6hREnnA_explore-orchestrator-guardrails-run-expl.md`
+- 13 msgs — `ses_f6a7738f9ffe6RAZA5rnjuvxBe_write-docker-stack-files-general-subagen.md`
+- 13 msgs — `ses_f6a97a260ffeNWjOmUVpgAKRNd_setup-langgraph-studio-general-subagent.md`
+- 12 msgs — `ses_f6ad8e89dffegpnjRGd8kSSLW1_setup-postgres-pgvector-db-general-subag.md`
+- 11 msgs — `ses_f662eaa2cffeqIf44RU7HD6lr5_validate-stack-e2e-smoke-general-subagen.md`
+- 10 msgs — `ses_f662eaa64ffeVRZClGRfuksXF6_finish-wave-1-bench-aggregate-general-su.md`
+- 10 msgs — `ses_f6a50d043ffe5vMowwTpZc2eul_find-observability-tooling-explore-subag.md`
+- 10 msgs — `ses_f6a575f29ffecMT5puzXMjSxCv_download-9b-reranker-general-subagent.md`
+- 9 msgs — `ses_f6a773916ffeTskweHocLEiRAC_write-agents-md-commands-general-subagen.md`
+- 8 msgs — `ses_f6a575f42ffe8YMbPSYvlfdqbA_download-rerankers-set-a-general-subagen.md`
+- 8 msgs — `ses_f6af32e65ffe85ebRy2z0t20qB_sync-parent-repo-git-general-subagent.md`
+- 7 msgs — `ses_f6a5ca448ffe8q908qHWfK4yfS_map-reranker-and-memory-code-explore-sub.md`
+- 6 msgs — `ses_f69bd00e1ffeZpMuACZP7ACDqh_fact-check-kb-submodule-general-subagent.md`
+- 6 msgs — `ses_f69fe249effefURDV1vv5x7Ttk_audit-mystery-observe-code-general-subag.md`
+- 6 msgs — `ses_f6a575f11fferEABLFMd57wGM6_download-rerankers-set-b-general-subagen.md`
+- 6 msgs — `ses_f6af2b3a1ffeqp0RpKmQCp9t0g_sync-orchestrator-git-general-subagent.md`
+- 6 msgs — `ses_f6af2c18effebM96RGD21aMR6h_sync-guardrails-git-general-subagent.md`
+- 6 msgs — `ses_f6af2da53ffeZAu3vFPZU39v3C_sync-knowledgebase-git-general-subagent.md`
+- 5 msgs — `ses_f69bd0067ffeYkQj7BGbueJNdi_fact-check-guardrails-setup-general-suba.md`
+- 5 msgs — `ses_f69bd0132ffe2p2YKzUyAoAX4g_fact-check-orchestrator-general-subagent.md`
+- 5 msgs — `ses_f69bd0148ffeo0kdaWGrhDa6gn_fact-check-root-deploy-general-subagent.md`
+- 5 msgs — `ses_f69bd019cffe7w8mbt1Nvf53kO_doc-explorer-inventory-general-subagent.md`
+- 4 msgs — `ses_f6af303aaffe5bPJzZj0L31OED_sync-server-setup-git-general-subagent.md`
+- 3 msgs — `ses_f6ae9b92dffeCirKJEEjVK2fdE_explore-llama-server-build-run-docs-expl.md`
