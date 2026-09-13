@@ -1,0 +1,15 @@
+body{font-family:system-ui,'Segoe UI',Tahoma,sans-serif;margin:0;background:#fafafa;color:#222}
+main{max-width:1000px;margin:0 auto;padding:24px}
+.sub{color:#555}
+.cards{display:flex;gap:16px;flex-wrap:wrap}
+.card{background:#fff;border:1px solid #ddd;border-radius:10px;padding:16px;min-width:230px;flex:1}
+.bignum{font-size:28px;font-weight:700}
+.lbl{color:#666;font-size:12px;margin-bottom:8px}
+.row{display:flex;justify-content:space-between;border-top:1px solid #eee;padding:4px 0;font-size:14px}
+table{border-collapse:collapse;width:100%;background:#fff;font-size:14px;margin:12px 0}
+th,td{border:1px solid #ddd;padding:6px 8px;text-align:left;vertical-align:top}
+th{background:#f0f0f0}
+img{max-width:100%;background:#fff;border:1px solid #ddd;border-radius:8px;margin:8px 0}
+pre{background:#111;color:#eee;padding:12px;border-radius:8px;overflow:auto}
+code{background:#eee;padding:1px 5px;border-radius:4px}
+h2{border-bottom:2px solid #ddd;padding-bottom:4px;margin-top:32px}
