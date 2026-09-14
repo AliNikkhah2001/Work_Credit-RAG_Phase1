@@ -1,0 +1,667 @@
+{
+ "version": "reranker-bgemma-25",
+ "created_at": "2026-09-14T13:54:39.184373+00:00",
+ "top_k": 5,
+ "total_queries": 25,
+ "by_format": {
+  "verbatim": {
+   "queries": 25,
+   "hit_rate": 0.44,
+   "top1_hit_rate": 0.44,
+   "mrr": 0.44,
+   "avg_rank": 1.0,
+   "avg_latency_ms": 64001.1
+  }
+ },
+ "overall": {
+  "queries": 25,
+  "hit_rate": 0.44,
+  "top1_hit_rate": 0.44,
+  "mrr": 0.44,
+  "avg_rank": 1.0,
+  "avg_latency_ms": 64001.1
+ },
+ "queries": [
+  {
+   "query": "آیا تعداد دفعات تغییر شغل یا جابجایی شغلی در گزارش اعتباری ثبت می‌شود و بر رتبه و امتیاز من تاثیر دارد؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "68d3e286-00f0-4af6-8f13-b93771baa1ea",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "96c4941f-caea-4c59-8df6-e124e2e38d60",
+    "e61a0812-82b6-4fe8-bf00-d891065dd683",
+    "0cee8520-297c-407f-bdef-99062c131b8b",
+    "074f3f5c-1da0-45f9-b626-0ff3a7063071",
+    "77bed16f-62a7-4f31-a812-da045a0666f6",
+    "a3a3c921-e3d8-43d9-a85a-a595cfc37841",
+    "bae6a9a4-6625-4c05-b060-4af50e13f688",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": true,
+   "rank": 1,
+   "top1_hit": true,
+   "elapsed_ms": 71541.2,
+   "retrieved_ids": [
+    "68d3e286-00f0-4af6-8f13-b93771baa1ea",
+    "2daef104-1817-4c29-9986-c917aa52380a",
+    "5f613919-6c8e-4268-b630-309900710506",
+    "1679ce58-e872-41fa-b96d-372bd9795d86",
+    "81db7a90-fa36-49ef-b9cf-49d65c39aad9"
+   ],
+   "_idx": 0
+  },
+  {
+   "query": "آیا امکان شخصی‌سازی قالب خروجی گزارش وجود دارد؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "e61a0812-82b6-4fe8-bf00-d891065dd683",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "2dff9ba3-d576-467d-9c36-2c966b9ef3ec",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": false,
+   "rank": -1,
+   "top1_hit": false,
+   "elapsed_ms": 85648.8,
+   "retrieved_ids": [
+    "699fc9c9-fce0-44f8-bd5f-a853a3f938e2",
+    "a89aef2f-7eab-4a06-bd3d-a5930e1faaf0",
+    "b1c166f0-c158-485c-b05b-c1c4c4e63ff5",
+    "369c7ef1-33e8-447b-bf5d-1fb78b465e8e",
+    "134a6489-e09d-43db-893f-286caf561086"
+   ],
+   "_idx": 1
+  },
+  {
+   "query": "آیا سابقه زنجیره انتقال چک در گزارش اعتبارسنجی چک اثرگذار است؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "e61a0812-82b6-4fe8-bf00-d891065dd683",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "b7c78570-1fcd-45db-bf0d-59d315f1fd4c",
+    "beddb02d-84ac-4eed-b452-48e79a8ca939",
+    "95be6851-c877-4ebc-80f4-7ad1f592e684",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": true,
+   "rank": 1,
+   "top1_hit": true,
+   "elapsed_ms": 58655.9,
+   "retrieved_ids": [
+    "95be6851-c877-4ebc-80f4-7ad1f592e684",
+    "beddb02d-84ac-4eed-b452-48e79a8ca939",
+    "0345d8c7-54fc-4c64-9c3f-6aea823d58f2",
+    "b7c78570-1fcd-45db-bf0d-59d315f1fd4c",
+    "c4221274-3971-4bb6-94b9-82baace51e2b"
+   ],
+   "_idx": 2
+  },
+  {
+   "query": "چگونه داده‌های نادرست یا تقلبی در مرحله اولیه شناسایی می‌شوند؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": false,
+   "rank": -1,
+   "top1_hit": false,
+   "elapsed_ms": 54415.5,
+   "retrieved_ids": [
+    "9746850d-0c1f-4174-bac8-a98dad984492",
+    "eca2bb73-5657-4f2f-afea-14d8b080a38b",
+    "2cb788f3-bd39-426c-b67a-e811e72a72f8",
+    "9d77d1dd-90eb-415f-ac01-d033dfc30bef",
+    "cbfe2fd6-e831-48eb-adf7-b8dccbddb2db"
+   ],
+   "_idx": 3
+  },
+  {
+   "query": "آیا می‌توان برای دریافت چک ضمانت به‌منظور اعطای تسهیلات به افراد، از گزارش اعتبارسنجی چک استفاده نمود؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "28b7f863-2774-49e5-a8df-401464875381",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "e61a0812-82b6-4fe8-bf00-d891065dd683",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "745d28da-7a62-45ae-9c0b-bc8aff89b8ca",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": true,
+   "rank": 1,
+   "top1_hit": true,
+   "elapsed_ms": 93752.6,
+   "retrieved_ids": [
+    "745d28da-7a62-45ae-9c0b-bc8aff89b8ca",
+    "6fe1ef75-f9d8-4e12-9105-f56dbb7b601d",
+    "0345d8c7-54fc-4c64-9c3f-6aea823d58f2",
+    "b5c604c8-b9ee-45c3-aaa2-15d47741fb32",
+    "ce1ae19d-6d14-41f2-aeb6-5e0a1e16a02e"
+   ],
+   "_idx": 4
+  },
+  {
+   "query": "آیا مشتریان می‌توانند از بانک‌ها درخواست کنند که اطلاعات منفی از سابقه اعتباری آن‌ها حذف شود؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "d2e78521-3f7e-43ec-8278-ff62bbf00b94",
+    "99877c5d-2ba7-49ec-9dac-8a9428481c24",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "e61a0812-82b6-4fe8-bf00-d891065dd683",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd",
+    "5e7d419d-e850-4287-a328-2826f9e5c8f5"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": true,
+   "rank": 1,
+   "top1_hit": true,
+   "elapsed_ms": 59425.9,
+   "retrieved_ids": [
+    "d2e78521-3f7e-43ec-8278-ff62bbf00b94",
+    "5e7d419d-e850-4287-a328-2826f9e5c8f5",
+    "f20c06e7-281d-4fb7-87b1-928ef0f3cd84",
+    "a9aa8e84-a903-4fd7-ac9a-14300527ea8c",
+    "99877c5d-2ba7-49ec-9dac-8a9428481c24"
+   ],
+   "_idx": 5
+  },
+  {
+   "query": "استانداردسازی داده‌های ارسالی چه مراحلی دارد؟",
+   "expected_ids": [],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": false,
+   "rank": -1,
+   "top1_hit": false,
+   "elapsed_ms": 58472.1,
+   "retrieved_ids": [
+    "7da8747f-ab21-4c27-895b-15f873545778",
+    "33446b18-d6ec-4e36-b7a4-cfa8189b9ec2",
+    "1055844f-0ed9-41f0-91de-d7b2d9b2b5f7",
+    "e815fde4-ae13-46a8-8d9b-132c81e59569",
+    "2ed480c0-ae3a-493a-843a-c52c20cdea9f"
+   ],
+   "_idx": 6
+  },
+  {
+   "query": "آیا تعداد دفعات تغییر شغل یا جابجایی شغلی در گزارش اعتباری ثبت می‌شود و بر رتبه و امتیاز من تاثیر دارد؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "68d3e286-00f0-4af6-8f13-b93771baa1ea",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "96c4941f-caea-4c59-8df6-e124e2e38d60",
+    "e61a0812-82b6-4fe8-bf00-d891065dd683",
+    "0cee8520-297c-407f-bdef-99062c131b8b",
+    "074f3f5c-1da0-45f9-b626-0ff3a7063071",
+    "77bed16f-62a7-4f31-a812-da045a0666f6",
+    "a3a3c921-e3d8-43d9-a85a-a595cfc37841",
+    "bae6a9a4-6625-4c05-b060-4af50e13f688",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": true,
+   "rank": 1,
+   "top1_hit": true,
+   "elapsed_ms": 59094.2,
+   "retrieved_ids": [
+    "68d3e286-00f0-4af6-8f13-b93771baa1ea",
+    "2daef104-1817-4c29-9986-c917aa52380a",
+    "5f613919-6c8e-4268-b630-309900710506",
+    "1679ce58-e872-41fa-b96d-372bd9795d86",
+    "81db7a90-fa36-49ef-b9cf-49d65c39aad9"
+   ],
+   "_idx": 7
+  },
+  {
+   "query": "برای افرادی که فاقد سابقه چک هستند، آیا امکان محاسبه امتیاز چک با استفاده از داده‌های جایگزین، مانند اطلاعات پرداخت قبوض خدماتی، خریدهای اینترنتی و موارد مشابه، وجود دارد؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "cb58aadd-2c42-46dc-9f64-d8082bba0616"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": true,
+   "rank": 1,
+   "top1_hit": true,
+   "elapsed_ms": 65474.6,
+   "retrieved_ids": [
+    "cb58aadd-2c42-46dc-9f64-d8082bba0616",
+    "05b98981-7e44-4899-b1d2-1f516cc7f662",
+    "0345d8c7-54fc-4c64-9c3f-6aea823d58f2",
+    "8dd041b3-10d2-4eb0-b2b6-7cb7dfa9bbfe",
+    "c2bc032d-7afb-4538-b79d-c4e3c2e4cd5a"
+   ],
+   "_idx": 8
+  },
+  {
+   "query": "آیا امکان اتصال از محیط ابری (Cloud Server) وجود دارد؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "e61a0812-82b6-4fe8-bf00-d891065dd683",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": false,
+   "rank": -1,
+   "top1_hit": false,
+   "elapsed_ms": 62656.6,
+   "retrieved_ids": [
+    "b687b2e9-bd97-483f-845c-01feb5a2f0e9",
+    "a2aca7fa-cacd-4c60-8370-660500a885de",
+    "aba0f06b-1012-45be-bcbc-2dfaaa9288fa",
+    "c02db810-cce1-46d9-a23b-446f4b761821",
+    "2a455afa-a182-479c-b873-a1e0fd7249d7"
+   ],
+   "_idx": 9
+  },
+  {
+   "query": "آیا می‌توان گزارش‌ها را در CRM سازمان نمایش داد؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": false,
+   "rank": -1,
+   "top1_hit": false,
+   "elapsed_ms": 56421.2,
+   "retrieved_ids": [
+    "98107d97-a8df-4fc6-8303-1d2e34c53cd2",
+    "7d0ff369-6cd4-4879-96a6-3deca0ed8ca4",
+    "5b6c880b-ace3-4d1d-a3fe-ad561c784f75",
+    "2e532847-5155-47fd-85f0-11c80e7048bf",
+    "1a537e0f-3b9a-4294-a5a4-6022c1ce6865"
+   ],
+   "_idx": 10
+  },
+  {
+   "query": "آیا اگر سیستم ما برای درخواست‌های حجمی بهینه نشده باشد ممکن است محدودیت دریافت کنیم؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "e61a0812-82b6-4fe8-bf00-d891065dd683",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": false,
+   "rank": -1,
+   "top1_hit": false,
+   "elapsed_ms": 68069.3,
+   "retrieved_ids": [
+    "4d9d1e78-0026-46ae-ba97-fc5e720d3c7a",
+    "e1813b85-4fe7-4112-8dfb-f7c42b93bef7",
+    "0e192df6-41de-411a-9d86-6b36d277d3b7",
+    "f1e31c7f-af7e-4824-9bff-7252fb938c58",
+    "5a6dc129-42e7-4a44-b381-0ef0d1d6f444"
+   ],
+   "_idx": 11
+  },
+  {
+   "query": "استانداردهای کدگذاری نوع شرکت، جنسیت و وضعیت تاهل چیست؟",
+   "expected_ids": [],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": false,
+   "rank": -1,
+   "top1_hit": false,
+   "elapsed_ms": 56928.1,
+   "retrieved_ids": [
+    "0a7acfc8-57fa-4f46-bb95-e82e7901f85a",
+    "a3b97bc6-262b-4594-b2ea-139f22619e59",
+    "a771fa65-594f-4fda-874e-b56851efd33b",
+    "ae26cd39-2bc9-4d57-9fe3-79442ae40784",
+    "80061fa1-35fa-4b43-97de-5c2e2f3e8965"
+   ],
+   "_idx": 12
+  },
+  {
+   "query": "چرا قرارداد باید حتماً فیزیکی امضا شود و نسخه الکترونیکی پذیرفته نمی‌شود؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": false,
+   "rank": -1,
+   "top1_hit": false,
+   "elapsed_ms": 64271.6,
+   "retrieved_ids": [
+    "ac9fb8f3-0d5b-4001-bdcc-d011ef3063b7",
+    "d13f64ef-0bbc-4003-a4de-d73c483f2314",
+    "25eaa942-0895-4c66-bd6d-70ba67b798b9",
+    "08e56e56-9a9f-4ad9-adef-376410a67d34",
+    "a426e6c8-9092-49e2-9024-f7e7dea0d1da"
+   ],
+   "_idx": 13
+  },
+  {
+   "query": "آیا امکان دارد امتیاز اعتباری من بدون هیچ تغییری در رفتار مالی‌ام، کاهش یابد؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "e61a0812-82b6-4fe8-bf00-d891065dd683",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": false,
+   "rank": -1,
+   "top1_hit": false,
+   "elapsed_ms": 59188.3,
+   "retrieved_ids": [
+    "5a413860-4ff8-4dfb-84a3-3b45bc951afc",
+    "2daef104-1817-4c29-9986-c917aa52380a",
+    "11b9113f-d884-44fb-abd6-2884f0f34b1d",
+    "5f613919-6c8e-4268-b630-309900710506",
+    "869aacf3-bc20-42da-8918-99d3a7e551af"
+   ],
+   "_idx": 14
+  },
+  {
+   "query": "چرا داده‌های هویتی از ثبت احوال و داده‌های مالکیت از ثبت اسناد باید تجمیع شود؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": false,
+   "rank": -1,
+   "top1_hit": false,
+   "elapsed_ms": 62671.0,
+   "retrieved_ids": [
+    "cbfe2fd6-e831-48eb-adf7-b8dccbddb2db",
+    "afc7a336-ecbd-421c-b196-4a5bbffd2c92",
+    "72d01c02-46fc-4e8e-aef3-394aac6bd8fd",
+    "8ed55981-0271-49aa-b9f8-36f99a413408",
+    "334336ff-4aad-42be-857f-2dfe4b7d781c"
+   ],
+   "_idx": 15
+  },
+  {
+   "query": "آیا تاریخ‌ها باید به‌صورت شمسی ارسال شوند؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "e61a0812-82b6-4fe8-bf00-d891065dd683",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": false,
+   "rank": -1,
+   "top1_hit": false,
+   "elapsed_ms": 54222.0,
+   "retrieved_ids": [
+    "4c340562-13db-4e88-a014-36d0304be3c4",
+    "898d0e64-385f-470a-9bd0-bab99d3d4113",
+    "7572f784-54b3-4e67-a440-8aac168e8dce",
+    "bcc934cf-094e-44cd-9292-50b0ac22b9d8",
+    "613be4eb-e600-495c-ae0b-8867404f8339"
+   ],
+   "_idx": 16
+  },
+  {
+   "query": "آیا امکان داره که یک وام‌گیرنده، امتیاز اعتبارسنجی خودش رو به شخص دیگری منتقل کنه؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "c48875d0-c3ce-4d9c-9c24-1d4b062f7cb8",
+    "28b7f863-2774-49e5-a8df-401464875381",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "e61a0812-82b6-4fe8-bf00-d891065dd683",
+    "439405c7-581e-48ee-8cd5-ecde1f03158d",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": false,
+   "rank": -1,
+   "top1_hit": false,
+   "elapsed_ms": 58686.6,
+   "retrieved_ids": [
+    "a120d570-6107-4ad7-a835-959e24438695",
+    "05029b94-229b-4410-a496-3033b85266f9",
+    "869aacf3-bc20-42da-8918-99d3a7e551af",
+    "9cd28b76-69c9-4d71-a9b8-7299dca53f55",
+    "4b241b05-016f-4b68-a533-591c34f1d812"
+   ],
+   "_idx": 17
+  },
+  {
+   "query": "چرا کیفیت داده در تجربه کاربری گزارش اعتباری تأثیر مستقیم دارد؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": false,
+   "rank": -1,
+   "top1_hit": false,
+   "elapsed_ms": 56120.7,
+   "retrieved_ids": [
+    "9cd28b76-69c9-4d71-a9b8-7299dca53f55",
+    "31931a15-dfdb-412e-87ec-2bc7ddd8ae88",
+    "131d56e2-0322-40c6-9b84-f6b87d4ab15c",
+    "4c6e2cbe-24f5-4379-a154-63b25fccc2c3",
+    "2a54d497-64dc-4ad3-9449-ef2fca7fb35b"
+   ],
+   "_idx": 18
+  },
+  {
+   "query": "چگونه داده‌های مالیاتی و بیمه‌ای با داده‌های بانکی تطبیق داده می‌شوند؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "e61a0812-82b6-4fe8-bf00-d891065dd683",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": false,
+   "rank": -1,
+   "top1_hit": false,
+   "elapsed_ms": 91938.0,
+   "retrieved_ids": [
+    "88841fe4-f09b-4327-9b7a-b4d17ed41f3b",
+    "6e41ec95-8548-4281-8db9-28a611b70c42",
+    "6d28d1e2-6385-4498-96c8-12b40be8a563",
+    "6cc4e7df-603a-4211-bfac-c31927f24d62",
+    "016d3b23-4db1-4299-9d10-73df685d7e1c"
+   ],
+   "_idx": 19
+  },
+  {
+   "query": "کسی که چک برگشتی را رفع سوءاثر و نقد می‌کند چه زمانی می‌تواند گزارش اعتبارسنجی چک بروز شده را دریافت نماید؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "28b7f863-2774-49e5-a8df-401464875381",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "e61a0812-82b6-4fe8-bf00-d891065dd683",
+    "bae6a9a4-6625-4c05-b060-4af50e13f688",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "c8944db8-a12d-4d3d-879a-76f647040db9",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": true,
+   "rank": 1,
+   "top1_hit": true,
+   "elapsed_ms": 66002.2,
+   "retrieved_ids": [
+    "c8944db8-a12d-4d3d-879a-76f647040db9",
+    "745d28da-7a62-45ae-9c0b-bc8aff89b8ca",
+    "5f3e7590-a46f-4db9-9bf7-f1de88258c77",
+    "a9aa8e84-a903-4fd7-ac9a-14300527ea8c",
+    "f7d26680-4d14-4fd1-b73e-2ef9ce8a0738"
+   ],
+   "_idx": 20
+  },
+  {
+   "query": "در گزارش اعتبارسنجی چک، رتبه افراد فاقد سابقه چک چه مقدار است؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "28b7f863-2774-49e5-a8df-401464875381",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "e61a0812-82b6-4fe8-bf00-d891065dd683",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "0345d8c7-54fc-4c64-9c3f-6aea823d58f2",
+    "8dd041b3-10d2-4eb0-b2b6-7cb7dfa9bbfe",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": true,
+   "rank": 1,
+   "top1_hit": true,
+   "elapsed_ms": 61781.3,
+   "retrieved_ids": [
+    "0345d8c7-54fc-4c64-9c3f-6aea823d58f2",
+    "e5848da1-ab1a-4ffa-a728-e16f6dd78a41",
+    "81db7a90-fa36-49ef-b9cf-49d65c39aad9",
+    "b2745467-935e-494a-9c3f-420219f53439",
+    "616de041-5814-4b3e-bfc5-fc78f4a1214a"
+   ],
+   "_idx": 21
+  },
+  {
+   "query": "چرا سوابق تسهیلاتی افراد تاثیر کمی بر امتیاز چک دارد؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "28b7f863-2774-49e5-a8df-401464875381",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "e61a0812-82b6-4fe8-bf00-d891065dd683",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "bca2021f-cd1f-481a-b23e-26eb95ee68cd",
+    "8e7f4f80-5763-4b09-b6c6-00eac19968f4",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": true,
+   "rank": 1,
+   "top1_hit": true,
+   "elapsed_ms": 57442.1,
+   "retrieved_ids": [
+    "bca2021f-cd1f-481a-b23e-26eb95ee68cd",
+    "8e7f4f80-5763-4b09-b6c6-00eac19968f4",
+    "3bc620c6-a9f0-42ae-9d21-dd8689a7ba29",
+    "8ed55981-0271-49aa-b9f8-36f99a413408",
+    "8d32c86d-685c-4fcf-99c7-4cdbc550dd11"
+   ],
+   "_idx": 22
+  },
+  {
+   "query": "آیا میتونم قبل از صدور چک، رتبه اعتباری صادرکننده چک رو بررسی کنم؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "c5577d77-562a-4516-8b39-8b622970eb3a",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "e61a0812-82b6-4fe8-bf00-d891065dd683",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": true,
+   "rank": 1,
+   "top1_hit": true,
+   "elapsed_ms": 57808.0,
+   "retrieved_ids": [
+    "c5577d77-562a-4516-8b39-8b622970eb3a",
+    "11b9113f-d884-44fb-abd6-2884f0f34b1d",
+    "5a413860-4ff8-4dfb-84a3-3b45bc951afc",
+    "76640f7f-906e-4409-8de2-ea5c8f6e2dde",
+    "745d28da-7a62-45ae-9c0b-bc8aff89b8ca"
+   ],
+   "_idx": 23
+  },
+  {
+   "query": "چرا شخصی که چکهای خیلی زیادی پاس کرده است الزاما افزایش امتیاز ندارد؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "28b7f863-2774-49e5-a8df-401464875381",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "e61a0812-82b6-4fe8-bf00-d891065dd683",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "76a6362a-ecdf-4f66-92cf-375b6d359311",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": true,
+   "rank": 1,
+   "top1_hit": true,
+   "elapsed_ms": 59339.0,
+   "retrieved_ids": [
+    "76a6362a-ecdf-4f66-92cf-375b6d359311",
+    "88aa15af-b75a-4734-a9e8-2d30986f1daf",
+    "bf3c84cd-9df9-438e-8a9f-8ff95b7a0be8",
+    "188e5555-5b98-4618-88aa-131ef9a76242",
+    "ccdb6c72-d522-4169-89e8-e55d41dd8bfe"
+   ],
+   "_idx": 24
+  }
+ ],
+ "variant": "bgemma-25",
+ "reranker_model": "BAAI/bge-reranker-v2-gemma",
+ "pool": 15,
+ "ir_metrics": {
+  "precision@5": 0.12800000000000003,
+  "recall@5": 0.07431257631257632,
+  "hit_rate@5": 0.44,
+  "mrr": 0.44,
+  "ndcg@5": 0.18599977918273633,
+  "map@5": 0.07142368742368742
+ }
+}

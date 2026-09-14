@@ -106,3 +106,18 @@ Expect: `queries: 5`, non-zero `hit_rate`, latency ≫ 30 ms/q
 Full transcript of the session that produced wave 1 + this runbook:
 `docs/SESSION_WAVE1_HANDOFF.md` (exported from opencode `session` table).
 Recreate context on the new machine by opening that file alongside this runbook.
+
+## 8. Interim CPU results (2026-09-13, same 25-query slice, pool 15)
+
+| Reranker | Prompt | Hit@5 | Top-1 | MRR | nDCG@5 | Latency/q (CPU) |
+|---|---|---|---|---|---|---|
+| bge-reranker-v2-gemma 2B | detailed (`KB_RERANKER_PROMPT=detailed`) | 0.44 | 0.44 | 0.44 | 0.186 | 64 s |
+| MiniLM-L12 (default) | n/a (cross-encoder) | 0.44 | 0.44 | 0.44 | 0.191 | 6.2 s |
+
+Identical ranking at 10x latency cost — heavies must prove themselves on GPU
+at full-800 before displacing MiniLM. Live pair-scoring demo:
+`/tmp/opencode/demo_bgemma_prompt.py` (default vs detailed prompt margins).
+
+Driver fix worth keeping: `bench_backbone.py` now uses one persistent event
+loop per worker (`asyncio.run()` per query breaks the asyncpg pool on queries
+2+ with "another operation is in progress").

@@ -24,12 +24,20 @@ import torch  # noqa: E402
 
 torch.set_num_threads(int(os.environ.get("OMP_NUM_THREADS", "12")))
 
+import asyncio
+
 from kb_manager.evaluation.benchmark import BenchmarkRunner, summarize_ir_metrics  # noqa: E402
-from kb_manager.web.routes.search import search_knowledge_base_sync  # noqa: E402
+from kb_manager.web.routes.search import search_knowledge_base  # noqa: E402
+
+# One persistent event loop per worker: the asyncpg pool binds connections to
+# the loop that first uses it, so asyncio.run() per query breaks queries 2+
+# ("another operation is in progress"). Production (uvicorn) is single-loop.
+_LOOP = asyncio.new_event_loop()
+asyncio.set_event_loop(_LOOP)
 
 
 def search_fn(query: str, k: int):
-    steps = search_knowledge_base_sync(query, k)
+    steps = _LOOP.run_until_complete(search_knowledge_base(query, k))
     return [(r.chunk_id, r.hybrid_score) for r in steps.final_results]
 
 
