@@ -20,6 +20,7 @@ Umbrella repository for a self-hosted, Persian-capable conversational RAG platfo
 - [Configuration](#configuration)
 - [Observability](#observability)
 - [Evaluation](#evaluation)
+  - [Retrieval quality (measured)](#retrieval-quality-measured)
 - [Done vs Pending](#done-vs-pending)
 - [Verification](#verification)
 - [Updating a Submodule](#updating-a-submodule)
@@ -282,6 +283,21 @@ python components/tracing/observe.py --request <request_id> --json
 ---
 
 ## Evaluation
+
+### Retrieval quality (measured)
+
+Wave-1 full-800 reranker shootout, CPU (2026-09-12/13). Dataset: 800 Persian QA, answer-grounded golds remapped to the live 2077-chunk PG KB (threshold 0.6, 772/800 covered, ~7 gold/query), top_k=5. Method: `docs/WAVE2_GPU_RUNBOOK.md` §1.
+
+| Backbone | Pool | Hit@5 | Top-1 | MRR | s/q (CPU) |
+|---|---|---|---|---|---|
+| MiniLM-L12 `mmarco-mMiniLMv2-L12-H384-v1` (default) | 15 | 0.536 | 0.469 | 0.493 | 3.9 |
+| MiniLM-L12 | 30 | 0.538 | — | 0.495 | 7.4 |
+| BGE-m3 `BAAI/bge-reranker-v2-m3` | 30 | 0.536 | 0.474 | 0.496 | 52 |
+| Jina-v3 | — | EXCLUDED | — | 0.117 | — |
+
+Decision: keep MiniLM-L12 pool15 default — BGE-m3 gains +0.003 MRR at ~13x latency; pool30 gains +0.002 at ~2x. Jina-v3 excluded (classification head failed to load under transformers 5: "MISSING params newly initialized" → near-random scores, MRR 0.117 — not a quality signal). bgemma-2B interim (identical 25-query slice, pool15, detailed prompt): 0.44/0.44/0.186 @ 64 s/q vs MiniLM 0.44/0.44/0.191 @ 6.2 s/q — identical ranking at ~10x cost; heavies must prove on GPU full-800.
+
+Full method + GPU next steps: `docs/WAVE2_GPU_RUNBOOK.md`, `deploy/vast/wave2_gpu.sh`. Bench data + session transcripts: `handoff/`.
 
 ### KB Retrieval (v8, 6593 chunks, RTX 6000 Ada)
 
