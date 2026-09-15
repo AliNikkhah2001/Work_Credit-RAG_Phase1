@@ -290,12 +290,15 @@ Wave-1 full-800 reranker shootout, CPU (2026-09-12/13). Dataset: 800 Persian QA,
 
 | Backbone | Pool | Hit@5 | Top-1 | MRR | s/q (CPU) |
 |---|---|---|---|---|---|
-| MiniLM-L12 `mmarco-mMiniLMv2-L12-H384-v1` (default) | 15 | 0.536 | 0.469 | 0.493 | 3.9 |
+| **BGE-m3 `BAAI/bge-reranker-v2-m3` (default)** | 15 | 0.536 | 0.474 | **0.496** | ~5–15 (rerank solo; pool-15 production cap) |
+| MiniLM-L12 `mmarco-mMiniLMv2-L12-H384-v1` (lightweight fallback) | 15 | 0.536 | 0.469 | 0.493 | 3.9 |
 | MiniLM-L12 | 30 | 0.538 | — | 0.495 | 7.4 |
 | BGE-m3 `BAAI/bge-reranker-v2-m3` | 30 | 0.536 | 0.474 | 0.496 | 52 |
 | Jina-v3 | — | EXCLUDED | — | 0.117 | — |
 
-Decision: keep MiniLM-L12 pool15 default — BGE-m3 gains +0.003 MRR at ~13x latency; pool30 gains +0.002 at ~2x. Jina-v3 excluded (classification head failed to load under transformers 5: "MISSING params newly initialized" → near-random scores, MRR 0.117 — not a quality signal). bgemma-2B interim (identical 25-query slice, pool15, detailed prompt): 0.44/0.44/0.186 @ 64 s/q vs MiniLM 0.44/0.44/0.191 @ 6.2 s/q — identical ranking at ~10x cost; heavies must prove on GPU full-800.
+Decision (2026-09-15): **default is `BAAI/bge-reranker-v2-m3`** — best measured MRR (0.496; hit 0.536, top1 0.474 on 800 Persian credit queries, top-5) plus multilingual/Persian backbone support (see below). MiniLM stays as the lightweight CPU fallback (`KB_RERANKER_MODEL=cross-encoder/mmarco-mMiniLMv2-L12-H384-v1`: 0.493 at pool15, 0.495 at pool30 — within 0.003 at a fraction of the latency). Jina-v3 excluded (classification head failed to load under transformers 5: "MISSING params newly initialized" → near-random scores, MRR 0.117 — not a quality signal). bgemma-2B interim (identical 25-query slice, pool15, detailed prompt): 0.44/0.44/0.186 @ 64 s/q vs MiniLM 0.44/0.44/0.191 @ 6.2 s/q — identical ranking at ~10x cost; heavies must prove on GPU full-800. Qwen3-Reranker-4B (think-disabled, GPU): MRR 0.233 — decisively behind. Production CPU note: 568M → `KB_RERANK_POOL=15`; GPU hosts can raise to 30.
+
+**Persian support:** v2-m3's backbone is BGE-M3 (XLM-RoBERTa-Large base, 568M params, 2.27GB, Apache-2.0) with multilinguality over 100+ languages including Persian; SOTA on MIRACL multilingual (includes Persian `fa`) and MKQA cross-lingual; vendor BGE docs explicitly recommend v2-m3 "for multilingual". Plain cross-encoder loader — no `trust_remote_code`. Default is set in code (`reranker.py _DEFAULT_MODEL`, `config.py RerankerConfig`, `search.py _RERANKER_MODEL` fallback; KB `master` `8d0c506`) and live on production KB `:8000` via `KB_RERANKER_MODEL` + `KB_RERANK_POOL=15`.
 
 Full method + GPU next steps: `docs/WAVE2_GPU_RUNBOOK.md`, `deploy/vast/wave2_gpu.sh`. Bench data + session transcripts: `handoff/`.
 

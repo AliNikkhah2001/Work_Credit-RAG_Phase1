@@ -18,7 +18,7 @@ Output: `/tmp/opencode/bench_<name>.json`, then aggregate with
 `/tmp/opencode/aggregate_bench.py` (copy it over — see §4).
 
 Wave-1 reference numbers (same dataset, CPU): MiniLM MRR 0.493,
-MiniLM-p30 0.495, BGE-m3 0.496. Beat 0.496 with acceptable latency to win.
+MiniLM-p30 0.495, BGE-m3 0.496 (default since 2026-09-15). Beat 0.496 with acceptable latency to win.
 
 ## 2. VRAM math (measured 2026-09-13, RTX 3090 24 GB)
 
@@ -115,7 +115,8 @@ Recreate context on the new machine by opening that file alongside this runbook.
 | MiniLM-L12 (default) | n/a (cross-encoder) | 0.44 | 0.44 | 0.44 | 0.191 | 6.2 s |
 
 Identical ranking at 10x latency cost — heavies must prove themselves on GPU
-at full-800 before displacing MiniLM. Live pair-scoring demo:
+at full-800 before displacing the BGE-m3 default (`BAAI/bge-reranker-v2-m3`,
+MRR 0.496 wave-1 leader; MiniLM is the lightweight fallback). Live pair-scoring demo:
 `/tmp/opencode/demo_bgemma_prompt.py` (default vs detailed prompt margins).
 
 ## 9. Qwen3 full-800 GPU result (2026-09-13, RTX 3090, pool 15, think-disabled)
@@ -139,7 +140,10 @@ and fixed along the way (`kb_manager/reranker.py` on `master`):
 
 Why Qwen still trails MiniLM here is not fully explained — likely domain
 fit (mMARCO-MiniLM is trained on exactly this passage-QA shape, including
-Persian mMARCO-fa). Decision stands: MiniLM default. Raw numbers:
+Persian mMARCO-fa). Decision (2026-09-15): default is `BAAI/bge-reranker-v2-m3`
+(best measured MRR 0.496; Persian-capable BGE-M3 backbone; vendor-recommended
+"for multilingual"; `KB_RERANK_POOL=15` on CPU, 30 on GPU) with MiniLM as the
+lightweight fallback. Raw numbers:
 `handoff/bench/bench_qwen4b_gpu800.json`.
 
 Driver fix worth keeping: `bench_backbone.py` now uses one persistent event
