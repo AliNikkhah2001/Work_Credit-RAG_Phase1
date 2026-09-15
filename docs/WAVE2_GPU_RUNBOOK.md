@@ -118,6 +118,30 @@ Identical ranking at 10x latency cost — heavies must prove themselves on GPU
 at full-800 before displacing MiniLM. Live pair-scoring demo:
 `/tmp/opencode/demo_bgemma_prompt.py` (default vs detailed prompt margins).
 
+## 9. Qwen3 full-800 GPU result (2026-09-13, RTX 3090, pool 15, think-disabled)
+
+| Reranker | Hit@5 | Top-1 | MRR | nDCG@5 | Latency/q |
+|---|---|---|---|---|---|
+| Qwen3-Reranker-4B (fixed scorer) | 0.325 | 0.178 | 0.233 | 0.097 | 6.4 s (GPU) |
+| MiniLM-L12 (reference) | 0.536 | 0.469 | 0.493 | — | 3.9 s (CPU) |
+
+The 4B loses decisively even with correct scoring. Two real bugs were found
+and fixed along the way (`kb_manager/reranker.py` on `master`):
+
+1. **Thinking mode**: Qwen3-Reranker emits `<think>…` before answering, so
+   naive Yes-logit scoring (FlagEmbedding default) is noise (MRR ~0.1).
+   New `Qwen3Reranker` class formats inputs with the model's own chat template
+   (`system`/`query`/`document` roles — a single `user` message renders
+   EMPTY) + `enable_thinking=False`, scoring `logit(yes) − logit(no)`.
+   Registry loader is now `qwen3` for both Qwen models.
+2. **Device placement**: FlagEmbedding wants `cuda:0`-style IDs (`cuda` alone
+   silently stays on CPU); fixed + installed CUDA torch 2.14 (cu126) in kb-venv.
+
+Why Qwen still trails MiniLM here is not fully explained — likely domain
+fit (mMARCO-MiniLM is trained on exactly this passage-QA shape, including
+Persian mMARCO-fa). Decision stands: MiniLM default. Raw numbers:
+`handoff/bench/bench_qwen4b_gpu800.json`.
+
 Driver fix worth keeping: `bench_backbone.py` now uses one persistent event
 loop per worker (`asyncio.run()` per query breaks the asyncpg pool on queries
 2+ with "another operation is in progress").
