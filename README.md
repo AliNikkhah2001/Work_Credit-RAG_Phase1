@@ -299,6 +299,28 @@ Decision: keep MiniLM-L12 pool15 default — BGE-m3 gains +0.003 MRR at ~13x lat
 
 Full method + GPU next steps: `docs/WAVE2_GPU_RUNBOOK.md`, `deploy/vast/wave2_gpu.sh`. Bench data + session transcripts: `handoff/`.
 
+### Cross-Encoder Reranker Direct API Benchmark (2026-09-15)
+
+Direct API benchmark on 20 Persian credit queries, KB v8 (6593 chunks), rerankers on CPU (GPU OOM). Latency measured per-query (BM25+Dense+RRF search → rerank 50→5).
+
+| Model | Params | Loader | Avg Rerank (ms) | Search (ms) | Status |
+|---|---|---|---|---|---|
+| **mmarco (baseline)** | 118M | crossencoder | **628** | 902 | ✅ Production |
+| **bge-reranker-v2-m3** | 568M | crossencoder | 3,754 | 660 | ⚠️ 6× slower |
+| bge-reranker-v2-gemma | 2.5B | flag-llm | 43,000 | - | ❌ CPU too slow |
+| Qwen3-Reranker-0.6B | 0.6B | flag-llm | 30,000 | - | ❌ CPU too slow |
+| Qwen3-Reranker-4B | 4B | flag-llm | — | — | ⏳ Pending |
+| jina-reranker-v3 | 0.6B | crossencoder | — | — | ⏳ Pending |
+| gte-multilingual-reranker-base | ~300M | crossencoder | — | — | ⏳ Pending |
+
+**Key Findings:**
+- **mmarco (baseline)** remains best CPU production choice: 628 ms rerank, fastest overall
+- **bge-reranker-v2-m3** gains expected quality but 6× slower (3.7s vs 0.6s) — only justified on GPU (1.6× speedup)
+- **Flag-LLM loaders** (bge-gemma, Qwen3) are LLM-based rerankers → 30-43s/query on CPU → **not viable for CPU production**
+- GPU would give ~1.6× speedup for crossencoder models (HNSW 1.6×, rerank 1.6×) but flag-llm still needs GPU
+
+Full results: `docs/cross_encoder_benchmark_results.md`, raw data: `data/reranker_benchmarks/`
+
 ### KB Retrieval (v8, 6593 chunks, RTX 6000 Ada)
 
 | Variant | Device | Avg Latency | Hit@5 (5q verbatim) | Rerank 50 |

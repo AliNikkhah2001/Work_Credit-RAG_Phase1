@@ -41,9 +41,13 @@ progress_bar() {
 log_test() {
     local name="$1" status="$2" details="$3" duration="$4"
     TEST_RESULTS+=("$name|$status|$details|$duration")
-    [[ "$status" == "PASS" ]] && ((PASSED_TESTS++)) || \
-    [[ "$status" == "FAIL" ]] && ((FAILED_TESTS++)) || \
-    ((SKIPPED_TESTS++))
+    if [[ "$status" == "PASS" ]]; then
+        ((PASSED_TESTS++))
+    elif [[ "$status" == "FAIL" ]]; then
+        ((FAILED_TESTS++))
+    else
+        ((SKIPPED_TESTS++))
+    fi
     ((TOTAL_TESTS++))
 }
 
@@ -64,14 +68,13 @@ run_test() {
 }
 
 # ─── Header ────────────────────────────────────────────────────────
-clear
 echo -e "${BOLD}${MAGENTA}"
 cat << 'EOF'
 ╔═══════════════════════════════════════════════════════════════════════════════╗
 ║        ██████╗ ███████╗███████╗███╗   ██╗    ██████╗ ███████╗██████╗       ║
 ║        ██╔══██╗██╔════╝██╔════╝████╗  ██║    ██╔══██╗██╔════╝██╔══██╗      ║
 ║        ██████╔╝█████╗  █████╗  ██╔██╗ ██║    ██████╔╝█████╗  ██████╔╝      ║
-║        ██╔══██╗██╔═══╝ ██╔══╝  ██║╚██╗██║    ██╔══██╗██╔══╝  ██╔══██╗      ║
+║        ██╔══██╗██╔═══╝ ██╔══╝  ██║╚██╗██║    ██╔══██╗██╔════╝██╔══██╗      ║
 ║        ██║  ██║███████╗███████╗██║ ╚████║    ██║  ██║███████╗██║  ██║      ║
 ║        ╚═╝  ╚═╝╚══════╝╚══════╝╚═╝  ╚═══╝    ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝      ║
 ║                                                                              ║
@@ -222,10 +225,9 @@ echo; echo
 END_TIME=$(date +%s)
 TOTAL_DUR=$((END_TIME - START_TIME))
 
-clear
 draw_box "TEST SUMMARY DASHBOARD" 80
 
-echo -e "${BOLD}═══════════════════════════════════════════════════════════════════════${NC}"
+echo -e "${BOLD}════════════════════════════════════════════════════════════════════════${NC}"
 printf "${BOLD}%-30s${NC} ${GREEN}%4d${NC}  ${RED}%4d${NC}  ${YELLOW}%4d${NC}  ${CYAN}%4d${NC}\n" "Results:" "$PASSED_TESTS" "$FAILED_TESTS" "$SKIPPED_TESTS" "$TOTAL_TESTS"
 printf "${BOLD}%-30s${NC} %ds\n" "Total Duration:" "$TOTAL_DUR"
 printf "${BOLD}%-30s${NC} %s\n" "Timestamp:" "$(date)"
