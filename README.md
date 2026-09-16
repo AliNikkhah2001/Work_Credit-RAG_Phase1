@@ -307,6 +307,12 @@ Full method + GPU next steps: `docs/WAVE2_GPU_RUNBOOK.md`, `deploy/vast/wave2_gp
 Status: **DIAGNOSIS FOUND, fix under test** (2026-09-16). Extends the repo's benchmark
 infra (`kb_manager/evaluation/`) with per-stage capture (BM25 / Dense / RRF / CrossEncoder).
 
+> Reproducibility note: the shared PG corpus changed mid-campaign (3308→1253→3330
+> chunks, concurrent re-ingests). All runs now record a corpus fingerprint
+> (count + ID hash + embedding coverage, start/end) and abort-flag on drift.
+> Baseline-v1 numbers below predate the guard; baseline-v2 re-runs everything
+> on fingerprinted corpus `0368bdd4` (3330 chunks, 1253 embedded).
+
 - Ground truth: `benchmark/datasets/eval_remapped.json` — 796/800 eval_clean questions
   remapped to the live 3330-chunk KB by answer-token coverage ≥ 0.6
   (graded relevance = coverage; 4 empty-answer + 20 zero-gold excluded from means).
