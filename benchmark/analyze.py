@@ -15,6 +15,7 @@ from collections import Counter
 from pathlib import Path
 
 ROOT = Path(os.getenv("BENCH_ROOT", Path(__file__).resolve().parent.parent))
+REPO = Path(__file__).resolve().parent.parent  # code always lives in the repo
 sys.path.insert(0, str(ROOT))
 from benchmark.metrics import K_VALUES, query_metrics
 
@@ -44,6 +45,75 @@ def classify(row: dict, ranks: dict) -> str:
     if d != -1:
         return "BM25_FAILURE"
     return "CANDIDATE_GENERATION_FAILURE"
+
+
+def _qtoks(s):
+    import re
+    return set(re.findall(r"[\w\u0600-\u06FF]+", (s or "").lower()))
+
+
+def _f1(a, b):
+    if not a or not b:
+        return 0.0
+    i = len(a & b)
+    return 2 * i / (len(a) + len(b))
+
+
+def resolve_primaries(per_query: list, rows_by_idx: dict) -> None:
+    """Primary gold = QA row(s) whose source question best matches the eval query.
+
+    Loads ALL qa_pair meta-questions from the DB once and fuzzy-matches each
+    eval query (token-F1). Primaries with F1 >= 0.7 are certain (verbatim or
+    near-verbatim source rows); lower best-F1 is recorded for validation.
+    Mutates entries: primary_gold (list), primary_best_f1.
+    """
+    import asyncio
+    import json as _json
+    import sys
+    sys.path.insert(0, str(REPO / "components" / "knowledgebase" / "kb-manager"))
+    os.chdir(str(REPO / "components" / "knowledgebase" / "kb-manager"))
+    from sqlalchemy import text as sqltext
+    from kb_manager.config import load_config
+    from kb_manager.models.database import Database
+
+    async def load_qa_rows():
+        cfg = load_config()
+        db = Database(cfg.db)
+        out = []
+        async with db.session() as s:
+            r = await s.execute(sqltext(
+                "SELECT id, metadata FROM chunks WHERE chunk_type='qa_pair'"))
+            for cid, meta in r.fetchall():
+                if isinstance(meta, str):
+                    meta = _json.loads(meta)
+                fields = (meta or {}).get("fields", {})
+                mq = (fields.get("question") or fields.get("پرسش")
+                      or fields.get("سوال") or "")
+                if mq.strip():
+                    out.append((cid, mq.strip()))
+        await db.close()
+        return out
+
+    qa_rows = asyncio.run(load_qa_rows())
+    print(f"qa_pair rows with questions: {len(qa_rows)}")
+    qtok_cache = [(cid, _qtoks(mq)) for cid, mq in qa_rows]
+    for e in per_query:
+        row = rows_by_idx[e["idx"]]
+        qt = _qtoks(row["query"])
+        scored = sorted(((_f1(qt, mt), cid) for cid, mt in qtok_cache), reverse=True)
+        best_f1 = scored[0][0] if scored else 0.0
+        primaries = [cid for f, cid in scored if f >= 0.7 and abs(f - best_f1) < 1e-9]
+        if not primaries and scored:
+            primaries = [scored[0][1]]  # best-effort fallback, flagged by low F1
+        e["primary_gold"] = primaries
+        e["primary_best_f1"] = round(best_f1, 4)
+        pranks = {}
+        for s in STAGES:
+            ids = [d["id"] for d in row["stages"][s]]
+            hits = [ids.index(p) + 1 for p in primaries if p in ids]
+            pranks[s] = min(hits) if hits else -1
+        e["p_ranks"] = pranks
+        e["p_category"] = classify(row, pranks)
 
 
 def main():
@@ -102,6 +172,27 @@ def main():
     overall["categories"] = dict(Counter(e["category"] for e in per_query))
     overall["rrf_gain"] = dict(Counter(e["rrf_vs_best_leg"] for e in per_query))
     overall["ce_gain"] = dict(Counter(e["ce_vs_rrf"] for e in per_query))
+
+    # primary-gold resolution (true-answer chunk per query) + primary-based aggregates
+    rows_by_idx = {r["idx"]: r for r in rows if r.get("status") == "SUCCESS"}
+    try:
+        resolve_primaries(per_query, rows_by_idx)
+        for s in STAGES:
+            for k in K_VALUES:
+                vals = []
+                for e in per_query:
+                    pr = e["p_ranks"].get(s, -1)
+                    vals.append(1.0 if 0 < pr <= k else 0.0)
+                overall[f"p_{s}_hit@{k}"] = round(sum(vals) / len(vals), 4) if vals else 0.0
+            vals = [1.0 / e["p_ranks"][s] for e in per_query if e["p_ranks"].get(s, -1) != -1]
+            rr_all = [1.0 / e["p_ranks"][s] if e["p_ranks"].get(s, -1) != -1 else 0.0
+                      for e in per_query]
+            overall[f"p_{s}_mrr"] = round(sum(rr_all) / len(rr_all), 4) if rr_all else 0.0
+        overall["p_categories"] = dict(Counter(e["p_category"] for e in per_query))
+        print("p_categories:", overall["p_categories"])
+    except Exception as ex:  # noqa: BLE001 - primary resolution is auxiliary, never fatal
+        print(f"primary resolution skipped: {str(ex)[:150]}")
+        overall["p_categories"] = {}
 
     out_m = ROOT / "benchmark" / "metrics"
     out_d = ROOT / "benchmark" / "diagnostics"

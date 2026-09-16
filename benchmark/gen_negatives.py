@@ -25,6 +25,7 @@ from collections import defaultdict
 from pathlib import Path
 
 ROOT = Path(os.getenv("BENCH_ROOT", Path(__file__).resolve().parent.parent))
+REPO = Path(__file__).resolve().parent.parent  # code always lives in the repo
 RAW = ROOT / "benchmark" / "raw" / "massive_results.jsonl"
 OUT = ROOT / "benchmark" / "datasets"
 
@@ -45,8 +46,8 @@ def build_doc_map(rows: list) -> dict:
 
 
 def main():
-    sys.path.insert(0, str(ROOT / "components" / "knowledgebase" / "kb-manager"))
-    os.chdir(str(ROOT / "components" / "knowledgebase" / "kb-manager"))
+    sys.path.insert(0, str(REPO / "components" / "knowledgebase" / "kb-manager"))
+    os.chdir(str(REPO / "components" / "knowledgebase" / "kb-manager"))
     from sqlalchemy import text as sqltext
     from kb_manager.config import load_config
     from kb_manager.models.database import Database
@@ -57,18 +58,23 @@ def main():
     print(f"usable rows: {len(ok)}/{len(rows)}")
 
     async def fetch_texts(ids: set) -> dict:
+        from sqlalchemy import bindparam
         cfg = load_config()
         db = Database(cfg.db)
         out = {}
         ids = list(ids)
+        pg = "postgres" in cfg.db.async_url
         async with db.session() as s:
             for i in range(0, len(ids), 500):
-                chunk = ids[i:i + 500]
-                r = await s.execute(
-                    sqltext("SELECT id, content FROM chunks WHERE id = ANY(:ids)"
-                            if "postgres" in cfg.db.async_url else
-                            "SELECT id, content FROM chunks WHERE id IN (%s)" % ",".join("?" * len(chunk))),
-                    {"ids": chunk} if "postgres" in cfg.db.async_url else tuple(chunk))
+                ch = ids[i:i + 500]
+                if pg:
+                    q = sqltext("SELECT id, content FROM chunks WHERE id IN :ids").bindparams(
+                        bindparam("ids", expanding=True))
+                    r = await s.execute(q, {"ids": ch})
+                else:
+                    q = sqltext("SELECT id, content FROM chunks WHERE id IN (%s)"
+                                % ",".join("?" * len(ch)))
+                    r = await s.execute(q, tuple(ch))
                 for cid, content in r.fetchall():
                     out[cid] = content or ""
         await db.close()
