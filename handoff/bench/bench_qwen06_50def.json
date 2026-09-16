@@ -1,0 +1,1352 @@
+{
+ "version": "reranker-qwen06-50def",
+ "created_at": "2026-09-15T09:38:06.370853+00:00",
+ "top_k": 5,
+ "total_queries": 50,
+ "by_format": {
+  "verbatim": {
+   "queries": 50,
+   "hit_rate": 0.2,
+   "top1_hit_rate": 0.04,
+   "mrr": 0.0877,
+   "avg_rank": 3.3,
+   "avg_latency_ms": 53443.0
+  }
+ },
+ "overall": {
+  "queries": 50,
+  "hit_rate": 0.2,
+  "top1_hit_rate": 0.04,
+  "mrr": 0.0877,
+  "avg_rank": 3.3,
+  "avg_latency_ms": 53443.0
+ },
+ "queries": [
+  {
+   "query": "آیا تأمین‌کنندگان مسئول صحت اطلاعات هویتی افراد هستند؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "e61a0812-82b6-4fe8-bf00-d891065dd683",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": false,
+   "rank": -1,
+   "top1_hit": false,
+   "elapsed_ms": 292304.7,
+   "retrieved_ids": [
+    "1a426215-6b99-422c-b05c-27ddf79520f0",
+    "433383b6-2f42-4e01-a4fb-8337f6aec142",
+    "09342280-f02a-47c6-ba21-f9b641f9c78f",
+    "fea11c3e-f3f7-4925-ab9a-7221839ed5c1",
+    "c5063ffa-7fcd-4067-b987-2266824b2096"
+   ],
+   "_idx": 0
+  },
+  {
+   "query": "دستگاه‌های تأمین‌کننده دقیقا چه نوع داده‌هایی باید ارائه دهند؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": false,
+   "rank": -1,
+   "top1_hit": false,
+   "elapsed_ms": 114008.1,
+   "retrieved_ids": [
+    "1a426215-6b99-422c-b05c-27ddf79520f0",
+    "d62f90af-e603-4703-accb-8fa8e3ec4dbb",
+    "b5a11a51-f20d-4acd-80bb-21dda64f0987",
+    "085081c2-b030-41dc-92c4-65ccd7cc91a8",
+    "09342280-f02a-47c6-ba21-f9b641f9c78f"
+   ],
+   "_idx": 1
+  },
+  {
+   "query": "آیا امکان انتقال دسترسی API به شرکت زیرمجموعه یا شریک تجاری وجود دارد؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": false,
+   "rank": -1,
+   "top1_hit": false,
+   "elapsed_ms": 115327.3,
+   "retrieved_ids": [
+    "9802152c-5248-4c6a-ab80-216936f50844",
+    "b7c78570-1fcd-45db-bf0d-59d315f1fd4c",
+    "b19b057d-58cb-4a9f-8efe-182209c0969d",
+    "f63a671b-7f0b-42a5-9d66-29d0f47d0fca",
+    "18a3b46a-d66e-4445-ab61-4bf91add935a"
+   ],
+   "_idx": 2
+  },
+  {
+   "query": "چرا وجود تأمین‌کنندگان داده در نظام اعتبارسنجی ضروری است؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "e61a0812-82b6-4fe8-bf00-d891065dd683",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": false,
+   "rank": -1,
+   "top1_hit": false,
+   "elapsed_ms": 93553.4,
+   "retrieved_ids": [
+    "4dea6dc5-bd09-443a-b42f-a6401948e6b4",
+    "1a426215-6b99-422c-b05c-27ddf79520f0",
+    "2a54d497-64dc-4ad3-9449-ef2fca7fb35b",
+    "9582f8d3-427e-4021-adac-b8d88ae245de",
+    "f6edcd8a-bb56-4ec8-90bf-90bb41e8d007"
+   ],
+   "_idx": 3
+  },
+  {
+   "query": "آیا برای دریافت گزارش اعتباری شرکتم نیاز به مدارک خاصی دارم؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "6ca88574-390a-40fa-8773-2f2c7e0bf2cc",
+    "7d1a566a-f625-4e35-921d-e13274f29500",
+    "d3e7e2ad-fde1-4240-94e3-5d8ba41de5d5",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "e61a0812-82b6-4fe8-bf00-d891065dd683",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": true,
+   "rank": 5,
+   "top1_hit": false,
+   "elapsed_ms": 96231.6,
+   "retrieved_ids": [
+    "e1813b85-4fe7-4112-8dfb-f7c42b93bef7",
+    "96ec21b2-2f00-40f7-8b45-770241834233",
+    "110eef80-6824-4832-85e2-3a110890381f",
+    "00f894f0-1866-42dd-8b46-9c4871ab31af",
+    "d3e7e2ad-fde1-4240-94e3-5d8ba41de5d5"
+   ],
+   "_idx": 4
+  },
+  {
+   "query": "اگر یک بانک اطلاعات بازپرداخت اقساط مرا به شرکت اعتبارسنجی ارسال نکند (اطلاعات بازپرداخت اقساط وام در گزارش اعتباری من وجود نداشته باشد)، چه اقدامی انجام دهم؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "f339694a-b5ca-4e6a-932a-dda5aa30616f",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "e61a0812-82b6-4fe8-bf00-d891065dd683",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": false,
+   "rank": -1,
+   "top1_hit": false,
+   "elapsed_ms": 119399.5,
+   "retrieved_ids": [
+    "c1f10671-e9e6-49a4-bf05-6d88108a26f3",
+    "2ac95c73-56e7-44cb-88be-5fe9039f6488",
+    "b6687b24-6077-4ee4-a069-86c98122d19e",
+    "82a0b6a8-75f4-41ee-bdd4-b30891f50548",
+    "7f78c4f2-fa30-4525-bcf7-0ba34f3af499"
+   ],
+   "_idx": 5
+  },
+  {
+   "query": "آیا تاخیر در پرداخت عوارض شهرداری در گزارش اعتباری ثبت می‌شود و در امتیاز اثر گذار است؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "a24031a6-4556-4224-a19e-2bc112f8d502",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "28b7f863-2774-49e5-a8df-401464875381",
+    "1aa365f5-6aa7-4d30-8355-4406bdb45cdf",
+    "af99047f-3f34-41e5-949c-a6375de315ff",
+    "68d3e286-00f0-4af6-8f13-b93771baa1ea",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "e61a0812-82b6-4fe8-bf00-d891065dd683",
+    "bae6a9a4-6625-4c05-b060-4af50e13f688",
+    "aacd819e-877d-42df-97e8-bfa028510e9a",
+    "b42761e0-492b-4a74-92a0-c84abd84c81f",
+    "6198fe81-4aa6-41b4-b0d0-31e2504ae932",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "bca2021f-cd1f-481a-b23e-26eb95ee68cd",
+    "b305f389-eb8f-49e0-b72b-667c02375e10",
+    "2dff9ba3-d576-467d-9c36-2c966b9ef3ec",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": false,
+   "rank": -1,
+   "top1_hit": false,
+   "elapsed_ms": 111884.3,
+   "retrieved_ids": [
+    "96ec21b2-2f00-40f7-8b45-770241834233",
+    "82dd5019-a401-428b-aefd-f0823c4396d4",
+    "2b56e3e3-0fbd-413c-b120-ae885d6beafb",
+    "0e3a7a29-cfeb-43f5-b033-3017b76d9322",
+    "110eef80-6824-4832-85e2-3a110890381f"
+   ],
+   "_idx": 6
+  },
+  {
+   "query": "چگونه داده‌های دسته‌ای برای مدل‌سازی ارائه می‌شود؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "e61a0812-82b6-4fe8-bf00-d891065dd683",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": false,
+   "rank": -1,
+   "top1_hit": false,
+   "elapsed_ms": 106588.3,
+   "retrieved_ids": [
+    "598c81ef-c9ed-4ddb-9d20-7928fdc3db8b",
+    "36aa0940-0b01-43af-8420-c598af9f9a6a",
+    "c19eb6dc-899b-44d8-8026-51e9ee83921b",
+    "a3f78b7d-bc48-461e-b547-76d18d5d6542",
+    "66c17584-44cd-4459-81b9-076497224da7"
+   ],
+   "_idx": 7
+  },
+  {
+   "query": "اگر شرکتی چک برگشتی داشته باشد، این چک چگونه بر رتبه اعتباری شرکت‌های وابسته به آن تاثیر می‌گذارد؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "71879522-a213-4487-9327-abac24c682e1",
+    "28b7f863-2774-49e5-a8df-401464875381",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "e61a0812-82b6-4fe8-bf00-d891065dd683",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": false,
+   "rank": -1,
+   "top1_hit": false,
+   "elapsed_ms": 111162.8,
+   "retrieved_ids": [
+    "f7b671de-683d-4a49-8a6a-c24328ca4983",
+    "b7319917-df0e-42d5-ad17-7e39701af831",
+    "e965bad5-1527-4729-8fad-05d0d16b7983",
+    "a9aa8e84-a903-4fd7-ac9a-14300527ea8c",
+    "b443a03f-2bd9-4a95-ae1e-bc64b984fd65"
+   ],
+   "_idx": 8
+  },
+  {
+   "query": "آیا می‌توانم برای فرزند نابالغم که حساب بانکی دارد، گزارش اعتباری بگیرم؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "b3bc6d78-c227-4542-bcae-82027d865172",
+    "f20c06e7-281d-4fb7-87b1-928ef0f3cd84",
+    "28b7f863-2774-49e5-a8df-401464875381",
+    "65293b21-5947-4d9b-8652-9a90fe3d8f64",
+    "e320fefb-d86f-47bb-a726-1002bd73f0a8",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "e61a0812-82b6-4fe8-bf00-d891065dd683",
+    "bae6a9a4-6625-4c05-b060-4af50e13f688",
+    "c7923ca1-6bf6-4b00-9f1d-ffef6214d7dd",
+    "fe6d2fcb-320d-492c-8805-ee161b9979e2",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": true,
+   "rank": 5,
+   "top1_hit": false,
+   "elapsed_ms": 141408.9,
+   "retrieved_ids": [
+    "bb3dcf2f-c743-4050-bb81-54997af7bf0b",
+    "40c6c43c-6215-437b-9e7e-8d673ccbe604",
+    "7cfa2fbd-c199-4179-b941-8a6bc6d5303d",
+    "5ed6409d-8ce0-43cd-a128-dd4e82c331ac",
+    "b3bc6d78-c227-4542-bcae-82027d865172"
+   ],
+   "_idx": 9
+  },
+  {
+   "query": "آیا تغییر در نوع فعالیت شرکت (مثلاً از تولیدی به خدماتی) بر امتیاز اعتباری تاثیر می‌گذارد؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "e61a0812-82b6-4fe8-bf00-d891065dd683",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": false,
+   "rank": -1,
+   "top1_hit": false,
+   "elapsed_ms": 88234.1,
+   "retrieved_ids": [
+    "598c81ef-c9ed-4ddb-9d20-7928fdc3db8b",
+    "e6296f0f-885a-46db-ad5f-16aecb27c3b7",
+    "9d3cc132-9e98-4fdd-b8a3-ae02e4a7e0a2",
+    "ccdb6c72-d522-4169-89e8-e55d41dd8bfe",
+    "2daef104-1817-4c29-9986-c917aa52380a"
+   ],
+   "_idx": 10
+  },
+  {
+   "query": "داده‌های سازمان تامین اجتماعی شامل چه مواردی است؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "28b7f863-2774-49e5-a8df-401464875381",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "e61a0812-82b6-4fe8-bf00-d891065dd683",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "2dff9ba3-d576-467d-9c36-2c966b9ef3ec",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": false,
+   "rank": -1,
+   "top1_hit": false,
+   "elapsed_ms": 145520.7,
+   "retrieved_ids": [
+    "134a6489-e09d-43db-893f-286caf561086",
+    "cde4782e-62cc-40bb-a5ab-20144132ac3e",
+    "1b7cfd60-a992-406f-b6a6-f3388571b601",
+    "d81d0dd6-ca28-497f-a409-7f9c276e588f",
+    "1a426215-6b99-422c-b05c-27ddf79520f0"
+   ],
+   "_idx": 11
+  },
+  {
+   "query": "آیا امکان ارائه ضمانت‌نامه بانکی به‌جای چک وجود دارد؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": false,
+   "rank": -1,
+   "top1_hit": false,
+   "elapsed_ms": 70003.5,
+   "retrieved_ids": [
+    "5ed6409d-8ce0-43cd-a128-dd4e82c331ac",
+    "40c6c43c-6215-437b-9e7e-8d673ccbe604",
+    "7cfa2fbd-c199-4179-b941-8a6bc6d5303d",
+    "d2e132f4-2c5b-4759-8574-922ca7b26e03",
+    "83350263-c55f-4b1c-ae3c-81d52ee8ef5d"
+   ],
+   "_idx": 12
+  },
+  {
+   "query": "چرا سوابق تسهیلاتی افراد تاثیر کمی بر امتیاز چک دارد؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "28b7f863-2774-49e5-a8df-401464875381",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "e61a0812-82b6-4fe8-bf00-d891065dd683",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "bca2021f-cd1f-481a-b23e-26eb95ee68cd",
+    "8e7f4f80-5763-4b09-b6c6-00eac19968f4",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": true,
+   "rank": 2,
+   "top1_hit": false,
+   "elapsed_ms": 26980.9,
+   "retrieved_ids": [
+    "5755278e-80d7-4feb-9609-eef619a7d697",
+    "8e7f4f80-5763-4b09-b6c6-00eac19968f4",
+    "a9aa8e84-a903-4fd7-ac9a-14300527ea8c",
+    "53c91374-8871-4cf5-8859-910ace97c69e",
+    "d017cdc3-0de7-4028-9e57-6f16ab48417c"
+   ],
+   "_idx": 13
+  },
+  {
+   "query": "آیا برای دریافت گزارش اعتباری شرکتم نیاز به مدارک خاصی دارم؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "6ca88574-390a-40fa-8773-2f2c7e0bf2cc",
+    "7d1a566a-f625-4e35-921d-e13274f29500",
+    "d3e7e2ad-fde1-4240-94e3-5d8ba41de5d5",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "e61a0812-82b6-4fe8-bf00-d891065dd683",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": true,
+   "rank": 5,
+   "top1_hit": false,
+   "elapsed_ms": 25974.9,
+   "retrieved_ids": [
+    "e1813b85-4fe7-4112-8dfb-f7c42b93bef7",
+    "96ec21b2-2f00-40f7-8b45-770241834233",
+    "110eef80-6824-4832-85e2-3a110890381f",
+    "00f894f0-1866-42dd-8b46-9c4871ab31af",
+    "d3e7e2ad-fde1-4240-94e3-5d8ba41de5d5"
+   ],
+   "_idx": 14
+  },
+  {
+   "query": "آیا تأمین‌کنندگان باید گزارش کیفیت داده ارائه دهند؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": false,
+   "rank": -1,
+   "top1_hit": false,
+   "elapsed_ms": 34043.4,
+   "retrieved_ids": [
+    "134a6489-e09d-43db-893f-286caf561086",
+    "09342280-f02a-47c6-ba21-f9b641f9c78f",
+    "d81d0dd6-ca28-497f-a409-7f9c276e588f",
+    "7646f803-dad7-47f2-83b9-1c45e7cd372f",
+    "1a426215-6b99-422c-b05c-27ddf79520f0"
+   ],
+   "_idx": 15
+  },
+  {
+   "query": "در صورتی که وجه پرداختی به حساب «اعتباریتو» واریز شده ولی گزارش صادر نشده باشد، چه مدارکی برای پیگیری لازم است؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "e61a0812-82b6-4fe8-bf00-d891065dd683",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "4e09a82c-c0a5-4394-8f3f-a3a249fa9d19",
+    "0e3a7a29-cfeb-43f5-b033-3017b76d9322",
+    "31987c10-88bf-4a8d-be42-e986409f54af",
+    "db34a26d-054d-4ac9-81cf-981f1a76a6ca",
+    "6eab588d-fae4-46a5-b851-d8f7026c2856",
+    "c9299546-8289-431c-bfc9-6fe9841650a8",
+    "c9eaa38e-b7f4-427b-b0da-9bdef805fbc4"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": false,
+   "rank": -1,
+   "top1_hit": false,
+   "elapsed_ms": 43299.9,
+   "retrieved_ids": [
+    "235ff39a-1838-4d9c-ba4e-d71fa1e21393",
+    "64ec4295-dda1-4ff6-b948-128cb31c136d",
+    "beb7bd16-83e0-4ea7-9788-15ee079a6076",
+    "0deaa3ab-2743-478c-be56-f675ac295dd3",
+    "110eef80-6824-4832-85e2-3a110890381f"
+   ],
+   "_idx": 16
+  },
+  {
+   "query": "در مرحله تکمیل فرم شماره ۱، اگر اطلاعات صاحب امضا تغییر کرده باشد ولی هنوز در روزنامه رسمی ثبت نشده باشد چه کنیم؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": false,
+   "rank": -1,
+   "top1_hit": false,
+   "elapsed_ms": 30288.7,
+   "retrieved_ids": [
+    "598c81ef-c9ed-4ddb-9d20-7928fdc3db8b",
+    "f303fbcf-8f30-422e-826c-cce13a760f88",
+    "befb7473-cec7-4422-9a2f-b0b53f7a9a18",
+    "1a426215-6b99-422c-b05c-27ddf79520f0",
+    "5b6c880b-ace3-4d1d-a3fe-ad561c784f75"
+   ],
+   "_idx": 17
+  },
+  {
+   "query": "من تعداد زیادی چک را نقد کردم که هیچ کدام برگشت نخورده است. چرا باید احتمال برگشت چک من از صفر بزرگتر باشد؟ چرا 0 نیست؟ چرا امتیاز چک من 100 نیست؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "e61a0812-82b6-4fe8-bf00-d891065dd683",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "170292a6-74b5-488d-9463-062779ac5fdd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": false,
+   "rank": -1,
+   "top1_hit": false,
+   "elapsed_ms": 34862.1,
+   "retrieved_ids": [
+    "cceca252-9e64-408c-976c-397cc6a97f68",
+    "1cd7854a-cb3e-4b99-9777-d10d43367534",
+    "33cf7f4f-f9b8-4dcf-8acb-a7a24b3ea78e",
+    "2a919b1f-34f1-4fd7-9d99-6005e73a756f",
+    "586fbcfe-b5ba-4be5-900d-e23ede1f2625"
+   ],
+   "_idx": 18
+  },
+  {
+   "query": "داده‌ها باید چند وقت یک‌بار و با چه روش‌هایی ارسال شوند؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": false,
+   "rank": -1,
+   "top1_hit": false,
+   "elapsed_ms": 28271.4,
+   "retrieved_ids": [
+    "b276a3cd-0e0f-42cd-87ae-dd2420d25c16",
+    "a3f78b7d-bc48-461e-b547-76d18d5d6542",
+    "44338f27-6286-4024-a977-5801cdef4028",
+    "7646f803-dad7-47f2-83b9-1c45e7cd372f",
+    "a304fba8-778f-4fc3-8d29-44e0370b2382"
+   ],
+   "_idx": 19
+  },
+  {
+   "query": "اگر شرکت ما تغییرات ثبتی مانند تغییر مدیرعامل یا نشانی داشته باشد، باید چه اقداماتی انجام دهیم؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "28b7f863-2774-49e5-a8df-401464875381",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "e61a0812-82b6-4fe8-bf00-d891065dd683",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "4e09a82c-c0a5-4394-8f3f-a3a249fa9d19",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": false,
+   "rank": -1,
+   "top1_hit": false,
+   "elapsed_ms": 29936.5,
+   "retrieved_ids": [
+    "598c81ef-c9ed-4ddb-9d20-7928fdc3db8b",
+    "d288931e-dba4-4f4b-a42b-1a92464e1b98",
+    "f0840af6-0374-4caf-a6cc-b5371365ec0c",
+    "ae26cd39-2bc9-4d57-9fe3-79442ae40784",
+    "6f9f6f01-3db9-46ef-98e8-7f92306cdb71"
+   ],
+   "_idx": 20
+  },
+  {
+   "query": "نقش سازمان امور مالیاتی در تامین داده‌های اعتباری چیست؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "28b7f863-2774-49e5-a8df-401464875381",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "e61a0812-82b6-4fe8-bf00-d891065dd683",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": false,
+   "rank": -1,
+   "top1_hit": false,
+   "elapsed_ms": 27584.7,
+   "retrieved_ids": [
+    "d29fce6b-ebc2-423d-8e6a-b0b803f9aeca",
+    "7084a234-607e-4b5b-ab0e-ad0c4daf9fe9",
+    "cde4782e-62cc-40bb-a5ab-20144132ac3e",
+    "fcc857e9-1630-4007-aa72-67daf0228180",
+    "016d3b23-4db1-4299-9d10-73df685d7e1c"
+   ],
+   "_idx": 21
+  },
+  {
+   "query": "داده‌های سازمان ثبت اسناد و املاک کشور شامل چه مواردی است؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": false,
+   "rank": -1,
+   "top1_hit": false,
+   "elapsed_ms": 26466.9,
+   "retrieved_ids": [
+    "36aa0940-0b01-43af-8420-c598af9f9a6a",
+    "7da8747f-ab21-4c27-895b-15f873545778",
+    "2053de6c-8b48-4104-acda-7ad286e8a72e",
+    "433383b6-2f42-4e01-a4fb-8337f6aec142",
+    "80061fa1-35fa-4b43-97de-5c2e2f3e8965"
+   ],
+   "_idx": 22
+  },
+  {
+   "query": "چند درصد از امتیاز اعتباری من وابسته به تاریخچه پرداخت اقساط است؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "28b7f863-2774-49e5-a8df-401464875381",
+    "acb9738e-b490-486a-9b38-45fafdda8241",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "e61a0812-82b6-4fe8-bf00-d891065dd683",
+    "cf3abbc9-d11c-4ca0-9ad4-c8e79e836907",
+    "bae6a9a4-6625-4c05-b060-4af50e13f688",
+    "6a9cb58e-1b09-4f39-8c63-d646c3da2ace",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "2dff9ba3-d576-467d-9c36-2c966b9ef3ec",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": true,
+   "rank": 1,
+   "top1_hit": true,
+   "elapsed_ms": 24421.1,
+   "retrieved_ids": [
+    "cf3abbc9-d11c-4ca0-9ad4-c8e79e836907",
+    "500b99a6-6d8e-472e-96cc-18d1822dab37",
+    "d93b6644-9820-4e3b-a65e-17dd4c86bd17",
+    "d03ee547-75c8-4d15-8cb6-a795855d9fb2",
+    "0f505361-b98d-4550-b1e2-15370fb1e84f"
+   ],
+   "_idx": 23
+  },
+  {
+   "query": "آیا درآمد بالا به تنهایی رتبه اعتباری من را بالا می‌برد؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "28b7f863-2774-49e5-a8df-401464875381",
+    "614960d4-0225-4f3d-879c-5e0f03fc8bff",
+    "e99f633e-7606-4962-a5ae-16c3a2cb3fce",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "e61a0812-82b6-4fe8-bf00-d891065dd683",
+    "c4341119-3032-45b8-bc9b-b3801991049c",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "2dff9ba3-d576-467d-9c36-2c966b9ef3ec",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": true,
+   "rank": 1,
+   "top1_hit": true,
+   "elapsed_ms": 25842.5,
+   "retrieved_ids": [
+    "614960d4-0225-4f3d-879c-5e0f03fc8bff",
+    "2a54d497-64dc-4ad3-9449-ef2fca7fb35b",
+    "cf3abbc9-d11c-4ca0-9ad4-c8e79e836907",
+    "074f3f5c-1da0-45f9-b626-0ff3a7063071",
+    "acb9738e-b490-486a-9b38-45fafdda8241"
+   ],
+   "_idx": 24
+  },
+  {
+   "query": "آیا تسویه بدهی‌های کوچک مانند جرائم رانندگی یا عوارض شهرداری در گزارش اعتباری ثبت می‌شود؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "28b7f863-2774-49e5-a8df-401464875381",
+    "02ef210d-dfc0-401b-a750-64de37b255e1",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "e61a0812-82b6-4fe8-bf00-d891065dd683",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": false,
+   "rank": -1,
+   "top1_hit": false,
+   "elapsed_ms": 30120.8,
+   "retrieved_ids": [
+    "d45fe637-5f77-4bcf-b54d-eae89f8f6b8a",
+    "24e06577-8b0f-4669-a5ff-46758f763348",
+    "762a8fbc-96c7-4925-918c-d6b00728ce0a",
+    "1aa365f5-6aa7-4d30-8355-4406bdb45cdf",
+    "29690b0e-1dfc-46d0-b06d-029352e3de34"
+   ],
+   "_idx": 25
+  },
+  {
+   "query": "آیا تاثیر سوابق همه‌ی سنوات گذشته در محاسبه امتیاز اعتبارسنجی چک یکسان است؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "e61a0812-82b6-4fe8-bf00-d891065dd683",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "e59b9b78-8b8b-4dc9-8483-2dc6dbe12ba2",
+    "2dff9ba3-d576-467d-9c36-2c966b9ef3ec",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": false,
+   "rank": -1,
+   "top1_hit": false,
+   "elapsed_ms": 28854.4,
+   "retrieved_ids": [
+    "39d48c48-0ede-4bd6-afb6-c7e0df24d10c",
+    "fad8a68e-4d35-4fd8-8941-ff09794fc42e",
+    "2d860594-417b-40de-9516-2a7f1830b78a",
+    "b175bef2-1913-4bae-b0a1-b1346ebc18ca",
+    "2a54d497-64dc-4ad3-9449-ef2fca7fb35b"
+   ],
+   "_idx": 26
+  },
+  {
+   "query": "آیا گزارش‌های اعتباری قابل استفاده برای رتبه‌بندی داخلی مشتریان هستند؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "28b7f863-2774-49e5-a8df-401464875381",
+    "e61a0812-82b6-4fe8-bf00-d891065dd683",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": false,
+   "rank": -1,
+   "top1_hit": false,
+   "elapsed_ms": 26698.8,
+   "retrieved_ids": [
+    "cf3abbc9-d11c-4ca0-9ad4-c8e79e836907",
+    "00f894f0-1866-42dd-8b46-9c4871ab31af",
+    "9cd28b76-69c9-4d71-a9b8-7299dca53f55",
+    "28041557-ac92-49ed-bb24-2f49db9b5a49",
+    "0ab3f7c4-1da7-42cd-88b6-5ec6d6bcb82a"
+   ],
+   "_idx": 27
+  },
+  {
+   "query": "آیا نامه معرفی نماینده فنی باید حتماً با مهر شرکت باشد؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "e61a0812-82b6-4fe8-bf00-d891065dd683",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": false,
+   "rank": -1,
+   "top1_hit": false,
+   "elapsed_ms": 26824.7,
+   "retrieved_ids": [
+    "7084a234-607e-4b5b-ab0e-ad0c4daf9fe9",
+    "7be32d2f-03f0-4880-9c0e-bf8612614e0b",
+    "d20ec41f-d124-4b34-a231-bc79a17d9d17",
+    "433383b6-2f42-4e01-a4fb-8337f6aec142",
+    "f671e777-be62-4c6b-8fe4-04f75f7ce69b"
+   ],
+   "_idx": 28
+  },
+  {
+   "query": "آیا رتبه اعتباری در بانک‌های مختلف یکسان است؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "6f31eb2b-1067-439d-a9e4-0ae7b6012fb2",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "e61a0812-82b6-4fe8-bf00-d891065dd683",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": false,
+   "rank": -1,
+   "top1_hit": false,
+   "elapsed_ms": 23817.5,
+   "retrieved_ids": [
+    "500b99a6-6d8e-472e-96cc-18d1822dab37",
+    "b175bef2-1913-4bae-b0a1-b1346ebc18ca",
+    "d03ee547-75c8-4d15-8cb6-a795855d9fb2",
+    "d93b6644-9820-4e3b-a65e-17dd4c86bd17",
+    "6fc71ba4-a6c7-46e3-80cc-99739098f539"
+   ],
+   "_idx": 29
+  },
+  {
+   "query": "چرا با وجود بازپرداخت به‌موقع اقساط، امتیاز اعتباری من هنوز افزایش نیافته است؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "a1a2bce4-f8ee-45ee-99f6-16757fd97877",
+    "28b7f863-2774-49e5-a8df-401464875381",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "e61a0812-82b6-4fe8-bf00-d891065dd683",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": false,
+   "rank": -1,
+   "top1_hit": false,
+   "elapsed_ms": 28188.7,
+   "retrieved_ids": [
+    "82a0b6a8-75f4-41ee-bdd4-b30891f50548",
+    "c1f10671-e9e6-49a4-bf05-6d88108a26f3",
+    "2a54d497-64dc-4ad3-9449-ef2fca7fb35b",
+    "41f40cdb-61f2-4e1c-b2bd-05531363a54a",
+    "83350263-c55f-4b1c-ae3c-81d52ee8ef5d"
+   ],
+   "_idx": 30
+  },
+  {
+   "query": "آیا با نبود داده و پرونده مالیاتی در فرآیند محاسبه امتیاز اعتباری شرکت‌ها خللی ایجاد می‌شود؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "80061fa1-35fa-4b43-97de-5c2e2f3e8965",
+    "7b2890b7-fe63-4902-9445-6149ff32e185",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "28b7f863-2774-49e5-a8df-401464875381",
+    "03e412ff-236e-464b-bd1c-f566cc585a02",
+    "53bb1f14-0f06-4f87-9d0a-117edfdd22ae",
+    "9b0f4f56-a16f-481e-a032-6c8cb1cfa5ae",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "e61a0812-82b6-4fe8-bf00-d891065dd683",
+    "bae6a9a4-6625-4c05-b060-4af50e13f688",
+    "97f5b376-6bd8-402d-ab4e-9cf58406a5d0",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "2dff9ba3-d576-467d-9c36-2c966b9ef3ec",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": true,
+   "rank": 2,
+   "top1_hit": false,
+   "elapsed_ms": 28270.8,
+   "retrieved_ids": [
+    "016d3b23-4db1-4299-9d10-73df685d7e1c",
+    "80061fa1-35fa-4b43-97de-5c2e2f3e8965",
+    "6ed87ac3-802d-4016-b741-00ec12669516",
+    "6cc4e7df-603a-4211-bfac-c31927f24d62",
+    "53bb1f14-0f06-4f87-9d0a-117edfdd22ae"
+   ],
+   "_idx": 31
+  },
+  {
+   "query": "آیا تأمین‌کنندگان باید نسخه پشتیبان داده‌های ارسالی را نگهداری کنند؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": false,
+   "rank": -1,
+   "top1_hit": false,
+   "elapsed_ms": 27202.2,
+   "retrieved_ids": [
+    "5b6c880b-ace3-4d1d-a3fe-ad561c784f75",
+    "d81d0dd6-ca28-497f-a409-7f9c276e588f",
+    "09342280-f02a-47c6-ba21-f9b641f9c78f",
+    "1a426215-6b99-422c-b05c-27ddf79520f0",
+    "7d57f7d8-4c81-48e3-a36f-f3e6b053e905"
+   ],
+   "_idx": 32
+  },
+  {
+   "query": "آیا تأمین‌کنندگان می‌توانند داده‌های جدید پیشنهاد دهند؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "e61a0812-82b6-4fe8-bf00-d891065dd683",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": false,
+   "rank": -1,
+   "top1_hit": false,
+   "elapsed_ms": 25548.3,
+   "retrieved_ids": [
+    "5b6c880b-ace3-4d1d-a3fe-ad561c784f75",
+    "1a426215-6b99-422c-b05c-27ddf79520f0",
+    "f20e0051-90ac-4ddc-aada-143cdbbadfa9",
+    "b2e21164-3dc2-4cc4-b252-1abb72fbdb88",
+    "b908a1fa-5e3d-40fa-94c1-9ad20c02ffc0"
+   ],
+   "_idx": 33
+  },
+  {
+   "query": "مهم‌ترین شاخص‌های ارزیابی کیفیت داده چیست و چگونه سنجیده می‌شود؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "105b3187-9b43-4713-8fba-93461e95abab"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": false,
+   "rank": -1,
+   "top1_hit": false,
+   "elapsed_ms": 29436.0,
+   "retrieved_ids": [
+    "d81d0dd6-ca28-497f-a409-7f9c276e588f",
+    "d817cde6-aebb-4acd-b105-2cb47c7322ed",
+    "da7b0bd0-df0c-4c0a-8d74-45807aeb93d2",
+    "31931a15-dfdb-412e-87ec-2bc7ddd8ae88",
+    "7646f803-dad7-47f2-83b9-1c45e7cd372f"
+   ],
+   "_idx": 34
+  },
+  {
+   "query": "هزینه دریافت گزارش اعتباری برای افراد زیر ۱۸ سال که حساب بانکی دارند چقدر است؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "b3bc6d78-c227-4542-bcae-82027d865172",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "e61a0812-82b6-4fe8-bf00-d891065dd683",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "2dff9ba3-d576-467d-9c36-2c966b9ef3ec",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": false,
+   "rank": -1,
+   "top1_hit": false,
+   "elapsed_ms": 37412.3,
+   "retrieved_ids": [
+    "dd37d152-0409-4548-8349-d946ecdb4887",
+    "60ca85ff-2bf3-41d0-9eea-a3cbe1fcc38b",
+    "98032dd2-3399-4ceb-9f87-4bedb22ea719",
+    "e1813b85-4fe7-4112-8dfb-f7c42b93bef7",
+    "3c50cd36-f2cb-4462-bc72-07426d66f850"
+   ],
+   "_idx": 35
+  },
+  {
+   "query": "اگر تأمین‌کننده چند رکورد با تاریخ‌های متفاوت ارسال کند، کدام رکورد معتبر شناخته می‌شود؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": false,
+   "rank": -1,
+   "top1_hit": false,
+   "elapsed_ms": 28818.9,
+   "retrieved_ids": [
+    "f0840af6-0374-4caf-a6cc-b5371365ec0c",
+    "f1e31c7f-af7e-4824-9bff-7252fb938c58",
+    "2d860594-417b-40de-9516-2a7f1830b78a",
+    "1a426215-6b99-422c-b05c-27ddf79520f0",
+    "a2aca7fa-cacd-4c60-8370-660500a885de"
+   ],
+   "_idx": 36
+  },
+  {
+   "query": "اگر شرکت چک‌های برگشتی خود را تسویه کند یا رفع سوء اثر نماید، آیا امتیاز اعتباری آن بهبود پیدا خواهد کرد؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "7d6b89b3-ee24-497a-b50f-4358a570ccf3",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "28b7f863-2774-49e5-a8df-401464875381",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "e61a0812-82b6-4fe8-bf00-d891065dd683",
+    "bae6a9a4-6625-4c05-b060-4af50e13f688",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "2dff9ba3-d576-467d-9c36-2c966b9ef3ec",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": false,
+   "rank": -1,
+   "top1_hit": false,
+   "elapsed_ms": 29301.5,
+   "retrieved_ids": [
+    "b7319917-df0e-42d5-ad17-7e39701af831",
+    "d9d43bea-99bf-46cb-b494-db66ef2dbb67",
+    "ca7da998-3f53-48c4-a229-4201e1241d82",
+    "16699424-6b08-4c6a-85a6-b0833870cf33",
+    "9d22b19d-facf-45d9-aeec-86fb33173c3d"
+   ],
+   "_idx": 37
+  },
+  {
+   "query": "اگر شرکت من افزایش سرمایه داشته باشد، آیا این موضوع بر رتبه اعتباری و امتیاز اعتباری آن تاثیر مثبت می‌گذارد؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "28b7f863-2774-49e5-a8df-401464875381",
+    "ff89d3e4-ca06-4e5e-b404-b3c650ee4223",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "e61a0812-82b6-4fe8-bf00-d891065dd683",
+    "bae6a9a4-6625-4c05-b060-4af50e13f688",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": false,
+   "rank": -1,
+   "top1_hit": false,
+   "elapsed_ms": 30657.1,
+   "retrieved_ids": [
+    "e965bad5-1527-4729-8fad-05d0d16b7983",
+    "1679ce58-e872-41fa-b96d-372bd9795d86",
+    "5c8e531f-1be7-4760-9615-9de4f82bdb41",
+    "8f9f078d-e025-408c-8848-3d4d4ac0b5e0",
+    "bf2a29be-1bfc-48df-9a80-b86ea41de3ee"
+   ],
+   "_idx": 38
+  },
+  {
+   "query": "آیا تاخیر در پرداخت عوارض شهرداری در گزارش اعتباری ثبت می‌شود و در امتیاز اثر گذار است؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "a24031a6-4556-4224-a19e-2bc112f8d502",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "28b7f863-2774-49e5-a8df-401464875381",
+    "1aa365f5-6aa7-4d30-8355-4406bdb45cdf",
+    "af99047f-3f34-41e5-949c-a6375de315ff",
+    "68d3e286-00f0-4af6-8f13-b93771baa1ea",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "e61a0812-82b6-4fe8-bf00-d891065dd683",
+    "bae6a9a4-6625-4c05-b060-4af50e13f688",
+    "aacd819e-877d-42df-97e8-bfa028510e9a",
+    "b42761e0-492b-4a74-92a0-c84abd84c81f",
+    "6198fe81-4aa6-41b4-b0d0-31e2504ae932",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "bca2021f-cd1f-481a-b23e-26eb95ee68cd",
+    "b305f389-eb8f-49e0-b72b-667c02375e10",
+    "2dff9ba3-d576-467d-9c36-2c966b9ef3ec",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": false,
+   "rank": -1,
+   "top1_hit": false,
+   "elapsed_ms": 27994.5,
+   "retrieved_ids": [
+    "96ec21b2-2f00-40f7-8b45-770241834233",
+    "82dd5019-a401-428b-aefd-f0823c4396d4",
+    "2b56e3e3-0fbd-413c-b120-ae885d6beafb",
+    "0e3a7a29-cfeb-43f5-b033-3017b76d9322",
+    "110eef80-6824-4832-85e2-3a110890381f"
+   ],
+   "_idx": 39
+  },
+  {
+   "query": "اگر بدهی شرکت در سامانه سمات به اشتباه ثبت شده باشد، چه مدارکی برای اصلاح آن لازم است؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "38848f8a-6ecd-49e4-b2ce-0918872b198a",
+    "28b7f863-2774-49e5-a8df-401464875381",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "e61a0812-82b6-4fe8-bf00-d891065dd683",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": true,
+   "rank": 3,
+   "top1_hit": false,
+   "elapsed_ms": 27216.0,
+   "retrieved_ids": [
+    "c5e3d852-b681-408b-b6ce-7acf13596ba0",
+    "241a48f9-1a27-4ff2-9ddf-4767f33fef91",
+    "38848f8a-6ecd-49e4-b2ce-0918872b198a",
+    "5fff88e2-1096-4e42-b918-010c0a8f3a4e",
+    "e2bb764b-1445-4d6c-8acf-ab91cca5bce2"
+   ],
+   "_idx": 40
+  },
+  {
+   "query": "آیا وضعیت تاهل بر رتبه اعتباری تاثیر دارد؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "0a7acfc8-57fa-4f46-bb95-e82e7901f85a",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "e61a0812-82b6-4fe8-bf00-d891065dd683",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": false,
+   "rank": -1,
+   "top1_hit": false,
+   "elapsed_ms": 25262.7,
+   "retrieved_ids": [
+    "11b9113f-d884-44fb-abd6-2884f0f34b1d",
+    "500b99a6-6d8e-472e-96cc-18d1822dab37",
+    "d93b6644-9820-4e3b-a65e-17dd4c86bd17",
+    "d03ee547-75c8-4d15-8cb6-a795855d9fb2",
+    "15fc1b7e-3121-40d9-b7a3-13c62cab5b50"
+   ],
+   "_idx": 41
+  },
+  {
+   "query": "چرا شماره پستی برای تحلیل اعتباری مهم است؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "e61a0812-82b6-4fe8-bf00-d891065dd683",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": false,
+   "rank": -1,
+   "top1_hit": false,
+   "elapsed_ms": 25194.1,
+   "retrieved_ids": [
+    "d03ee547-75c8-4d15-8cb6-a795855d9fb2",
+    "2a54d497-64dc-4ad3-9449-ef2fca7fb35b",
+    "d3e9954f-23b6-4271-a5f3-819f54b4aa02",
+    "bdee3cd1-ae23-4e6c-885b-a9e63d3ff193",
+    "26e1dda1-85d1-4c62-96ed-e493926489e6"
+   ],
+   "_idx": 42
+  },
+  {
+   "query": "جدول اشخاص مرتبط با قرارداد شامل چه فیلدهایی است؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "1ed1ad86-d2a7-4d8f-ad7c-dd8311892532",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": false,
+   "rank": -1,
+   "top1_hit": false,
+   "elapsed_ms": 23144.2,
+   "retrieved_ids": [
+    "d75a9ef8-a4c0-4f37-a6c8-1dff245e0f0a",
+    "5f472bc6-f20d-4942-aa84-9177e11e7403",
+    "8ef3b1e9-b9ca-4997-8ef1-e89df1f6686b",
+    "afc5974b-44a0-4990-988b-4e003cb91cc8",
+    "25eaa942-0895-4c66-bd6d-70ba67b798b9"
+   ],
+   "_idx": 43
+  },
+  {
+   "query": "آیا داشتن بیمه عمر یا بیمه تکمیلی، تأثیری در افزایش امتیاز اعتباری دارد؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "59d3f746-f40f-468b-a55c-401a78735d67",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "e61a0812-82b6-4fe8-bf00-d891065dd683",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": true,
+   "rank": 4,
+   "top1_hit": false,
+   "elapsed_ms": 28464.0,
+   "retrieved_ids": [
+    "d75a9ef8-a4c0-4f37-a6c8-1dff245e0f0a",
+    "5f472bc6-f20d-4942-aa84-9177e11e7403",
+    "2a54d497-64dc-4ad3-9449-ef2fca7fb35b",
+    "59d3f746-f40f-468b-a55c-401a78735d67",
+    "f272aed1-131c-45ee-a1b5-c1be27a57114"
+   ],
+   "_idx": 44
+  },
+  {
+   "query": "داده‌های قراردادها چه انواعی دارند و چگونه استاندارد می‌شوند؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": false,
+   "rank": -1,
+   "top1_hit": false,
+   "elapsed_ms": 25184.4,
+   "retrieved_ids": [
+    "5f472bc6-f20d-4942-aa84-9177e11e7403",
+    "d75a9ef8-a4c0-4f37-a6c8-1dff245e0f0a",
+    "a426e6c8-9092-49e2-9024-f7e7dea0d1da",
+    "a588f68d-36e2-4303-ab9e-6aaa5b8c504c",
+    "a80e9f2d-9162-4b7a-a272-ce6d835cccc8"
+   ],
+   "_idx": 45
+  },
+  {
+   "query": "داده‌های دسته‌ای و بی‌نام چه ویژگی‌هایی دارند؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": false,
+   "rank": -1,
+   "top1_hit": false,
+   "elapsed_ms": 27373.4,
+   "retrieved_ids": [
+    "36aa0940-0b01-43af-8420-c598af9f9a6a",
+    "2f453ad7-b1f1-4ee8-9b21-b7576650f0ee",
+    "225c676b-1aae-4736-89c0-5803aa6fdf8b",
+    "a3f78b7d-bc48-461e-b547-76d18d5d6542",
+    "c19eb6dc-899b-44d8-8026-51e9ee83921b"
+   ],
+   "_idx": 46
+  },
+  {
+   "query": "چگونه داده‌های دسته‌ای برای مدل‌سازی ارائه می‌شود؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "e61a0812-82b6-4fe8-bf00-d891065dd683",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": false,
+   "rank": -1,
+   "top1_hit": false,
+   "elapsed_ms": 27234.3,
+   "retrieved_ids": [
+    "598c81ef-c9ed-4ddb-9d20-7928fdc3db8b",
+    "36aa0940-0b01-43af-8420-c598af9f9a6a",
+    "c19eb6dc-899b-44d8-8026-51e9ee83921b",
+    "a3f78b7d-bc48-461e-b547-76d18d5d6542",
+    "66c17584-44cd-4459-81b9-076497224da7"
+   ],
+   "_idx": 47
+  },
+  {
+   "query": "داده‌های مربوط به نوع تسهیلات و هدف از دریافت تسهیلات چگونه استفاده می‌شوند؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": false,
+   "rank": -1,
+   "top1_hit": false,
+   "elapsed_ms": 29714.6,
+   "retrieved_ids": [
+    "2f453ad7-b1f1-4ee8-9b21-b7576650f0ee",
+    "f3200e4a-c4c3-4ffd-9e6b-13a31e9a0e02",
+    "4d3fe92f-9256-4208-aaa3-985dd9ada698",
+    "e72a26b5-bc39-4558-8d46-e9ce8255e74f",
+    "28e12a16-57ba-43ef-9d9c-8c2999edba5e"
+   ],
+   "_idx": 48
+  },
+  {
+   "query": "اگر نسبت به بدهی مالیاتی‌ام اعتراض داده باشم، آیا تا زمان رسیدگی، این بدهی در گزارش من ثبت می‌شود؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "214fa40d-6ee2-4ace-98c6-a8a0a98d34d9",
+    "6366e546-e9cd-45cb-bb9e-6ceb210501f8",
+    "28b7f863-2774-49e5-a8df-401464875381",
+    "dec39214-e8de-4d28-9422-67adae753397",
+    "2d68a14c-c2d0-46e3-872f-cbe81fe9aca3",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "e61a0812-82b6-4fe8-bf00-d891065dd683",
+    "bae6a9a4-6625-4c05-b060-4af50e13f688",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": true,
+   "rank": 5,
+   "top1_hit": false,
+   "elapsed_ms": 40615.6,
+   "retrieved_ids": [
+    "05228519-a355-472f-8248-875ccad5d8b0",
+    "de25d18f-ae96-4f31-a4f9-4cfed119510f",
+    "016d3b23-4db1-4299-9d10-73df685d7e1c",
+    "b3bc6d78-c227-4542-bcae-82027d865172",
+    "2d68a14c-c2d0-46e3-872f-cbe81fe9aca3"
+   ],
+   "_idx": 49
+  }
+ ],
+ "variant": "qwen06-50def",
+ "reranker_model": "Qwen/Qwen3-Reranker-0.6B",
+ "pool": 15,
+ "ir_metrics": {
+  "precision@5": 0.044000000000000004,
+  "recall@5": 0.021270562770562766,
+  "hit_rate@5": 0.2,
+  "mrr": 0.08766666666666667,
+  "ndcg@5": 0.04155933560115021,
+  "map@5": 0.008851515151515152
+ }
+}

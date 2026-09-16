@@ -1,0 +1,123 @@
+{
+ "version": "reranker-qwen4b-smoke",
+ "created_at": "2026-09-15T07:00:57.909448+00:00",
+ "top_k": 5,
+ "total_queries": 3,
+ "by_format": {
+  "verbatim": {
+   "queries": 3,
+   "hit_rate": 0.3333,
+   "top1_hit_rate": 0.0,
+   "mrr": 0.0833,
+   "avg_rank": 4.0,
+   "avg_latency_ms": 116874.0
+  }
+ },
+ "overall": {
+  "queries": 3,
+  "hit_rate": 0.3333,
+  "top1_hit_rate": 0.0,
+  "mrr": 0.0833,
+  "avg_rank": 4.0,
+  "avg_latency_ms": 116874.0
+ },
+ "queries": [
+  {
+   "query": "آیا تعداد دفعات تغییر شغل یا جابجایی شغلی در گزارش اعتباری ثبت می‌شود و بر رتبه و امتیاز من تاثیر دارد؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "68d3e286-00f0-4af6-8f13-b93771baa1ea",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "96c4941f-caea-4c59-8df6-e124e2e38d60",
+    "e61a0812-82b6-4fe8-bf00-d891065dd683",
+    "0cee8520-297c-407f-bdef-99062c131b8b",
+    "074f3f5c-1da0-45f9-b626-0ff3a7063071",
+    "77bed16f-62a7-4f31-a812-da045a0666f6",
+    "a3a3c921-e3d8-43d9-a85a-a595cfc37841",
+    "bae6a9a4-6625-4c05-b060-4af50e13f688",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": true,
+   "rank": 4,
+   "top1_hit": false,
+   "elapsed_ms": 140344.2,
+   "retrieved_ids": [
+    "0f4f9c6c-6162-4bd6-b184-57ad6995b5e6",
+    "8b95fd74-feb4-4610-95d3-1967be239ba6",
+    "ff89d3e4-ca06-4e5e-b404-b3c650ee4223",
+    "68d3e286-00f0-4af6-8f13-b93771baa1ea",
+    "2daef104-1817-4c29-9986-c917aa52380a"
+   ],
+   "_idx": 0
+  },
+  {
+   "query": "آیا امکان شخصی‌سازی قالب خروجی گزارش وجود دارد؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "e61a0812-82b6-4fe8-bf00-d891065dd683",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "2dff9ba3-d576-467d-9c36-2c966b9ef3ec",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": false,
+   "rank": -1,
+   "top1_hit": false,
+   "elapsed_ms": 111791.3,
+   "retrieved_ids": [
+    "134a6489-e09d-43db-893f-286caf561086",
+    "2f16a9fc-273b-45a5-ac4b-e9dced06e07c",
+    "2cb849dc-bd5e-4499-8ba2-5a608481a880",
+    "5348d21b-a824-42d4-889f-133bd6cece37",
+    "932d2c6f-52d2-4076-835b-08b1ffdbef3b"
+   ],
+   "_idx": 1
+  },
+  {
+   "query": "آیا سابقه زنجیره انتقال چک در گزارش اعتبارسنجی چک اثرگذار است؟",
+   "expected_ids": [
+    "714de25e-b197-4b30-9cae-99988a9585c4",
+    "fa3d490d-e18d-4c73-9708-680cd89d8ca9",
+    "105b3187-9b43-4713-8fba-93461e95abab",
+    "e61a0812-82b6-4fe8-bf00-d891065dd683",
+    "96ec685a-84e2-4740-9873-5b869c0f77f2",
+    "b7c78570-1fcd-45db-bf0d-59d315f1fd4c",
+    "beddb02d-84ac-4eed-b452-48e79a8ca939",
+    "95be6851-c877-4ebc-80f4-7ad1f592e684",
+    "755762bb-cc5d-4fe8-a298-90e8d4861ddd"
+   ],
+   "format": "verbatim",
+   "difficulty": "easy",
+   "hit": false,
+   "rank": -1,
+   "top1_hit": false,
+   "elapsed_ms": 98486.5,
+   "retrieved_ids": [
+    "e5848da1-ab1a-4ffa-a728-e16f6dd78a41",
+    "c8944db8-a12d-4d3d-879a-76f647040db9",
+    "745d28da-7a62-45ae-9c0b-bc8aff89b8ca",
+    "05029b94-229b-4410-a496-3033b85266f9",
+    "c4221274-3971-4bb6-94b9-82baace51e2b"
+   ],
+   "_idx": 2
+  }
+ ],
+ "variant": "qwen4b-smoke",
+ "reranker_model": "Qwen/Qwen3-Reranker-4B",
+ "pool": 15,
+ "ir_metrics": {
+  "precision@5": 0.06666666666666667,
+  "recall@5": 0.025641025641025644,
+  "hit_rate@5": 0.3333333333333333,
+  "mrr": 0.08333333333333333,
+  "ndcg@5": 0.04868944994756882,
+  "map@5": 0.006410256410256411
+ }
+}

@@ -1,16 +1,21 @@
-# Handoff — move to a bigger GPU machine and run wave 2
+# Handoff — opencode history + wave results (branch `opencode-history`)
 
-Exported 2026-09-13 from Vast instance 50713720 (RTX 3090 24 GB).
+Exported 2026-09-16 from Vast instance 50713720 (RTX 3090 24 GB).
 Git: parent `main` (this commit), KB `master`, orch/guard/setup `main`.
 
 ## Contents
 
 - `CONTINUE.md` — **paste this into a fresh opencode session on the new machine.**
-- `sessions/` — all 35 opencode sessions (1327 messages) as markdown:
+- `sessions/` — all 40 opencode sessions (1857 messages) as markdown:
   `sessions/INDEX.md` lists them. Main session is
-  `ses_f6b058c02ffej8lpFUThWHsld0_*.md`. Secrets redacted.
-- `bench/` — wave-1 result JSONs (`bench_minilm.json`, `bench_minilm-p30.json`,
-  `bench_bgem3.json`, `bench_jina.json` partial), screens, `eval_remapped.json`
+  `ses_f6b058c02ffej8lpFUThWHsld0_*.md`. Secrets redacted (verified: no
+  `ghp_` / `sk-lf` / `pk-lf` / `Langfuse-Admin-*` literals remain).
+- `db/opencode-2026-09-16.db` — full raw opencode SQLite backup (VACUUMed,
+  314 MB, **Git LFS**) for exact restore:
+  `cp db/opencode-2026-09-16.db ~/.local/share/opencode/opencode.db`.
+- `bench/` — wave-1 + wave-2 result JSONs (`bench_minilm*.json`,
+  `bench_bgem3.json`, `bench_jina.json`, `bench_qwen*.json`,
+  `bench_bgemma25.json`, `e2e_*.json`), screens, `eval_remapped.json`
   (800 answer-grounded queries), `validation_2026-09-13.log` (17/17 PASS).
 - `scripts/` — `bench_backbone.py`, `aggregate_bench.py`, `remap_gold.py`,
   `bench_wave2.sh`, helpers.
@@ -19,8 +24,6 @@ Git: parent `main` (this commit), KB `master`, orch/guard/setup `main`.
 
 - `/tmp/hf_clean` (58 GB models) → re-download per `docs/WAVE2_GPU_RUNBOOK.md` §5,
   or `rsync` it across.
-- `~/.local/share/opencode/opencode.db` (128 MB, over GitHub's 100 MB file
-  limit) → the `sessions/` exports are its readable equivalent.
 - `/tmp/opencode/langfuse.env`, `parent-git/` (116 MB stale mirror).
 
 ## New-machine order
