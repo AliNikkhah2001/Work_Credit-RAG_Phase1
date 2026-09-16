@@ -78,6 +78,40 @@ def git_sha() -> str:
         return "unknown"
 
 
+def corpus_fingerprint() -> dict:
+    """Count + ID hash + embedding coverage of the live chunks table.
+
+    Guards reproducibility: concurrent re-ingests change the corpus under us.
+    """
+    import hashlib
+
+    async def _fp():
+        from sqlalchemy import text as sqltext
+        from kb_manager.config import load_config
+        from kb_manager.models.database import Database
+        cfg = load_config()
+        db = Database(cfg.db)
+        async with db.session() as s:
+            try:
+                n = (await s.execute(sqltext("SELECT count(*) FROM chunks"))).scalar()
+            except Exception:
+                n = -1
+            try:
+                ne = (await s.execute(
+                    sqltext("SELECT count(*) FROM chunks WHERE embedding IS NOT NULL"))).scalar()
+            except Exception:
+                ne = -1
+            try:
+                rows = (await s.execute(sqltext("SELECT id FROM chunks ORDER BY id"))).fetchall()
+                h = hashlib.md5(",".join(r[0] for r in rows).encode()).hexdigest()
+            except Exception:
+                h = "unknown"
+        await db.close()
+        return {"chunk_count": n, "embedded_count": ne, "id_hash": h}
+
+    return _LOOP.run_until_complete(_fp())
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--indices-file", default=None)
@@ -114,6 +148,7 @@ def main():
 
     config = {
         "git_sha": git_sha(),
+        "corpus_start": corpus_fingerprint(),
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "reranker_model": get_reranker_model_name(),
         "rerank_pool": get_rerank_pool(),
@@ -156,6 +191,15 @@ def main():
                 print(f"[{pos}/{len(pending)}] idx={n} status={rec['status']} "
                       f"wall={rec['wall_ms']}ms elapsed={el:.0f}s", flush=True)
     print(f"DONE {len(pending)} queries in {time.monotonic()-t_all:.0f}s -> {jsonl_path}", flush=True)
+    end_fp = corpus_fingerprint()
+    print(f"corpus end: {end_fp}", flush=True)
+    cfg_path = out_dir / "massive_config.json"
+    cfg = json.load(open(cfg_path, encoding="utf-8"))
+    cfg["corpus_end"] = end_fp
+    cfg["corpus_stable"] = (cfg.get("corpus_start") == end_fp)
+    json.dump(cfg, open(cfg_path, "w", encoding="utf-8"), indent=2, ensure_ascii=False)
+    if not cfg["corpus_stable"]:
+        print("WARNING: corpus changed mid-run - results may mix corpora!", flush=True)
 
 
 if __name__ == "__main__":

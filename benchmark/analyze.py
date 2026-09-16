@@ -118,6 +118,12 @@ def resolve_primaries(per_query: list, rows_by_idx: dict) -> None:
 
 def main():
     raw = ROOT / "benchmark" / "raw" / "massive_results.jsonl"
+    cfg_path = ROOT / "benchmark" / "raw" / "massive_config.json"
+    if cfg_path.exists():
+        cfg = json.load(open(cfg_path, encoding="utf-8"))
+        print(f"config: model={cfg.get('reranker_model')} pool={cfg.get('rerank_pool')} "
+              f"top_k={cfg.get('top_k')} boost={cfg.get('keyword_boost_override')}")
+        print(f"corpus: start={cfg.get('corpus_start')} stable={cfg.get('corpus_end') == cfg.get('corpus_start')}")
     rows = [json.loads(l) for l in open(raw, encoding="utf-8")]
     ok = [r for r in rows if r.get("status") == "SUCCESS" and r.get("n_gold", 0) > 0]
     nogold = [r["idx"] for r in rows if r.get("status") == "NO_GOLD" or
