@@ -302,6 +302,27 @@ Decision (2026-09-15): **default is `BAAI/bge-reranker-v2-m3`** — best measure
 
 Full method + GPU next steps: `docs/WAVE2_GPU_RUNBOOK.md`, `deploy/vast/wave2_gpu.sh`. Bench data + session transcripts: `handoff/`.
 
+### Massive stage-level benchmark (current)
+
+Status: **RUNNING** (baseline in progress, 2026-09-16). Extends the repo's benchmark
+infra (`kb_manager/evaluation/`) with per-stage capture (BM25 / Dense / RRF / CrossEncoder).
+
+- Ground truth: `benchmark/datasets/eval_remapped.json` — 796/800 eval_clean questions
+  remapped to the live 3330-chunk KB by answer-token coverage ≥ 0.6
+  (mean ~12 golds/query, graded relevance = coverage; 4 empty-answer + 20 zero-gold
+  queries excluded from means, counted separately). Stale `expected_chunk_ids`
+  (0% coverage on current KB) are NOT used.
+- Pipeline: production code path (`search_knowledge_base`, top_k=20, pool=15,
+  `BAAI/bge-reranker-v2-m3`), stage lists kept to depth 100, CE ranking pool-capped at 15.
+- Metrics: Recall/Hit/NDCG @1,3,5,10,20,50,100 + MRR per stage, candidate recall,
+  RRF/CE gain-loss, failure categories. Validated against hand-computed cases
+  (`benchmark/test_metrics.py`) and cross-checked with `kb_manager` metrics.
+- Artifacts: `benchmark/raw/massive_results.jsonl`, `benchmark/metrics/`,
+  `benchmark/diagnostics/`, `benchmark/plots/`. Harness: `benchmark/run_massive.py`;
+  analysis: `benchmark/analyze.py`; plots: `benchmark/plots.py`.
+
+*Metrics table lands here when the baseline completes.*
+
 ### Cross-Encoder Reranker Direct API Benchmark (2026-09-15)
 
 Direct API benchmark on 20 Persian credit queries, KB v8 (6593 chunks), rerankers on CPU (GPU OOM). Latency measured per-query (BM25+Dense+RRF search → rerank 50→5).

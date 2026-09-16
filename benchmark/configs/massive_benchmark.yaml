@@ -1,0 +1,24 @@
+# Frozen baseline configuration for the massive retrieval benchmark.
+# Any experiment changing these must record a new config + before/after comparison.
+git_sha: "71a2e9b13d7d0f34b33889730d57c7fa1ff7cc53"  # parent main at baseline start
+kb_submodule: "e2b521c"  # Work_RAG-KB master (1405-06-23 data)
+dataset: benchmark/datasets/eval_remapped.json
+dataset_items: 796        # 800 input - 4 empty-answer excluded
+remap_threshold: 0.6
+db_chunks: 3330
+retrieval:
+  top_k: 20             # orchestrator regime (retrieval_top_k=20)
+  stage_depth: 100      # diagnostic stage-list depth
+  keyword_boost: 3.0
+  rrf_k: 60
+  synonym_beam: 5
+  reranker_model: BAAI/bge-reranker-v2-m3
+  rerank_pool: 15       # production pool (CE ranking depth capped here)
+  fusion_alpha: 0.7
+metrics:
+  k_values: [1, 3, 5, 10, 20, 50, 100]
+  relevance: graded answer-token coverage
+env:
+  KB_DB_URL: postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/kb_manager
+  HF_HUB_OFFLINE: 1
+  OMP_NUM_THREADS: 12
