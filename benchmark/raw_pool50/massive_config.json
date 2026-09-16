@@ -1,0 +1,34 @@
+{
+  "git_sha": "fe71a065862f33ff57a462a63026077f11414c62",
+  "generated_at": "2026-09-16T10:05:57.540909+00:00",
+  "reranker_model": "BAAI/bge-reranker-v2-m3",
+  "rerank_pool": 50,
+  "top_k": 20,
+  "stage_depth": 100,
+  "dataset_meta": {
+    "generated_at": "2026-09-16T07:33:04.708813+00:00",
+    "source_dataset": "components/knowledgebase/kb-manager/kb_manager/evaluation/datasets/eval_clean.json",
+    "threshold": 0.6,
+    "n_input": 800,
+    "n_kept": 796,
+    "n_excluded_empty_answer": 4,
+    "excluded_indices": [
+      71,
+      413,
+      414,
+      415
+    ],
+    "db_chunks": 3330
+  },
+  "env": {
+    "KB_RERANK_POOL": "50",
+    "KB_RERANKER_MODEL": "",
+    "KB_KEYWORD_BOOST": "",
+    "KB_SYNONYM_ENABLED": "",
+    "KB_SYNONYM_BEAM": "",
+    "KB_EMBED_MODEL": "",
+    "KB_RERANKER_DEVICE": "",
+    "KB_DB_URL": "postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/kb_manager",
+    "OMP_NUM_THREADS": "12"
+  }
+}
