@@ -9,11 +9,12 @@ Reads benchmark/raw/massive_results.jsonl -> writes:
   benchmark/diagnostics/gold_ranks.jsonl
 """
 import json
+import os
 import sys
 from collections import Counter
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(os.getenv("BENCH_ROOT", Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(ROOT))
 from benchmark.metrics import K_VALUES, query_metrics
 
@@ -49,8 +50,9 @@ def main():
     raw = ROOT / "benchmark" / "raw" / "massive_results.jsonl"
     rows = [json.loads(l) for l in open(raw, encoding="utf-8")]
     ok = [r for r in rows if r.get("status") == "SUCCESS" and r.get("n_gold", 0) > 0]
-    nogold = [r["idx"] for r in rows if r.get("status") == "SUCCESS" and not r.get("n_gold")]
-    err = [r for r in rows if r.get("status") not in ("SUCCESS",)]
+    nogold = [r["idx"] for r in rows if r.get("status") == "NO_GOLD" or
+              (r.get("status") == "SUCCESS" and not r.get("n_gold"))]
+    err = [r for r in rows if r.get("status") not in ("SUCCESS", "NO_GOLD")]
     print(f"rows={len(rows)} ok={len(ok)} no_gold={len(nogold)} errors={len(err)}")
 
     per_query = []

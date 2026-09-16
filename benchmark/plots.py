@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """10 required diagnostic plots from benchmark/metrics + raw results."""
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -9,7 +10,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(os.getenv("BENCH_ROOT", Path(__file__).resolve().parent.parent))
 M = json.load(open(ROOT / "benchmark" / "metrics" / "overall_metrics.json"))
 Q = [json.loads(l) for l in open(ROOT / "benchmark" / "metrics" / "metrics_by_query.jsonl")]
 RAW = {}
