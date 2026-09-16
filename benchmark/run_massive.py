@@ -42,9 +42,9 @@ TOP_K = 10
 DEPTH = 100
 
 
-def search_stages(query: str, top_k: int, depth: int) -> dict:
+def search_stages(query: str, top_k: int, depth: int, keyword_boost=None) -> dict:
     steps = _LOOP.run_until_complete(
-        search_knowledge_base(query, top_k, stage_depth=depth))
+        search_knowledge_base(query, top_k, keyword_boost=keyword_boost, stage_depth=depth))
 
     def pack(lst, score_keys):
         out = []
@@ -84,6 +84,8 @@ def main():
     ap.add_argument("--out", default=str(ROOT / "benchmark" / "raw"))
     ap.add_argument("--top-k", type=int, default=TOP_K)
     ap.add_argument("--depth", type=int, default=DEPTH)
+    ap.add_argument("--keyword-boost", type=float, default=None,
+                    help="override KB keyword boost (default: server env)")
     args = ap.parse_args()
 
     out_dir = Path(args.out)
@@ -117,6 +119,7 @@ def main():
         "rerank_pool": get_rerank_pool(),
         "top_k": args.top_k,
         "stage_depth": args.depth,
+        "keyword_boost_override": args.keyword_boost,
         "dataset_meta": ds["meta"],
         "env": {k: os.getenv(k, "") for k in
                  ["KB_RERANK_POOL", "KB_RERANKER_MODEL", "KB_KEYWORD_BOOST",
@@ -139,7 +142,8 @@ def main():
                 if not item["expected_chunk_ids"]:
                     rec["status"] = "NO_GOLD"
                 else:
-                    rec["stages"] = search_stages(item["query"], args.top_k, args.depth)
+                    rec["stages"] = search_stages(item["query"], args.top_k, args.depth,
+                                                      args.keyword_boost)
                     rec["status"] = "SUCCESS"
             except Exception as e:  # noqa: BLE001 - taxonomy requires explicit capture
                 rec["status"] = "SEARCH_ERROR"
