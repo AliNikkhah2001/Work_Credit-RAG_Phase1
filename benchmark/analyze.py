@@ -190,6 +190,18 @@ def main():
             overall[f"p_{s}_mrr"] = round(sum(rr_all) / len(rr_all), 4) if rr_all else 0.0
         overall["p_categories"] = dict(Counter(e["p_category"] for e in per_query))
         print("p_categories:", overall["p_categories"])
+        # stratify primary view by certainty (F1>=0.7 certain vs best-effort fallback)
+        for tag, pred in (("certain", lambda e: e.get("primary_best_f1", 0) >= 0.7),
+                          ("uncertain", lambda e: e.get("primary_best_f1", 0) < 0.7)):
+            sub = [e for e in per_query if pred(e)]
+            overall[f"p_n_{tag}"] = len(sub)
+            for s in STAGES:
+                for k in K_VALUES:
+                    vals = [1.0 if 0 < e["p_ranks"].get(s, -1) <= k else 0.0 for e in sub]
+                    overall[f"p_{tag}_{s}_hit@{k}"] = (
+                        round(sum(vals) / len(vals), 4) if vals else 0.0)
+            overall[f"p_{tag}_categories"] = dict(Counter(e["p_category"] for e in sub))
+        print("certain n:", overall["p_n_certain"], "uncertain n:", overall["p_n_uncertain"])
     except Exception as ex:  # noqa: BLE001 - primary resolution is auxiliary, never fatal
         print(f"primary resolution skipped: {str(ex)[:150]}")
         overall["p_categories"] = {}

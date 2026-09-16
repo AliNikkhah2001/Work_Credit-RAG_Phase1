@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import math
 
-K_VALUES = [1, 3, 5, 10, 20, 50, 100]
+K_VALUES = [1, 3, 5, 10, 15, 20, 50, 100]
 
 
 def _gold_set(relevance: dict) -> set:
