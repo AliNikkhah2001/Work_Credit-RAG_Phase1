@@ -172,9 +172,29 @@ def main():
     overall["categories"] = dict(Counter(e["category"] for e in per_query))
     overall["rrf_gain"] = dict(Counter(e["rrf_vs_best_leg"] for e in per_query))
     overall["ce_gain"] = dict(Counter(e["ce_vs_rrf"] for e in per_query))
+    rows_by_idx = {r["idx"]: r for r in rows if r.get("status") == "SUCCESS"}
+    # per-bucket metrics (query-type analysis)
+    try:
+        from benchmark.query_analysis import classify_query
+        for e in per_query:
+            e["buckets"] = classify_query(rows_by_idx[e["idx"]]["query"])["buckets"]
+        buckets: dict = {}
+        all_b = sorted({b for e in per_query for b in e["buckets"]})
+        for b in all_b:
+            sub = [e for e in per_query if b in e["buckets"]]
+            buckets[b] = {"n": len(sub)}
+            for s in STAGES:
+                for k in (5, 10):
+                    vals = [e[f"{s}_hit@{k}"] for e in sub]
+                    buckets[b][f"{s}_hit@{k}"] = round(sum(vals) / len(vals), 4)
+                vals = [e[f"{s}_rr"] for e in sub]
+                buckets[b][f"{s}_mrr"] = round(sum(vals) / len(vals), 4)
+        overall["buckets"] = buckets
+    except Exception as ex:  # noqa: BLE001 - auxiliary, never fatal
+        print(f"bucket analysis skipped: {str(ex)[:120]}")
+        overall["buckets"] = {}
 
     # primary-gold resolution (true-answer chunk per query) + primary-based aggregates
-    rows_by_idx = {r["idx"]: r for r in rows if r.get("status") == "SUCCESS"}
     try:
         resolve_primaries(per_query, rows_by_idx)
         for s in STAGES:
