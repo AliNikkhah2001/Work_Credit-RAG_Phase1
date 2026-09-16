@@ -2,13 +2,15 @@
 <!-- Status: DRAFT. Filled as evidence lands. -->
 
 ## Executive Summary
-- **ROOT CAUSE:** _TBD (candidate generation vs reranking, with evidence)_
-- **FIX:** _TBD_
+- **ROOT CAUSE:** `KB_KEYWORD_BOOST=3.0` score addition (`content + 3×keyword`,
+  unnormalized scales) buries exact matches (verbatim query: content-BM25 #1/#2
+  → combined #113/#118; keyword leg alone ranks them #2484/#760).
+- **FIX:** _under test (boost ∈ {0, 1.0} ablation; rank-fusion alternative queued)_
 - **BASELINE → FINAL:** _TBD_
 - **DATASET:** `benchmark/datasets/eval_remapped.json` (796 Q/A, graded relevance)
-- **BENCHMARK:** `benchmark/raw/massive_results.jsonl`
-- **COMMIT:** _TBD_
-- **REMAINING ISSUES:** _TBD_
+- **BENCHMARK:** `benchmark/raw/massive_results.jsonl` (776 rows) + `raw_kb0` (ablation)
+- **COMMIT:** _this branch_
+- **REMAINING ISSUES:** dense leg weakness (hit@5 0.384); uncertain-primary half needs verbatim-suite validation
 
 ## System Architecture
 BM25 (Okapi, Persian char-3-grams, content+keyword×3.0, synonym beam5) +
