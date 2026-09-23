@@ -1,0 +1,71 @@
+services:
+  kb:
+    build:
+      args:
+        http_proxy: http://192.168.203.2:3128
+        https_proxy: http://192.168.203.2:3128
+        HTTP_PROXY: http://192.168.203.2:3128
+        HTTPS_PROXY: http://192.168.203.2:3128
+    ports: ["0.0.0.0:8000:8000"]
+    environment:
+      HF_HUB_OFFLINE: 0
+      http_proxy: http://192.168.203.2:3128
+      https_proxy: http://192.168.203.2:3128
+      HTTP_PROXY: http://192.168.203.2:3128
+      HTTPS_PROXY: http://192.168.203.2:3128
+      no_proxy: localhost,127.0.0.1,postgres,kb,guardrails,orchestrator,langfuse,tracing-fallback
+      NO_PROXY: localhost,127.0.0.1,postgres,kb,guardrails,orchestrator,langfuse,tracing-fallback
+  guardrails:
+    build:
+      args:
+        http_proxy: http://192.168.203.2:3128
+        https_proxy: http://192.168.203.2:3128
+        HTTP_PROXY: http://192.168.203.2:3128
+        HTTPS_PROXY: http://192.168.203.2:3128
+    ports: ["0.0.0.0:8200:8200"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      UPSTREAM_LLM_BASE_URL: http://192.168.96.82:18000/v1
+      LLM_BASE_URL: http://192.168.96.82:18000/v1
+      http_proxy: http://192.168.203.2:3128
+      https_proxy: http://192.168.203.2:3128
+      HTTP_PROXY: http://192.168.203.2:3128
+      HTTPS_PROXY: http://192.168.203.2:3128
+      no_proxy: localhost,127.0.0.1,postgres,kb,guardrails,orchestrator,langfuse,tracing-fallback,192.168.96.82
+      NO_PROXY: localhost,127.0.0.1,postgres,kb,guardrails,orchestrator,langfuse,tracing-fallback,192.168.96.82
+  orchestrator:
+    build:
+      args:
+        http_proxy: http://192.168.203.2:3128
+        https_proxy: http://192.168.203.2:3128
+        HTTP_PROXY: http://192.168.203.2:3128
+        HTTPS_PROXY: http://192.168.203.2:3128
+    ports: ["0.0.0.0:8100:8100"]
+    environment:
+      KB_BASE_URL: http://kb:8000
+      GUARDRAILS_BASE_URL: http://guardrails:8200
+      LANGFUSE_HOST: http://tracing-fallback:3000
+      LANGFUSE_PUBLIC_KEY: pk-lf-docker-local
+      LANGFUSE_SECRET_KEY: sk-lf-docker-local
+      TRACE_ENABLED: true
+      http_proxy: http://192.168.203.2:3128
+      https_proxy: http://192.168.203.2:3128
+      HTTP_PROXY: http://192.168.203.2:3128
+      HTTPS_PROXY: http://192.168.203.2:3128
+      no_proxy: localhost,127.0.0.1,postgres,kb,guardrails,orchestrator,langfuse,tracing-fallback,192.168.96.82
+      NO_PROXY: localhost,127.0.0.1,postgres,kb,guardrails,orchestrator,langfuse,tracing-fallback,192.168.96.82
+  tracing-fallback:
+    ports: ["0.0.0.0:3000:3000"]
+    environment:
+      http_proxy: http://192.168.203.2:3128
+      https_proxy: http://192.168.203.2:3128
+      HTTP_PROXY: http://192.168.203.2:3128
+      HTTPS_PROXY: http://192.168.203.2:3128
+      no_proxy: localhost,127.0.0.1
+      NO_PROXY: localhost,127.0.0.1
+  postgres:
+    ports: ["0.0.0.0:5433:5432"]
+  webui:
+    ports: ["0.0.0.0:13002:8080"]
