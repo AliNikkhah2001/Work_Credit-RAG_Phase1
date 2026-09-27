@@ -19,13 +19,12 @@ Umbrella repository for a self-hosted, Persian-capable conversational RAG platfo
 - [Models](#models)
 - [Configuration](#configuration)
 - [Observability](#observability)
-- [Evaluation](#evaluation)
-  - [Retrieval quality (measured)](#retrieval-quality-measured)
+- [Latency & Performance](#latency-analysis--performance-optimization) — **measured 2026-09-27**
+- [Evaluation](#evaluation) — **all reports & metrics verified**
 - [Done vs Pending](#done-vs-pending)
 - [Verification](#verification)
+- [Archive](#archive)
 - [Updating a Submodule](#updating-a-submodule)
-- [License](#license)
-- [Links](#links)
 
 ---
 
@@ -361,6 +360,22 @@ python eval/build_report_site.py  # GitHub Pages at docs/benchmark-report/
 ```
 
 **Full details:** [docs/evaluation.md](docs/evaluation.md)
+
+---
+
+## Archive
+
+Non-code artifacts moved to `archive/` (not on `main` history before cleanup):
+
+| Archive path | Content | Original location |
+|--------------|---------|-------------------|
+| `archive/handoff-sessions/` | 36 session transcripts + `SESSION_WAVE1_HANDOFF.md` (268KB) | `handoff/sessions/`, `docs/SESSION_WAVE1_HANDOFF.md` |
+| `archive/audit-2026-09-12/` | `documentation_audit.md` + `artifacts/documentation/` audit set | `docs/`, `artifacts/` |
+| `archive/migration-history/` | `VAST_GEMMA4_MIGRATION.md`, `WAVE2_GPU_RUNBOOK.md` | `docs/` |
+| `archive/benchmark-history/` | `docs/benchmark-report/` duplicated from `eval/results/` (19 files, 1.3MB) | `docs/benchmark-report/` (now `.gitignore`, canonical is `eval/results/`) |
+| `archive/` in `components/knowledgebase/` | Windows `.bat` (17), debug scripts (20), HTML dumps (5), `BEFORE` JSON snapshots, 14MB `persian-rag` duplicate | `kb-manager/` flat root |
+
+See `archive/README.md` for retention policy. All archived data is on `chore/cleanup-consolidated`; `main` keeps only code + canonical `eval/results/`.
 
 ---
 
