@@ -228,3 +228,5 @@ secrets/
 credentials/
 !secrets/README.md
 .webui_secret_key
+# Generated benchmark site (use eval/build_report_site.py)
+docs/benchmark-report/
