@@ -1,10 +1,7 @@
-# Handoff — Bench & Scripts
+# Handoff — Archived
 
-| Path | Content | Relation |
-|------|---------|----------|
-| `bench/` (20 files, 4.6MB) | Reranker shootouts (`bench_minilm.json`, `bench_bgem3.json`, `eval_remapped.json` 921KB), smoke tests | **Supplement** to `eval/results/` — raw 800Q bench data before aggregation |
-| `scripts/` (17 scripts) | `bench_backbone.py`, `aggregate_bench.py`, `remap_gold.py`, `verify_*.py` | Evaluation tooling, duplicates `scripts/` at root (see `scripts/cross_encoder_benchmark.py` canonical) |
-| `CONTINUE.md` | Wave-2 GPU runbook continuation | Pointer to `docs/WAVE2_GPU_RUNBOOK.md` |
+> **Pointer:** Raw bench data and scripts were moved to `archive/handoff/` (Phase 2, 2026-09-27).
+> - `bench/` (20 JSON 4.6MB) — 800Q reranker shootouts, `eval_remapped.json` 921KB — supplement to `eval/results/` (canonical, see `README.md#evaluation`)
+> - `scripts/` (17) — `bench_backbone.py`, `aggregate_bench.py`, `remap_gold.py`, `verify_*.py` — eval tooling, canonical is `scripts/cross_encoder_benchmark.py`
 
-**Canonical:** `eval/results/` (aggregated) + `README.md#evaluation`. `handoff/bench/` is raw supplement — keep for reproducibility, not for API.
-**Sessions:** `handoff/sessions/` (36 transcripts) archived to `archive/handoff-sessions/` on `main`.
+**Canonical:** `eval/results/` (aggregated) + `README.md#evaluation`. See `archive/handoff/README.md` for retention.
