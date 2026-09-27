@@ -2,7 +2,7 @@
 Implements Langfuse ingestion API + simple UI for Vast unprivileged host.
 Stores traces to /tmp/langfuse_traces.jsonl and provides /api/public/health
 """
-from fastapi import FastAPI, Request, Query
+from fastapi import FastAPI, Header, Request, Query
 from fastapi.responses import JSONResponse, HTMLResponse
 import html as _htmlesc
 import json, time, os
@@ -379,7 +379,12 @@ async def traces():
     return {"data": out, "total": len(out)}
 
 @app.post("/api/public/ingestion")
-async def ingestion(request: Request):
+async def ingestion(request: Request, x_api_key: str = Header(None, alias="X-API-Key")):
+    # T-C2: Require API key if TRACING_API_KEY is set (fail-closed when configured)
+    import os
+    expected = os.getenv("TRACING_API_KEY")
+    if expected and x_api_key != expected:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
     body = await request.json()
     # Langfuse SDK sends {batch: [{type, body:{id, name, ...}}]}
     ts = int(time.time()*1000)

@@ -230,3 +230,6 @@ credentials/
 .webui_secret_key
 # Generated benchmark site (use eval/build_report_site.py)
 docs/benchmark-report/
+
+# T-C1: secrets — never commit real .env
+deploy/docker/.env
