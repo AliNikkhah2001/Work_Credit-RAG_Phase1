@@ -1,0 +1,834 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RAG Observability Dashboard</title>
+<style>
+:root{--red:#b91c1c;--green:#15803d;--ink:#111;--mut:#666;--line:#e5e7eb;--bg:#f8fafc;--blue:#2563eb}
+*{box-sizing:border-box}
+body{font-family:Tahoma,system-ui,-apple-system,sans-serif;margin:0;background:var(--bg);color:var(--ink)}
+header{background:#111827;color:#fff;padding:14px 20px;display:flex;flex-wrap:wrap;gap:14px;align-items:center;position:sticky;top:0;z-index:10}
+header h1{font-size:17px;margin:0;white-space:nowrap}
+header .spacer{flex:1}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tab{padding:6px 12px;border:1px solid rgba(255,255,255,.25);border-radius:16px;cursor:pointer;font-size:13px;background:transparent;color:#cbd5e1}
+.tab.on{background:#fff;color:#111827;border-color:#fff;font-weight:600}
+.hdr-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.hdr-actions select,.hdr-actions button{padding:5px 10px;border-radius:6px;border:1px solid var(--line);font-family:inherit;font-size:12px}
+.hdr-actions button{background:var(--blue);color:#fff;border-color:var(--blue);cursor:pointer}
+.hdr-actions button:hover{opacity:.9}
+main{max-width:1180px;margin:0 auto;padding:18px}
+.card{background:#fff;border:1px solid var(--line);padding:14px;border-radius:10px;text-align:center}
+.card b{font-size:26px;display:block}
+.card span{font-size:12px;color:var(--mut)}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:12px 0}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:900px){.grid{grid-template-columns:1fr}}
+.panel{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:14px}
+.panel h3{margin:0 0 10px;font-size:14px}
+.row{display:flex;align-items:center;gap:8px;margin:5px 0}
+.lbl{min-width:120px;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.track{flex:1;background:#eee;height:14px;border-radius:4px;overflow:hidden}
+.fill{background:var(--blue);height:14px;border-radius:4px;transition:width .4s}
+.fill.g{background:var(--green)}.fill.r{background:var(--red)}.fill.y{background:#ca8a04}
+.val{min-width:80px;font-size:11px;color:var(--mut);text-align:right}
+table{border-collapse:collapse;width:100%;font-size:12px}
+th,td{border:1px solid var(--line);padding:6px;text-align:left;vertical-align:top}
+th{background:#f1f5f9;white-space:nowrap}
+tr:hover{background:#f8fafc}
+td.trunc{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;align-items:center}
+.toolbar select,.toolbar input{padding:6px 8px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:12px}
+.toolbar button{padding:6px 12px;border:1px solid var(--line);border-radius:6px;background:#fff;cursor:pointer;font-size:12px}
+.toolbar button.primary{background:var(--blue);color:#fff;border-color:var(--blue)}
+.toolbar button:disabled{opacity:.5;cursor:not-allowed}
+.pill{font-size:11px;padding:2px 8px;border-radius:10px;background:#e0e7ff;color:#3730a3;display:inline-block}
+.pill.ok{background:#dcfce7;color:#166534}.pill.bad{background:#fee2e2;color:#991b1b}
+.stars{color:#f59e0b;letter-spacing:1px}
+.tabpane{display:none}.tabpane.on{display:block}
+.muted{color:var(--mut);font-size:12px}
+.err{color:var(--red);font-size:13px;background:#fef2f2;border:1px solid #fecaca;padding:8px;border-radius:6px}
+.detail{background:#f8fafc;border:1px solid var(--line);border-radius:8px;padding:12px;margin-top:10px}
+.detail h4{margin:8px 0 6px;font-size:13px}
+.detail pre{background:#fff;border:1px solid var(--line);padding:8px;border-radius:6px;white-space:pre-wrap;word-break:break-word;font-size:12px;max-height:300px;overflow:auto}
+.star-btn{font-size:18px;cursor:pointer;background:none;border:none;padding:2px 3px}
+.star-btn.on{color:#f59e0b}.star-btn.off{color:#d1d5db}
+.timeline{position:relative;padding-left:22px}
+.timeline::before{content:'';position:absolute;left:9px;top:8px;bottom:8px;width:2px;background:var(--line)}
+.stage{position:relative;background:#fff;border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin:8px 0 0 0;cursor:pointer}
+.stage::before{content:'';position:absolute;left:-16px;top:14px;width:10px;height:10px;border-radius:50%;background:var(--blue);border:2px solid #fff;box-shadow:0 0 0 2px var(--blue)}
+.stage.blocked::before{background:var(--red);box-shadow:0 0 0 2px var(--red)}
+.stage-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.stage-head b{font-size:13px}
+.stage-head small{color:var(--mut);font-size:11px}
+.stage-body{margin-top:8px;font-size:12px;display:none}
+.stage.open .stage-body{display:block}
+.connector{height:10px;display:flex;align-items:center;justify-content:center;color:var(--mut);font-size:11px}
+.kv{display:grid;grid-template-columns:110px 1fr;gap:4px 8px;font-size:12px}
+.kv dt{color:var(--mut)}.kv dd{margin:0;word-break:break-word}
+.badge{font-size:11px;padding:2px 6px;border-radius:10px;background:#f1f5f9;border:1px solid var(--line)}
+.tip{position:fixed;background:#111827;color:#fff;font-size:11px;padding:5px 8px;border-radius:6px;pointer-events:none;display:none;z-index:20;max-width:300px}
+pre.json{max-height:400px;overflow:auto}
+/* Pipeline chunk / citation / signal cards */
+.chunk-card{background:#f8fafc;border:1px solid var(--line);border-radius:8px;padding:10px;margin:6px 0}
+.chunk-card-head{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
+.chunk-card-head .src-badge{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600;border:1px solid var(--line)}
+.chunk-card-head .src-both{background:#dbeafe;color:#1e40af;border-color:#bfdbfe}
+.chunk-card-head .src-ce{background:#dcfce7;color:#166534;border-color:#bbf7d0}
+.chunk-card-head .src-rrf{background:#fef3c7;color:#92400e;border-color:#fde68a}
+.chunk-card-head .src-other{background:#f1f5f9;color:#475569}
+.chunk-card .score-bar{flex:1;max-width:120px;height:8px;background:#e5e7eb;border-radius:4px;overflow:hidden}
+.chunk-card .score-fill{height:100%;border-radius:4px;transition:width .3s}
+.chunk-card .chunk-title{font-size:12px;font-weight:600}
+.chunk-card .chunk-heading{font-size:11px;color:var(--mut)}
+.chunk-card .chunk-content{font-size:12px;white-space:pre-wrap;word-break:break-word;margin-top:6px;line-height:1.5}
+.cite-card{background:#f8fafc;border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin:6px 0;display:flex;gap:8px;align-items:flex-start}
+.cite-num{flex-shrink:0;width:24px;height:24px;border-radius:50%;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+.cite-meta{font-size:12px}
+.signal-chip{font-size:11px;padding:2px 8px;border-radius:10px;border:1px solid var(--line);display:inline-block;margin:2px}
+.signal-chip.block{background:#fee2e2;color:#991b1b;border-color:#fecaca}
+.signal-chip.allow{background:#dcfce7;color:#166534;border-color:#bbf7d0}
+.decision-badge{font-size:12px;padding:4px 12px;border-radius:16px;font-weight:600;display:inline-block}
+.decision-badge.allowed{background:#dcfce7;color:#166534;border:1px solid #bbf7d0}
+.decision-badge.blocked{background:#fee2e2;color:#991b1b;border:1px solid #fecaca}
+.raw-toggle{font-size:11px;color:var(--mut);cursor:pointer;text-decoration:underline;background:none;border:none;padding:4px}
+.raw-toggle:hover{color:var(--ink)}
+</style></head><body>
+<header>
+<h1>🔬 RAG Observability Dashboard</h1>
+<div class="tabs" id="tabbar">
+<div class="tab on" data-tab="overview">Overview</div>
+<div class="tab" data-tab="evaluations">Evaluations</div>
+<div class="tab" data-tab="pipeline">Pipeline Inspector</div>
+<div class="tab" data-tab="traces">Traces</div>
+<div class="tab" data-tab="export">Export</div>
+</div>
+<div class="spacer"></div>
+<div class="hdr-actions">
+<label class="muted" style="color:#cbd5e1;font-size:12px">Auto-refresh
+<select id="refreshSel"><option value="5000">5s</option><option value="10000">10s</option><option value="30000">30s</option><option value="0">Off</option></select>
+</label>
+<button id="refreshNow">Refresh Now</button>
+<span id="liveDot" title="last refresh" style="width:9px;height:9px;border-radius:50%;background:#22c55e;display:inline-block"></span>
+<span id="lastRefresh" style="font-size:11px;color:#cbd5e1"></span>
+</div>
+</header>
+<main>
+<!-- Overview -->
+<div id="pane-overview" class="tabpane on">
+<div class="cards" id="ov-cards"><div class="card"><b>…</b><span>Loading</span></div></div>
+<div class="grid">
+<div class="panel"><h3>Requests per hour (24h)</h3><svg id="chart-req" width="100%" height="160"></svg><div class="muted" id="chart-req-note"></div></div>
+<div class="panel"><h3>Latency distribution (ms)</h3><svg id="chart-lat" width="100%" height="160"></svg><div class="muted" id="chart-lat-note"></div></div>
+</div>
+<div class="grid">
+<div class="panel"><h3>Rating distribution (1–5 ★)</h3><svg id="chart-rating" width="100%" height="160"></svg></div>
+<div class="panel"><h3>Model usage</h3><svg id="chart-model" width="100%" height="160"></svg><span id="modelLegend" class="muted"></span></div>
+</div>
+<div class="panel"><h3>Recent evaluations (last 10)</h3><div id="ov-recent">Loading…</div></div>
+</div>
+
+<!-- Evaluations -->
+<div id="pane-evaluations" class="tabpane">
+<div class="toolbar">
+<label>Rating <select id="ev-rating"><option value="">All</option><option value="5">5 ★</option><option value="4">4 ★</option><option value="3">3 ★</option><option value="2">2 ★</option><option value="1">1 ★</option></select></label>
+<label>Model <select id="ev-model"><option value="">All</option></select></label>
+<label>Tag <input id="ev-tag" placeholder="tag" size="10"></label>
+<label>Search <input id="ev-search" placeholder="query / response / comment" size="18" dir="auto"></label>
+<button id="ev-filter">Filter</button>
+<button id="ev-clear">Clear</button>
+<button id="ev-export-jsonl">Export JSONL</button>
+<button id="ev-export-csv">Export CSV</button>
+<span class="muted" id="ev-count"></span>
+</div>
+<div class="toolbar">
+<button id="ev-prev">Prev</button><span id="ev-page" class="muted">Page 1/1</span><button id="ev-next">Next</button>
+</div>
+<div id="ev-table-wrap">Loading…</div>
+<div id="ev-detail" class="detail" style="display:none"></div>
+</div>
+
+<!-- Pipeline Inspector -->
+<div id="pane-pipeline" class="tabpane">
+<div class="toolbar">
+<label>Request ID: <input id="pipe-id" placeholder="req_xxxx or uuid" size="32" dir="auto"></label>
+<button id="pipe-load" class="primary">Load</button>
+<button id="pipe-raw-toggle">Toggle raw JSON</button>
+<span class="muted">Click a request ID in Evaluations/Traces to auto-load here.</span>
+</div>
+<div id="pipe-status" class="muted">Enter a Request ID and click Load.</div>
+<div id="pipe-timeline" class="timeline" style="display:none"></div>
+<div id="pipe-bottom" class="panel" style="display:none;margin-top:12px"></div>
+<details id="pipe-raw-wrap" style="margin-top:10px;display:none"><summary class="muted" style="cursor:pointer;font-size:11px">Show raw JSON (for debugging / export)</summary><pre id="pipe-raw" class="json" style="background:#fff;border:1px solid var(--line);padding:10px;border-radius:8px;max-height:500px;overflow:auto;font-size:11px;white-space:pre-wrap;word-break:break-all;margin-top:6px"></pre></details>
+</div>
+
+<!-- Traces -->
+<div id="pane-traces" class="tabpane">
+<div class="toolbar">
+<label>Model <select id="tr-model"><option value="">All</option></select></label>
+<label>Search <input id="tr-search" placeholder="query / request_id" size="22" dir="auto"></label>
+<button id="tr-filter">Filter</button>
+<button id="tr-clear">Clear</button>
+<button id="tr-refresh">Refresh</button>
+<span class="muted" id="tr-count"></span>
+</div>
+<div class="toolbar">
+<button id="tr-prev">Prev</button><span id="tr-page" class="muted">Page 1/1</span><button id="tr-next">Next</button>
+</div>
+<div id="tr-table-wrap">Loading…</div>
+</div>
+
+<!-- Export -->
+<div id="pane-export" class="tabpane">
+<div class="panel">
+<h3>Export filters</h3>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px">
+<label>From date<br><input type="date" id="ex-from"></label>
+<label>To date<br><input type="date" id="ex-to"></label>
+<label>Min rating<br><select id="ex-min"><option value="">All</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></label>
+<label>Max rating<br><select id="ex-max"><option value="">All</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></label>
+<label>Tags (comma-separated)<br><input id="ex-tags" placeholder="e.g. helpful, hallucination" style="width:100%" dir="auto"></label>
+<label>Model<br><select id="ex-model"><option value="">All</option></select></label>
+</div>
+<div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+<label><input type="radio" name="ex-fmt" value="jsonl" checked> JSONL</label>
+<label><input type="radio" name="ex-fmt" value="csv"> CSV</label>
+<button id="ex-preview" class="primary">Generate Preview</button>
+<button id="ex-download">Download</button>
+<span id="ex-count" class="muted"></span>
+</div>
+</div>
+<div class="panel"><h3>Preview (first 5 rows)</h3><div id="ex-preview-status" class="muted">Click Generate Preview.</div><pre id="ex-preview-json" class="json" style="display:none"></pre></div>
+</div>
+</main>
+<div class="tip" id="tip"></div>
+<script>
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function trunc(s,n){s=String(s||'');return s.length>n?s.slice(0,n)+'…':s}
+function fmtTime(ts){if(!ts)return '—';try{if(typeof ts==='number'){let d=new Date(ts*1000);if(ts>1e12) d=new Date(ts);return d.toLocaleString()}return String(ts)}catch(e){return String(ts)}}
+function fmtLatency(ms){if(ms==null) return '—';if(ms>=1000) return (ms/1000).toFixed(2)+'s';return ms+'ms'}
+function stars(n){if(!n) return '<span class="muted">—</span>';let s='';for(let i=1;i<=5;i++) s+= i<=n?'★':'☆';return '<span class="stars">'+s+'</span> '+n}
+function avgRating(dist){let tot=0,cnt=0;for(let k in dist){let v=dist[k]||0;tot+= (+k)*v;cnt+=v}return cnt? (tot/cnt).toFixed(1):'—'}
+let currentTab='overview',refreshTimer=null;
+// tab switching
+document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{switchTab(t.dataset.tab)}));
+function switchTab(name){
+  currentTab=name;
+  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.dataset.tab===name));
+  document.querySelectorAll('.tabpane').forEach(p=>p.classList.toggle('on',p.id==='pane-'+name));
+  loadTab(name);
+}
+function setLastRefresh(){document.getElementById('lastRefresh').textContent=new Date().toLocaleTimeString();document.getElementById('liveDot').style.background='#22c55e'}
+function setError(){document.getElementById('liveDot').style.background='#ef4444'}
+function scheduleRefresh(){
+  if(refreshTimer) clearInterval(refreshTimer);
+  let v=parseInt(document.getElementById('refreshSel').value,10);
+  if(!v) return;
+  refreshTimer=setInterval(()=>loadTab(currentTab),v);
+}
+document.getElementById('refreshSel').addEventListener('change',scheduleRefresh);
+document.getElementById('refreshNow').addEventListener('click',()=>loadTab(currentTab));
+function loadTab(name){
+  if(name==='overview') loadOverview();
+  else if(name==='evaluations') loadEvaluations();
+  else if(name==='traces') loadTraces();
+  else if(name==='pipeline'){ /* keep current */ }
+  else if(name==='export'){ /* no auto */ }
+}
+
+// ---------- Overview ----------
+async function loadOverview(){
+  let wrap=document.getElementById('ov-cards');
+  try{
+    let r=await fetch('/api/observability/overview');if(!r.ok) throw new Error('HTTP '+r.status);
+    let s=await r.json();
+    let avgStars=avgRating(s.rating_distribution||{});
+    let blockPct=s.block_rate!=null? (s.block_rate*100).toFixed(1)+'%':'—';
+    let avgLat=s.avg_latency_ms!=null? fmtLatency(Math.round(s.avg_latency_ms)):'—';
+    wrap.innerHTML=
+      "<div class='card'><b>"+(s.total_requests||0).toLocaleString()+"</b><span>Requests</span></div>"+
+      "<div class='card'><b>"+esc(avgLat)+"</b><span>Avg Latency</span></div>"+
+      "<div class='card'><b>"+(s.total_evaluations||0)+"</b><span>Rated</span></div>"+
+      "<div class='card'><b>"+esc(blockPct)+"</b><span>Block rate</span></div>"+
+      "<div class='card'><b>"+esc(avgStars)+" ★</b><span>Avg Rating</span></div>";
+    // charts
+    let tsData=null;
+    try{let tr=await fetch('/api/observability/timeseries?hours=24');if(tr.ok){let j=await tr.json();tsData=j.data||j}}catch(e){}
+    if(!tsData) tsData=s.requests_per_hour||[];
+    // normalize timeseries to [{label,count}]
+    let buckets=[];
+    if(Array.isArray(tsData)){
+      buckets=tsData.map(b=>{
+        let c=b.requests!=null?b.requests:(b.count!=null?b.count:0);
+        let label=b.hour||b.label||''; // b.hour is ISO like 2026-09-23T10:00
+        let short=label? label.slice(11,16) : '';
+        return {label:short||label,count:c,raw:b}
+      });
+    }
+    renderBarChart('chart-req',buckets,'count','label');
+    document.getElementById('chart-req-note').textContent=buckets.length? '24h buckets':'No data';
+    // rating distribution
+    renderRatingChart(s.rating_distribution||{});
+    // model donut
+    renderModelDonut(s.model_distribution||{});
+    // latency histogram: fetch some traces to bucket latencies
+    await renderLatencyHistogram('chart-lat');
+    // recent evaluations
+    loadOverviewRecent();
+    populateModelSelects(s.model_distribution||{});
+    setLastRefresh();
+  }catch(e){
+    wrap.innerHTML="<div class='err'>Failed to load overview: "+esc(e.message)+"</div>";
+    setError();
+  }
+}
+function renderBarChart(svgId,data,valKey,labelKey){
+  let svg=document.getElementById(svgId);if(!svg) return;
+  let W=svg.clientWidth||500;let H=150;svg.setAttribute('viewBox','0 0 '+W+' '+H);svg.innerHTML='';
+  if(!data||!data.length){svg.innerHTML="<text x='50%' y='50%' text-anchor='middle' fill='#999' font-size='12'>No data</text>";return}
+  let max=Math.max(1,...data.map(d=>d[valKey]||0));
+  let bw=(W-30)/data.length;let gap=Math.max(1,bw-2);
+  let ns='http://www.w3.org/2000/svg';
+  // baseline
+  let base=document.createElementNS(ns,'line');base.setAttribute('x1','10');base.setAttribute('x2',W-10);base.setAttribute('y1',H-20);base.setAttribute('y2',H-20);base.setAttribute('stroke','#e5e7eb');svg.appendChild(base);
+  data.forEach((d,i)=>{
+    let v=d[valKey]||0;let h=v/max*(H-40);let x=10+i*bw+1;let y=H-20-h;
+    let r=document.createElementNS(ns,'rect');
+    r.setAttribute('x',x.toFixed(1));r.setAttribute('y',y.toFixed(1));r.setAttribute('width',gap.toFixed(1));r.setAttribute('height',Math.max(1,h).toFixed(1));
+    r.setAttribute('fill','#2563eb');r.setAttribute('rx','2');
+    let tt=(d[labelKey]||'')+' : '+v;let t=document.createElementNS(ns,'title');t.textContent=tt;r.appendChild(t);svg.appendChild(r);
+    if(data.length<=24){
+      let tx=document.createElementNS(ns,'text');tx.setAttribute('x',(x+gap/2).toFixed(1));tx.setAttribute('y',(H-6).toFixed(1));tx.setAttribute('text-anchor','middle');tx.setAttribute('font-size','7');tx.setAttribute('fill','#666');tx.textContent=(d[labelKey]||'').slice(0,5);svg.appendChild(tx);
+    }
+  });
+}
+function renderRatingChart(dist){
+  let svg=document.getElementById('chart-rating');if(!svg) return;
+  let W=svg.clientWidth||300,H=160;svg.setAttribute('viewBox','0 0 '+W+' '+H);
+  let max=Math.max(1,...[1,2,3,4,5].map(k=>dist[k]||0));
+  let ns='http://www.w3.org/2000/svg';svg.innerHTML='';
+  for(let i=1;i<=5;i++){
+    let v=dist[i]||0;let h=v/max*(H-50);let bw=(W-40)/5;let x=20+(i-1)*bw;let y=H-30-h;
+    let r=document.createElementNS(ns,'rect');r.setAttribute('x',x.toFixed(1));r.setAttribute('y',y.toFixed(1));r.setAttribute('width',Math.max(10,bw-8).toFixed(1));r.setAttribute('height',Math.max(2,h).toFixed(1));r.setAttribute('fill',i>=4?'#15803d':i===3?'#ca8a04':'#b91c1c');r.setAttribute('rx','3');let t=document.createElementNS(ns,'title');t.textContent=i+'★ : '+v;r.appendChild(t);svg.appendChild(r);
+    let tx=document.createElementNS(ns,'text');tx.setAttribute('x',(x+bw/2-4).toFixed(1));tx.setAttribute('y',(H-14).toFixed(1));tx.setAttribute('font-size','11');tx.setAttribute('fill','#666');tx.textContent=i+'★';svg.appendChild(tx);
+    let tv=document.createElementNS(ns,'text');tv.setAttribute('x',(x+bw/2-4).toFixed(1));tv.setAttribute('y',(y-4).toFixed(1));tv.setAttribute('font-size','10');tv.setAttribute('fill','#111');tv.textContent=v;svg.appendChild(tv);
+  }
+}
+function renderModelDonut(dist){
+  let svg=document.getElementById('chart-model');let legend=document.getElementById('modelLegend');if(!svg) return;
+  let W=200,H=160;svg.setAttribute('viewBox','0 0 200 160');svg.innerHTML='';
+  let entries=Object.entries(dist).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  if(!entries.length){svg.innerHTML="<text x='50%' y='50%' text-anchor='middle' fill='#999' font-size='12'>No data</text>";legend.textContent='';return}
+  let total=entries.reduce((a,[,v])=>a+v,0);
+  let colors=['#2563eb','#0ea5e9','#10b981','#f59e0b','#ef4444','#8b5cf6'];
+  let ns='http://www.w3.org/2000/svg';
+  // background circle
+  let cx=80,cy=70,r=50;
+  let bg=document.createElementNS(ns,'circle');bg.setAttribute('cx',cx);bg.setAttribute('cy',cy);bg.setAttribute('r',r);bg.setAttribute('fill','none');bg.setAttribute('stroke','#eee');bg.setAttribute('stroke-width','16');svg.appendChild(bg);
+  let offset=0;C=Math.PI*2*r;
+  entries.forEach(([k,v],i)=>{
+    let pct=v/total;let len=C*pct;
+    let c=document.createElementNS(ns,'circle');
+    c.setAttribute('cx',cx);c.setAttribute('cy',cy);c.setAttribute('r',r);c.setAttribute('fill','none');c.setAttribute('stroke',colors[i%colors.length]);c.setAttribute('stroke-width','16');
+    c.setAttribute('stroke-dasharray',len.toFixed(1)+' '+(C-len).toFixed(1));
+    c.setAttribute('transform','rotate(-90 '+cx+' '+cy+')');c.setAttribute('stroke-dashoffset',(-offset).toFixed(1));
+    let t=document.createElementNS(ns,'title');t.textContent=k+': '+v+' ('+(pct*100).toFixed(1)+'%)';c.appendChild(t);svg.appendChild(c);
+    offset+=len;
+  });
+  // center text
+  let tx=document.createElementNS(ns,'text');tx.setAttribute('x',cx);tx.setAttribute('y',cy+4);tx.setAttribute('text-anchor','middle');tx.setAttribute('font-size','12');tx.setAttribute('font-weight','600');tx.textContent=total;svg.appendChild(tx);
+  // legend to right
+  let lx=145;entries.forEach(([k,v],i)=>{
+    let y=20+i*16;
+    let rect=document.createElementNS(ns,'rect');rect.setAttribute('x',lx);rect.setAttribute('y',y);rect.setAttribute('width','10');rect.setAttribute('height','10');rect.setAttribute('fill',colors[i%colors.length]);svg.appendChild(rect);
+    let tt=document.createElementNS(ns,'text');tt.setAttribute('x',lx+13);tt.setAttribute('y',y+9);tt.setAttribute('font-size','7');tt.setAttribute('fill','#333');tt.textContent=trunc(k,14)+' ('+v+')';svg.appendChild(tt);
+  });
+  legend.textContent=total+' total';
+}
+async function renderLatencyHistogram(svgId){
+  let svg=document.getElementById(svgId);if(!svg) return;
+  let W=svg.clientWidth||500,H=160;svg.setAttribute('viewBox','0 0 '+W+' '+H);svg.innerHTML='';
+  let buckets=[{label:'<500',count:0},{label:'500-1k',count:0},{label:'1k-2k',count:0},{label:'2k-4k',count:0},{label:'4k+',count:0}];
+  try{
+    let r=await fetch('/api/observability/traces?limit=100');if(r.ok){let j=await r.json();let rows=j.data||[];rows.forEach(row=>{
+      let ms=row.latency_ms;if(ms==null) return;
+      if(ms<500) buckets[0].count++;
+      else if(ms<1000) buckets[1].count++;
+      else if(ms<2000) buckets[2].count++;
+      else if(ms<4000) buckets[3].count++;
+      else buckets[4].count++;
+    });}
+  }catch(e){}
+  let max=Math.max(1,...buckets.map(b=>b.count));
+  let ns='http://www.w3.org/2000/svg';
+  if(buckets.every(b=>b.count===0)){svg.innerHTML="<text x='50%' y='50%' text-anchor='middle' fill='#999' font-size='12'>No latency data</text>";document.getElementById('chart-lat-note').textContent='Need traces with latency_ms';return}
+  document.getElementById('chart-lat-note').textContent=buckets.reduce((a,b)=>a+b.count,0)+' samples';
+  let bw=(W-30)/buckets.length;
+  buckets.forEach((b,i)=>{
+    let h=b.count/max*(H-40);let x=12+i*bw;let y=H-20-h;
+    let rect=document.createElementNS(ns,'rect');rect.setAttribute('x',x.toFixed(1));rect.setAttribute('y',y.toFixed(1));rect.setAttribute('width',Math.max(8,bw-6).toFixed(1));rect.setAttribute('height',Math.max(2,h).toFixed(1));rect.setAttribute('fill','#0ea5e9');rect.setAttribute('rx','3');let t=document.createElementNS(ns,'title');t.textContent=b.label+': '+b.count;rect.appendChild(t);svg.appendChild(rect);
+    let tx=document.createElementNS(ns,'text');tx.setAttribute('x',(x+bw/2).toFixed(1));tx.setAttribute('y',(H-6).toFixed(1));tx.setAttribute('text-anchor','middle');tx.setAttribute('font-size','8');tx.setAttribute('fill','#666');tx.textContent=b.label;svg.appendChild(tx);
+    let tv=document.createElementNS(ns,'text');tv.setAttribute('x',(x+bw/2).toFixed(1));tv.setAttribute('y',(y-4).toFixed(1));tv.setAttribute('text-anchor','middle');tv.setAttribute('font-size','9');tv.setAttribute('fill','#111');tv.textContent=b.count;svg.appendChild(tv);
+  });
+}
+async function loadOverviewRecent(){
+  let el=document.getElementById('ov-recent');
+  try{
+    let r=await fetch('/api/observability/evaluations?limit=10&offset=0');if(!r.ok) throw new Error('HTTP '+r.status);
+    let j=await r.json();let rows=j.data||[];
+    if(!rows.length){el.innerHTML="<p class='muted'>No evaluations yet</p>";return}
+    let h="<table><tr><th>Time</th><th>Query</th><th>Rating</th><th>Model</th></tr>";
+    rows.forEach(ev=>{
+      h+="<tr><td>"+esc(fmtTime(ev.created_at))+"</td><td dir='auto'>"+esc(trunc(ev.user_query,50))+"</td><td>"+stars(ev.rating)+"</td><td>"+esc(ev.model||'—')+"</td></tr>";
+    });
+    h+="</table>";el.innerHTML=h;
+  }catch(e){el.innerHTML="<div class='err'>"+esc(e.message)+"</div>"}
+}
+function populateModelSelects(dist){
+  let models=Object.keys(dist||{}).sort();
+  // also try to enrich from evaluations if empty
+  let selects=[document.getElementById('ev-model'),document.getElementById('tr-model'),document.getElementById('ex-model')];
+  selects.forEach(sel=>{
+    if(!sel) return;
+    let cur=sel.value;
+    let opts='<option value="">All</option>'+models.map(m=>"<option"+(m===cur?" selected":"")+">"+esc(m)+"</option>").join('');
+    if(sel.innerHTML!==opts) sel.innerHTML=opts;
+  });
+}
+
+// ---------- Evaluations ----------
+let evPage=0,evLimit=20,evTotal=0;
+async function loadEvaluations(){
+  let wrap=document.getElementById('ev-table-wrap');wrap.innerHTML='Loading…';
+  let rating=document.getElementById('ev-rating').value;
+  let model=document.getElementById('ev-model').value;
+  let tag=document.getElementById('ev-tag').value.trim();
+  let search=document.getElementById('ev-search').value.trim();
+  let params=new URLSearchParams({limit:evLimit,offset:evPage*evLimit});
+  if(rating) params.set('rating',rating);
+  if(model) params.set('model',model);
+  if(tag) params.set('tag',tag);
+  if(search) params.set('search',search);
+  try{
+    let r=await fetch('/api/observability/evaluations?'+params.toString());if(!r.ok) throw new Error('HTTP '+r.status);
+    let j=await r.json();let rows=j.data||[];evTotal=j.total||0;
+    document.getElementById('ev-count').textContent=evTotal+' total';
+    let pages=Math.max(1,Math.ceil(evTotal/evLimit));document.getElementById('ev-page').textContent='Page '+(evPage+1)+'/'+pages;
+    document.getElementById('ev-prev').disabled=evPage<=0;document.getElementById('ev-next').disabled=(evPage+1)>=pages;
+    if(!rows.length){wrap.innerHTML="<p class='muted'>No evaluations yet</p>";setLastRefresh();return}
+    let h="<table><tr><th>Time</th><th>Query</th><th>Response</th><th>Rating</th><th>Comment</th><th>Tags</th><th>Model</th><th>Latency</th><th>Actions</th></tr>";
+    rows.forEach(ev=>{
+      let tgs=(ev.tags||[]).map(t=>"<span class='pill'>"+esc(t)+"</span>").join(' ');
+      h+="<tr data-id='"+esc(ev.id)+"' style='cursor:pointer'>"+
+        "<td>"+esc(fmtTime(ev.created_at))+"</td>"+
+        "<td dir='auto' class='trunc' title='"+esc(ev.user_query||'')+"'>"+esc(trunc(ev.user_query,40))+"</td>"+
+        "<td dir='auto' class='trunc' title='"+esc(ev.response||'')+"'>"+esc(trunc(ev.response,40))+"</td>"+
+        "<td>"+stars(ev.rating)+"</td>"+
+        "<td dir='auto' class='trunc' title='"+esc(ev.comment||'')+"'>"+esc(trunc(ev.comment,30))+"</td>"+
+        "<td>"+(tgs||"<span class='muted'>—</span>")+"</td>"+
+        "<td>"+esc(ev.model||'—')+"</td>"+
+        "<td>"+esc(fmtLatency(ev.latency_ms))+"</td>"+
+        "<td><button class='inspect-btn' data-rid='"+esc(ev.request_id||'')+"'>Inspect</button> <button class='del-btn' data-id='"+esc(ev.id)+"'>Del</button></td>"+
+        "</tr>";
+    });
+    h+="</table>";wrap.innerHTML=h;
+    wrap.querySelectorAll('tr[data-id]').forEach(tr=>tr.addEventListener('click',e=>{
+      if(e.target.tagName==='BUTTON') return;
+      openEvalDetail(tr.dataset.id,rows.find(r=>r.id===tr.dataset.id));
+    }));
+    wrap.querySelectorAll('.del-btn').forEach(b=>b.addEventListener('click',async e=>{
+      e.stopPropagation();if(!confirm('Delete this evaluation?')) return;
+      let id=b.dataset.id;let dr=await fetch('/api/observability/evaluations/'+encodeURIComponent(id),{method:'DELETE'});if(dr.ok) loadEvaluations(); else alert('Delete failed');
+    }));
+    wrap.querySelectorAll('.inspect-btn').forEach(b=>b.addEventListener('click',e=>{
+      e.stopPropagation();let rid=b.dataset.rid;if(rid) openPipeline(rid);
+    }));
+    setLastRefresh();
+  }catch(e){wrap.innerHTML="<div class='err'>"+esc(e.message)+"</div>";setError()}
+}
+function openEvalDetail(id,ev){
+  if(!ev) return;
+  let el=document.getElementById('ev-detail');el.style.display='block';
+  let tgs=(ev.tags||[]).join(', ');
+  el.innerHTML=
+    "<h4>Evaluation "+esc(id)+" <span class='muted'>"+esc(fmtTime(ev.created_at))+"</span></h4>"+
+    "<div class='kv'><dt>Request ID</dt><dd><a href='#' id='detail-pipe-link'>"+esc(ev.request_id||'—')+"</a></dd><dt>Model</dt><dd>"+esc(ev.model||'—')+" · "+esc(fmtLatency(ev.latency_ms))+"</dd></div>"+
+    "<h4>Query</h4><pre dir='auto'>"+esc(ev.user_query||'—')+"</pre>"+
+    "<h4>Response</h4><pre dir='auto'>"+esc(ev.response||'—')+"</pre>"+
+    "<h4>Rating</h4><div id='detail-stars'>"+[1,2,3,4,5].map(i=>"<button class='star-btn "+(i<=ev.rating?"on":"off")+"' data-r='"+i+"'>★</button>").join('')+" <span class='muted' id='detail-rating-val'>"+esc(ev.rating||'—')+"</span></div>"+
+    "<h4>Comment</h4><textarea id='detail-comment' rows='3' style='width:100%;padding:8px;border:1px solid var(--line);border-radius:6px' dir='auto'>"+esc(ev.comment||'')+"</textarea><br><button id='detail-save-comment' style='margin-top:6px' class='primary'>Save comment</button> <span id='detail-save-status' class='muted'></span>"+
+    "<h4>Tags (comma-separated)</h4><input id='detail-tags' value='"+esc(tgs)+"' style='width:100%;padding:6px;border:1px solid var(--line);border-radius:6px' dir='auto'> <button id='detail-save-tags' style='margin-top:6px'>Save tags</button>"+
+    "<div style='margin-top:10px;display:flex;gap:8px'><button id='detail-inspect'>Open in Pipeline Inspector →</button><button id='detail-delete' style='background:var(--red);color:#fff;border-color:var(--red)'>Delete</button><button id='detail-close'>Close</button></div>";
+  el.querySelector('#detail-pipe-link').addEventListener('click',e=>{e.preventDefault();if(ev.request_id) openPipeline(ev.request_id)});
+  el.querySelector('#detail-inspect').addEventListener('click',()=>{if(ev.request_id) openPipeline(ev.request_id)});
+  el.querySelector('#detail-close').addEventListener('click',()=>el.style.display='none');
+  el.querySelector('#detail-delete').addEventListener('click',async()=>{
+    if(!confirm('Delete?')) return;let r=await fetch('/api/observability/evaluations/'+encodeURIComponent(id),{method:'DELETE'});if(r.ok){el.style.display='none';loadEvaluations()}else alert('delete failed')
+  });
+  el.querySelectorAll('.star-btn').forEach(b=>b.addEventListener('click',async()=>{
+    let nr=parseInt(b.dataset.r,10);let r=await fetch('/api/observability/evaluations/'+encodeURIComponent(id),{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({rating:nr})});
+    if(r.ok){let j=await r.json();ev.rating=j.rating;el.querySelectorAll('.star-btn').forEach(x=>x.className='star-btn '+(parseInt(x.dataset.r,10)<=nr?'on':'off'));document.getElementById('detail-rating-val').textContent=nr;loadEvaluations()}
+  }));
+  el.querySelector('#detail-save-comment').addEventListener('click',async()=>{
+    let v=document.getElementById('detail-comment').value;let st=document.getElementById('detail-save-status');st.textContent='Saving…';
+    let r=await fetch('/api/observability/evaluations/'+encodeURIComponent(id),{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({comment:v})});
+    if(r.ok){st.textContent='Saved ✓';setTimeout(()=>st.textContent='',1500);loadEvaluations()}else st.textContent='Error'
+  });
+  el.querySelector('#detail-save-tags').addEventListener('click',async()=>{
+    let v=document.getElementById('detail-tags').value;let arr=v.split(',').map(s=>s.trim()).filter(Boolean);
+    let r=await fetch('/api/observability/evaluations/'+encodeURIComponent(id),{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({tags:arr})});
+    if(r.ok) loadEvaluations();
+  });
+  el.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+document.getElementById('ev-filter').addEventListener('click',()=>{evPage=0;loadEvaluations()});
+document.getElementById('ev-clear').addEventListener('click',()=>{document.getElementById('ev-rating').value='';document.getElementById('ev-tag').value='';document.getElementById('ev-model').value='';document.getElementById('ev-search').value='';evPage=0;loadEvaluations()});
+document.getElementById('ev-prev').addEventListener('click',()=>{if(evPage>0){evPage--;loadEvaluations()}});
+document.getElementById('ev-next').addEventListener('click',()=>{evPage++;loadEvaluations()});
+document.getElementById('ev-search').addEventListener('keydown',e=>{if(e.key==='Enter'){evPage=0;loadEvaluations()}});
+document.getElementById('ev-export-jsonl').addEventListener('click',()=>doExport('jsonl',true));
+document.getElementById('ev-export-csv').addEventListener('click',()=>doExport('csv',true));
+function doExport(fmt,fromEvalTab){
+  let p=new URLSearchParams();
+  if(fromEvalTab){
+    let r=document.getElementById('ev-rating').value;let m=document.getElementById('ev-model').value;let t=document.getElementById('ev-tag').value.trim();
+    if(r) p.set('min_rating',r),p.set('max_rating',r);
+    if(t) p.set('tags',t);
+    if(m) p.set('model',m);
+    let s=document.getElementById('ev-search').value.trim(); // export does not support search, but include tags
+  }
+  p.set('format',fmt);
+  let url='/api/observability/export?'+p.toString();
+  window.location=url;
+}
+
+// ---------- Traces ----------
+let trPage=0,trLimit=20,trTotal=0;
+async function loadTraces(){
+  let wrap=document.getElementById('tr-table-wrap');wrap.innerHTML='Loading…';
+  let model=document.getElementById('tr-model').value;let search=document.getElementById('tr-search').value.trim();
+  let params=new URLSearchParams({limit:trLimit,offset:trPage*trLimit});
+  if(model) params.set('model',model);
+  if(search) params.set('search',search);
+  try{
+    let r=await fetch('/api/observability/traces?'+params.toString());if(!r.ok) throw new Error('HTTP '+r.status);
+    let j=await r.json();let rows=j.data||[];trTotal=j.total||0;
+    document.getElementById('tr-count').textContent=trTotal+' total';
+    let pages=Math.max(1,Math.ceil(trTotal/trLimit));document.getElementById('tr-page').textContent='Page '+(trPage+1)+'/'+pages;
+    document.getElementById('tr-prev').disabled=trPage<=0;document.getElementById('tr-next').disabled=(trPage+1)>=pages;
+    if(!rows.length){wrap.innerHTML="<p class='muted'>No traces yet</p>";setLastRefresh();return}
+    let h="<table><tr><th>✓</th><th>Request ID</th><th>Model</th><th>Time</th><th>Latency</th><th>Query Preview</th><th>Spans</th></tr>";
+    rows.forEach(t=>{
+      let hasResp=t.response? '✓':'…';
+      let spanCount=(t.retrieved_chunks||[]).length||(t.citations||[]).length||'—';
+      let preview=trunc(t.user_query||t.context_preview||'',60);
+      h+="<tr>"+
+        "<td>"+hasResp+"</td>"+
+        "<td><a href='#' class='pipe-link' data-rid='"+esc(t.request_id)+"'>"+esc(t.request_id)+"</a></td>"+
+        "<td>"+esc(t.model||'—')+"</td>"+
+        "<td>"+esc(fmtTime(t.created_at))+"</td>"+
+        "<td>"+esc(fmtLatency(t.latency_ms))+"</td>"+
+        "<td dir='auto' class='trunc' title='"+esc(t.user_query||'')+"'>"+esc(preview)+"</td>"+
+        "<td>"+esc(spanCount)+"</td>"+
+        "</tr>";
+    });
+    h+="</table>";wrap.innerHTML=h;
+    wrap.querySelectorAll('.pipe-link').forEach(a=>a.addEventListener('click',e=>{e.preventDefault();openPipeline(a.dataset.rid)}));
+    setLastRefresh();
+  }catch(e){wrap.innerHTML="<div class='err'>"+esc(e.message)+"</div>";setError()}
+}
+document.getElementById('tr-filter').addEventListener('click',()=>{trPage=0;loadTraces()});
+document.getElementById('tr-clear').addEventListener('click',()=>{document.getElementById('tr-model').value='';document.getElementById('tr-search').value='';trPage=0;loadTraces()});
+document.getElementById('tr-refresh').addEventListener('click',loadTraces);
+document.getElementById('tr-prev').addEventListener('click',()=>{if(trPage>0){trPage--;loadTraces()}});
+document.getElementById('tr-next').addEventListener('click',()=>{trPage++;loadTraces()});
+document.getElementById('tr-search').addEventListener('keydown',e=>{if(e.key==='Enter'){trPage=0;loadTraces()}});
+
+// ---------- Pipeline ----------
+let lastPipelineData=null;
+document.getElementById('pipe-load').addEventListener('click',()=>{let id=document.getElementById('pipe-id').value.trim();if(id) loadPipeline(id)});
+document.getElementById('pipe-id').addEventListener('keydown',e=>{if(e.key==='Enter') document.getElementById('pipe-load').click()});
+document.getElementById('pipe-raw-toggle').addEventListener('click',()=>{
+  let w=document.getElementById('pipe-raw-wrap');w.style.display=w.style.display==='none'?'block':'none';
+  w.open=w.style.display!=='none';
+});
+function openPipeline(rid){
+  switchTab('pipeline');
+  document.getElementById('pipe-id').value=rid;
+  loadPipeline(rid);
+}
+async function loadPipeline(rid){
+  let status=document.getElementById('pipe-status');let tl=document.getElementById('pipe-timeline');let bottom=document.getElementById('pipe-bottom');let raw=document.getElementById('pipe-raw');let rawWrap=document.getElementById('pipe-raw-wrap');
+  status.textContent='Loading…';tl.style.display='none';bottom.style.display='none';rawWrap.style.display='none';raw.textContent='';
+  try{
+    let r=await fetch('/api/observability/pipeline/'+encodeURIComponent(rid));
+    if(!r.ok){
+      let j=await r.json().catch(()=>({}));
+      let msg=j.error||('HTTP '+r.status);
+      // 404 means no trace data for this request_id — explain instead of showing raw JSON
+      if(r.status===404){
+        status.innerHTML="<div class='err'>No pipeline trace found for <code>"+esc(rid)+"</code>"
+          +"<br><span style='font-size:11px'>This request has no detailed trace. Only chats that went through the RAG pipeline (with retrieval + generation) produce a pipeline trace. "
+          +"Ratings created via <code>/rate</code> without a prior RAG trace will not have one. Check the <b>Traces</b> tab for request IDs that have traces, or <a href='#' onclick=\"switchTab('traces');loadTraces();return false\">browse Traces</a>.</span></div>";
+        setError();
+        return;
+      }
+      throw new Error(msg);
+    }
+    let data=await r.json();lastPipelineData=data;
+    raw.textContent=JSON.stringify(data,null,2);
+    status.textContent='Loaded '+esc(rid);
+    renderPipeline(data);
+    setLastRefresh();
+  }catch(e){status.innerHTML="<span class='err'>"+esc(e.message)+"</span>";setError()}
+}
+function renderChunkCard(c, idx){
+  let src=(c.source||'').toLowerCase();
+  let badgeCls= src==='both'?'src-both': src==='ce'?'src-ce': src==='rrf'?'src-rrf':'src-other';
+  let badgeLabel= src==='both'?'BOTH': src==='ce'?'CE': src==='rrf'?'RRF': (c.source||'—').toUpperCase();
+  let rankParts=[];
+  if(c.rank_rrf!=null) rankParts.push('RRF #'+c.rank_rrf);
+  if(c.rank_ce!=null) rankParts.push('CE #'+c.rank_ce);
+  let rankTxt=rankParts.length? ' · '+rankParts.join(' · '):'';
+  let score=c.score!=null? Number(c.score): (c.hybrid_score!=null?Number(c.hybrid_score):(c.rerank_score!=null?Number(c.rerank_score):null));
+  let scorePct= score!=null? Math.min(100,Math.max(0,Math.round(score*100))): null;
+  let scoreColor= scorePct==null?'#9ca3af': scorePct>=80?'#16a34a': scorePct>=50?'#2563eb':'#f59e0b';
+  let content=(c.content||c.text||'').trim();
+  let snippet=content.length>600? content.slice(0,600):content;
+  let rest=content.length>600? content.slice(600):'';
+  return "<div class='chunk-card'>"
+    +"<div class='chunk-card-head'>"
+      +"<span class='src-badge "+badgeCls+"'>"+esc(badgeLabel)+"</span>"
+      +(scorePct!=null? "<div class='score-bar'><div class='score-fill' style='width:"+scorePct+"%;background:"+scoreColor+"'></div></div><span style='font-size:11px;color:var(--mut)'>"+esc(score!=null?score.toFixed(3):'')+"</span>" : "")
+      +"<span class='chunk-title' dir='auto'>"+esc(c.title||'Untitled')+"</span>"
+    +"</div>"
+    +(c.heading? "<div class='chunk-heading' dir='auto'>"+esc(c.heading)+rankTxt+"</div>" : (rankTxt?"<div class='chunk-heading'>"+esc(rankTxt.slice(3))+"</div>":""))
+    +"<div class='chunk-content' dir='auto'>"+esc(snippet)+"</div>"
+    +(rest? "<details style='margin-top:4px'><summary style='cursor:pointer;font-size:11px;color:var(--mut)'>Show more ("+rest.length+" chars)</summary><div class='chunk-content' dir='auto'>"+esc(rest)+"</div></details>" : "")
+    +"<div class='muted' style='margin-top:4px;font-size:10px'>chunk_id: "+esc(c.chunk_id||'—')+" · doc: "+esc(c.document_id||'—')+"</div>"
+  +"</div>";
+}
+function renderCitationCard(c, idx){
+  return "<div class='cite-card'>"
+    +"<div class='cite-num'>"+(idx+1)+"</div>"
+    +"<div class='cite-meta' dir='auto'><b>"+esc(c.title||'Untitled')+"</b>"
+      +(c.heading? "<br><span class='muted'>"+esc(c.heading)+"</span>":"")
+      +"<br><span class='muted' style='font-size:10px'>"+esc(c.chunk_id||'')+"</span></div>"
+  +"</div>";
+}
+function renderSignalChip(s){
+  let isBlock=typeof s==='string'? (s.toLowerCase().includes('block')||s.toLowerCase().includes('inject')) : (s.blocked===true||s.allowed===false);
+  let label=typeof s==='string'? s : (s.detector||s.category||s.type||s.signal||JSON.stringify(s)).slice(0,80);
+  return "<span class='signal-chip "+(isBlock?'block':'allow')+"'>"+esc(label)+"</span>";
+}
+function parseGuardrail(v){
+  if(v==null) return null;
+  if(typeof v==='object') return v;
+  if(typeof v==='string'){
+    let s=v.trim();
+    // Stored as Python repr "{'allowed': True}" instead of JSON — fix before parse
+    if(s.startsWith("{'")||s.includes("'allowed'")){
+      try{s=s.replace(/'/g,'"').replace(/\bTrue\b/g,'true').replace(/\bFalse\b/g,'false').replace(/\bNone\b/g,'null')}catch(e){}
+    }
+    try{let o=JSON.parse(s);return typeof o==='object'?o:null}catch(e){return {reason:s};}
+  }
+  return null;
+}
+function renderGuardrailBlock(guard){
+  // Accept both object and JSON/Python-repr string (as stored in DB)
+  guard=parseGuardrail(guard);
+  if(!guard||typeof guard!=='object') return "<span class='muted'>— no guardrail data</span>";
+  let allowed=guard.allowed!==false && guard.blocked!==true && guard.action!=='block';
+  let badge="<span class='decision-badge "+(allowed?'allowed':'blocked')+"'>"+(allowed?'Allowed':'Blocked')+(guard.action? ' · '+esc(guard.action):'')+"</span>";
+  let sigs=guard.signals||guard.categories||guard.reasons||[];
+  let sigsHtml='';
+  if(Array.isArray(sigs)&&sigs.length){
+    sigsHtml="<div style='margin:6px 0'>"+sigs.map(renderSignalChip).join(' ')+"</div>";
+  } else if(sigs&&typeof sigs==='string'&&sigs.trim()){
+    sigsHtml="<div style='margin:6px 0'>"+sigs.split(/[,;]/).map(s=>s.trim()).filter(Boolean).map(renderSignalChip).join(' ')+"</div>";
+  }
+  let reason=guard.reason||guard.message||guard.refusal||'';
+  let reasonHtml=reason? "<p dir='auto' style='margin:6px 0;font-size:12px'>"+esc(reason)+"</p>" : "";
+  let detailKeys=Object.keys(guard).filter(k=>!['allowed','blocked','action','signals','categories','reasons','reason','message','refusal'].includes(k));
+  let extraHtml='';
+  if(detailKeys.length){
+    extraHtml="<details style='margin-top:6px'><summary style='cursor:pointer;font-size:11px;color:var(--mut)'>More fields</summary><dl class='kv' style='margin-top:4px'>";
+    detailKeys.forEach(k=>{
+      let v=guard[k];
+      let txt=typeof v==='string'? v : JSON.stringify(v,null,2);
+      extraHtml+="<dt>"+esc(k)+"</dt><dd><pre dir='auto' style='margin:0;white-space:pre-wrap;font-size:11px'>"+esc(txt.slice(0,600))+"</pre></dd>";
+    });
+    extraHtml+="</dl></details>";
+  }
+  return badge+sigsHtml+reasonHtml+extraHtml;
+}
+function renderPipeline(d){
+  let tl=document.getElementById('pipe-timeline');let bottom=document.getElementById('pipe-bottom');
+  tl.innerHTML='';tl.style.display='block';
+  let st=d.stage_timing||{};let gi=d.guardrail_input,go=d.guardrail_output;
+  let rc=d.retrieved_chunks||[];let cits=d.citations||[];
+  let timeline=d.timeline||d.observer_timeline||null;
+  // Build 8 stages — each renders clean tagged HTML instead of raw JSON
+  let stages=[
+    {key:'input',title:'Stage 1: User Input',icon:'💬',render:()=>{
+      return "<dl class='kv'>"
+        +"<dt>Query</dt><dd><pre dir='auto' style='margin:0;white-space:pre-wrap'>"+esc(d.user_query||'—')+"</pre></dd>"
+        +"<dt>Model</dt><dd><span class='badge'>"+esc(d.model||'—')+"</span></dd>"
+        +"<dt>Time</dt><dd>"+esc(fmtTime(d.created_at))+"</dd>"
+        +"<dt>Request ID</dt><dd><code style='font-size:11px'>"+esc(d.request_id||'—')+"</code></dd>"
+      +"</dl>";
+    }},
+    {key:'guard_input',title:'Stage 2: Guardrails Input',icon:'🛡️',render:()=>{
+      if(!gi) return "<span class='muted'>No guardrail input data — request was not screened or data was not captured.</span>";
+      return renderGuardrailBlock(gi);
+    }},
+    {key:'rewrite',title:'Stage 3: Query Rewrite',icon:'✏️',render:()=>{
+      let orig=d.user_query||'—';let rw=d.rewritten_query;
+      let changed=rw&&rw!==orig;
+      return "<dl class='kv'>"
+        +"<dt>Original</dt><dd><pre dir='auto' style='margin:0;white-space:pre-wrap'>"+esc(orig)+"</pre></dd>"
+        +"<dt>Rewritten</dt><dd>"+(rw? "<pre dir='auto' style='margin:0;white-space:pre-wrap"+(changed?"'":";opacity:.6'")+">"+esc(rw)+"</pre>"+"<span class='muted' style='font-size:11px'>"+(changed?"Modified before retrieval":"No rewrite — original used as-is")+"</span>" : "<span class='muted'>No rewrite</span>")+"</dd>"
+      +"</dl>";
+    }},
+    {key:'retrieve',title:'Stage 4: Retrieve',icon:'🔎',render:()=>{
+      let h="<div style='display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px'>"
+        +"<span class='badge'>"+rc.length+" chunks</span>"
+        +(cits.length? "<span class='badge'>"+cits.length+" citations</span>":"")
+        +(d.retrieval_method? "<span class='badge'>"+esc(d.retrieval_method)+"</span>":"")
+        +"</div>";
+      if(!rc.length) return h+"<span class='muted'>No chunks retrieved — KB returned empty or retrieval was skipped.</span>";
+      rc.forEach((c,i)=>{ h+=renderChunkCard(c,i); });
+      if(cits.length){
+        h+="<h4 style='margin:10px 0 4px;font-size:12px'>Citations linked from answer</h4>";
+        cits.forEach((c,i)=>{ h+=renderCitationCard(c,i); });
+      }
+      return h;
+    }},
+    {key:'build',title:'Stage 5: Build Context',icon:'🧩',render:()=>{
+      let ctx=d.context_preview||d.context_sent_to_gemma||'';
+      if(!ctx||!ctx.trim()) return "<span class='muted'>Empty — no context was sent to the model (greeting or blocked request).</span>";
+      let snippet=ctx.slice(0,800);
+      let rest=ctx.length>800? ctx.slice(800):'';
+      return "<pre dir='auto' style='margin:0;white-space:pre-wrap;background:#f8fafc;border:1px solid var(--line);padding:8px;border-radius:6px;max-height:300px;overflow:auto'>"+esc(snippet)+"</pre>"
+        +(rest? "<details style='margin-top:4px'><summary style='cursor:pointer;font-size:11px;color:var(--mut)'>Show full context ("+ctx.length+" chars)</summary><pre dir='auto' style='white-space:pre-wrap;background:#f8fafc;border:1px solid var(--line);padding:8px;border-radius:6px;max-height:400px;overflow:auto;margin-top:4px'>"+esc(ctx)+"</pre></details>" : "");
+    }},
+    {key:'generate',title:'Stage 6: Guarded Generate',icon:'🤖',render:()=>{
+      let raw=d.response||d.raw_model_output||(timeline&&timeline.output)||'';
+      if(!raw||!String(raw).trim()) return "<span class='muted'>Empty — model produced no output (blocked or error).</span>";
+      return "<pre dir='auto' style='margin:0;white-space:pre-wrap;background:#f8fafc;border:1px solid var(--line);padding:8px;border-radius:6px;max-height:400px;overflow:auto'>"+esc(String(raw))+"</pre>";
+    }},
+    {key:'guard_output',title:'Stage 7: Guardrails Output',icon:'🛡️',render:()=>{
+      if(!go) return "<span class='muted'>No output guardrail data — response was not screened or data was not captured.</span>";
+      return renderGuardrailBlock(go);
+    }},
+    {key:'format',title:'Stage 8: Format Response',icon:'📝',render:()=>{
+      let ans=d.response||d.final_answer||'—';
+      let h="<pre dir='auto' style='margin:0;white-space:pre-wrap;background:#f8fafc;border:1px solid var(--line);padding:8px;border-radius:6px'>"+esc(String(ans).slice(0,1500))+"</pre>";
+      if(String(ans).length>1500) h+="<details style='margin-top:4px'><summary style='cursor:pointer;font-size:11px;color:var(--mut)'>Show full answer</summary><pre dir='auto' style='white-space:pre-wrap;background:#f8fafc;border:1px solid var(--line);padding:8px;border-radius:6px;max-height:400px;overflow:auto;margin-top:4px'>"+esc(String(ans))+"</pre></details>";
+      if(cits.length){
+        h+="<h4 style='margin:8px 0 4px;font-size:12px'>Citations ("+cits.length+")</h4>";
+        cits.forEach((c,i)=>{ h+=renderCitationCard(c,i); });
+      } else {
+        h+="<p class='muted' style='margin-top:6px'>No citations linked.</p>";
+      }
+      return h;
+    }}
+  ];
+  stages.forEach((s,i)=>{
+    let timingKey=Object.keys(st).find(k=>k.toLowerCase().includes(s.key.slice(0,4))||k===s.key);
+    let ms=null;if(st[s.key]!=null) ms=st[s.key];else if(timingKey) ms=st[timingKey];
+    // try generic stage_timing lookup case-insensitive
+    if(ms==null){
+      for(let k in st){if(k.toLowerCase().replace(/[^a-z]/g,'').includes(s.key.slice(0,3).toLowerCase())){ms=st[k];break}}
+    }
+    let card=document.createElement('div');card.className='stage'+( (s.key==='guard_input'&&gi&&gi.allowed===false)||(s.key==='guard_output'&&go&&go.allowed===false)?' blocked':'');
+    if(i===0) card.classList.add('open');
+    let head=document.createElement('div');head.className='stage-head';
+    head.innerHTML="<span><span>"+s.icon+"</span> <b>"+esc(s.title)+"</b></span><small>"+(ms!=null? esc(fmtLatency(Math.round(ms))):'')+" "+(i<stages.length-1?"▾":"")+"</small>";
+    let body=document.createElement('div');body.className='stage-body';
+    body.innerHTML=s.render();
+    // if timeline spans exist, show relevant spans for this stage as structured cards
+    if(timeline&&timeline.spans){
+      let spanMap={input:'validate_input',guard_input:'validate_input',rewrite:'query-rewrite',retrieve:'retrieve',build:'build_context',generate:'guarded_generate',guard_output:'guarded_generate',format:'format_response'};
+      let wanted=spanMap[s.key];
+      let matched=timeline.spans.filter(sp=>sp.span===wanted);
+      if(matched.length){
+        let wrap=document.createElement('div');
+        wrap.innerHTML="<hr style='margin:10px 0'><small class='muted'>Observer spans ("+matched.length+")</small>";
+        matched.forEach(sp=>{
+          let inp=sp.input==null? '—' : (typeof sp.input==='string'? sp.input.slice(0,400) : JSON.stringify(sp.input,null,2).slice(0,400));
+          let out=sp.output==null? '—' : (typeof sp.output==='string'? sp.output.slice(0,600) : JSON.stringify(sp.output,null,2).slice(0,600));
+          let spanCard=document.createElement('div');
+          spanCard.style.cssText='background:#f8fafc;border:1px solid var(--line);padding:8px;border-radius:6px;margin:4px 0;font-size:11px';
+          spanCard.innerHTML="<b style='font-size:11px'>"+esc(sp.span||'span')+"</b> <span class='muted'>"+esc(sp.start||'')+"</span>"
+            +"<div style='margin-top:4px'><span class='badge'>in</span> <pre dir='auto' style='margin:2px 0;white-space:pre-wrap;word-break:break-word'>"+esc(inp)+"</pre></div>"
+            +"<div style='margin-top:4px'><span class='badge'>out</span> <pre dir='auto' style='margin:2px 0;white-space:pre-wrap;word-break:break-word'>"+esc(out)+"</pre></div>";
+          wrap.appendChild(spanCard);
+        });
+        body.appendChild(wrap);
+      }
+    }
+    card.appendChild(head);card.appendChild(body);
+    head.addEventListener('click',()=>card.classList.toggle('open'));
+    tl.appendChild(card);
+    if(i<stages.length-1){
+      let conn=document.createElement('div');conn.className='connector';
+      let gap=st[stages[i+1].key];if(gap==null) gap=''; else gap=fmtLatency(Math.round(gap));
+      // show stage_timing delta if available
+      let nextMs=null;let nxt=stages[i+1].key;if(st[nxt]!=null) nextMs=st[nxt];
+      conn.textContent=nextMs!=null? '↓ '+fmtLatency(Math.round(nextMs)) : '│';
+      tl.appendChild(conn);
+    }
+  });
+  // bottom summary
+  bottom.style.display='block';
+  let total=d.latency_ms!=null? fmtLatency(d.latency_ms) : (st.total!=null? fmtLatency(Math.round(st.total)) : '—');
+  let totalMs=d.latency_ms||st.total||Object.values(st).reduce((a,b)=>a+(typeof b==='number'?b:0),0);
+  bottom.innerHTML=
+    "<div style='display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap'><span><b>Total latency:</b> "+esc(total)+"</span><span class='muted'>Request "+esc(d.request_id||'')+" · Model "+esc(d.model||'—')+"</span></div>"+
+    (timeline? "<div class='muted' style='margin-top:6px'>Observer timeline: "+(timeline.spans?timeline.spans.length:0)+" spans · "+esc(timeline.name||'')+"</div>":"");
+}
+
+// ---------- Export ----------
+document.getElementById('ex-preview').addEventListener('click',async()=>{
+  let params=buildExportParams();params.set('format',document.querySelector('input[name="ex-fmt"]:checked').value);
+  let url='/api/observability/export?'+params.toString();
+  let status=document.getElementById('ex-preview-status');let pre=document.getElementById('ex-preview-json');
+  status.textContent='Loading…';pre.style.display='none';
+  try{
+    let r=await fetch(url);if(!r.ok) throw new Error('HTTP '+r.status);
+    let txt=await r.text();
+    let fmt=params.get('format');
+    let count=0,preview='';
+    if(fmt==='csv'){
+      let lines=txt.trim().split('\n');count=Math.max(0,lines.length-1);preview=lines.slice(0,6).join('\n');
+      if(!preview) preview='(empty)';
+    }else{
+      let lines=txt.trim()? txt.trim().split('\n'):[];count=lines.length;let first5=lines.slice(0,5);
+      try{preview=first5.map(l=>JSON.stringify(JSON.parse(l),null,2)).join('\n---\n')}catch(e){preview=first5.join('\n')}
+      if(!preview) preview='(no matching records)';
+    }
+    document.getElementById('ex-count').textContent=count+' matching records';
+    status.textContent='Preview '+Math.min(5,count)+' of '+count+' records';
+    pre.textContent=preview;pre.style.display='block';
+  }catch(e){status.textContent='Error: '+e.message}
+});
+document.getElementById('ex-download').addEventListener('click',()=>{
+  let params=buildExportParams();params.set('format',document.querySelector('input[name="ex-fmt"]:checked').value);
+  window.location='/api/observability/export?'+params.toString();
+});
+function buildExportParams(){
+  let p=new URLSearchParams();
+  let from=document.getElementById('ex-from').value;let to=document.getElementById('ex-to').value;
+  let min=document.getElementById('ex-min').value;let max=document.getElementById('ex-max').value;
+  let tags=document.getElementById('ex-tags').value.trim();let model=document.getElementById('ex-model').value;
+  if(min) p.set('min_rating',min);
+  if(max) p.set('max_rating',max);
+  if(tags) p.set('tags',tags);
+  if(model) p.set('model',model);
+  if(from) p.set('date_from',from);
+  if(to) p.set('date_to',to);
+  return p;
+}
+
+// initial load
+loadOverview();scheduleRefresh();
+</script></body></html>

@@ -13,7 +13,31 @@ try:
 except Exception:
     observer = None
 
+try:
+    from dashboard_api import router as observability_router
+    HAS_OBSERVABILITY = True
+except ImportError:
+    try:
+        from .dashboard_api import router as observability_router
+        HAS_OBSERVABILITY = True
+    except ImportError:
+        HAS_OBSERVABILITY = False
+        observability_router = None
+
 app = FastAPI(title="Work RAG Tracing (Langfuse self-hosted fallback)")
+
+if HAS_OBSERVABILITY and observability_router is not None:
+    app.include_router(observability_router)
+    # Also ensure eval_store DB is initialized
+    try:
+        import eval_store
+        eval_store.init_db()
+    except Exception:
+        try:
+            from . import eval_store as _es
+            _es.init_db()
+        except Exception:
+            pass
 
 TRACE_FILE = Path("/tmp/langfuse_traces.jsonl")
 TRACE_FILE.parent.mkdir(parents=True, exist_ok=True)
@@ -307,6 +331,43 @@ async def api_studio_result(thread_id: str, run_id: str, request_id: str = ""):
         return out
 
     return await asyncio.to_thread(_poll)
+
+@app.get("/dashboard/observability", response_class=HTMLResponse)
+async def observability_dashboard():
+    """Serve observability dashboard HTML if available, else placeholder."""
+    from fastapi.responses import Response as _Resp
+    # Try to serve HTML file from templates/observability.html
+    candidates = [
+        Path(__file__).parent / "templates" / "observability.html",
+        Path(__file__).parent / "observability.html",
+        Path("/tmp/observability.html"),
+    ]
+    for p in candidates:
+        if p.exists():
+            try:
+                html = p.read_text(encoding="utf-8")
+                # Cache-bust: force revalidation so updates appear immediately
+                return _Resp(content=html, media_type="text/html",
+                             headers={"Cache-Control": "no-store, no-cache, must-revalidate",
+                                      "Pragma": "no-cache"})
+            except Exception:
+                continue
+    # Fallback placeholder
+    html = """<!doctype html><html><head><meta charset="utf-8"><title>Observability Dashboard</title>
+    <style>body{font-family:sans-serif;margin:20px} .card{border:1px solid #ddd;padding:12px;border-radius:8px;margin:8px 0}</style></head><body>
+    <h1>Observability Dashboard</h1>
+    <p>API available at <code>/api/observability/*</code></p>
+    <ul>
+      <li><a href="/api/observability/overview">/api/observability/overview</a></li>
+      <li><a href="/api/observability/traces">/api/observability/traces</a></li>
+      <li><a href="/api/observability/evaluations">/api/observability/evaluations</a></li>
+      <li><a href="/api/observability/timeseries">/api/observability/timeseries</a></li>
+      <li><a href="/api/observability/export?format=jsonl">/api/observability/export</a></li>
+    </ul>
+    <p>Place custom dashboard HTML at <code>components/tracing/templates/observability.html</code></p>
+    </body></html>"""
+    return HTMLResponse(html)
+
 
 @app.get("/api/public/traces")
 async def traces():
