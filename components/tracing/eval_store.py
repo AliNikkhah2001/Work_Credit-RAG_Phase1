@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Optional, List, Dict, Any
 
 DB_PATH = Path(os.getenv("EVAL_DB_PATH", "/tmp/observability.db"))
-TRACE_JSONL = Path(os.getenv("TRACE_JSONL", "/tmp/pipeline_traces.jsonl"))
+TRACE_JSONL = Path(os.getenv("TRACE_JSONL", "/tmp/langfuse_traces.jsonl"))
 
 
 def get_db() -> sqlite3.Connection:
