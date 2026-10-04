@@ -721,20 +721,33 @@ def get_timeseries(hours=24) -> list[dict]:
     try:
         import datetime as _dt
         now_ts = _now()
+        start_ts = now_ts - hours * 3600
+        
+        # Bulk fetch data for the timeframe (2 queries instead of 4 * hours)
+        traces_cur = conn.execute("SELECT created_at, latency_ms FROM traces WHERE created_at >= ?", (start_ts,))
+        traces = traces_cur.fetchall()
+        
+        evals_cur = conn.execute("SELECT created_at, rating FROM evaluations WHERE created_at >= ?", (start_ts,))
+        evals = evals_cur.fetchall()
+
         buckets: list[dict] = []
         for i in range(hours):
             bucket_start = now_ts - (hours - 1 - i) * 3600
             bucket_end = bucket_start + 3600
             hour_label = _dt.datetime.fromtimestamp(bucket_start).strftime("%Y-%m-%dT%H:00")
-            # requests count
-            cnt_req = conn.execute("SELECT COUNT(*) FROM traces WHERE created_at >= ? AND created_at < ?", (bucket_start, bucket_end)).fetchone()[0]
-            cnt_eval = conn.execute("SELECT COUNT(*) FROM evaluations WHERE created_at >= ? AND created_at < ?", (bucket_start, bucket_end)).fetchone()[0]
-            # avg latency in bucket
-            row_lat = conn.execute("SELECT AVG(latency_ms) FROM traces WHERE created_at >= ? AND created_at < ? AND latency_ms IS NOT NULL", (bucket_start, bucket_end)).fetchone()
-            avg_lat = round(float(row_lat[0]), 2) if row_lat[0] is not None else 0
-            # avg rating in bucket
-            row_rat = conn.execute("SELECT AVG(rating) FROM evaluations WHERE created_at >= ? AND created_at < ? AND rating IS NOT NULL", (bucket_start, bucket_end)).fetchone()
-            avg_rat = round(float(row_rat[0]), 2) if row_rat[0] is not None else 0
+            
+            # Aggregate traces
+            bucket_traces = [t for t in traces if bucket_start <= t[0] < bucket_end]
+            cnt_req = len(bucket_traces)
+            lats = [t[1] for t in bucket_traces if t[1] is not None]
+            avg_lat = round(sum(lats) / len(lats), 2) if lats else 0
+            
+            # Aggregate evaluations
+            bucket_evals = [e for e in evals if bucket_start <= e[0] < bucket_end]
+            cnt_eval = len(bucket_evals)
+            rats = [e[1] for e in bucket_evals if e[1] is not None]
+            avg_rat = round(sum(rats) / len(rats), 2) if rats else 0
+            
             buckets.append({
                 "hour": hour_label,
                 "requests": cnt_req,
