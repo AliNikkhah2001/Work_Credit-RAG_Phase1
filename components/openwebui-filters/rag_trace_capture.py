@@ -23,6 +23,7 @@ import json
 import re
 import urllib.request
 import urllib.error
+import asyncio
 
 
 # Matches <source ...>chunk content</source> across all RAG-injected messages
@@ -149,7 +150,7 @@ class Filter:
         re.IGNORECASE | re.DOTALL,
     )
 
-    def _handle_rate_command(
+    async def _handle_rate_command(
         self,
         text: str,
         chat_id: Optional[str],
@@ -178,7 +179,7 @@ class Filter:
             "user_id": user_id,
             "timestamp": time.time(),
         }
-        ok, msg = self._post_evaluation(payload)
+        ok, msg = await asyncio.to_thread(self._post_evaluation, payload)
         stars = "★" * rating + "☆" * (5 - rating)
         if ok:
             tag_str = f"  Tags: {', '.join('#'+t for t in tags)}" if tags else ""
@@ -245,7 +246,7 @@ class Filter:
                         if not chat_id and isinstance(body, dict):
                             chat_id = body.get("chat_id") or body.get("id")
                         user_id = __user__.get("id") if isinstance(__user__, dict) else None
-                        confirmation = self._handle_rate_command(text, chat_id, user_id)
+                        confirmation = await self._handle_rate_command(text, chat_id, user_id)
                         if confirmation is not None:
                             # Keep as user message but rewrite content so the LLM
                             # echoes the confirmation instead of treating /rate as a question.
@@ -498,7 +499,7 @@ class Filter:
             # Run synchronously but with short timeout; wrapped in try/except
             # We do this in a thread-safe way without blocking the event loop too long
             try:
-                self._post_trace(payload)
+                asyncio.create_task(asyncio.to_thread(self._post_trace, payload))
             except Exception as e:
                 self._log(f"outlet POST wrapper error (swallowed): {e}")
 

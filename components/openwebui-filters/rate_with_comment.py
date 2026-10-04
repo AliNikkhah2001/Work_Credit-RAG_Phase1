@@ -30,6 +30,7 @@ import time
 import urllib.request
 import urllib.parse
 import urllib.error
+import asyncio
 
 
 # Matches: /rate 5 Great response! #tag1 #tag2
@@ -196,7 +197,7 @@ class Action:
                 return {"rating": rating, "comment": comment, "tags": tags, "raw": text.strip()}
         return None
 
-    def _fetch_evaluation(self, request_id: str) -> Optional[dict]:
+    async def _fetch_evaluation(self, request_id: str) -> Optional[dict]:
         """GET existing evaluation for request_id — returns dict or None."""
         base = self.valves.observability_endpoint.rstrip("/")
         candidates = [
@@ -204,28 +205,35 @@ class Action:
             f"{base}/api/observability/evaluations?request_id={urllib.parse.quote(request_id)}",
             f"{base}/api/observability/traces/{urllib.parse.quote(request_id)}",
         ]
+
+        def _do_fetch(url):
+            req = urllib.request.Request(url, method="GET", headers={"Accept": "application/json"})
+            with urllib.request.urlopen(req, timeout=3.0) as resp:
+                if resp.status == 200:
+                    return json.loads(resp.read().decode("utf-8"))
+            return None
+
         for url in candidates:
             try:
-                req = urllib.request.Request(url, method="GET", headers={"Accept": "application/json"})
-                with urllib.request.urlopen(req, timeout=3.0) as resp:
-                    if resp.status == 200:
-                        data = json.loads(resp.read().decode("utf-8"))
-                        # Direct evaluation object
-                        if isinstance(data, dict) and ("rating" in data or "evaluations" in data):
-                            return data
-                        # Envelope {data: {...}}
-                        if isinstance(data, dict) and isinstance(data.get("data"), dict):
-                            inner = data["data"]
-                            if "rating" in inner or "evaluations" in inner:
-                                return inner
-                        # List envelope — find matching request_id
-                        if isinstance(data, dict) and isinstance(data.get("data"), list):
-                            for item in data["data"]:
-                                if isinstance(item, dict) and item.get("request_id") == request_id:
-                                    return item
-                        # Fallback: if trace payload contains evaluation
-                        if isinstance(data, dict) and "evaluation" in data:
-                            return data["evaluation"]
+                data = await asyncio.to_thread(_do_fetch, url)
+                if data is None:
+                    continue
+                # Direct evaluation object
+                if isinstance(data, dict) and ("rating" in data or "evaluations" in data):
+                    return data
+                # Envelope {data: {...}}
+                if isinstance(data, dict) and isinstance(data.get("data"), dict):
+                    inner = data["data"]
+                    if "rating" in inner or "evaluations" in inner:
+                        return inner
+                # List envelope — find matching request_id
+                if isinstance(data, dict) and isinstance(data.get("data"), list):
+                    for item in data["data"]:
+                        if isinstance(item, dict) and item.get("request_id") == request_id:
+                            return item
+                # Fallback: if trace payload contains evaluation
+                if isinstance(data, dict) and "evaluation" in data:
+                    return data["evaluation"]
             except urllib.error.HTTPError as e:
                 if e.code == 404:
                     continue
@@ -234,7 +242,7 @@ class Action:
                 continue
         return None
 
-    def _post_evaluation(self, payload: dict) -> tuple[bool, str]:
+    async def _post_evaluation(self, payload: dict) -> tuple[bool, str]:
         """POST evaluation to observability. Returns (ok, message)."""
         base = self.valves.observability_endpoint.rstrip("/")
         url = f"{base}/api/observability/evaluations"
@@ -243,9 +251,11 @@ class Action:
             req = urllib.request.Request(
                 url, data=data, method="POST", headers={"Content-Type": "application/json"}
             )
-            with urllib.request.urlopen(req, timeout=3.0) as resp:
-                body = resp.read().decode("utf-8")
-                return True, body[:500]
+            def _do_post():
+                with urllib.request.urlopen(req, timeout=3.0) as resp:
+                    return resp.read().decode("utf-8")
+            body = await asyncio.to_thread(_do_post)
+            return True, body[:500]
         except urllib.error.HTTPError as e:
             try:
                 err_body = e.read().decode("utf-8")[:300]
@@ -405,7 +415,7 @@ class Action:
                     "user_id": __user__.get("id") if isinstance(__user__, dict) else None,
                     "message_preview": message_preview[:500],
                 }
-                ok, msg = self._post_evaluation(payload)
+                ok, msg = await self._post_evaluation(payload)
                 post_ok = ok
                 post_msg = msg
                 if __event_emitter__ is not None:
@@ -426,18 +436,18 @@ class Action:
                 # Re-fetch to show updated evaluation
                 existing = None
                 if ok:
-                    existing = self._fetch_evaluation(request_id)
+                    existing = await self._fetch_evaluation(request_id)
                     # Merge so panel shows what was just saved even if fetch lags
                     if not isinstance(existing, dict) or "rating" not in existing:
                         existing = payload
                 else:
-                    existing = self._fetch_evaluation(request_id)
+                    existing = await self._fetch_evaluation(request_id)
                 return self._render_panel(request_id, chat_id, message_preview, existing, rate_cmd, post_ok, post_msg)
 
             # No /rate command — just show current evaluation + instructions
             existing = None
             if request_id:
-                existing = self._fetch_evaluation(request_id)
+                existing = await self._fetch_evaluation(request_id)
 
             if __event_emitter__ is not None:
                 try:

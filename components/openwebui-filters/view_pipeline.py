@@ -22,6 +22,7 @@ import json
 import urllib.request
 import urllib.parse
 import urllib.error
+import asyncio
 
 
 PIPELINE_STAGES = [
@@ -139,7 +140,7 @@ class Action:
 
         return None
 
-    def _fetch_trace(self, request_id: str) -> Optional[dict]:
+    async def _fetch_trace(self, request_id: str) -> Optional[dict]:
         """Try multiple endpoint shapes and return the first successful JSON."""
         base = self.valves.observability_endpoint.rstrip("/")
         candidates = [
@@ -147,18 +148,25 @@ class Action:
             f"{base}/api/observability/traces/{urllib.parse.quote(request_id)}",
             f"{base}/api/observe/timeline/{urllib.parse.quote(request_id)}",
         ]
+
+        def _do_fetch(url):
+            req = urllib.request.Request(url, method="GET", headers={"Accept": "application/json"})
+            with urllib.request.urlopen(req, timeout=5.0) as resp:
+                if resp.status == 200:
+                    return json.loads(resp.read().decode("utf-8"))
+            return None
+
         for url in candidates:
             try:
-                req = urllib.request.Request(url, method="GET", headers={"Accept": "application/json"})
-                with urllib.request.urlopen(req, timeout=5.0) as resp:
-                    if resp.status == 200:
-                        data = json.loads(resp.read().decode("utf-8"))
-                        # Unwrap common envelopes {data: {...}} or direct dict
-                        if isinstance(data, dict) and "data" in data and isinstance(data["data"], dict):
-                            # check if data.data looks like a trace
-                            if "request_id" in data["data"] or "spans" in data["data"]:
-                                return data["data"]
-                        return data
+                data = await asyncio.to_thread(_do_fetch, url)
+                if data is None:
+                    continue
+                # Unwrap common envelopes {data: {...}} or direct dict
+                if isinstance(data, dict) and "data" in data and isinstance(data["data"], dict):
+                    # check if data.data looks like a trace
+                    if "request_id" in data["data"] or "spans" in data["data"]:
+                        return data["data"]
+                return data
             except urllib.error.HTTPError as e:
                 if e.code == 404:
                     continue
@@ -355,7 +363,7 @@ class Action:
                         pass
                 return msg
 
-            trace = self._fetch_trace(request_id)
+            trace = await self._fetch_trace(request_id)
             if trace is None or (isinstance(trace, dict) and trace.get("error")):
                 # Distinguish "error: no trace" from real trace with error field
                 if isinstance(trace, dict) and "error" in trace and len(trace) == 1:

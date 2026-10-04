@@ -39,7 +39,8 @@ Runs on every chat turn that uses a model with the filter enabled.
 Valves:
 
 ```python
-trace_endpoint: str = "http://127.0.0.1:3000"  # tracing collector
+# Python code defaults to Docker service URL; configure to 127.0.0.1 for local/host
+trace_endpoint: str = "http://rag-tracing-fallback:3000"  # Docker default (local host: http://127.0.0.1:3000)
 capture_enabled: bool = True
 log_to_console: bool = False
 ```
@@ -74,7 +75,8 @@ versions that dispatch to either name.
 Valves:
 
 ```python
-observability_endpoint: str = "http://127.0.0.1:3000"
+# Python code defaults to Docker service URL; configure to 127.0.0.1 for local/host
+observability_endpoint: str = "http://rag-tracing-fallback:3000"  # Docker default (local host: http://127.0.0.1:3000)
 max_content_preview: int = 500
 ```
 
@@ -109,7 +111,8 @@ Implements `action` + `pipe` alias.
 Valves:
 
 ```python
-observability_endpoint: str = "http://127.0.0.1:3000"
+# Python code defaults to Docker service URL; configure to 127.0.0.1 for local/host
+observability_endpoint: str = "http://rag-tracing-fallback:3000"  # Docker default (local host: http://127.0.0.1:3000)
 rating_scale: int = 5
 ```
 
@@ -176,9 +179,7 @@ Filters/Actions are **per-model** in OpenWebUI.
 
 ## 4. API endpoints they communicate with
 
-All three point at the **observability service** (default `http://127.0.0.1:3000`,
-the fallback collector at `components/tracing/app.py`; swap to `:3001` for the
-full Langfuse v2 UI).
+All three point at the **observability service** (code defaults to `http://rag-tracing-fallback:3000` for Docker container-to-container networking; use `http://127.0.0.1:3000` for local host testing with the fallback collector at `components/tracing/app.py`, or swap to `:3001` for the full Langfuse v2 UI).
 
 | Endpoint | Method | Used by | Notes |
 |----------|--------|---------|-------|
@@ -219,7 +220,7 @@ or via the API. No restart is needed.
 
 | Valve | Default | Description |
 |-------|---------|-------------|
-| `trace_endpoint` | `http://127.0.0.1:3000` | Collector base URL. Trailing slash is stripped. On Vast the collector lives at `http://127.0.0.1:3000` (fallback) or `http://127.0.0.1:3001` (Langfuse v2). |
+| `trace_endpoint` | `http://rag-tracing-fallback:3000` | Collector base URL. Defaults to Docker service name `http://rag-tracing-fallback:3000`. For local/host environments or Vast host venv, set to `http://127.0.0.1:3000` (fallback) or `http://127.0.0.1:3001` (Langfuse v2). Trailing slash is stripped. |
 | `capture_enabled` | `true` | Master toggle for capture (filter still runs but is a no-op when false). |
 | `log_to_console` | `false` | Print trace lifecycle to the OpenWebUI server log (useful for debugging). |
 
@@ -227,14 +228,14 @@ or via the API. No restart is needed.
 
 | Valve | Default | Description |
 |-------|---------|-------------|
-| `observability_endpoint` | `http://127.0.0.1:3000` | Base URL for pipeline/trace GETs. |
+| `observability_endpoint` | `http://rag-tracing-fallback:3000` | Base URL for pipeline/trace GETs (Docker default; use `http://127.0.0.1:3000` for local host). |
 | `max_content_preview` | `500` | Max characters per chunk/stage preview in the rendered markdown. Increase for more context, decrease for compact cards. |
 
 ### `rate_with_comment`
 
 | Valve | Default | Description |
 |-------|---------|-------------|
-| `observability_endpoint` | `http://127.0.0.1:3000` | Base URL for evaluation GET/POST. |
+| `observability_endpoint` | `http://rag-tracing-fallback:3000` | Base URL for evaluation GET/POST (Docker default; use `http://127.0.0.1:3000` for local host). |
 | `rating_scale` | `5` | Max star rating. The `/rate` parser accepts `1–rating_scale`. Change to `10` for a 10-point scale. |
 
 All URLs respect `http://` vs `https://` and optional non-standard ports.
@@ -258,7 +259,7 @@ curl -s http://127.0.0.1:8100/v1/chat/completions -H 'Content-Type: application/
 curl -s http://127.0.0.1:3000/api/observe/requests?limit=3 | jq .
 curl -s http://127.0.0.1:3000/api/public/traces | jq '.data | length'
 
-# 4. New observability API (once implemented server-side)
+# 4. Observability traces API
 curl -s http://127.0.0.1:3000/api/observability/traces | jq .
 ```
 
@@ -274,5 +275,7 @@ curl -s http://127.0.0.1:3000/api/observability/traces | jq .
 - **`__metadata__ is None`** in logs → normal for direct API calls; only
   browser chats via OpenWebUI populate metadata.
 - **Inside OpenWebUI the filter cannot reach `127.0.0.1:3000`** (Docker networking)
-  → set `trace_endpoint` to `http://host.docker.internal:3000` or the host's
+  → within Docker Compose, the default `http://rag-tracing-fallback:3000` connects
+  directly to the tracing container. If running without Compose networking,
+  set `trace_endpoint` to `http://host.docker.internal:3000` or the host's
   LAN IP, or run OpenWebUI with `--network host`.
