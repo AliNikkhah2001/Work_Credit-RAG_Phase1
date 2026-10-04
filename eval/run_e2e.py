@@ -247,8 +247,21 @@ def compute_metrics(results: List[Dict[str, Any]]) -> Dict[str, Any]:
     correct = sum(1 for r in results if r.get("correct"))
     # Groundedness: has citations when expected to answer
     grounded = sum(1 for r in results if r.get("citations_count", 0) > 0 and r.get("expected_action") in ("answer", "correct"))
-    # Citation accuracy: for those with expected_docs, check if citations match expected
-    citation_acc = sum(1 for r in results if r.get("expected_docs") and any(c["chunk_id"] in r["expected_docs"] for c in r.get("retrieved_chunks", [])[:5]))  # proxy
+    
+    # Citation accuracy: for those with expected_docs, check if the LLM ACTUALLY cited the expected document
+    def check_citation(r):
+        expected = r.get("expected_docs", [])
+        if not expected:
+            return False
+        citations = r.get("citations", [])
+        final_answer = r.get("final_answer", "")
+        # Check if the expected doc ID appears in the returned citations list or the raw text
+        for e in expected:
+            if any(e in str(c) for c in citations) or e in final_answer:
+                return True
+        return False
+
+    citation_acc = sum(1 for r in results if r.get("expected_docs") and check_citation(r))
 
     generation = {
         "answer_correctness": round(correct / total, 4) if total else 0,
