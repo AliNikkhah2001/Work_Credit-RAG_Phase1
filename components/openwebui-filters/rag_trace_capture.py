@@ -473,9 +473,9 @@ class Filter:
 
             payload = {
                 "request_id": request_id,
-                "query": trace_data.get("original_query", "") if isinstance(trace_data, dict) else "",
+                "user_query": trace_data.get("original_query", "") if isinstance(trace_data, dict) else "",
                 "original_query": trace_data.get("original_query", "") if isinstance(trace_data, dict) else "",
-                "chunks": trace_data.get("chunks", []) if isinstance(trace_data, dict) else [],
+                "retrieved_chunks": trace_data.get("chunks", []) if isinstance(trace_data, dict) else [],
                 "chunk_count": trace_data.get("chunk_count", 0) if isinstance(trace_data, dict) else 0,
                 "system_prompt": trace_data.get("system_prompt", "") if isinstance(trace_data, dict) else "",
                 "system_prompt_preview": trace_data.get("system_prompt_preview", "") if isinstance(trace_data, dict) else "",
@@ -485,11 +485,10 @@ class Filter:
                 "latency_ms": round(latency_ms, 2) if isinstance(latency_ms, float) else None,
                 "timestamp": time.time(),
                 "stages": PIPELINE_STAGES,
-                "metadata": {
-                    "user_id": __user__.get("id") if isinstance(__user__, dict) else None,
-                    "chat_id": __metadata__.get("chat_id") if isinstance(__metadata__, dict) else None,
-                    "model": body.get("model", "") if isinstance(body, dict) else "",
-                },
+                "user_id": __user__.get("id") if isinstance(__user__, dict) else None,
+                "chat_id": __metadata__.get("chat_id") if isinstance(__metadata__, dict) else None,
+                "model": body.get("model", "") if isinstance(body, dict) else "",
+                "metadata": {},
             }
 
             self._log(f"outlet response len={len(final_content)} latency_ms={payload['latency_ms']}")
