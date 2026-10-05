@@ -10,6 +10,13 @@ Umbrella repository for a self-hosted, Persian-capable conversational RAG platfo
 
 ---
 
+## Latest Metrics (1405-07-06)
+
+*   **Overall Hit Rate (Top-5):** `91.67%`
+*   **Top-1 Hit Rate:** `79.17%`
+*   **Mean Reciprocal Rank (MRR):** `0.844`
+*   **Latency:** Dynamic Thresholding with Cross-Encoder RRF.
+
 ## Table of Contents
 
 - [Architecture](#architecture)
@@ -278,6 +285,20 @@ python components/tracing/observe.py --request <request_id> --json
 
 ---
 
+## 📂 Metadata Filtering & Folder Hierarchy
+The chunking pipeline now deeply integrates with the physical directory structure of the knowledge base. 
+During ingestion, the orchestrator parses the path (e.g. `kb-source/1405-07-06/پایگاه دانش/اشخاص حقوقی/...`) and injects the folder hierarchy as dynamic metadata tags on every single chunk.
+When querying the system, you can pass a `filter_path` parameter (e.g. `filter_path="اشخاص حقوقی"`) to instantly restrict the search radius. This guarantees perfect separation of contexts and ensures the RAG pipeline only pulls from the designated semantic sub-tree.
+
+## 🔗 Supplementary Data Architecture (`ضمیمه پایگاه دانش`)
+Not all knowledge is suited for Dense Vector embeddings (e.g. list of bank names, reason codes, shareholder tables). 
+These are now intercepted during ingestion and treated separately:
+*   **System Configurations (`واژگان معادل.xlsx`):** Passed directly to BM25 query expansion as synonyms.
+*   **Guardrails (`سوالات نامربوط.xlsx`):** Ignored from RAG injection to prevent hallucination.
+*   **Entity Lists:** Converted to structured JSON. A MiniLM vector embedding of the *list description* is cached in memory. During search, if the user's query vector is semantically similar to an Entity List description (Cosine > 0.6), the *entire* raw JSON list is injected perfectly intact into the final LLM payload.
+
+For deeper architectural details, see [`data/supplementary_architecture.md`](data/supplementary_architecture.md).
+
 ## Evaluation
 
 ### Retrieval quality (measured)
@@ -460,3 +481,10 @@ See [LICENSE](LICENSE). Each submodule may also declare its own license and depe
 - **Tests**: guardrails tests (26), orchestrator tests (9), KB tests (32) — all in submodule `tests/` dirs
 - **Evaluation docs**: [docs/evaluation.md](docs/evaluation.md), [docs/cross_encoder_benchmark_results.md](docs/cross_encoder_benchmark_results.md)
 - **Historical planning docs**: Archived in `deprecated/plans/`
+
+## 🚀 Production Scaling (1 Million+ Users)
+For deploying this RAG engine to millions of concurrent users, the native Python execution (FastAPI locking) and `RankBM25` memory constraints become bottlenecks.
+We have architected a **Million-User Scale Plan** that replaces `RankBM25` with SPLADE, migrates ML execution to NVIDIA Triton + TensorRT, and introduces Semantic Caching.
+
+See the complete architectural design and scaling strategy here:
+👉 [**Million-User Scale Plan**](million-user-scale-plan.md)
