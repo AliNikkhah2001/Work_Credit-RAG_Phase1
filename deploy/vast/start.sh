@@ -6,7 +6,11 @@ set -u
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 MODEL="${MODEL:-/tmp/hf_clean/models--unsloth--gemma-4-31B-it-GGUF/snapshots/c1ac76e99d5513b141e8adde7288b85c3f9c32ec/gemma-4-31B-it-UD-Q4_K_XL.gguf}"
 LLAMA_SERVER="${LLAMA_SERVER:-/workspace/llama.cpp-src/build-cuda/bin/llama-server}"
-KB_DB_URL="${KB_DB_URL:-postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/kb_manager}"
+# Set these in your environment or .env file
+KB_DB_PASSWORD="${KB_DB_PASSWORD:-changeme}"
+KB_DB_URL="${KB_DB_URL:-postgresql+asyncpg://postgres:${KB_DB_PASSWORD}@127.0.0.1:5432/kb_manager}"
+LANGFUSE_PUBLIC_KEY="${LANGFUSE_PUBLIC_KEY:-changeme}"
+LANGFUSE_SECRET_KEY="${LANGFUSE_SECRET_KEY:-changeme}"
 export HF_HOME="${HF_HOME:-/tmp/hf_clean}" HF_HUB_CACHE="${HF_HUB_CACHE:-/tmp/hf_clean}" HF_HUB_OFFLINE=1
 
 echo "== 0. postgres (expects cluster running with kb_manager DB + vector ext) =="
@@ -48,7 +52,7 @@ PYTHONPATH="$ROOT/components/orchestrator/src" KB_BASE_URL=http://127.0.0.1:8000
   GUARDRAILS_BASE_URL=http://127.0.0.1:8200 \
   UPSTREAM_LLM_MODEL=unsloth/gemma-4-31B-it-GGUF:UD-Q4_K_XL \
   LANGFUSE_HOST="${LANGFUSE_HOST:-http://127.0.0.1:3001}" \
-  LANGFUSE_PUBLIC_KEY="${LANGFUSE_PUBLIC_KEY:-}" LANGFUSE_SECRET_KEY="${LANGFUSE_SECRET_KEY:-}" \
+  LANGFUSE_PUBLIC_KEY="${LANGFUSE_PUBLIC_KEY:-changeme}" LANGFUSE_SECRET_KEY="${LANGFUSE_SECRET_KEY:-changeme}" \
   nohup /tmp/orch-venv/bin/python -m uvicorn work_rag_orchestrator.api:create_app --factory \
   --host 0.0.0.0 --port 8100 > /tmp/orch.log 2>&1 &
 sleep 10

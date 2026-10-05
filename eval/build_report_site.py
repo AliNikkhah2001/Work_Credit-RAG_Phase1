@@ -91,10 +91,12 @@ def fail_table(results: list[dict], key: str, n: int = 8) -> str:
             f"<th>rationale</th></tr>{rows}</table>")
 
 
+# Note: style.css is archived at archive/benchmark-history/docs-benchmark-2026-09/style.css and needs to be copied manually.
 PAGE = """<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Work Credit RAG — Agent Behaviour & Benchmark Report</title>
+<!-- Note: style.css is archived at archive/benchmark-history/docs-benchmark-2026-09/style.css and needs to be copied manually. -->
 <link rel="stylesheet" href="style.css"></head>
 <body><main>
 <h1>Work Credit RAG — Agent Behaviour &amp; Benchmark Report</h1>

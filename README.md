@@ -2,11 +2,11 @@
 
 [![Python](https://img.shields.io/badge/python-3.11-blue)](https://www.python.org/downloads/release/python-3110/)
 [![License](https://img.shields.io/github/license/AliNikkhah2001/Work_Credit-RAG_Phase1)](LICENSE)
-[![Branch](https://img.shields.io/badge/branch-vast--gemma4--migration-orange)]()
+[![Branch](https://img.shields.io/badge/branch-main-blue)]()
 
 Umbrella repository for a self-hosted, Persian-capable conversational RAG platform. The implementation is split into independently maintained Git submodules so model/server operations, knowledge-base lifecycle, safety policy, and LangGraph orchestration can evolve without returning to a monolith.
 
-> **Status:** `vast-gemma4-migration` live on Vast.ai (2026-09-12). `main` is last stable monolith checkpoint (`3ee1780`). Do not merge to `main` until §16 (persistent llama-server) is complete.
+> **Status:** Active on `main`. Deployed on Vast.ai (2026-09-12) with modular component architecture.
 
 ---
 
@@ -136,12 +136,11 @@ flowchart TD
 
 Each gitlink is pinned to an exact commit. Updating a component requires a component-repo commit followed by a parent-repo commit that advances the gitlink.
 
+> **Note:** Run `git submodule status` for current pins.
+
 ```bash
 git submodule status --recursive
-# 6ce319f... components/guardrails (heads/vast-gemma4-migration)
-# 8b8f6e5...       components/knowledgebase (heads/vast-gemma4-migration)
-# cdb6e7d...       components/orchestrator (heads/vast-gemma4-migration)
-# 5d5a7e4...       components/server-setup (heads/vast-gemma4-migration)
+# Run git submodule status for current pins
 ```
 
 ---
@@ -170,8 +169,6 @@ browser :13000 → Open WebUI → Orchestrator :8100
 
 **Excluded from MVP:** long-term memory, PostgreSQL LangGraph checkpoints, query rewriting, agent loops, retrieval retries, streaming, GraphRAG, multi-agent routing, Kubernetes.
 
-Detailed plan: [docs/MVP_INTEGRATION_PLAN.md](docs/MVP_INTEGRATION_PLAN.md)
-
 ---
 
 ## Quick Start
@@ -182,7 +179,7 @@ Detailed plan: [docs/MVP_INTEGRATION_PLAN.md](docs/MVP_INTEGRATION_PLAN.md)
 # 1. Clone with submodules
 git clone --recurse-submodules https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1.git
 cd Work_Credit-RAG_Phase1
-git switch vast-gemma4-migration
+git switch main
 git submodule sync --recursive && git submodule update --init --recursive
 
 # 2. Full startup (postgres → Gemma → KB → guardrails → collector → orchestrator → WebUI)
@@ -221,7 +218,7 @@ docker compose up -d --build
 | **Reranker** | mmarco-mMiniLMv2-L12-H384-v1 | `cross-encoder/mmarco-mMiniLMv2-L12-H384-v1` | 118M | `KB_RERANK_POOL=50`, `KB_RERANKER_DEVICE=cpu/cuda` |
 | **Guardrails** | Ghadeer mmBERT (toxicity/hate/intent) | — | — | F1 0.94 Persian, thresholds: toxicity 0.80, hate 0.80, PII 0.90, injection 0.85 |
 
-**Model Cards:** [docs/models.md](docs/models.md)
+**Model Cards:** See [AGENTS.md](AGENTS.md) §2 for the service and model table.
 
 ---
 
@@ -255,7 +252,7 @@ docker compose up -d --build
 | | `WEBUI_AUTH` | `false` | `false` |
 | | `DATA_DIR` | — | `/tmp/webui-data` |
 
-**Full reference:** [docs/architecture.md](docs/architecture.md#environment-variables)
+**Full reference:** See [AGENTS.md](AGENTS.md) §1–4 for environment variable details.
 
 ---
 
@@ -263,7 +260,7 @@ docker compose up -d --build
 
 | Tool | URL | Purpose |
 |------|-----|---------|
-| **Langfuse v2** | `http://localhost:3001` (via tunnel) | Full trace UI, Postgres-backed. Login: `admin@local.test` / `Langfuse-Admin-139b81ba` |
+| **Langfuse v2** | `http://localhost:3001` (via tunnel) | Full trace UI, Postgres-backed. Set `LANGFUSE_ADMIN_EMAIL` / `LANGFUSE_ADMIN_PASSWORD` env vars. |
 | **Fallback Collector** | `http://localhost:3000` | JSONL at `/tmp/langfuse_traces.jsonl`, ingestion API compatible |
 | **Local Trace Viewer** | `http://localhost:3000/observe` | Request list → timeline (request → validate_input → retrieve → build_context → guarded_generate → format_response) |
 | **Local Graph Debugger** | `http://localhost:3000/studio` | Runs `rag` graph via :2024 API server-side, shows state + observe link |
@@ -285,7 +282,7 @@ python components/tracing/observe.py --request <request_id> --json
 
 ### Retrieval quality (measured)
 
-Wave-1 full-800 reranker shootout, CPU (2026-09-12/13). Dataset: 800 Persian QA, answer-grounded golds remapped to the live 2077-chunk PG KB (threshold 0.6, 772/800 covered, ~7 gold/query), top_k=5. Method: `docs/WAVE2_GPU_RUNBOOK.md` §1.
+Wave-1 full-800 reranker shootout, CPU (2026-09-12/13). Dataset: 800 Persian QA, answer-grounded golds remapped to the live 2077-chunk PG KB (threshold 0.6, 772/800 covered, ~7 gold/query), top_k=5. Method: `archive/migration-history/WAVE2_GPU_RUNBOOK.md` §1.
 
 | Backbone | Pool | Hit@5 | Top-1 | MRR | s/q (CPU) |
 |---|---|---|---|---|---|
@@ -299,7 +296,7 @@ Decision (2026-09-15): **default is `BAAI/bge-reranker-v2-m3`** — best measure
 
 **Persian support:** v2-m3's backbone is BGE-M3 (XLM-RoBERTa-Large base, 568M params, 2.27GB, Apache-2.0) with multilinguality over 100+ languages including Persian; SOTA on MIRACL multilingual (includes Persian `fa`) and MKQA cross-lingual; vendor BGE docs explicitly recommend v2-m3 "for multilingual". Plain cross-encoder loader — no `trust_remote_code`. Default is set in code (`reranker.py _DEFAULT_MODEL`, `config.py RerankerConfig`, `search.py _RERANKER_MODEL` fallback; KB `master` `8d0c506`) and live on production KB `:8000` via `KB_RERANKER_MODEL` + `KB_RERANK_POOL=15`.
 
-Full method + GPU next steps: `docs/WAVE2_GPU_RUNBOOK.md`, `deploy/vast/wave2_gpu.sh`. Bench data + session transcripts: `handoff/`.
+Full method: `archive/migration-history/WAVE2_GPU_RUNBOOK.md`. Bench data + session transcripts: `archive/handoff-sessions/`.
 
 ### Cross-Encoder Reranker Direct API Benchmark (2026-09-15)
 
@@ -321,7 +318,7 @@ Direct API benchmark on 20 Persian credit queries, KB v8 (6593 chunks), reranker
 - **Flag-LLM loaders** (bge-gemma, Qwen3) are LLM-based rerankers → 30-43s/query on CPU → **not viable for CPU production**
 - GPU would give ~1.6× speedup for crossencoder models (HNSW 1.6×, rerank 1.6×) but flag-llm still needs GPU
 
-Full results: `docs/cross_encoder_benchmark_results.md`, raw data: `data/reranker_benchmarks/`
+Full results: `docs/cross_encoder_benchmark_results.md` (raw benchmark data in `data/reranker_benchmarks/` not committed)
 
 ### KB Retrieval (v8, 6593 chunks, RTX 6000 Ada)
 
@@ -383,7 +380,7 @@ See `archive/README.md` for retention policy. All archived data is on `chore/cle
 
 ### Done ✓
 
-- [x] **Branches** `vast-gemma4-migration` on parent + 4 submodules, pinned and pushed
+- [x] **Branches** `main` on parent + 4 submodules, pinned and pushed
 - [x] **Environment** validated (1× RTX 3090 24GB, CUDA 12.x, no proxy, host venvs)
 - [x] **KB** v8 pgvector HNSW: 103 docs, 6593 chunks, hybrid retrieval verified
 - [x] **Guardrails** deterministic Persian rails, HurtLex allowlist 19 lemmas, risk scoring, semantic interface
@@ -391,19 +388,19 @@ See `archive/README.md` for retention policy. All archived data is on `chore/cle
 - [x] **Gemma source fix** — llama.cpp 0f3a71b, `--no-mmproj --jinja`, `enable_thinking:false` → clean Persian
 - [x] **HurtLex allowlist** — 19 lemmas with evidence, 26 tests pass, 0/120 blocked
 - [x] **Compose** `compose.mvp.yml` (no gemma-manager, only 13000 public)
-- [x] **Docs** RUNBOOK_VAST, VAST_GEMMA4_MIGRATION, MVP_INTEGRATION_PLAN, GUARDRAILS_V2_PLAN
+- [x] **Docs** Migration history, evaluation benchmarks, and runbooks documented
 - [x] **Public URL** `http://91.108.80.253:13000` verified
 - [x] **Commits** all pushed to `main` and `vast` branches, no force-push
+- [x] **Merge to `main`** — merged to `main`; `main` is now the current active branch
 
 ### Pending ⏳
 
-- [ ] **Make llama-server persistent** — currently `nohup` manual, need supervisor with `LD_LIBRARY_PATH=/opt/llama-new/lib:/usr/local/cuda/lib64`
+- [ ] **llama-server process supervision** — currently `nohup` manual, need supervisor with `LD_LIBRARY_PATH=/opt/llama-new/lib:/usr/local/cuda/lib64`
 - [ ] **Docker privileged** — Vast host unprivileged (`unshare` denied); need privileged host or host-network fallback
 - [ ] **KB completeness** — 5 XLSX fail `No valid sheets`; `dense_embeddings.npz` git-ignored
 - [ ] **Vast port mapping** — 13000 not in instance ports; reachable via host but should be explicit
 - [ ] **HurtLex coverage** — audit future false positives via 30-text script
 - [ ] **Orchestrator fallback cleanup** — decide on duplicate fallback in `format_response`
-- [ ] **Merge to `main`** — after llama-server persistent + 13000 mapping explicit
 
 ---
 
@@ -456,10 +453,10 @@ See [LICENSE](LICENSE). Each submodule may also declare its own license and depe
 
 ## Links
 
-- **Runbook** (startup, env, ports, troubleshooting): [docs/RUNBOOK_VAST.md](docs/RUNBOOK_VAST.md)
-- **Migration log** (discovery, fixes, HurtLex audit): [docs/VAST_GEMMA4_MIGRATION.md](docs/VAST_GEMMA4_MIGRATION.md)
-- **MVP plan & acceptance tests**: [docs/MVP_INTEGRATION_PLAN.md](docs/MVP_INTEGRATION_PLAN.md)
-- **Compose (Vast)**: [compose.mvp.yml](compose.mvp.yml) + [server-setup/deploy/docker-compose.vast.yml](components/server-setup/deploy/docker-compose.vast.yml)
-- **Guardrails allowlist**: [components/guardrails/kb/hurtlex_allowlist.json](components/guardrails/kb/hurtlex_allowlist.json) + [actions.py](components/guardrails/src/work_rag_guardrails/actions.py)
-- **Tests**: [guardrails tests](components/guardrails/tests/test_hurtlex_allowlist.py) (26), [orchestrator tests](components/orchestrator/tests) (9), [KB tests](components/knowledgebase/kb-manager/tests) (32)
-- **Architecture docs**: [docs/architecture.md](docs/architecture.md), [docs/models.md](docs/models.md), [docs/evaluation.md](docs/evaluation.md), [docs/training.md](docs/training.md)
+- **Runbook** (startup, env, ports, troubleshooting): See [AGENTS.md](AGENTS.md) §2–3 and `deploy/vast/start.sh`
+- **Migration log** (discovery, fixes, HurtLex audit): [archive/migration-history/VAST_GEMMA4_MIGRATION.md](archive/migration-history/VAST_GEMMA4_MIGRATION.md)
+- **Compose**: [compose.mvp.yml](compose.mvp.yml) + [deploy/docker/docker-compose.yml](deploy/docker/docker-compose.yml)
+- **Guardrails allowlist**: `components/guardrails/kb/hurtlex_allowlist.json` + `components/guardrails/src/work_rag_guardrails/actions.py` (submodule)
+- **Tests**: guardrails tests (26), orchestrator tests (9), KB tests (32) — all in submodule `tests/` dirs
+- **Evaluation docs**: [docs/evaluation.md](docs/evaluation.md), [docs/cross_encoder_benchmark_results.md](docs/cross_encoder_benchmark_results.md)
+- **Historical planning docs**: Archived in `deprecated/plans/`

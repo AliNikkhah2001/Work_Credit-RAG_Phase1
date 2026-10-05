@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+import sys
 
 import matplotlib
 matplotlib.use("Agg")
@@ -24,7 +25,8 @@ def plot_sim_hist(results: list[dict], out: Path) -> None:
     sims = [r["similarity"] for r in results]
     plt.figure(figsize=(7, 4))
     plt.hist(sims, bins=20, edgecolor="black")
-    plt.axvline(sum(sims) / len(sims), linestyle="--", label=f"mean {sum(sims)/len(sims):.3f}")
+    mean_sim = sum(sims) / len(sims) if sims else 0.0
+    plt.axvline(mean_sim, linestyle="--", label=f"mean {mean_sim:.3f}")
     plt.xlabel("cosine similarity (answer vs ground truth)")
     plt.ylabel("questions")
     plt.title("Answer similarity distribution")
@@ -39,7 +41,7 @@ def plot_format_means(results: list[dict], out: Path) -> None:
     for r in results:
         by.setdefault(r.get("format", "?"), []).append(r["similarity"])
     labels = sorted(by)
-    means = [sum(v) / len(v) for v in (by[k] for k in labels)]
+    means = [sum(v) / len(v) if v else 0.0 for v in (by[k] for k in labels)]
     plt.figure(figsize=(7, 4))
     plt.bar(labels, means)
     plt.ylim(0, 1)
@@ -113,6 +115,10 @@ def main() -> None:
         plot_compare(load(Path(pa)), load(Path(pb)), Path(pa).stem, Path(pb).stem, outdir / oname)
         print("wrote", outdir / oname)
         return
+    if not a.bench:
+        ap.print_usage()
+        print("Error: --bench is required unless --compare is specified.", file=sys.stderr)
+        sys.exit(1)
     data = load(Path(a.bench))
     res = data["results"]
     plot_sim_hist(res, outdir / f"similarity_hist_{a.tag}.png")

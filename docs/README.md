@@ -2,24 +2,15 @@
 
 This directory contains project-wide documentation.
 
-## Guides
+> **Note:** Historical planning and migration documents (including `RUNBOOK_VAST.md`, `MVP_INTEGRATION_PLAN.md`, `GUARDRAILS_V2_PLAN.md`, `RERANKER_MEMORY_TASK.md`, `architecture.md`, `models.md`, `training.md`, and `PROJECT_HIERARCHY.md`) have been moved to `deprecated/plans/`.
+
+## Technical Reference & Evaluation
 
 | File | Description |
 |------|-------------|
-| [RUNBOOK_VAST.md](RUNBOOK_VAST.md) | Vast.ai startup, env, ports, troubleshooting |
-| [VAST_GEMMA4_MIGRATION.md](VAST_GEMMA4_MIGRATION.md) | Migration log: discovery, 14 inspections, fixes, HurtLex audit |
-| [MVP_INTEGRATION_PLAN.md](MVP_INTEGRATION_PLAN.md) | Cross-component implementation sequence, acceptance criteria |
-| [GUARDRAILS_V2_PLAN.md](GUARDRAILS_V2_PLAN.md) | Risk scoring, observability, semantic interface, thresholds, rollback |
-| [RERANKER_MEMORY_TASK.md](RERANKER_MEMORY_TASK.md) | Reranker/memory task specification |
-
-## Technical Reference
-
-| File | Description |
-|------|-------------|
-| [architecture.md](architecture.md) | System architecture, request flow, component diagrams, ports, env vars |
-| [models.md](models.md) | Model cards for all models (generation, embedding, reranker, guardrails) |
 | [evaluation.md](evaluation.md) | KB retrieval benchmarks, RAG E2E, LLM-as-judge, reproduction |
-| [training.md](training.md) | KB ingestion pipeline, reranker shootout, query reform, quality gates |
+| [cross_encoder_benchmark_results.md](cross_encoder_benchmark_results.md) | Cross-encoder reranker benchmark results and latency breakdown |
+| [history/](history/) | Historical code audits and reviews |
 
 ## Reports
 

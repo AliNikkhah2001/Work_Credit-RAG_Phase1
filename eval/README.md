@@ -4,7 +4,7 @@ This directory contains end-to-end evaluation of the RAG agent against KB ground
 
 ## Dataset
 
-- Source: `components/knowledgebase/kb-manager/data/test_questions.json` (120 questions, updated to `b1bb648`)
+- Source: `components/knowledgebase/kb-manager/data/test_questions.json` (120 questions, updated to `b1bb648`; note that this file requires submodule initialization)
 - Sample: 20 diverse (first 15 + 5 with known allowlisted terms like حذف, پستی, etc.)
 - Ground truth: `expected_answer`, `expected_chunk_ids`, `keywords`, `category`, `difficulty`
 
@@ -33,7 +33,7 @@ For each question:
 
 ## After fix
 
-- HurtLex allowlist now 11 lemmas: `حذف, بخشی, تامین مالی, اشتغال, پست, پستی, مصرف, هدف, نادرست, مهم, ضعیف` (all normalized, logged)
+- HurtLex allowlist had 11 lemmas at time of evaluation (note that this count may have been updated in subsequent revisions): `حذف, بخشی, تامین مالی, اشتغال, پست, پستی, مصرف, هدف, نادرست, مهم, ضعیف` (all normalized, logged)
 - Profanity now requires `len(w)>2`, so `ان` (len 2) no longer flags
 - 19 regression tests in `components/guardrails/tests/test_hurtlex_allowlist.py` + 6 in `test_input_rails.py` + 9 in orchestrator
 - 6 user samples + 6 credit samples all `stop` with 5 citations, Persian only
@@ -43,9 +43,10 @@ For each question:
 Before fix, wrong samples were tagged and saved in `kb_wrong_samples.json` (2 samples). After fix, `kb_rag_evaluation_20samples.json` contains `tags: ["ok"]` for all, and `kb_wrong_samples.json` is empty (or not generated). To reproduce, run:
 
 ```bash
-PYTHONPATH=components/guardrails/src /tmp/guard-venv/bin/python /tmp/eval_kb_rag2.py
-# or for full 120 (takes ~10 min):
-timeout 600 python3 /tmp/full_eval.py
+# Guardrails evaluation:
+python eval/run_guardrails_eval.py
+# or for full 120 (takes ~10 min against running orchestrator):
+python eval/run_llm_answer_benchmark.py --out eval/results/llm_answer_benchmark_v4.json
 ```
 
 ## Files

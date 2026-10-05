@@ -333,7 +333,7 @@ log "11. Observability Stack"
 echo "------------------------------"
 
 # Langfuse v2 traces
-TRACES=$(curl -s --max-time 5 -u "pk-lf-seeded-public-001:sk-lf-seeded-secret-001" \
+TRACES=$(curl -s --max-time 5 -u "${LANGFUSE_PUBLIC_KEY:-pk-lf-seeded-public-001}:${LANGFUSE_SECRET_KEY:-sk-lf-seeded-secret-001}" \
     "http://127.0.0.1:3001/api/public/traces?limit=1" 2>/dev/null \
     | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('meta',{}).get('totalItems',0))" 2>/dev/null || echo "0")
 ok "Langfuse v2 traces: $TRACES total"
@@ -371,7 +371,7 @@ Then open:
   • Orchestrator: http://localhost:8100
   • Observe:      http://localhost:3000/observe
   • Studio:       http://localhost:3000/studio
-  • Langfuse:     http://localhost:3001 (admin@local.test / Langfuse-Admin-139b81ba)
+  • Langfuse:     http://localhost:3001 (${LANGFUSE_ADMIN_EMAIL:-admin@local.test} / ${LANGFUSE_ADMIN_PASSWORD:-Langfuse-Admin-139b81ba})
   • Smith Studio: https://smith.langchain.com/studio/?baseUrl=http://127.0.0.1:2024
 EOF
 
