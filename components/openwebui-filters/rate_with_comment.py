@@ -1,25 +1,24 @@
 """
-Rate with Comment — OpenWebUI Action Function (Phase 4)
+Star Rating + Comment — OpenWebUI Action Function (ICS helper agent, NOT arena)
 
-Lets users rate an assistant response with stars + comment + tags.
+> NOTE: The orchestrator should also handle /report at api.py:chat_completions
+> (like the existing /rate handler) — add it there if missing, otherwise this
+> action will handle it alone.
 
 Flow:
-  1. User clicks the action button under a message.
-  2. This action extracts request_id / chat_id / message content.
-  3. It fetches any existing evaluation for that request_id.
-  4. It returns a markdown panel with:
-     - Current evaluation (if any)
-     - Instructions for submitting a rating via `/rate` chat command
-     - Dashboard link
-     - If the body already contains a /rate pattern, it parses and POSTs
-       the evaluation to {observability_endpoint}/api/observability/evaluations
+  1. User clicks the action button under an assistant message.
+  2. This action extracts request_id / chat_id / message preview.
+  3. Fetches any existing evaluation for that request_id.
+  4. If body already contains a /rate command or direct rating fields,
+     POSTs the evaluation immediately and shows confirmation.
+  5. Otherwise shows a star-selection panel with instructions.
 
-Because OpenWebUI Action Functions cannot render interactive forms,
-the MVP uses a chat-command pattern:
-
+Chat command pattern (handled here AND by the rag_trace_capture filter inlet):
   /rate 5 Great response! #helpful #accurate
+  /rate 3 Could be more detailed #needs-work
+  /rate 1 Hallucinated sources #inaccurate
 
-The filter/action sandbox is stdlib-only (urllib, not httpx).
+Only stdlib + pydantic — uses urllib.request for HTTP (no httpx).
 """
 
 from pydantic import BaseModel, Field
@@ -33,7 +32,6 @@ import urllib.error
 
 
 # Matches: /rate 5 Great response! #tag1 #tag2
-# Groups: rating (1-5), comment, tags
 _RATE_RE = re.compile(
     r"/rate\s+([1-5])\s*(.*?)\s*(#[\w-]+(?:\s+#[\w-]+)*)?\s*$",
     re.IGNORECASE | re.DOTALL,
@@ -41,29 +39,23 @@ _RATE_RE = re.compile(
 
 
 class Action:
-    """OpenWebUI Action — rate a response with comment and tags."""
+    """OpenWebUI Action — star rating (1-5) + comment + tags."""
 
     class Valves(BaseModel):
         observability_endpoint: str = Field(
             default="http://rag-tracing-fallback:3000",
             description="Observability service endpoint (Docker: rag-tracing-fallback:3000, host: 127.0.0.1:3000)",
         )
-        rating_scale: int = Field(
-            default=5,
-            description="Max rating (5 stars)",
-        )
 
     def __init__(self):
         self.valves = self.Valves()
-        self.name = "rate_response"
 
     # ------------------------------------------------------------------
-    # helpers
+    # extract helpers
     # ------------------------------------------------------------------
     def _extract_request_id(self, body: dict) -> Optional[str]:
         if not isinstance(body, dict):
             return None
-        # Spec priority: metadata.request_id → request_id → chat_id → message.id
         meta = body.get("metadata")
         if isinstance(meta, dict):
             v = meta.get("request_id")
@@ -85,7 +77,6 @@ class Action:
                 v = m2.get("request_id")
                 if isinstance(v, str) and v.strip():
                     return v.strip()
-        # Fallbacks for compatibility
         if isinstance(meta, dict):
             for key in ("chat_id", "id"):
                 v = meta.get(key)
@@ -106,7 +97,6 @@ class Action:
             v = rag.get("request_id")
             if isinstance(v, str) and v.strip():
                 return v.strip()
-        # Scan messages for embedded request_id
         messages = body.get("messages")
         if isinstance(messages, list):
             for m in messages:
@@ -117,40 +107,10 @@ class Action:
                     v = mm.get("request_id")
                     if isinstance(v, str) and v.strip():
                         return v.strip()
+        v = body.get("id")
+        if isinstance(v, str) and v.strip():
+            return v.strip()
         return None
-
-    def _extract_message_content(self, body: dict) -> str:
-        """Best-effort assistant message extraction."""
-        if not isinstance(body, dict):
-            return ""
-        # Direct message
-        msg = body.get("message")
-        if isinstance(msg, dict):
-            c = msg.get("content")
-            if isinstance(c, str) and c.strip():
-                return c.strip()
-        # Choices shape
-        choices = body.get("choices")
-        if isinstance(choices, list) and choices:
-            ch = choices[0]
-            if isinstance(ch, dict):
-                m = ch.get("message", {})
-                if isinstance(m, dict) and isinstance(m.get("content"), str):
-                    return m["content"].strip()
-        # Messages list — last assistant
-        messages = body.get("messages")
-        if isinstance(messages, list) and messages:
-            for m in reversed(messages):
-                if isinstance(m, dict) and m.get("role") == "assistant":
-                    c = m.get("content")
-                    if isinstance(c, str) and c.strip():
-                        return c.strip()
-        # Fallback keys
-        for k in ("content", "response", "output", "text"):
-            v = body.get(k)
-            if isinstance(v, str) and v.strip():
-                return v.strip()
-        return ""
 
     def _extract_chat_id(self, body: dict) -> Optional[str]:
         if not isinstance(body, dict):
@@ -163,17 +123,77 @@ class Action:
             v = meta.get("chat_id")
             if isinstance(v, str) and v.strip():
                 return v.strip()
+            v = meta.get("id")
+            if isinstance(v, str) and v.strip():
+                return v.strip()
+        msg = body.get("message")
+        if isinstance(msg, dict):
+            v = msg.get("chat_id")
+            if isinstance(v, str) and v.strip():
+                return v.strip()
         return None
 
-    def _find_rate_command(self, body: dict) -> Optional[dict]:
-        """Search body text for a /rate command and parse it.
+    def _extract_message_content(self, body: dict) -> str:
+        if not isinstance(body, dict):
+            return ""
+        msg = body.get("message")
+        if isinstance(msg, dict):
+            c = msg.get("content")
+            if isinstance(c, str) and c.strip():
+                return c.strip()
+        choices = body.get("choices")
+        if isinstance(choices, list) and choices:
+            ch = choices[0]
+            if isinstance(ch, dict):
+                m = ch.get("message", {})
+                if isinstance(m, dict) and isinstance(m.get("content"), str):
+                    return m["content"].strip()
+        messages = body.get("messages")
+        if isinstance(messages, list) and messages:
+            for m in reversed(messages):
+                if isinstance(m, dict) and m.get("role") == "assistant":
+                    c = m.get("content")
+                    if isinstance(c, str) and c.strip():
+                        return c.strip()
+        for k in ("content", "response", "output", "text"):
+            v = body.get(k)
+            if isinstance(v, str) and v.strip():
+                return v.strip()
+        return ""
 
-        Returns {rating:int, comment:str, tags:list} or None.
-        Scans: body.content, body.message.content, messages[-1].content
-        """
+    def _find_rate_command(self, body: dict) -> Optional[dict]:
+        """Search body text for /rate or direct rating fields."""
+        # 1) Direct structured fields (ICS helper could send JSON body)
+        if isinstance(body, dict):
+            for key in ("rating", "stars", "score"):
+                v = body.get(key)
+                if isinstance(v, int) and 1 <= v <= 5:
+                    comment = body.get("comment") or body.get("text") or ""
+                    tags = body.get("tags") if isinstance(body.get("tags"), list) else []
+                    # normalize tags: strip leading '#'
+                    tags = [str(t).lstrip("#") for t in tags]
+                    return {"rating": v, "comment": str(comment).strip(), "tags": tags, "raw": f"direct:{key}={v}"}
+                if isinstance(v, str) and v.strip().isdigit():
+                    iv = int(v.strip())
+                    if 1 <= iv <= 5:
+                        comment = body.get("comment") or ""
+                        tags = body.get("tags") if isinstance(body.get("tags"), list) else []
+                        tags = [str(t).lstrip("#") for t in tags]
+                        return {"rating": iv, "comment": str(comment).strip(), "tags": tags, "raw": f"direct:{key}={v}"}
+            # nested evaluation object
+            ev = body.get("evaluation")
+            if isinstance(ev, dict) and isinstance(ev.get("rating"), int) and 1 <= ev["rating"] <= 5:
+                return {
+                    "rating": int(ev["rating"]),
+                    "comment": str(ev.get("comment", "")).strip(),
+                    "tags": [str(t).lstrip("#") for t in ev.get("tags", [])] if isinstance(ev.get("tags"), list) else [],
+                    "raw": "direct:evaluation.rating",
+                }
+
+        # 2) Text pattern /rate 5 ...
         candidates: list[str] = []
         if isinstance(body, dict):
-            for k in ("content", "text", "input"):
+            for k in ("content", "text", "input", "comment"):
                 v = body.get(k)
                 if isinstance(v, str):
                     candidates.append(v)
@@ -185,7 +205,6 @@ class Action:
                 last = messages[-1]
                 if isinstance(last, dict) and isinstance(last.get("content"), str):
                     candidates.append(last["content"])
-
         for text in candidates:
             m = _RATE_RE.search(text.strip())
             if m:
@@ -197,12 +216,12 @@ class Action:
         return None
 
     def _fetch_evaluation(self, request_id: str) -> Optional[dict]:
-        """GET existing evaluation for request_id — returns dict or None."""
         base = self.valves.observability_endpoint.rstrip("/")
+        # try direct id, then search query param
         candidates = [
             f"{base}/api/observability/evaluations/{urllib.parse.quote(request_id)}",
-            f"{base}/api/observability/evaluations?request_id={urllib.parse.quote(request_id)}",
-            f"{base}/api/observability/traces/{urllib.parse.quote(request_id)}",
+            f"{base}/api/observability/evaluations?search={urllib.parse.quote(request_id)}",
+            f"{base}/api/observability/evaluations?search={urllib.parse.quote(request_id)}&limit=10",
         ]
         for url in candidates:
             try:
@@ -210,22 +229,26 @@ class Action:
                 with urllib.request.urlopen(req, timeout=3.0) as resp:
                     if resp.status == 200:
                         data = json.loads(resp.read().decode("utf-8"))
-                        # Direct evaluation object
-                        if isinstance(data, dict) and ("rating" in data or "evaluations" in data):
+                        # direct evaluation object
+                        if isinstance(data, dict) and "rating" in data:
                             return data
-                        # Envelope {data: {...}}
-                        if isinstance(data, dict) and isinstance(data.get("data"), dict):
-                            inner = data["data"]
-                            if "rating" in inner or "evaluations" in inner:
-                                return inner
-                        # List envelope — find matching request_id
+                        # envelope with data list — find matching request_id
                         if isinstance(data, dict) and isinstance(data.get("data"), list):
                             for item in data["data"]:
                                 if isinstance(item, dict) and item.get("request_id") == request_id:
                                     return item
-                        # Fallback: if trace payload contains evaluation
-                        if isinstance(data, dict) and "evaluation" in data:
-                            return data["evaluation"]
+                            # if search returned single page, return first with rating
+                            for item in data["data"]:
+                                if isinstance(item, dict) and "rating" in item:
+                                    return item
+                            if data["data"]:
+                                return {"evaluations": data["data"]}
+                        if isinstance(data, dict) and isinstance(data.get("data"), dict):
+                            inner = data["data"]
+                            if "rating" in inner or "evaluations" in inner:
+                                return inner
+                        if isinstance(data, dict) and "evaluations" in data:
+                            return data
             except urllib.error.HTTPError as e:
                 if e.code == 404:
                     continue
@@ -235,14 +258,11 @@ class Action:
         return None
 
     def _post_evaluation(self, payload: dict) -> tuple[bool, str]:
-        """POST evaluation to observability. Returns (ok, message)."""
         base = self.valves.observability_endpoint.rstrip("/")
         url = f"{base}/api/observability/evaluations"
         try:
             data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
-            req = urllib.request.Request(
-                url, data=data, method="POST", headers={"Content-Type": "application/json"}
-            )
+            req = urllib.request.Request(url, data=data, method="POST", headers={"Content-Type": "application/json"})
             with urllib.request.urlopen(req, timeout=3.0) as resp:
                 body = resp.read().decode("utf-8")
                 return True, body[:500]
@@ -257,10 +277,9 @@ class Action:
 
     def _stars(self, rating: Optional[int]) -> str:
         if rating is None or not isinstance(rating, int):
-            return "☆" * self.valves.rating_scale
-        scale = self.valves.rating_scale
-        rating = max(0, min(rating, scale))
-        return "★" * rating + "☆" * (scale - rating)
+            return "☆☆☆☆☆"
+        rating = max(0, min(rating, 5))
+        return "★" * rating + "☆" * (5 - rating)
 
     def _render_panel(
         self,
@@ -273,11 +292,21 @@ class Action:
         post_msg: str = "",
     ) -> str:
         base = self.valves.observability_endpoint.rstrip("/")
+        dash = base.replace("rag-tracing-fallback", "127.0.0.1")
         lines: list[str] = []
-        scale = self.valves.rating_scale
 
-        lines.append(f"# Rate Response {self._stars(existing.get('rating') if isinstance(existing, dict) else None) if isinstance(existing, dict) and 'rating' in existing else ''}".strip())
+        # Title
+        lines.append("## Star this response")
         lines.append("")
+        # show current stars in title if existing
+        if isinstance(existing, dict) and "rating" in existing:
+            try:
+                r = int(existing["rating"])
+                lines.append(f"Current: {self._stars(r)} ({r}/5)")
+                lines.append("")
+
+            except Exception:
+                pass
 
         rid_display = f"`{request_id}`" if request_id else "_(no request_id found)_"
         lines.append(f"**Request ID:** {rid_display}")
@@ -286,24 +315,27 @@ class Action:
         lines.append("")
 
         if message_preview:
-            preview = message_preview[:300] + ("…" if len(message_preview) > 300 else "")
-            # Escape markdown-sensitive chars lightly — keep readable
+            preview = message_preview[:400] + ("…" if len(message_preview) > 400 else "")
+            # blockquote preview
             lines.append(f"> {preview}")
             lines.append("")
 
         # Existing evaluation
         if isinstance(existing, dict) and ("rating" in existing or "comment" in existing):
-            lines.append("## Current Evaluation")
+            lines.append("### Current evaluation")
             r = existing.get("rating")
             if r is not None:
-                lines.append(f"- **Rating:** {self._stars(int(r))} ({r}/{scale})")
+                try:
+                    lines.append(f"- **Rating:** {self._stars(int(r))} ({r}/5)")
+                except Exception:
+                    lines.append(f"- **Rating:** {r}")
             if existing.get("comment"):
                 lines.append(f"- **Comment:** {existing['comment']}")
             if existing.get("tags"):
                 tags = existing["tags"]
-                if isinstance(tags, list):
+                if isinstance(tags, list) and tags:
                     lines.append(f"- **Tags:** {', '.join('#' + str(t) for t in tags)}")
-                else:
+                elif isinstance(tags, str) and tags.strip():
                     lines.append(f"- **Tags:** {tags}")
             if existing.get("created_at") or existing.get("timestamp"):
                 lines.append(f"- **Rated at:** {existing.get('created_at') or existing.get('timestamp')}")
@@ -311,55 +343,80 @@ class Action:
                 lines.append(f"- **By:** `{existing['user_id']}`")
             lines.append("")
         elif isinstance(existing, dict) and isinstance(existing.get("evaluations"), list) and existing["evaluations"]:
-            lines.append("## Current Evaluations")
+            lines.append("### Recent evaluations for this request")
             for ev in existing["evaluations"][:5]:
                 if isinstance(ev, dict):
-                    lines.append(f"- {self._stars(ev.get('rating'))} ({ev.get('rating','?')}/{scale}) — {ev.get('comment','')} {', '.join('#'+t for t in ev.get('tags',[]))}")
+                    rr = ev.get("rating", "?")
+                    stars = self._stars(int(rr)) if isinstance(rr, int) else str(rr)
+                    comment = ev.get("comment", "")
+                    tags = ", ".join("#" + str(t) for t in ev.get("tags", [])) if isinstance(ev.get("tags"), list) else ""
+                    lines.append(f"- {stars} ({rr}/5) — {comment} {tags}")
             lines.append("")
         else:
             lines.append("_No evaluation yet for this message._")
             lines.append("")
 
-        # If a /rate command was just parsed and posted
+        # If a /rate was just parsed and posted
         if parse_result is not None:
             lines.append("---")
             if post_ok:
-                lines.append(f"Saved: {self._stars(parse_result['rating'])} ({parse_result['rating']}/{scale})")
+                lines.append(f"**Saved:** {self._stars(parse_result['rating'])} ({parse_result['rating']}/5)")
                 if parse_result["comment"]:
                     lines.append(f"> {parse_result['comment']}")
                 if parse_result["tags"]:
-                    lines.append(f"Tags: {', '.join('#'+t for t in parse_result['tags'])}")
+                    lines.append(f"Tags: {', '.join('#' + t for t in parse_result['tags'])}")
                 lines.append("")
             else:
-                lines.append(f"Failed to save rating: {post_msg}")
+                lines.append(f"**Failed to save rating:** {post_msg}")
                 lines.append("")
                 lines.append(f"Payload attempted: `rating={parse_result['rating']}` comment=`{parse_result['comment'][:100]}` tags={parse_result['tags']}")
                 lines.append("")
+            # after save, still show instructions below
 
-        # Instructions — now handled live by the rag_trace_capture filter inlet
+        # Star selection + instructions
         lines.append("---")
-        lines.append("## How to Rate — type a `/rate` command as your next message")
+        lines.append("### How to rate")
         lines.append("")
-        lines.append(f"```\n/rate 5 Great response! #helpful #accurate\n```")
+        lines.append("Pick a star value and send it as your next message:")
         lines.append("")
-        lines.append(f"- Rating is **1–{scale}** (required, first number after `/rate`)")
-        lines.append(f"- Comment is free text after the rating")
-        lines.append(f"- Tags are optional `#tag` words at the end (e.g. `#helpful #accurate #needs-work`)")
-        lines.append(f"- The filter saves it instantly — the LLM is not called for `/rate` messages")
+        lines.append("- **1** — `☆☆☆☆☆` — Poor / incorrect")
+        lines.append("- **2** — `★★☆☆☆` — Below average")
+        lines.append("- **3** — `★★★☆☆` — Acceptable")
+        lines.append("- **4** — `★★★★☆` — Good")
+        lines.append("- **5** — `★★★★★` — Excellent")
         lines.append("")
-        lines.append(f"**Examples — copy, edit, and send as your next message:**")
-        lines.append(f"```\n/rate 5 Excellent, very accurate\n/rate 3 Could be more detailed #needs-work\n/rate 1 Hallucinated sources #inaccurate\n```")
+        lines.append("**Quick submit — copy, edit and send:**")
         lines.append("")
-        lines.append(f"> After you send `/rate ...`, you will get a confirmation and the rating appears in the dashboard.")
+        lines.append("```")
+        lines.append("/rate 5 Great response! #helpful #accurate")
+        lines.append("```")
+        lines.append("")
+        lines.append("**More examples:**")
+        lines.append("```")
+        lines.append("/rate 5 Excellent, very accurate")
+        lines.append("/rate 3 Could be more detailed #needs-work")
+        lines.append("/rate 1 Hallucinated sources #inaccurate")
+        lines.append("/rate 4 Helpful but missing citation #incomplete")
+        lines.append("```")
+        lines.append("")
+        lines.append("- Rating is **1–5** (required, first number after `/rate`)")
+        lines.append("- Comment is free text after the rating")
+        lines.append("- Tags are optional `#tag` words at the end (e.g. `#helpful`)")
+        lines.append("- The filter saves it instantly — the LLM is not called for `/rate` messages")
+        lines.append("")
+        lines.append("> After you send `/rate ...`, you will get a confirmation and the rating appears in the dashboard.")
+        lines.append("")
+        lines.append("**Direct JSON (ICS helper):** you can also POST structured data — if this action receives `{\"rating\": 5, \"comment\": \"...\", \"tags\": [...]}` it will save immediately without needing the `/rate` prefix.")
+        lines.append("")
 
-        # Dashboard link
-        lines.append("")
+        # Dashboard links
         lines.append("---")
-        dash = base.replace("rag-tracing-fallback", "127.0.0.1")
         if request_id:
             lines.append(f"[View Pipeline]({dash}/api/observability/pipeline/{urllib.parse.quote(request_id)}) · [Dashboard]({dash}/dashboard/observability) · [All Traces]({dash}/observe)")
         else:
             lines.append(f"[Dashboard]({dash}/dashboard/observability) · [All Traces]({dash}/observe) · [Health]({dash}/health)")
+        lines.append("")
+        lines.append(f"<sub>Observability: `{base}` — ICS helper agent only (NOT arena).</sub>")
 
         return "\n".join(lines)
 
@@ -372,12 +429,11 @@ class Action:
         __user__: Optional[dict] = None,
         __event_emitter__=None,
         **kwargs,
-    ) -> Optional[str]:
-        """Show current evaluation or parse a /rate command and save it."""
+    ) -> str:
+        """Show star panel or parse & save a /rate command."""
         try:
             request_id = self._extract_request_id(body)
             if not request_id:
-                # Try kwargs
                 for k in ("request_id", "chat_id", "id"):
                     v = kwargs.get(k)
                     if isinstance(v, str) and v.strip():
@@ -390,10 +446,8 @@ class Action:
 
             message_preview = self._extract_message_content(body)
 
-            # Check if body already contains a /rate command to parse + save
+            # Check if body already contains a /rate command or direct rating
             rate_cmd = self._find_rate_command(body)
-            post_ok: Optional[bool] = None
-            post_msg = ""
             if rate_cmd is not None and request_id:
                 payload = {
                     "request_id": request_id,
@@ -406,8 +460,6 @@ class Action:
                     "message_preview": message_preview[:500],
                 }
                 ok, msg = self._post_evaluation(payload)
-                post_ok = ok
-                post_msg = msg
                 if __event_emitter__ is not None:
                     try:
                         emitter = __event_emitter__
@@ -423,29 +475,19 @@ class Action:
                             )
                     except Exception:
                         pass
-                # Re-fetch to show updated evaluation
                 existing = None
                 if ok:
                     existing = self._fetch_evaluation(request_id)
-                    # Merge so panel shows what was just saved even if fetch lags
                     if not isinstance(existing, dict) or "rating" not in existing:
                         existing = payload
                 else:
                     existing = self._fetch_evaluation(request_id)
-                return self._render_panel(request_id, chat_id, message_preview, existing, rate_cmd, post_ok, post_msg)
+                return self._render_panel(request_id, chat_id, message_preview, existing, rate_cmd, ok, msg)
 
-            # No /rate command — just show current evaluation + instructions
+            # No /rate — just show panel + existing rating
             existing = None
             if request_id:
                 existing = self._fetch_evaluation(request_id)
-
-            if __event_emitter__ is not None:
-                try:
-                    emitter = __event_emitter__
-                    if callable(getattr(emitter, "__call__", None)):
-                        await emitter({"type": "status", "data": {"description": "Evaluation panel ready", "done": True}})
-                except Exception:
-                    pass
 
             return self._render_panel(request_id, chat_id, message_preview, existing)
 
@@ -463,6 +505,6 @@ class Action:
         __user__: Optional[dict] = None,
         __event_emitter__=None,
         **kwargs,
-    ) -> Optional[str]:
-        """Alias for `action` — OpenWebUI ≤0.5 dispatches to `pipe` for actions."""
+    ) -> str:
+        """Alias for `action` — OpenWebUI <=0.5 dispatches to `pipe` for actions."""
         return await self.action(body, __user__, __event_emitter__, **kwargs)
