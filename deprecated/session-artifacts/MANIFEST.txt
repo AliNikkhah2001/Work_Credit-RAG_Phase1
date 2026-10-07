@@ -1,0 +1,24 @@
+# Session Artifacts — Deprecated Manifest
+# Moved on: 2026-09-27
+# Reason: Vast.ai session-specific scripts, hardcoded IPs/secrets, and ephemeral deployment data
+# WARNING: Some files contain hardcoded API keys and credentials — DO NOT reuse directly
+
+ORIGINAL_PATH                                           -> DEPRECATED_PATH                                              | REASON
+deploy/vast/wave2_assets/SESSION_WAVE1_HANDOFF.md       -> deprecated/session-artifacts/vast_SESSION_WAVE1_HANDOFF.md   | 6461-line raw session dump (273KB bloat)
+deploy/vast/wave2_assets/aggregate_bench.py             -> deprecated/session-artifacts/vast_aggregate_bench.py         | Session benchmark with hardcoded URLs
+deploy/vast/wave2_assets/bench_backbone.py              -> deprecated/session-artifacts/vast_bench_backbone.py          | Duplicates eval/run_e2e.py with Vast paths
+deploy/vast/wave2_assets/remap_gold.py                  -> deprecated/session-artifacts/vast_remap_gold.py              | One-off remapper with flawed token-overlap heuristic
+deploy/vast/wave2_assets/eval_remapped.json             -> deprecated/session-artifacts/vast_eval_remapped.json         | CORRUPTED: 5 boilerplate chunks marked gold for 80-96% of queries
+deploy/vast/wave2_assets/smoke5.json                    -> deprecated/session-artifacts/vast_smoke5.json                | 5-question subset with same corruption
+deploy/vast/COMMANDS.md                                 -> deprecated/session-artifacts/vast_COMMANDS.md                | Hardcoded SSH commands for instance 50713720
+deploy/vast/Caddyfile.public                            -> deprecated/session-artifacts/vast_Caddyfile.public           | Ephemeral credit-rag.duckdns.org domain
+deploy/vast/langfuse-v2.sh                              -> deprecated/session-artifacts/vast_langfuse-v2.sh             | CONTAINS HARDCODED API KEYS (sk-lf-..., pk-lf-...)
+deploy/vast/studio.sh                                   -> deprecated/session-artifacts/vast_studio.sh                  | LM Studio launcher, niche session tool
+deploy/vast/wave2_gpu.sh                                -> deprecated/session-artifacts/vast_wave2_gpu.sh               | Overlaps start.sh, session-specific paths
+handoff/CONTINUE.md                                     -> deprecated/session-artifacts/handoff_CONTINUE.md             | 7 broken paths, tasks completed 2026-09-15
+handoff/README.md                                       -> deprecated/session-artifacts/handoff_README.md               | Session handoff pointer
+deploy/docker/docker-compose.override.yml               -> deprecated/session-artifacts/docker-compose.override.yml     | Leaks private LAN IPs (192.168.x.x), binds all to 0.0.0.0
+
+# To restore any file:
+#   git log --all --full-history -- <ORIGINAL_PATH>
+#   git checkout <commit-hash> -- <ORIGINAL_PATH>

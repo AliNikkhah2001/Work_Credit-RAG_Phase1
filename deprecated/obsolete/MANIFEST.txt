@@ -1,0 +1,12 @@
+# Obsolete Scripts — Deprecated Manifest
+# Moved on: 2026-09-27
+# Reason: Scripts with src/ imports or abandoned tech that cannot work with current components/ structure
+
+ORIGINAL_PATH                        -> DEPRECATED_PATH                              | REASON
+scripts/run_mvp.sh                   -> deprecated/obsolete/run_mvp.sh              | sys.stdeps typo (line 87), src/ imports, port mismatches
+scripts/test_mvp.py                  -> deprecated/obsolete/test_mvp.py             | Hardcoded port 9000, Bearer sk-local-dev, fails without submodules
+deploy/docker/Dockerfile.llama       -> deprecated/obsolete/Dockerfile.llama        | llama.cpp approach abandoned in favor of vLLM
+
+# To restore any file:
+#   git log --all --full-history -- <ORIGINAL_PATH>
+#   git checkout <commit-hash> -- <ORIGINAL_PATH>

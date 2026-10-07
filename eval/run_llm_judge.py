@@ -98,8 +98,7 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("bench", type=str)
     ap.add_argument("--out", type=str, required=True)
-    ap.add_argument("--model", type=str,
-                    default="/workspace/.hf_home/hub/models--unsloth--gemma-4-31B-it-GGUF/snapshots/c1ac76e99d5513b141e8adde7288b85c3f9c32ec/gemma-4-31B-it-UD-Q4_K_XL.gguf")
+    ap.add_argument("--model", type=str, default="model-name-here")
     ap.add_argument("--limit", type=int, default=None)
     a = ap.parse_args()
     main(Path(a.bench), Path(a.out), a.model, a.limit)

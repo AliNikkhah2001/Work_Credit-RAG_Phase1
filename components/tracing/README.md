@@ -18,6 +18,7 @@ Fallback trace collector and local observation UI for the Work Credit RAG platfo
 | Collector | 3000 | `POST /api/public/ingestion`, `GET /api/public/traces`, `GET /api/public/health` |
 | Observe UI | 3000 | `GET /observe` (request list), `GET /observe/{request_id}` (timeline) |
 | Studio UI | 3000 | `GET /studio` (local graph debugger), `POST /api/studio/run`, `GET /api/studio/result` |
+| Observability Dashboard | 3000 | `GET /dashboard/observability`, `GET/POST /api/observability/*` |
 
 ## API Endpoints
 
@@ -54,11 +55,32 @@ Fallback trace collector and local observation UI for the Work Credit RAG platfo
 
 **Run flow:** Creates thread → starts run → polls until `success`/`error` → returns clipped state + observe link
 
+### Observability Dashboard
+
+The Observability Dashboard provides web-based trace inspection, evaluation metrics, and pipeline debugging without external dependencies.
+
+- **`dashboard_api.py`**: Exposes FastAPI endpoints mounted at `/api/observability` for trace storage, evaluations, stage latency breakdown, summary stats, and data export.
+- **`eval_store.py`**: SQLite storage engine (configured via `EVAL_DB_PATH`, default `/tmp/observability.db` with WAL mode) persisting traces and evaluator ratings.
+- **`templates/observability.html`**: Interactive web dashboard served at `GET /dashboard/observability`.
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/dashboard/observability` | Web dashboard UI |
+| `POST` | `/api/observability/traces` | Record full pipeline trace |
+| `GET` | `/api/observability/traces` | List/search stored traces |
+| `GET` | `/api/observability/traces/{request_id}` | Retrieve trace details |
+| `GET` | `/api/observability/pipeline/{request_id}` | Full 8-stage timeline for a request |
+| `POST` | `/api/observability/evaluations` | Submit rating, comment, and tags |
+| `GET` | `/api/observability/evaluations` | Query evaluations |
+| `GET` | `/api/observability/overview` | Aggregated metrics (requests, latency, ratings) |
+| `GET` | `/api/observability/timeseries` | Latency and throughput time series |
+| `GET` | `/api/observability/export` | Export trace data (`?format=jsonl`) |
+
 ## Running
 
 ```bash
 cd components/tracing
-/tmp/orch-venv/bin/python -m uvicorn app:app --host 0.0.0.0 --port 3000
+python -m uvicorn app:app --host 0.0.0.0 --port 3000
 ```
 
 Or via parent startup: `bash deploy/vast/start.sh` (starts after guardrails)
@@ -70,6 +92,7 @@ Or via parent startup: `bash deploy/vast/start.sh` (starts after guardrails)
 | `LANGFUSE_HOST` | `http://127.0.0.1:3001` | Upstream Langfuse v2 (for observe CLI) |
 | `STUDIO_API` | `http://127.0.0.1:2024` | LangGraph Studio API |
 | `TRACE_FILE` | `/tmp/langfuse_traces.jsonl` | JSONL storage path |
+| `EVAL_DB_PATH` | `/tmp/observability.db` | SQLite database path for traces & evaluations |
 
 ## Observe CLI
 
@@ -97,13 +120,15 @@ python observe.py --request <request_id> --file-only  # offline JSONL only
 curl -s http://127.0.0.1:3000/health
 curl -s http://127.0.0.1:3000/api/public/health
 
-# Observe UI
+# Observe UI & Dashboard
 open http://127.0.0.1:3000/observe
 open http://127.0.0.1:3000/studio
+open http://127.0.0.1:3000/dashboard/observability
 
 # API
 curl -s http://127.0.0.1:3000/api/observe/requests?limit=5 | jq .
 curl -s http://127.0.0.1:3000/api/observe/timeline/<request_id> | jq .
+curl -s http://127.0.0.1:3000/api/observability/overview | jq .
 
 # Studio run
 curl -s -X POST http://127.0.0.1:3000/api/studio/run \
@@ -115,7 +140,7 @@ curl -s "http://127.0.0.1:3000/api/studio/result?thread_id=...&run_id=...&reques
 
 ## Links
 
-- [Parent README](../README.md#observability)
-- [Architecture](../docs/architecture.md)
-- [Langfuse v2 setup](../deploy/vast/langfuse-v2.sh)
-- [Studio setup](../deploy/vast/studio.sh)
+- [Parent README](../../README.md#observability)
+- [Documentation Index](../../docs/README.md)
+- [Historical Planning Docs](../../deprecated/plans/)
+- [Vast Deployment Scripts](../../deploy/vast/)

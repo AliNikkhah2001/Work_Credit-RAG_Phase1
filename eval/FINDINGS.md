@@ -26,10 +26,10 @@ Saved files:
 To reproduce:
 
 ```bash
-# 20-sample quick eval (30s)
-PYTHONPATH=components/guardrails/src /tmp/guard-venv/bin/python /tmp/eval_kb_rag2.py  # uses /tmp/eval_kb_rag2.py
-# Full 120 (10 min)
-timeout 600 python3 /tmp/full_eval.py  # see eval/README.md
+# Guardrails evaluation
+python eval/run_guardrails_eval.py
+# Full 120 question answer benchmark (takes ~10 min against running orchestrator)
+python eval/run_llm_answer_benchmark.py --out eval/results/llm_answer_benchmark_v4.json
 # Raw guardrails check for any query
 curl -s http://127.0.0.1:8200/v1/rails/check -H 'Content-Type: application/json' -d '{"stage":"input","text":"...","request_id":"t"}' | jq .
 ```
@@ -123,7 +123,7 @@ curl -s http://127.0.0.1:8200/v1/rails/check -H 'Content-Type: application/json'
 
 **Queries (6 of 120):** All with expected answer `رتبه اعتباری در واقع شاخص اعتماد مالی شماست... رتبه اعتباری ضعیف می‌تواند باعث رد درخواست وام شود.` (e.g., `شاخص اعتماد ریسک پایین موسسات مالی خوش حسابی`, `راستی، چرا امتیاز اعتباری و رتبه اعتباری من مهم است...` etc.)
 
-**Diagnosis:** `check_output_persian` on `expected_answer` → `hate:ضعیف` (`hurtlex_fa_conservative.json:688 "نادرست"? No, "ضعیف":670? Actually `ضعیف` at 670 is `مهم`? Wait `ضعیف` at 688 is `نادرست`? Let's check: `ضعیف` is at `670: "مهم"` is not, `ضعیف` is separate. The expected answer contains `ضعیف` (weak) as in `رتبه اعتباری ضعیف` — legitimate financial term, not hate. But HurtLex flags `ضعیف` as hate (weak = insult). In credit domain, “weak rating” is factual.
+**Diagnosis:** `check_output_persian` on `expected_answer` triggered `hate:ضعیف` via `hurtlex_fa_conservative.json`. The expected answer contains `ضعیف` (weak/poor) in standard financial phrasing like `رتبه اعتباری ضعیف` ("poor credit rating"). While HurtLex flags `ضعیف` as derogatory/insulting language in general contexts, in credit evaluation "weak rating" is factual, domain-standard terminology rather than hate speech.
 
 **Fix:** Added `ضعیف` to allowlist, same as others, with test `test_zaif_allowed`.
 
@@ -168,7 +168,7 @@ Now out-of-context returns `بر اساس اطلاعات موجود در پای�
 
 ## How to tweak further
 
-1. **Guardrail-blocked KB question:** Add its lemma to `components/guardrails/kb/hurtlex_allowlist.json` (with `evidence` and `normalized_allowlist`), add test in `tests/test_hurtlex_allowlist.py` (benign `test_*_allowed`), restart `8200` (`PYTHONPATH=... /tmp/guard-venv/bin/python -m uvicorn ... --port 8200`), rerun `PYTHONPATH=... /tmp/guard-venv/bin/python -m pytest ... -k allowlist`.
+1. **Guardrail-blocked KB question:** Add its lemma to `components/guardrails/kb/hurtlex_allowlist.json` (with `evidence` and `normalized_allowlist`), add test in `tests/test_hurtlex_allowlist.py` (benign `test_*_allowed`), restart `8200` (`PYTHONPATH=components/guardrails/src python -m uvicorn work_rag_guardrails.service:app --port 8200`), rerun `PYTHONPATH=components/guardrails/src python -m pytest components/guardrails/tests/ -k allowlist`.
 2. **Retrieval wrong (citation miss):** Check `expected_chunk_ids` vs `final_results` in `kb_rag_evaluation_20samples.json` `derivation: miss` → tune `build_context.py` `MAX_CHUNKS`/`MAX_CHARS` or `knowledgebase` reranker, or add missing keywords to `kb-source`.
 3. **Prompt English or generic fallback:** Edit `build_context.py` system message (Persian, citation style) and restart `8100`.
 4. **Control-token leak `<unused`:** Check `service.py` `_clean_gemma_output` and ensure `chat_template_kwargs:{"enable_thinking":false}` is sent (commit `3f20bed`), and `llama.cpp` is `0f3a71b` with `--no-mmproj`.

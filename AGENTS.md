@@ -17,6 +17,8 @@ Umbrella repo; implementation lives in submodules. Do NOT duplicate component co
 
 ## 2. Service table (instance 50713720, 2026-09-12, 1x RTX 3090)
 
+> **Note:** Paths referencing `/workspace/...`, `/tmp/*-venv`, and `/tmp/hf_clean` are ephemeral host paths specific to the Vast.ai deployment environment. For local development or non-Vast hosts, use your local repository path and standard virtual environments.
+
 | Svc | Dir / module | venv | Port | Key env |
 |---|---|---|---|---|
 | llama-server | `/workspace/llama.cpp-src/build-cuda/bin/llama-server` | — | 18000 (127.0.0.1 only) | `--ctx-size 8192 --temp 0.2 --no-mmproj --jinja -ngl 999`, `MODEL=.../gemma-4-31B-it-UD-Q4_K_XL.gguf` |
@@ -29,7 +31,7 @@ Umbrella repo; implementation lives in submodules. Do NOT duplicate component co
 | Studio API | `components/orchestrator` (`bash deploy/vast/studio.sh`) | `/tmp/orch-venv` | 2024 (0.0.0.0) | panel `https://smith.langchain.com/studio/?baseUrl=http://127.0.0.1:2024` |
 | postgres 14 + pgvector | system cluster | — | 5432 | DBs `kb_manager`, `langfuse`; `KB_DB_URL` must be set explicitly or KB silently falls back to SQLite |
 
-Models cache: `/tmp/hf_clean`. `HF_HOME` AND `HF_HUB_CACHE` must BOTH point there (hub 1.x reads `$HF_HOME/hub`). `HF_HUB_OFFLINE=1`.
+Models cache: `/tmp/hf_clean` (Vast.ai ephemeral path; configure locally via standard cache dir). `HF_HOME` AND `HF_HUB_CACHE` must BOTH point there (hub 1.x reads `$HF_HOME/hub`). `HF_HUB_OFFLINE=1`.
 
 Full startup order: postgres → Gemma → KB → guardrails → collector → orchestrator → WebUI = `bash deploy/vast/start.sh`.
 
@@ -51,11 +53,11 @@ Restart ONE service (example: guardrails):
 
 ```bash
 fuser -k 8200/tcp; sleep 3
-cd /workspace/Work_Credit-RAG_Phase1
+cd /workspace/Work_Credit-RAG_Phase1  # Vast.ai host path (or local repo root)
 PYTHONPATH=$PWD/components/guardrails/src GUARDRAILS_HOST=0.0.0.0 GUARDRAILS_PORT=8200 \
   UPSTREAM_LLM_BASE_URL=http://127.0.0.1:18000/v1 UPSTREAM_LLM_MODEL=unsloth/gemma-4-31B-it-GGUF:UD-Q4_K_XL \
   nohup /tmp/guard-venv/bin/python -m uvicorn work_rag_guardrails.api:create_app --factory \
-  --host 0.0.0.0 --port 8200 > /tmp/guard.log 2>&1 &
+  --host 0.0.0.0 --port 8200 > /tmp/guard.log 2>&1 &  # Note: /tmp/guard-venv is Vast.ai-specific; locally use active virtualenv
 curl -s http://127.0.0.1:8200/health
 ```
 
@@ -101,8 +103,8 @@ bash deploy/vast/studio.sh  # API :2024
 ## 4. Git rules
 
 - Parent pins submodules to exact commits (gitlinks). Check: `git submodule status --recursive`.
-- Component fix → commit+push on that repo's `vast-gemma4-migration`, then advance the pin with a parent commit.
-- Deployment-only material (deploy/, docs/, eval/) → parent `vast-deploy` / `release` branches.
+- Component fix → commit+push on that repo's `main` (or appropriate task branch), then advance the pin with a parent commit.
+- Deployment-only material (deploy/, docs/, eval/) → parent `main` (or appropriate task/release branch).
 - Never force-push. Never commit secrets (`*.env`, tokens, passwords, `/tmp/opencode/langfuse.env`) or generated artifacts (`*.npz`, `__pycache__`, `*.log`, venvs).
 
 ## 5. Vast gotchas
@@ -110,8 +112,8 @@ bash deploy/vast/studio.sh  # API :2024
 - Unprivileged container: NO docker. Host venvs only; `compose.mvp.yml` is for privileged hosts.
 - NAT ports fixed at creation: new direct mappings impossible. Public access = SSH tunnels: `ssh -p <ssh_port> root@<ssh_host> -L 13000:localhost:13000 -L 8100:localhost:8100 -L 3000:localhost:3000 -L 3001:localhost:3001 -L 2024:localhost:2024`.
 - Gemma `:18000` stays loopback-only (127.0.0.1) by design; never expose publicly.
-- Phantom overlay dentries: `/workspace/.hf_home` looks populated but is empty phantom dentries — real cache is `/tmp/hf_clean`.
-- HF cache layout: set BOTH `HF_HOME=/tmp/hf_clean` and `HF_HUB_CACHE=/tmp/hf_clean`.
+- Phantom overlay dentries (Vast.ai host): `/workspace/.hf_home` looks populated but is empty phantom dentries — real cache is `/tmp/hf_clean`.
+- HF cache layout (Vast.ai host): set BOTH `HF_HOME=/tmp/hf_clean` and `HF_HUB_CACHE=/tmp/hf_clean`.
 - asyncpg loop bug (fixed in KB working tree): `search_api` must `await search_knowledge_base` directly, NOT via `asyncio.to_thread(...)` (thread-hop breaks the pool: "attached to a different loop"). Empty search + that error → check the fix is present.
 - Langfuse v2 envelope: top-level `id` + ISO `timestamp`; updates via same-id `trace-create` (no `trace-update` in v2). SDK v4 pydantic shape is incompatible — direct-HTTP path in orchestrator `tracing.py` is authoritative.
 - Gemma needs `chat_template_kwargs:{"enable_thinking":false}` + `--no-mmproj --jinja` or `<unused*>` leaks return.

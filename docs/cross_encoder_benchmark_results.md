@@ -100,6 +100,8 @@ Tested 7 cross-encoder reranker models on the Work Credit RAG KB (v8 pgvector, 6
 
 ## Files Generated
 
+> **Note:** The files below in `data/reranker_benchmarks/` are runtime benchmark outputs and are not committed to the repository (uncommitted/gitignored).
+
 ```
 data/reranker_benchmarks/
 ├── benchmark_mmarco (baseline).json

@@ -1,0 +1,12 @@
+# Audits — Deprecated Manifest
+# Moved on: 2026-09-27
+# Reason: Triple-redundant audit docs; canonical version kept at docs/history/CODE_AUDIT_2026-09-27.md
+
+ORIGINAL_PATH                                    -> DEPRECATED_PATH                                      | REASON
+AGENTS_FIX_PLAN.md                               -> deprecated/audits/AGENTS_FIX_PLAN.md                | 142-issue fix plan; redundant with canonical audit
+.opencode/plans/audit-fix-2026-09-27.md          -> deprecated/audits/opencode_audit-fix-2026-09-27.md  | Same findings in OpenCode format
+.opencode/config.json                            -> deprecated/audits/opencode_config.json               | User-specific tool config; was in .gitignore but committed
+
+# To restore any file:
+#   git log --all --full-history -- <ORIGINAL_PATH>
+#   git checkout <commit-hash> -- <ORIGINAL_PATH>

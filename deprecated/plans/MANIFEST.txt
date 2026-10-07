@@ -1,0 +1,17 @@
+# Plans — Deprecated Manifest
+# Moved on: 2026-09-27
+# Reason: Completed planning docs, 12-line pointer stubs, or stale hierarchy snapshots
+
+ORIGINAL_PATH                          -> DEPRECATED_PATH                           | REASON
+docs/GUARDRAILS_V2_PLAN.md            -> deprecated/plans/GUARDRAILS_V2_PLAN.md    | 12-line stub; original in archive/plans/
+docs/RERANKER_MEMORY_TASK.md          -> deprecated/plans/RERANKER_MEMORY_TASK.md   | 12-line stub; original in archive/plans/
+docs/MVP_INTEGRATION_PLAN.md          -> deprecated/plans/MVP_INTEGRATION_PLAN.md   | 388-line historical RFC; all phases implemented
+docs/PROJECT_HIERARCHY.md             -> deprecated/plans/PROJECT_HIERARCHY.md      | 726-line static snapshot at stale commit f402517
+docs/architecture.md                  -> deprecated/plans/architecture.md           | 12-line stub; original in archive/plans/
+docs/training.md                      -> deprecated/plans/training.md               | 12-line stub; original in archive/plans/
+docs/models.md                        -> deprecated/plans/models.md                 | 12-line stub; original in archive/plans/
+docs/RUNBOOK_VAST.md                  -> deprecated/plans/RUNBOOK_VAST.md           | 12-line stub; original in archive/plans/
+
+# To restore any file:
+#   git log --all --full-history -- <ORIGINAL_PATH>
+#   git checkout <commit-hash> -- <ORIGINAL_PATH>

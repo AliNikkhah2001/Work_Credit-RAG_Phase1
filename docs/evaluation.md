@@ -19,8 +19,10 @@
 python eval/run_llm_answer_benchmark.py --out eval/results/llm_answer_benchmark_v4.json
 python eval/run_llm_judge.py eval/results/llm_answer_benchmark_v4.json --out eval/results/llm_judge_v4.json
 python eval/make_plots.py
-python eval/build_report_site.py  # generates docs/benchmark-report/ (gitignored, see archive/)
+python eval/build_report_site.py  # generates docs/benchmark-report/ (gitignored; see archive/benchmark-history/)
 ```
+
+> **Note on `docs/benchmark-report/`**: The HTML report directory `docs/benchmark-report/` is generated at runtime by `eval/build_report_site.py` and is gitignored. Historical benchmark reports may be found in `archive/benchmark-history/`.
 
 ## Archive
 
