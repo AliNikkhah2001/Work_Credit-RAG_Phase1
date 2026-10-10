@@ -318,6 +318,10 @@ python components/tracing/observe.py --request <request_id>
 python components/tracing/observe.py --request <request_id> --json
 ```
 
+> **End-to-end testing (filter_path + clarifying):** see [`components/knowledgebase/kb-manager/README.md` → Testing on Open WebUI](components/knowledgebase/kb-manager/README.md#testing-on-open-webui--end-to-end-rag--filter_path--clarifying) — KB tester `:8000/search`, WebUI scope picker + `rag_trace_capture` filter (`filter_path`), and sticky clarifying (`cheque` / `facilities_person` / `facilities_legal`).
+> Verifies `applied_subspace` + `filter_path` persistence in `http://127.0.0.1:3000/dashboard/observability` (subspace badge, clarifying state, JSONL export).
+> Smoke + clarifying curls are in that section; WebUI at `http://127.0.0.1:13000` is ICS Helper (Arena disabled).
+
 ---
 
 ## 📂 Metadata Filtering & Folder Hierarchy
