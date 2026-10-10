@@ -23,6 +23,7 @@ Umbrella repository for a self-hosted, Persian-capable conversational RAG platfo
 - [Repository Composition](#repository-composition)
 - [MVP Target](#mvp-target)
 - [Quick Start](#quick-start)
+- [Tester Accounts](#tester-accounts) — **20 sample logins + dashboard**
 - [Models](#models)
 - [Configuration](#configuration)
 - [Observability](#observability)
@@ -213,6 +214,40 @@ cp .env.example .env   # Set MODEL_FILE to your Gemma GGUF path
 docker compose up -d --build
 # WebUI at http://<host>:13000
 ```
+
+## Tester Accounts
+
+> **WebUI (ICS Helper, NOT Arena):** `http://127.0.0.1:13000` — select **ICS Helper** at top of chat (Arena is disabled).
+> **Dashboard:** `http://127.0.0.1:3000/dashboard/observability` — 8-stage formatted traces (chunk cards BOTH/CE/RRF, guardrail badges, score bars), evaluations, pipeline inspector, export (JSONL/CSV).
+> Full list also in [`tester-credentials.md`](tester-credentials.md).
+
+| # | Username (email) | Password | Display name (obviously fake — not real personnel) |
+|---|------------------|----------|--------------------------------------------------|
+| 01 | `tester01@ics.local` | `Tester2024!` | TestAccount_01 |
+| 02 | `tester02@ics.local` | `Tester2024!` | TestAccount_02 |
+| 03 | `tester03@ics.local` | `Tester2024!` | DemoTester_03 |
+| 04 | `tester04@ics.local` | `Tester2024!` | DemoTester_04 |
+| 05 | `tester05@ics.local` | `Tester2024!` | EvalUser_05 |
+| 06 | `tester06@ics.local` | `Tester2024!` | EvalUser_06 |
+| 07 | `tester07@ics.local` | `Tester2024!` | QA_Fake_07 |
+| 08 | `tester08@ics.local` | `Tester2024!` | QA_Fake_08 |
+| 09 | `tester09@ics.local` | `Tester2024!` | Dummy_09 |
+| 10 | `tester10@ics.local` | `Tester2024!` | Dummy_10 |
+| 11 | `tester11@ics.local` | `Tester2024!` | MockAccount_11 |
+| 12 | `tester12@ics.local` | `Tester2024!` | MockAccount_12 |
+| 13 | `tester13@ics.local` | `Tester2024!` | SampleTest_13 |
+| 14 | `tester14@ics.local` | `Tester2024!` | SampleTest_14 |
+| 15 | `tester15@ics.local` | `Tester2024!` | Placeholder_15 |
+| 16 | `tester16@ics.local` | `Tester2024!` | Placeholder_16 |
+| 17 | `tester17@ics.local` | `Tester2024!` | SimUser_17 |
+| 18 | `tester18@ics.local` | `Tester2024!` | SimUser_18 |
+| 19 | `tester19@ics.local` | `Tester2024!` | Synthetic_19 |
+| 20 | `tester20@ics.local` | `Tester2024!` | Synthetic_20 |
+
+- **Admin:** `admin@localhost` / `admin` — has Users/Functions/Models management. Login currently goes to admin ( `WEBUI_AUTH=false` — direct chat without forced login; set `WEBUI_AUTH=true` to force a login redirect, then `testerNN@ics.local` gets its own `user_id` so ratings show the distinct evaluator). Change passwords via **Settings → Profile → Change Password**.
+- **Buttons on each ICS helper reply:** **Star Rating** (1–5 ★) · **Report Problem** (6 categories `inaccurate/incomplete/hallucination/wrong_source/off_topic/other` via `/report …`) · **Retrieved Content** (full KB chunks with source badges) · **Ground Truth** (`/truth The correct answer is …` stores `[GROUND_TRUTH]`).
+- **Persistence:** Chats are in `webui.db`; traces/evaluations are in a separate `observability.db` (`docker-data/volumes/docker_trace-data/_data` + `/tmp/langfuse_traces.jsonl`) with `created_at` timestamps, `request_id`, `retrieved_chunks`, `stage_timing`, `user_id` — **deleting a chat in WebUI does NOT delete its traces/evaluations** (verified: delete → traces/evaluations counts unchanged, full retrieval+generation log remains).
+- See [`tester-credentials.md`](tester-credentials.md) for the full file with login, dashboard, and persistence notes.
 
 ---
 
