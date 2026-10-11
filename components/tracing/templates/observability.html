@@ -689,10 +689,28 @@ function renderPipeline(d){
       +"</dl>";
     }},
     {key:'retrieve',title:'Stage 4: Retrieve',icon:'🔎',render:()=>{
+      // F7 observability badge: show applied_subspace when present
+      let subspaceLabel = d.applied_subspace || d.filter_path || "";
+      let subspaceBadge = "";
+      if(subspaceLabel){
+        let label = String(subspaceLabel);
+        let pretty = label==="cheque" ? "Cheque" : label==="facilities" ? "Facilities" : label==="facilities_person" ? "Facilities · Person" : label==="facilities_legal" ? "Facilities · Legal" : label==="legal_entity" ? "Legal Entity" : label==="general" ? "General" : label;
+        let color = label==="cheque" ? "#dbeafe" : label.includes("facilities") ? "#fef3c7" : label==="legal_entity" ? "#ede9fe" : "#f1f5f9";
+        let border = label==="cheque" ? "#bfdbfe" : label.includes("facilities") ? "#fde68a" : label==="legal_entity" ? "#ddd6fe" : "var(--line)";
+        let textColor = label==="cheque" ? "#1e40af" : label.includes("facilities") ? "#92400e" : label==="legal_entity" ? "#5b21b6" : "#334155";
+        subspaceBadge = "<span class='badge' style='background:"+color+";border-color:"+border+";color:"+textColor+"' title='applied_subspace'>◉ "+esc(pretty)+"</span>";
+        if(d.available_subspaces && Array.isArray(d.available_subspaces) && d.available_subspaces.length){
+          subspaceBadge += " <span class='muted' style='font-size:10px'>· candidates: "+esc(d.available_subspaces.join(", "))+"</span>";
+        }
+        if(d.filter_path && d.filter_path !== d.applied_subspace){
+          subspaceBadge += " <span class='muted' style='font-size:10px'>filter: "+esc(d.filter_path)+"</span>";
+        }
+      }
       let h="<div style='display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px'>"
         +"<span class='badge'>"+rc.length+" chunks</span>"
         +(cits.length? "<span class='badge'>"+cits.length+" citations</span>":"")
         +(d.retrieval_method? "<span class='badge'>"+esc(d.retrieval_method)+"</span>":"")
+        + subspaceBadge
         +"</div>";
       if(!rc.length) return h+"<span class='muted'>No chunks retrieved — KB returned empty or retrieval was skipped.</span>";
       rc.forEach((c,i)=>{ h+=renderChunkCard(c,i); });
@@ -782,8 +800,17 @@ function renderPipeline(d){
   bottom.style.display='block';
   let total=d.latency_ms!=null? fmtLatency(d.latency_ms) : (st.total!=null? fmtLatency(Math.round(st.total)) : '—');
   let totalMs=d.latency_ms||st.total||Object.values(st).reduce((a,b)=>a+(typeof b==='number'?b:0),0);
+  // F7 subspace badge in summary
+  let subspaceSummary="";
+  if(d.applied_subspace){
+    let _lab=d.applied_subspace;
+    let _pretty=_lab==="cheque"?"Cheque":_lab==="facilities"?"Facilities":_lab==="facilities_person"?"Facilities · Person":_lab==="facilities_legal"?"Facilities · Legal":_lab==="legal_entity"?"Legal Entity":_lab==="general"?"General":_lab;
+    subspaceSummary=" · <span class='badge' style='font-size:11px'>"+esc(_pretty)+"</span>";
+  } else if(d.filter_path){
+    subspaceSummary=" · <span class='badge' style='font-size:11px'>"+esc(d.filter_path)+"</span>";
+  }
   bottom.innerHTML=
-    "<div style='display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap'><span><b>Total latency:</b> "+esc(total)+"</span><span class='muted'>Request "+esc(d.request_id||'')+" · Model "+esc(d.model||'—')+"</span></div>"+
+    "<div style='display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap'><span><b>Total latency:</b> "+esc(total)+subspaceSummary+"</span><span class='muted'>Request "+esc(d.request_id||'')+" · Model "+esc(d.model||'—')+"</span></div>"+
     (timeline? "<div class='muted' style='margin-top:6px'>Observer timeline: "+(timeline.spans?timeline.spans.length:0)+" spans · "+esc(timeline.name||'')+"</div>":"");
 }
 

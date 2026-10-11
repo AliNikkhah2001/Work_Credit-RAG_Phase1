@@ -66,9 +66,18 @@ def init_db():
                 citations TEXT,
                 context_preview TEXT,
                 latency_ms INTEGER,
-                created_at REAL
+                created_at REAL,
+                applied_subspace TEXT,
+                available_subspaces TEXT,
+                filter_path TEXT
             )
         """)
+        # Migration: add new columns if DB predates F7
+        for _col in ("applied_subspace", "available_subspaces", "filter_path"):
+            try:
+                conn.execute(f"ALTER TABLE traces ADD COLUMN {_col} TEXT")
+            except Exception:
+                pass
         # Indexes for evaluations
         conn.execute("CREATE INDEX IF NOT EXISTS idx_eval_request_id ON evaluations(request_id)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_eval_rating ON evaluations(rating)")
@@ -154,6 +163,14 @@ def _trace_row_to_dict(row: sqlite3.Row) -> dict:
         d["citations"] = []
     if d.get("stage_timing") is None:
         d["stage_timing"] = {}
+    # F7 subspace fields — available_subspaces stored as JSON array string
+    if "available_subspaces" in d:
+        raw_av = d.get("available_subspaces")
+        if isinstance(raw_av, str) and raw_av:
+            try:
+                d["available_subspaces"] = json.loads(raw_av)
+            except Exception:
+                d["available_subspaces"] = None
     return d
 
 
@@ -422,6 +439,12 @@ def save_trace(data: dict) -> dict:
     else:
         cit_str = _dumps(cit)
 
+    # F7 subspace fields
+    applied_subspace_val = data.get("applied_subspace")
+    avail_val = data.get("available_subspaces")
+    avail_str = _dumps(avail_val) if avail_val is not None else None
+    filter_path_val = data.get("filter_path")
+
     conn = get_db()
     try:
         # Check existing by request_id
@@ -436,7 +459,8 @@ def save_trace(data: dict) -> dict:
                 UPDATE traces SET
                     chat_id=?, user_id=?, model=?, user_query=?, rewritten_query=?,
                     response=?, stage_timing=?, guardrail_input=?, guardrail_output=?,
-                    retrieved_chunks=?, citations=?, context_preview=?, latency_ms=?
+                    retrieved_chunks=?, citations=?, context_preview=?, latency_ms=?,
+                    applied_subspace=?, available_subspaces=?, filter_path=?
                 WHERE request_id=?
             """, (
                 data.get("chat_id"),
@@ -452,14 +476,17 @@ def save_trace(data: dict) -> dict:
                 cit_str,
                 data.get("context_preview"),
                 data.get("latency_ms"),
+                applied_subspace_val,
+                avail_str,
+                filter_path_val,
                 request_id,
             ))
         else:
             created_at = data.get("created_at") or now
             conn.execute("""
                 INSERT INTO traces
-                (id, request_id, chat_id, user_id, model, user_query, rewritten_query, response, stage_timing, guardrail_input, guardrail_output, retrieved_chunks, citations, context_preview, latency_ms, created_at)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                (id, request_id, chat_id, user_id, model, user_query, rewritten_query, response, stage_timing, guardrail_input, guardrail_output, retrieved_chunks, citations, context_preview, latency_ms, created_at, applied_subspace, available_subspaces, filter_path)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             """, (
                 trace_id,
                 request_id,
@@ -477,6 +504,9 @@ def save_trace(data: dict) -> dict:
                 data.get("context_preview"),
                 data.get("latency_ms"),
                 created_at,
+                applied_subspace_val,
+                avail_str,
+                filter_path_val,
             ))
         conn.commit()
         row = conn.execute("SELECT * FROM traces WHERE request_id=?", (request_id,)).fetchone()

@@ -56,6 +56,9 @@ class SaveTraceRequest(BaseModel):
     citations: Optional[list] = None
     context_preview: Optional[str] = None
     latency_ms: Optional[int] = None
+    applied_subspace: Optional[str] = None
+    available_subspaces: Optional[list] = None
+    filter_path: Optional[str] = None
 
     class Config:
         extra = "allow"

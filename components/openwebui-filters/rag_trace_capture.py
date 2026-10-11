@@ -14,6 +14,8 @@ filter sandbox (no httpx).
 Install: Admin Panel → Functions → Create New Function → paste this file.
 Attach to model via Model settings → Functions.
 Valves: trace_endpoint, capture_enabled, log_to_console
+Scope fallback: type [چک] or [تسهیلات] or [شرکت] at the start of your message, or scope:cheque, or keep is_global Valves scope via Admin → Functions → RAG Trace Capture → Valves
+  (also supports [cheque], #cheque, scope:facilities, #تسهیلات, etc.; UserValves.scope is primary, prefix is secondary fallback stripped before orchestrator).
 """
 
 from pydantic import BaseModel, Field
@@ -60,12 +62,173 @@ class Filter:
             description="Also log to console",
         )
 
+    class UserValves(BaseModel):
+        """Per-user scope picker (F7) — sets filter_path forwarded to orchestrator."""
+        scope: str = Field(
+            default="",
+            description="KB scope filter — empty=all, cheque=چک, facilities_person=تسهیلات شخصی, facilities_legal=تسهیلات حقوقی, facilities=تسهیلات (any), general=عمومی. Or raw Persian path e.g. 'گزارش اعتباری چک'.",
+        )
+
+    # Scope label → KB filter_path (mirrors orchestrator subspace_map)
+    _SCOPE_MAP = {
+        "cheque": "گزارش اعتباری چک",
+        "facilities": "اعتبارسنجی تسهیلات",
+        "facilities_person": "اشخاص حقیقی/اعتبارسنجی تسهیلات",
+        "facilities_legal": "اشخاص حقوقی/اعتبارسنجی تسهیلات",
+        "general": "پایگاه دانش عمومی",
+        "legal_entity": "اشخاص حقوقی",
+        "facilities_person_short": "اشخاص حقیقی",
+        "facilities_legal_short": "اشخاص حقوقی",
+    }
+
+    # Fallback prefix → canonical scope key (UserValves.scope is primary, prefix is secondary)
+    # Supports [چک], [cheque], #cheque, scope:cheque etc. at start of last user message.
+    _SCOPE_PREFIX_MAP = {
+        "چک": "cheque",
+        "cheque": "cheque",
+        "check": "cheque",
+        "تسهیلات": "facilities",
+        "facilities": "facilities",
+        "تسهیلات شخصی": "facilities_person",
+        "شخصی": "facilities_person",
+        "حقیقی": "facilities_person",
+        "facilities_person": "facilities_person",
+        "facilities_person_short": "facilities_person",
+        "اشخاص حقیقی": "facilities_person",
+        "تسهیلات حقوقی": "facilities_legal",
+        "حقوقی": "facilities_legal",
+        "شرکت": "facilities_legal",
+        "شرکتی": "facilities_legal",
+        "facilities_legal": "facilities_legal",
+        "facilities_legal_short": "facilities_legal",
+        "اشخاص حقوقی": "facilities_legal",
+        "legal": "facilities_legal",
+        "legal_entity": "legal_entity",
+        "general": "general",
+        "عمومی": "general",
+        "پایگاه دانش عمومی": "general",
+        "دانش عمومی": "general",
+    }
+
+    # Matches message-prefix scope at start of user message: [چک], #cheque, scope:cheque
+    _SCOPE_PREFIX_RE = re.compile(
+        r"^\s*(?:\[(?P<bracket>[^\]]+)\]|#(?P<hash>[^\s\]]+)|scope:(?P<scope>[^\s]+))\s*",
+        re.IGNORECASE | re.UNICODE,
+    )
+
+    def _parse_scope_prefix(self, content: str):
+        """Parse scope prefix at start of message.
+
+        Returns (scope_key_or_raw, stripped_content) if prefix found, else (None, content).
+        scope_key_or_raw is canonical key (e.g. 'cheque') or raw token if unknown
+        (raw will be passed through _resolve_filter_path).
+        Stripped content is message without the prefix (lstrip).
+        """
+        if not isinstance(content, str) or not content:
+            return None, content
+        m = self._SCOPE_PREFIX_RE.match(content)
+        if not m:
+            return None, content
+        token = (m.group("bracket") or m.group("hash") or m.group("scope") or "").strip()
+        if not token:
+            return None, content
+        token_norm = token.strip().lower()
+        # direct canonical lookup
+        scope_key = self._SCOPE_PREFIX_MAP.get(token_norm)
+        if scope_key is None:
+            # also try _SCOPE_MAP keys (allows scope:facilities_person etc.)
+            lower = token_norm
+            if lower in self._SCOPE_MAP:
+                scope_key = lower
+            else:
+                # unknown token — treat as raw filter_path passthrough (e.g. Persian path)
+                # keep original token (preserve case for Persian)
+                scope_key = token.strip()
+        stripped = content[m.end():].lstrip()
+        # if stripped is empty, keep it empty (user sent only tag) — caller will handle
+        return scope_key, stripped
+
     def __init__(self):
         self.valves = self.Valves()
+        try:
+            self.user_valves = self.UserValves()
+        except Exception:
+            self.user_valves = None
         # OpenWebUI convention: Filters may expose toggle / file_handler
         # For this filter we want built-in RAG to run, so we do NOT use file_handler.
         self.toggle = True
         self.file_handler = False  # do not intercept file uploads
+
+    def _resolve_filter_path(self, scope: str) -> Optional[str]:
+        """Map UserValves.scope to KB filter_path. Empty -> None (no filter)."""
+        if not scope or not str(scope).strip():
+            return None
+        s = str(scope).strip()
+        # direct Persian path passthrough if contains Persian chars or slash
+        if any("\u0600" <= ch <= "\u06FF" for ch in s):
+            return s
+        # label map
+        lower = s.lower()
+        if lower in self._SCOPE_MAP:
+            return self._SCOPE_MAP[lower]
+        # unknown non-empty -> passthrough as filter_path (allows custom)
+        return s
+
+    def _inject_scope(self, body: dict, user_scope: Optional[str] = None) -> None:
+        """Inject filter_path into body if scope is set and not already present.
+
+        Primary: UserValves.scope / body.metadata.scope.
+        Secondary fallback (Open WebUI 0.11 is_global popup bug): message-prefix
+          [چک] / [تسهیلات] / [شرکت] / [cheque] / #cheque / scope:cheque etc.
+        When prefix is detected the tag is stripped from the last user message so
+        the clean query goes to the orchestrator.
+        """
+        if not isinstance(body, dict):
+            return
+        # --- Secondary fallback detection: parse prefix from last user message ---
+        # Always strip the prefix so the orchestrator sees clean query, even if
+        # filter_path was already set via primary path. This is idempotent: second
+        # call sees no prefix.
+        prefix_scope = None
+        try:
+            msgs = body.get("messages")
+            if isinstance(msgs, list) and msgs:
+                last = msgs[-1]
+                if isinstance(last, dict) and last.get("role") == "user":
+                    content = last.get("content", "")
+                    if isinstance(content, str):
+                        parsed, stripped = self._parse_scope_prefix(content)
+                        if parsed is not None:
+                            prefix_scope = parsed
+                            # strip prefix from message in-place
+                            last["content"] = stripped
+                            self._log(f"scope prefix detected token={parsed!r} stripped {len(content)}->{len(stripped)}")
+        except Exception as e:
+            self._log(f"scope prefix parse error (swallowed): {e}")
+
+        if body.get("filter_path"):
+            return  # already set by caller / previous filter (message already stripped above)
+        # prefer explicit user_scope param, else self.user_valves.scope
+        scope_val = user_scope
+        if scope_val is None and getattr(self, "user_valves", None) is not None:
+            try:
+                scope_val = getattr(self.user_valves, "scope", "")
+            except Exception:
+                scope_val = ""
+        # also allow scope via body metadata
+        if not scope_val and isinstance(body.get("metadata"), dict):
+            scope_val = body["metadata"].get("scope") or body["metadata"].get("filter_path") or ""
+        fp = self._resolve_filter_path(scope_val or "")
+        if fp:
+            body["filter_path"] = fp
+            self._log(f"scope picker injected filter_path={fp!r} (scope={scope_val!r})")
+            return
+        # fallback: message prefix
+        if prefix_scope is not None:
+            fp2 = self._resolve_filter_path(prefix_scope)
+            if fp2:
+                body["filter_path"] = fp2
+                self._log(f"scope prefix fallback injected filter_path={fp2!r} (prefix_scope={prefix_scope!r})")
 
     # ------------------------------------------------------------------
     # helpers
@@ -229,6 +392,11 @@ class Filter:
           __metadata__["_trace_data"]   — dict with original_query, user, timestamp
         """
         try:
+            # F7 scope picker — inject filter_path into body so orchestrator can filter KB
+            try:
+                self._inject_scope(body)
+            except Exception:
+                pass
             if not self.valves.capture_enabled:
                 return body
 
@@ -334,6 +502,11 @@ class Filter:
         in a tool loop.
         """
         try:
+            # F7: ensure filter_path is present on the outgoing LLM request body
+            try:
+                self._inject_scope(body)
+            except Exception:
+                pass
             if not self.valves.capture_enabled:
                 return body
             if __metadata__ is None:
