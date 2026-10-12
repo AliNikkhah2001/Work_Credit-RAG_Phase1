@@ -416,7 +416,30 @@ python eval/make_plots.py ...
 python eval/build_report_site.py  # GitHub Pages at docs/benchmark-report/
 ```
 
-**Full details:** [docs/evaluation.md](docs/evaluation.md)
+### 🧪 Multi-Agent Conversational Benchmark — 2026-10-12 (NEW)
+
+> **41 turns** (12 multi-turn convs · 29 turns + 12 single baselines) across **4 subspaces** — multi-agent suite with RAGAS (`faithfulness`, `answer_relevancy`, `context_relevancy`, `context_recall`, `hallucination`, `ambiguity_resolution`, `sticky_persistence`, `retrieval_hit`) + LLM judge `gemma-4-31b` via `:9000`. See **[docs/benchmark-report-2026-10-12.md](docs/benchmark-report-2026-10-12.md)** for the full report with samples, explanations, tables, and Mermaid plots.
+
+| Metric | Score | Verdict |
+|---|---:|---|
+| faithfulness | 0.644 | Moderate — abstains correctly but 2 cases suppressed valid context |
+| answer_relevancy | 0.212 | Low — topic-selection turns judged irrelevant |
+| context_relevancy | 0.078 | Very low — many 0-chunk greetings |
+| **non_hallucination** | **0.805** | **Good — G5 fake grade never hallucinated** |
+| ambiguity_resolution | 0.854* | *0/6 scattered fails hidden by trivial passes |
+| sticky_persistence | 0.610 | Fragile — re-spec ok, sticky follow-ups drop |
+| retrieval_hit | 0.537 | general 0.600 > cheque 0.111 |
+
+| Subspace | n | faith | hit | sticky | p50 |
+|---|---:|---:|---:|---:|---:|
+| cheque | 9 | 0.556 | **0.111** | 0.444 | 10741 ms |
+| facilities_person | 6 | 0.833 | 0.167 | 0.500 | 7130 ms |
+| facilities_legal | 3 | **0.933** | 0.333 | 0.667 | 11150 ms |
+| general | 10 | 0.660 | **0.600** | 0.300 | 8006 ms |
+
+Latency `p50 8006ms` — `retrieve 1681ms` vs `guarded_generate 5381ms` (65% generation-bound). **Key fixes:** `0/6` scattered queries should clarify, cheque `evidence_min_score 0.15` starves `0.028` hits, sticky drops on generic follow-ups. Repro: `PYTHONPATH=".:components/orchestrator:$PYTHONPATH" python3 -m evaluation.bench_runner && python3 -m evaluation.ragas_eval --input evaluation/artifacts/bench_results_latest.json && python3 -m evaluation.report --bench evaluation/artifacts/bench_results_latest.json --ragas evaluation/artifacts/ragas_results_latest.json` → artfacts in `evaluation/artifacts/`.
+
+**Full details:** [docs/evaluation.md](docs/evaluation.md) · [docs/benchmark-report-2026-10-12.md](docs/benchmark-report-2026-10-12.md) — per-conversation drill-down, hallucination samples, ambiguity scatter, sticky timeline, KB probe table.
 
 ---
 

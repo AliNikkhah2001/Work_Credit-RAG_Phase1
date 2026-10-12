@@ -1,0 +1,3148 @@
+{
+  "meta": {
+    "input": "evaluation/artifacts/bench_results_latest.json",
+    "timestamp": "2026-10-12T08:58:00Z",
+    "model_judge": "gemma-4-31b",
+    "endpoint_judge": "http://127.0.0.1:9000/v1/chat/completions",
+    "total_turns": 41,
+    "bench_meta": {
+      "timestamp": "2026-10-12T08:49:11.920129+00:00",
+      "elapsed_ms": 391068,
+      "endpoints": {
+        "orch": "http://127.0.0.1:8100/v1/chat/completions",
+        "kb": "http://127.0.0.1:8000/search/api",
+        "obs_template": "http://127.0.0.1:3000/api/observability/pipeline/{request_id}"
+      },
+      "model": "ics-helper-agent",
+      "http_timeout_s": 120.0,
+      "dry_run": false,
+      "only_ids": null,
+      "total_turns_expected": 41,
+      "total_turns_multi_expected": 29,
+      "total_turns_single_expected": 12
+    },
+    "bench_summary": {
+      "total_conversations": 12,
+      "total_single_baselines": 12,
+      "total_turns": 41,
+      "total_turns_multi": 29,
+      "finish_mismatches": 6,
+      "finish_checked": 41,
+      "subspace_mismatches": 16,
+      "subspace_checked": 28,
+      "errors": 0,
+      "latency_ms": {
+        "p50": 8006,
+        "p95": 19447,
+        "avg": 9078,
+        "min": 1241,
+        "max": 25304
+      },
+      "kb_probes": 12
+    }
+  },
+  "overall": {
+    "faithfulness": 0.6439,
+    "answer_relevancy": 0.2122,
+    "context_relevancy": 0.078,
+    "context_recall": 0.1134,
+    "hallucination": 0.1951,
+    "non_hallucination": 0.8049,
+    "ambiguity_resolution": 0.8537,
+    "sticky_persistence": 0.6098,
+    "retrieval_hit": 0.5366,
+    "latency_ms": {
+      "p50": 8006.0,
+      "p95": 19447.0,
+      "avg": 9078.68,
+      "min": 1241.0,
+      "max": 25304.0,
+      "count": 41
+    },
+    "error_rate": 0.0,
+    "error_count": 0,
+    "total_turns": 41,
+    "stage_timing_ms": {
+      "validate_input": {
+        "p50": 51.9,
+        "p95": 65.4,
+        "avg": 182.75,
+        "min": 26.0,
+        "max": 5710.8,
+        "count": 41
+      },
+      "retrieve": {
+        "p50": 1681.7,
+        "p95": 10682.9,
+        "avg": 2061.99,
+        "min": 696.6,
+        "max": 10682.9,
+        "count": 20
+      },
+      "build_context": {
+        "p50": 0.1,
+        "p95": 0.3,
+        "avg": 0.31,
+        "min": 0.1,
+        "max": 4.6,
+        "count": 27
+      },
+      "guarded_generate": {
+        "p50": 5381.3,
+        "p95": 13682.3,
+        "avg": 6178.1,
+        "min": 2084.0,
+        "max": 16565.1,
+        "count": 27
+      },
+      "format_response": {
+        "p50": 0.2,
+        "p95": 1.1,
+        "avg": 0.42,
+        "min": 0.1,
+        "max": 3.6,
+        "count": 41
+      }
+    }
+  },
+  "by_subspace": {
+    "cheque": {
+      "count": 9,
+      "faithfulness": 0.5556,
+      "answer_relevancy": 0.0,
+      "context_relevancy": 0.1111,
+      "context_recall": 0.0667,
+      "hallucination": 0.3333,
+      "non_hallucination": 0.6667,
+      "ambiguity_resolution": 1.0,
+      "sticky_persistence": 0.4444,
+      "retrieval_hit": 0.1111,
+      "latency_ms": {
+        "p50": 10741.0,
+        "p95": 17525.0,
+        "avg": 9436.56,
+        "min": 1244.0,
+        "max": 17525.0,
+        "count": 9
+      },
+      "error_rate": 0.0
+    },
+    "facilities_legal": {
+      "count": 3,
+      "faithfulness": 0.9333,
+      "answer_relevancy": 0.2333,
+      "context_relevancy": 0.0667,
+      "context_recall": 0.2,
+      "hallucination": 0.3333,
+      "non_hallucination": 0.6667,
+      "ambiguity_resolution": 1.0,
+      "sticky_persistence": 0.6667,
+      "retrieval_hit": 0.3333,
+      "latency_ms": {
+        "p50": 11150.0,
+        "p95": 25304.0,
+        "avg": 14197.67,
+        "min": 6139.0,
+        "max": 25304.0,
+        "count": 3
+      },
+      "error_rate": 0.0
+    },
+    "facilities_person": {
+      "count": 6,
+      "faithfulness": 0.8333,
+      "answer_relevancy": 0.0,
+      "context_relevancy": 0.1,
+      "context_recall": 0.1,
+      "hallucination": 0.5,
+      "non_hallucination": 0.5,
+      "ambiguity_resolution": 1.0,
+      "sticky_persistence": 0.5,
+      "retrieval_hit": 0.1667,
+      "latency_ms": {
+        "p50": 7130.0,
+        "p95": 19447.0,
+        "avg": 7435.83,
+        "min": 1241.0,
+        "max": 19447.0,
+        "count": 6
+      },
+      "error_rate": 0.0
+    },
+    "general": {
+      "count": 10,
+      "faithfulness": 0.66,
+      "answer_relevancy": 0.2,
+      "context_relevancy": 0.14,
+      "context_recall": 0.285,
+      "hallucination": 0.1,
+      "non_hallucination": 0.9,
+      "ambiguity_resolution": 1.0,
+      "sticky_persistence": 0.3,
+      "retrieval_hit": 0.6,
+      "latency_ms": {
+        "p50": 8006.0,
+        "p95": 17738.0,
+        "avg": 8897.8,
+        "min": 1631.0,
+        "max": 17738.0,
+        "count": 10
+      },
+      "error_rate": 0.0
+    }
+  },
+  "per_turn": [
+    {
+      "conv_id": "conv_cheque_01",
+      "turn_index": 1,
+      "user": "سلام",
+      "expected_finish": "greeting",
+      "expected_subspace": null,
+      "finish_reason": "stop",
+      "applied_subspace": null,
+      "latency_ms": 11426,
+      "http_status": 200,
+      "error": null,
+      "retrieved_chunks_count": 0,
+      "citations_count": 0,
+      "scores": {
+        "faithfulness": 0.0,
+        "answer_relevancy": 1.0,
+        "context_relevancy": 0.0,
+        "context_recall": 0.0,
+        "hallucination": 0.0,
+        "ambiguity_resolution": 1.0,
+        "sticky_persistence": 1.0,
+        "retrieval_hit": 1.0,
+        "non_hallucination": 1.0
+      },
+      "metrics": {
+        "faithfulness": {
+          "score": 0.0,
+          "reason": "The answer contains claims about the assistant's identity and capabilities that are not supported by any provided context.",
+          "source": "llm"
+        },
+        "answer_relevancy": {
+          "score": 1.0,
+          "reason": "The answer is a direct and appropriate response to a greeting.",
+          "source": "llm"
+        },
+        "context_relevancy": {
+          "score": 0.0,
+          "reason": "No chunks were provided to evaluate against the question.",
+          "source": "llm"
+        },
+        "context_recall": {
+          "score": 0.0,
+          "reason": "no contexts -> no recall",
+          "source": "heuristic"
+        },
+        "hallucination": {
+          "score": 0.0,
+          "reason": "greeting with no contexts -> not hallucinated",
+          "source": "heuristic"
+        },
+        "ambiguity_resolution": {
+          "score": 1.0,
+          "reason": "expected greeting, got stop -> pass",
+          "source": "heuristic"
+        },
+        "sticky_persistence": {
+          "score": 1.0,
+          "reason": "no expected subspace -> sticky N/A (pass)",
+          "source": "heuristic"
+        },
+        "retrieval_hit": {
+          "score": 1.0,
+          "reason": "no expected subspace -> vacuously hit",
+          "source": "heuristic"
+        },
+        "non_hallucination": {
+          "score": 1.0,
+          "reason": "1 - hallucination (greeting with no contexts -> not hallucinated)",
+          "source": "heuristic"
+        }
+      }
+    },
+    {
+      "conv_id": "conv_cheque_01",
+      "turn_index": 2,
+      "user": "چک برگشتی چیست و چگونه رفع سوء اثر می‌شود؟",
+      "expected_finish": "stop",
+      "expected_subspace": "cheque",
+      "finish_reason": "stop",
+      "applied_subspace": null,
+      "latency_ms": 9244,
+      "http_status": 200,
+      "error": null,
+      "retrieved_chunks_count": 0,
+      "citations_count": 0,
+      "scores": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.0,
+        "context_relevancy": 0.0,
+        "context_recall": 0.0,
+        "hallucination": 0.0,
+        "ambiguity_resolution": 1.0,
+        "sticky_persistence": 0.0,
+        "retrieval_hit": 0.0,
+        "non_hallucination": 1.0
+      },
+      "metrics": {
+        "faithfulness": {
+          "score": 1.0,
+          "reason": "The answer correctly states that no information was found in the knowledge base, which is faithful to the fact that no contexts were provided.",
+          "source": "llm"
+        },
+        "answer_relevancy": {
+          "score": 0.0,
+          "reason": "The answer states that no information was found in the knowledge base and does not address the question.",
+          "source": "llm"
+        },
+        "context_relevancy": {
+          "score": 0.0,
+          "reason": "No chunks were provided to evaluate against the question.",
+          "source": "llm"
+        },
+        "context_recall": {
+          "score": 0.0,
+          "reason": "no contexts -> no recall",
+          "source": "heuristic"
+        },
+        "hallucination": {
+          "score": 0.0,
+          "reason": "abstention phrase -> not hallucinated (correct abstention)",
+          "source": "heuristic"
+        },
+        "ambiguity_resolution": {
+          "score": 1.0,
+          "reason": "expected stop, got stop -> correct (no spurious clarify)",
+          "source": "heuristic"
+        },
+        "sticky_persistence": {
+          "score": 0.0,
+          "reason": "subspace_match false (exp cheque, got None)",
+          "source": "heuristic"
+        },
+        "retrieval_hit": {
+          "score": 0.0,
+          "reason": "no contexts -> miss for cheque",
+          "source": "heuristic"
+        },
+        "non_hallucination": {
+          "score": 1.0,
+          "reason": "1 - hallucination (abstention phrase -> not hallucinated (correct abstention))",
+          "source": "heuristic"
+        }
+      }
+    },
+    {
+      "conv_id": "conv_cheque_01",
+      "turn_index": 3,
+      "user": "اگر چکم بدون موجودی باشد چه کار کنم؟",
+      "expected_finish": "stop",
+      "expected_subspace": "cheque",
+      "finish_reason": "stop",
+      "applied_subspace": null,
+      "latency_ms": 15374,
+      "http_status": 200,
+      "error": null,
+      "retrieved_chunks_count": 0,
+      "citations_count": 0,
+      "scores": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.0,
+        "context_relevancy": 0.0,
+        "context_recall": 0.0,
+        "hallucination": 0.0,
+        "ambiguity_resolution": 1.0,
+        "sticky_persistence": 0.0,
+        "retrieval_hit": 0.0,
+        "non_hallucination": 1.0
+      },
+      "metrics": {
+        "faithfulness": {
+          "score": 1.0,
+          "reason": "The answer correctly states that no information was found in the knowledge base, which is faithful to the fact that no contexts were provided.",
+          "source": "llm"
+        },
+        "answer_relevancy": {
+          "score": 0.0,
+          "reason": "The answer explicitly states that no information was found to answer the question, providing no helpful or relevant content.",
+          "source": "llm"
+        },
+        "context_relevancy": {
+          "score": 0.0,
+          "reason": "No chunks were provided to evaluate against the question.",
+          "source": "llm"
+        },
+        "context_recall": {
+          "score": 0.0,
+          "reason": "no contexts -> no recall",
+          "source": "heuristic"
+        },
+        "hallucination": {
+          "score": 0.0,
+          "reason": "abstention phrase -> not hallucinated (correct abstention)",
+          "source": "heuristic"
+        },
+        "ambiguity_resolution": {
+          "score": 1.0,
+          "reason": "expected stop, got stop -> correct (no spurious clarify)",
+          "source": "heuristic"
+        },
+        "sticky_persistence": {
+          "score": 0.0,
+          "reason": "subspace_match false (exp cheque, got None)",
+          "source": "heuristic"
+        },
+        "retrieval_hit": {
+          "score": 0.0,
+          "reason": "no contexts -> miss for cheque",
+          "source": "heuristic"
+        },
+        "non_hallucination": {
+          "score": 1.0,
+          "reason": "1 - hallucination (abstention phrase -> not hallucinated (correct abstention))",
+          "source": "heuristic"
+        }
+      }
+    },
+    {
+      "conv_id": "conv_cheque_02",
+      "turn_index": 1,
+      "user": "وضعیت اعتباری چطور است",
+      "expected_finish": "clarify",
+      "expected_subspace": null,
+      "finish_reason": "stop",
+      "applied_subspace": null,
+      "latency_ms": 11071,
+      "http_status": 200,
+      "error": null,
+      "retrieved_chunks_count": 0,
+      "citations_count": 0,
+      "scores": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.0,
+        "context_relevancy": 0.0,
+        "context_recall": 0.0,
+        "hallucination": 0.0,
+        "ambiguity_resolution": 0.0,
+        "sticky_persistence": 1.0,
+        "retrieval_hit": 1.0,
+        "non_hallucination": 1.0
+      },
+      "metrics": {
+        "faithfulness": {
+          "score": 1.0,
+          "reason": "The answer correctly states that no information was found, which is faithful to the fact that no contexts were provided.",
+          "source": "llm"
+        },
+        "answer_relevancy": {
+          "score": 0.0,
+          "reason": "The answer explicitly states that no information was found to answer the question.",
+          "source": "llm"
+        },
+        "context_relevancy": {
+          "score": 0.0,
+          "reason": "No chunks were provided to evaluate against the question.",
+          "source": "llm"
+        },
+        "context_recall": {
+          "score": 0.0,
+          "reason": "no contexts -> no recall",
+          "source": "heuristic"
+        },
+        "hallucination": {
+          "score": 0.0,
+          "reason": "abstention phrase -> not hallucinated (correct abstention)",
+          "source": "heuristic"
+        },
+        "ambiguity_resolution": {
+          "score": 0.0,
+          "reason": "expected clarify, got stop -> should have clarified",
+          "source": "heuristic"
+        },
+        "sticky_persistence": {
+          "score": 1.0,
+          "reason": "no expected subspace -> sticky N/A (pass)",
+          "source": "heuristic"
+        },
+        "retrieval_hit": {
+          "score": 1.0,
+          "reason": "no expected subspace -> vacuously hit",
+          "source": "heuristic"
+        },
+        "non_hallucination": {
+          "score": 1.0,
+          "reason": "1 - hallucination (abstention phrase -> not hallucinated (correct abstention))",
+          "source": "heuristic"
+        }
+      }
+    },
+    {
+      "conv_id": "conv_cheque_02",
+      "turn_index": 2,
+      "user": "چک",
+      "expected_finish": "stop",
+      "expected_subspace": "cheque",
+      "finish_reason": "stop",
+      "applied_subspace": "cheque",
+      "latency_ms": 2357,
+      "http_status": 200,
+      "error": null,
+      "retrieved_chunks_count": 0,
+      "citations_count": 0,
+      "scores": {
+        "faithfulness": 0.0,
+        "answer_relevancy": 0.0,
+        "context_relevancy": 0.0,
+        "context_recall": 0.0,
+        "hallucination": 1.0,
+        "ambiguity_resolution": 1.0,
+        "sticky_persistence": 1.0,
+        "retrieval_hit": 0.0,
+        "non_hallucination": 0.0
+      },
+      "metrics": {
+        "faithfulness": {
+          "score": 0.0,
+          "reason": "The answer provides a response based on a selected category, but there are no contexts provided to ground or support this claim.",
+          "source": "llm"
+        },
+        "answer_relevancy": {
+          "score": 0.0,
+          "reason": "The answer does not provide information about 'checks' but instead asks the user to specify a question within a selected category.",
+          "source": "llm"
+        },
+        "context_relevancy": {
+          "score": 0.0,
+          "reason": "No chunks were provided to evaluate against the question.",
+          "source": "llm"
+        },
+        "context_recall": {
+          "score": 0.0,
+          "reason": "no contexts -> no recall",
+          "source": "heuristic"
+        },
+        "hallucination": {
+          "score": 1.0,
+          "reason": "answer with no contexts -> hallucinated (no grounding)",
+          "source": "heuristic"
+        },
+        "ambiguity_resolution": {
+          "score": 1.0,
+          "reason": "expected stop, got stop -> correct (no spurious clarify)",
+          "source": "heuristic"
+        },
+        "sticky_persistence": {
+          "score": 1.0,
+          "reason": "bench subspace_match true",
+          "source": "heuristic"
+        },
+        "retrieval_hit": {
+          "score": 0.0,
+          "reason": "no contexts -> miss for cheque",
+          "source": "heuristic"
+        },
+        "non_hallucination": {
+          "score": 0.0,
+          "reason": "1 - hallucination (answer with no contexts -> hallucinated (no grounding))",
+          "source": "heuristic"
+        }
+      }
+    },
+    {
+      "conv_id": "conv_cheque_02",
+      "turn_index": 3,
+      "user": "تاثیر چک برگشتی بر امتیاز اعتباری چقدر است؟",
+      "expected_finish": "stop",
+      "expected_subspace": "cheque",
+      "finish_reason": "stop",
+      "applied_subspace": null,
+      "latency_ms": 17525,
+      "http_status": 200,
+      "error": null,
+      "retrieved_chunks_count": 10,
+      "citations_count": 0,
+      "scores": {
+        "faithfulness": 0.0,
+        "answer_relevancy": 0.0,
+        "context_relevancy": 1.0,
+        "context_recall": 0.6,
+        "hallucination": 0.0,
+        "ambiguity_resolution": 1.0,
+        "sticky_persistence": 0.0,
+        "retrieval_hit": 1.0,
+        "non_hallucination": 1.0
+      },
+      "metrics": {
+        "faithfulness": {
+          "score": 0.0,
+          "reason": "The answer claims no information was found, but the contexts explicitly state that bounced checks reduce credit scores (Context 1, 2, 3, and 5).",
+          "source": "llm"
+        },
+        "answer_relevancy": {
+          "score": 0.0,
+          "reason": "The answer explicitly states that no information was found to answer the question.",
+          "source": "llm"
+        },
+        "context_relevancy": {
+          "score": 1.0,
+          "reason": "All chunks are relevant as they directly address the impact of bounced checks on credit scores, including specific details about timeframes and types of checks.",
+          "source": "llm"
+        },
+        "context_recall": {
+          "score": 0.6,
+          "reason": "heuristic max_overlap 0.12 blended 0.22",
+          "source": "heuristic"
+        },
+        "hallucination": {
+          "score": 0.0,
+          "reason": "abstention phrase -> not hallucinated (correct abstention)",
+          "source": "heuristic"
+        },
+        "ambiguity_resolution": {
+          "score": 1.0,
+          "reason": "expected stop, got stop -> correct (no spurious clarify)",
+          "source": "heuristic"
+        },
+        "sticky_persistence": {
+          "score": 0.0,
+          "reason": "subspace_match false (exp cheque, got None)",
+          "source": "heuristic"
+        },
+        "retrieval_hit": {
+          "score": 1.0,
+          "reason": "hit: 5/5 chunks contain cheque keywords",
+          "source": "heuristic"
+        },
+        "non_hallucination": {
+          "score": 1.0,
+          "reason": "1 - hallucination (abstention phrase -> not hallucinated (correct abstention))",
+          "source": "heuristic"
+        }
+      }
+    },
+    {
+      "conv_id": "conv_facilities_person_01",
+      "turn_index": 1,
+      "user": "وضعیت اعتباری چطور است",
+      "expected_finish": "clarify",
+      "expected_subspace": null,
+      "finish_reason": "stop",
+      "applied_subspace": null,
+      "latency_ms": 7736,
+      "http_status": 200,
+      "error": null,
+      "retrieved_chunks_count": 0,
+      "citations_count": 0,
+      "scores": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.0,
+        "context_relevancy": 0.0,
+        "context_recall": 0.0,
+        "hallucination": 0.0,
+        "ambiguity_resolution": 0.0,
+        "sticky_persistence": 1.0,
+        "retrieval_hit": 1.0,
+        "non_hallucination": 1.0
+      },
+      "metrics": {
+        "faithfulness": {
+          "score": 1.0,
+          "reason": "The answer correctly states that no information was found, which is faithful to the fact that no contexts were provided.",
+          "source": "llm"
+        },
+        "answer_relevancy": {
+          "score": 0.0,
+          "reason": "The answer explicitly states that no information was found to answer the question.",
+          "source": "llm"
+        },
+        "context_relevancy": {
+          "score": 0.0,
+          "reason": "No chunks were provided to evaluate against the question.",
+          "source": "llm"
+        },
+        "context_recall": {
+          "score": 0.0,
+          "reason": "no contexts -> no recall",
+          "source": "heuristic"
+        },
+        "hallucination": {
+          "score": 0.0,
+          "reason": "abstention phrase -> not hallucinated (correct abstention)",
+          "source": "heuristic"
+        },
+        "ambiguity_resolution": {
+          "score": 0.0,
+          "reason": "expected clarify, got stop -> should have clarified",
+          "source": "heuristic"
+        },
+        "sticky_persistence": {
+          "score": 1.0,
+          "reason": "no expected subspace -> sticky N/A (pass)",
+          "source": "heuristic"
+        },
+        "retrieval_hit": {
+          "score": 1.0,
+          "reason": "no expected subspace -> vacuously hit",
+          "source": "heuristic"
+        },
+        "non_hallucination": {
+          "score": 1.0,
+          "reason": "1 - hallucination (abstention phrase -> not hallucinated (correct abstention))",
+          "source": "heuristic"
+        }
+      }
+    },
+    {
+      "conv_id": "conv_facilities_person_01",
+      "turn_index": 2,
+      "user": "تسهیلات اشخاص حقیقی",
+      "expected_finish": "stop",
+      "expected_subspace": "facilities_person",
+      "finish_reason": "stop",
+      "applied_subspace": "facilities_person",
+      "latency_ms": 7130,
+      "http_status": 200,
+      "error": null,
+      "retrieved_chunks_count": 0,
+      "citations_count": 0,
+      "scores": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.0,
+        "context_relevancy": 0.0,
+        "context_recall": 0.0,
+        "hallucination": 1.0,
+        "ambiguity_resolution": 1.0,
+        "sticky_persistence": 1.0,
+        "retrieval_hit": 0.0,
+        "non_hallucination": 0.0
+      },
+      "metrics": {
+        "faithfulness": {
+          "score": 1.0,
+          "reason": "The answer is a conversational acknowledgment of the selected topic and does not make any factual claims that require grounding in the provided contexts.",
+          "source": "llm"
+        },
+        "answer_relevancy": {
+          "score": 0.0,
+          "reason": "The answer does not provide information about the facilities; it merely acknowledges the selection of the topic and asks the user to provide a specific question.",
+          "source": "llm"
+        },
+        "context_relevancy": {
+          "score": 0.0,
+          "reason": "No chunks were provided to evaluate against the question.",
+          "source": "llm"
+        },
+        "context_recall": {
+          "score": 0.0,
+          "reason": "no contexts -> no recall",
+          "source": "heuristic"
+        },
+        "hallucination": {
+          "score": 1.0,
+          "reason": "answer with no contexts -> hallucinated (no grounding)",
+          "source": "heuristic"
+        },
+        "ambiguity_resolution": {
+          "score": 1.0,
+          "reason": "expected stop, got stop -> correct (no spurious clarify)",
+          "source": "heuristic"
+        },
+        "sticky_persistence": {
+          "score": 1.0,
+          "reason": "bench subspace_match true",
+          "source": "heuristic"
+        },
+        "retrieval_hit": {
+          "score": 0.0,
+          "reason": "no contexts -> miss for facilities_person",
+          "source": "heuristic"
+        },
+        "non_hallucination": {
+          "score": 0.0,
+          "reason": "1 - hallucination (answer with no contexts -> hallucinated (no grounding))",
+          "source": "heuristic"
+        }
+      }
+    },
+    {
+      "conv_id": "conv_facilities_person_01",
+      "turn_index": 3,
+      "user": "آیا میزان درآمد یا گردش حساب من هم در بهبود رتبه اعتباری تاثیر دارد؟",
+      "expected_finish": "stop",
+      "expected_subspace": "facilities_person",
+      "finish_reason": "stop",
+      "applied_subspace": null,
+      "latency_ms": 19447,
+      "http_status": 200,
+      "error": null,
+      "retrieved_chunks_count": 10,
+      "citations_count": 0,
+      "scores": {
+        "faithfulness": 0.0,
+        "answer_relevancy": 0.0,
+        "context_relevancy": 0.6,
+        "context_recall": 0.6,
+        "hallucination": 0.0,
+        "ambiguity_resolution": 1.0,
+        "sticky_persistence": 0.0,
+        "retrieval_hit": 1.0,
+        "non_hallucination": 1.0
+      },
+      "metrics": {
+        "faithfulness": {
+          "score": 0.0,
+          "reason": "The answer claims no information was found, but Contexts 1, 2, and 3 explicitly state that income and account turnover do not affect the credit score in the current version.",
+          "source": "llm"
+        },
+        "answer_relevancy": {
+          "score": 0.0,
+          "reason": "The answer explicitly states that no information was found to answer the question, providing no relevant information.",
+          "source": "llm"
+        },
+        "context_relevancy": {
+          "score": 0.6,
+          "reason": "Chunks 1, 2, and 3 directly answer the question regarding income and account turnover, while Chunks 4 and 5 are irrelevant as they discuss payment of overdue installments.",
+          "source": "llm"
+        },
+        "context_recall": {
+          "score": 0.6,
+          "reason": "heuristic max_overlap 0.20 blended 0.24",
+          "source": "heuristic"
+        },
+        "hallucination": {
+          "score": 0.0,
+          "reason": "abstention phrase -> not hallucinated (correct abstention)",
+          "source": "heuristic"
+        },
+        "ambiguity_resolution": {
+          "score": 1.0,
+          "reason": "expected stop, got stop -> correct (no spurious clarify)",
+          "source": "heuristic"
+        },
+        "sticky_persistence": {
+          "score": 0.0,
+          "reason": "subspace_match false (exp facilities_person, got None)",
+          "source": "heuristic"
+        },
+        "retrieval_hit": {
+          "score": 1.0,
+          "reason": "hit: 5/5 chunks contain facilities_person keywords",
+          "source": "heuristic"
+        },
+        "non_hallucination": {
+          "score": 1.0,
+          "reason": "1 - hallucination (abstention phrase -> not hallucinated (correct abstention))",
+          "source": "heuristic"
+        }
+      }
+    },
+    {
+      "conv_id": "conv_facilities_person_01",
+      "turn_index": 4,
+      "user": "چک",
+      "expected_finish": "stop",
+      "expected_subspace": "cheque",
+      "finish_reason": "stop",
+      "applied_subspace": "cheque",
+      "latency_ms": 1458,
+      "http_status": 200,
+      "error": null,
+      "retrieved_chunks_count": 0,
+      "citations_count": 0,
+      "scores": {
+        "faithfulness": 0.0,
+        "answer_relevancy": 0.0,
+        "context_relevancy": 0.0,
+        "context_recall": 0.0,
+        "hallucination": 1.0,
+        "ambiguity_resolution": 1.0,
+        "sticky_persistence": 1.0,
+        "retrieval_hit": 0.0,
+        "non_hallucination": 0.0
+      },
+      "metrics": {
+        "faithfulness": {
+          "score": 0.0,
+          "reason": "The answer provides a response based on a selected category, but there are no contexts provided to ground or support this claim.",
+          "source": "llm"
+        },
+        "answer_relevancy": {
+          "score": 0.0,
+          "reason": "The answer does not provide information about 'checks' but instead asks the user to specify a question within a selected category.",
+          "source": "llm"
+        },
+        "context_relevancy": {
+          "score": 0.0,
+          "reason": "No chunks were provided to evaluate against the question.",
+          "source": "llm"
+        },
+        "context_recall": {
+          "score": 0.0,
+          "reason": "no contexts -> no recall",
+          "source": "heuristic"
+        },
+        "hallucination": {
+          "score": 1.0,
+          "reason": "answer with no contexts -> hallucinated (no grounding)",
+          "source": "heuristic"
+        },
+        "ambiguity_resolution": {
+          "score": 1.0,
+          "reason": "expected stop, got stop -> correct (no spurious clarify)",
+          "source": "heuristic"
+        },
+        "sticky_persistence": {
+          "score": 1.0,
+          "reason": "bench subspace_match true",
+          "source": "heuristic"
+        },
+        "retrieval_hit": {
+          "score": 0.0,
+          "reason": "no contexts -> miss for cheque",
+          "source": "heuristic"
+        },
+        "non_hallucination": {
+          "score": 0.0,
+          "reason": "1 - hallucination (answer with no contexts -> hallucinated (no grounding))",
+          "source": "heuristic"
+        }
+      }
+    },
+    {
+      "conv_id": "conv_facilities_person_02",
+      "turn_index": 1,
+      "user": "سلام خوبی؟",
+      "expected_finish": "greeting",
+      "expected_subspace": null,
+      "finish_reason": "stop",
+      "applied_subspace": null,
+      "latency_ms": 5685,
+      "http_status": 200,
+      "error": null,
+      "retrieved_chunks_count": 0,
+      "citations_count": 0,
+      "scores": {
+        "faithfulness": 0.0,
+        "answer_relevancy": 1.0,
+        "context_relevancy": 0.0,
+        "context_recall": 0.0,
+        "hallucination": 0.0,
+        "ambiguity_resolution": 1.0,
+        "sticky_persistence": 1.0,
+        "retrieval_hit": 1.0,
+        "non_hallucination": 1.0
+      },
+      "metrics": {
+        "faithfulness": {
+          "score": 0.0,
+          "reason": "The answer contains claims about the assistant's identity and purpose that are not supported by any provided context.",
+          "source": "llm"
+        },
+        "answer_relevancy": {
+          "score": 1.0,
+          "reason": "The answer directly responds to the greeting and introduces the assistant's purpose.",
+          "source": "llm"
+        },
+        "context_relevancy": {
+          "score": 0.0,
+          "reason": "No chunks were provided to evaluate against the question.",
+          "source": "llm"
+        },
+        "context_recall": {
+          "score": 0.0,
+          "reason": "no contexts -> no recall",
+          "source": "heuristic"
+        },
+        "hallucination": {
+          "score": 0.0,
+          "reason": "greeting with no contexts -> not hallucinated",
+          "source": "heuristic"
+        },
+        "ambiguity_resolution": {
+          "score": 1.0,
+          "reason": "expected greeting, got stop -> pass",
+          "source": "heuristic"
+        },
+        "sticky_persistence": {
+          "score": 1.0,
+          "reason": "no expected subspace -> sticky N/A (pass)",
+          "source": "heuristic"
+        },
+        "retrieval_hit": {
+          "score": 1.0,
+          "reason": "no expected subspace -> vacuously hit",
+          "source": "heuristic"
+        },
+        "non_hallucination": {
+          "score": 1.0,
+          "reason": "1 - hallucination (greeting with no contexts -> not hallucinated)",
+          "source": "heuristic"
+        }
+      }
+    },
+    {
+      "conv_id": "conv_facilities_person_02",
+      "turn_index": 2,
+      "user": "بدهکار شدم چیکار کنم",
+      "expected_finish": "clarify",
+      "expected_subspace": null,
+      "finish_reason": "stop",
+      "applied_subspace": null,
+      "latency_ms": 8998,
+      "http_status": 200,
+      "error": null,
+      "retrieved_chunks_count": 0,
+      "citations_count": 0,
+      "scores": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.0,
+        "context_relevancy": 0.0,
+        "context_recall": 0.0,
+        "hallucination": 0.0,
+        "ambiguity_resolution": 0.0,
+        "sticky_persistence": 1.0,
+        "retrieval_hit": 1.0,
+        "non_hallucination": 1.0
+      },
+      "metrics": {
+        "faithfulness": {
+          "score": 1.0,
+          "reason": "The answer correctly states that no information was found in the knowledge base, which is faithful to the fact that no contexts were provided.",
+          "source": "llm"
+        },
+        "answer_relevancy": {
+          "score": 0.0,
+          "reason": "The answer explicitly states that no information was found to answer the question, providing no helpful or relevant guidance.",
+          "source": "llm"
+        },
+        "context_relevancy": {
+          "score": 0.0,
+          "reason": "No chunks were provided to evaluate against the question.",
+          "source": "llm"
+        },
+        "context_recall": {
+          "score": 0.0,
+          "reason": "no contexts -> no recall",
+          "source": "heuristic"
+        },
+        "hallucination": {
+          "score": 0.0,
+          "reason": "abstention phrase -> not hallucinated (correct abstention)",
+          "source": "heuristic"
+        },
+        "ambiguity_resolution": {
+          "score": 0.0,
+          "reason": "expected clarify, got stop -> should have clarified",
+          "source": "heuristic"
+        },
+        "sticky_persistence": {
+          "score": 1.0,
+          "reason": "no expected subspace -> sticky N/A (pass)",
+          "source": "heuristic"
+        },
+        "retrieval_hit": {
+          "score": 1.0,
+          "reason": "no expected subspace -> vacuously hit",
+          "source": "heuristic"
+        },
+        "non_hallucination": {
+          "score": 1.0,
+          "reason": "1 - hallucination (abstention phrase -> not hallucinated (correct abstention))",
+          "source": "heuristic"
+        }
+      }
+    },
+    {
+      "conv_id": "conv_facilities_person_02",
+      "turn_index": 3,
+      "user": "اعتبارسنجی تسهیلات برای اشخاص حقیقی",
+      "expected_finish": "stop",
+      "expected_subspace": "facilities_person",
+      "finish_reason": "stop",
+      "applied_subspace": "facilities_person",
+      "latency_ms": 1785,
+      "http_status": 200,
+      "error": null,
+      "retrieved_chunks_count": 0,
+      "citations_count": 0,
+      "scores": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.0,
+        "context_relevancy": 0.0,
+        "context_recall": 0.0,
+        "hallucination": 1.0,
+        "ambiguity_resolution": 1.0,
+        "sticky_persistence": 1.0,
+        "retrieval_hit": 0.0,
+        "non_hallucination": 0.0
+      },
+      "metrics": {
+        "faithfulness": {
+          "score": 1.0,
+          "reason": "The answer is a conversational response acknowledging the selection of a topic rather than making factual claims that require grounding in the provided contexts.",
+          "source": "llm"
+        },
+        "answer_relevancy": {
+          "score": 0.0,
+          "reason": "The answer does not provide information about credit validation; it merely acknowledges the selection of a category and asks the user to ask a question.",
+          "source": "llm"
+        },
+        "context_relevancy": {
+          "score": 0.0,
+          "reason": "No chunks were provided to evaluate against the question.",
+          "source": "llm"
+        },
+        "context_recall": {
+          "score": 0.0,
+          "reason": "no contexts -> no recall",
+          "source": "heuristic"
+        },
+        "hallucination": {
+          "score": 1.0,
+          "reason": "answer with no contexts -> hallucinated (no grounding)",
+          "source": "heuristic"
+        },
+        "ambiguity_resolution": {
+          "score": 1.0,
+          "reason": "expected stop, got stop -> correct (no spurious clarify)",
+          "source": "heuristic"
+        },
+        "sticky_persistence": {
+          "score": 1.0,
+          "reason": "bench subspace_match true",
+          "source": "heuristic"
+        },
+        "retrieval_hit": {
+          "score": 0.0,
+          "reason": "no contexts -> miss for facilities_person",
+          "source": "heuristic"
+        },
+        "non_hallucination": {
+          "score": 0.0,
+          "reason": "1 - hallucination (answer with no contexts -> hallucinated (no grounding))",
+          "source": "heuristic"
+        }
+      }
+    },
+    {
+      "conv_id": "conv_facilities_legal_01",
+      "turn_index": 1,
+      "user": "محدودیت‌های تسهیلات برای اشخاص حقوقی چیست؟",
+      "expected_finish": "stop",
+      "expected_subspace": "facilities_legal",
+      "finish_reason": "stop",
+      "applied_subspace": "facilities_legal",
+      "latency_ms": 11150,
+      "http_status": 200,
+      "error": null,
+      "retrieved_chunks_count": 10,
+      "citations_count": 0,
+      "scores": {
+        "faithfulness": 0.8,
+        "answer_relevancy": 0.7,
+        "context_relevancy": 0.2,
+        "context_recall": 0.6,
+        "hallucination": 0.0,
+        "ambiguity_resolution": 1.0,
+        "sticky_persistence": 1.0,
+        "retrieval_hit": 1.0,
+        "non_hallucination": 1.0
+      },
+      "metrics": {
+        "faithfulness": {
+          "score": 0.8,
+          "reason": "Most claims are supported by the contexts: the bank's final decision (Context 5), the effect of bank guarantees (Context 4), the impact of being a guarantor (Context 2), and the 5-year history (Context 1). However, the claim that 'initial loan rejections do not negatively impact the credit score' is not mentioned in the provided contexts.",
+          "source": "llm"
+        },
+        "answer_relevancy": {
+          "score": 0.7,
+          "reason": "The answer addresses the question by explaining that the credit bureau doesn't set limits, but banks do, and it details how credit scores and guarantees affect the process. However, it doesn't list specific regulatory or financial limits for legal entities.",
+          "source": "llm"
+        },
+        "context_relevancy": {
+          "score": 0.2,
+          "reason": "Only Chunk 1 and Chunk 5 touch upon legal entities (companies) and credit/loan factors, but none of the chunks explicitly list the 'limitations' (محدودیت‌ها) of facilities for legal entities; they mostly discuss credit scoring and guarantees.",
+          "source": "llm"
+        },
+        "context_recall": {
+          "score": 0.6,
+          "reason": "heuristic max_overlap 0.04 blended 0.21",
+          "source": "heuristic"
+        },
+        "hallucination": {
+          "score": 0.0,
+          "reason": "coverage 0.47 -> not hallucinated",
+          "source": "heuristic"
+        },
+        "ambiguity_resolution": {
+          "score": 1.0,
+          "reason": "expected stop, got stop -> correct (no spurious clarify)",
+          "source": "heuristic"
+        },
+        "sticky_persistence": {
+          "score": 1.0,
+          "reason": "bench subspace_match true",
+          "source": "heuristic"
+        },
+        "retrieval_hit": {
+          "score": 1.0,
+          "reason": "hit: 5/5 chunks contain facilities_legal keywords",
+          "source": "heuristic"
+        },
+        "non_hallucination": {
+          "score": 1.0,
+          "reason": "1 - hallucination (coverage 0.47 -> not hallucinated)",
+          "source": "heuristic"
+        }
+      }
+    },
+    {
+      "conv_id": "conv_facilities_legal_01",
+      "turn_index": 2,
+      "user": "هیات مدیره چه نقشی دارد؟",
+      "expected_finish": "stop",
+      "expected_subspace": "general",
+      "finish_reason": "stop",
+      "applied_subspace": null,
+      "latency_ms": 17738,
+      "http_status": 200,
+      "error": null,
+      "retrieved_chunks_count": 10,
+      "citations_count": 0,
+      "scores": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.0,
+        "context_relevancy": 0.0,
+        "context_recall": 0.35,
+        "hallucination": 0.0,
+        "ambiguity_resolution": 1.0,
+        "sticky_persistence": 0.0,
+        "retrieval_hit": 1.0,
+        "non_hallucination": 1.0
+      },
+      "metrics": {
+        "faithfulness": {
+          "score": 1.0,
+          "reason": "The answer correctly states that no information regarding the role of the board of directors is present in the provided contexts.",
+          "source": "llm"
+        },
+        "answer_relevancy": {
+          "score": 0.0,
+          "reason": "The answer states that no information was found in the knowledge base and does not provide any information regarding the role of the board of directors.",
+          "source": "llm"
+        },
+        "context_relevancy": {
+          "score": 0.0,
+          "reason": "None of the retrieved chunks discuss the role of the board of directors; they focus on credit scoring, loan guarantees, and bank decision-making.",
+          "source": "llm"
+        },
+        "context_recall": {
+          "score": 0.35,
+          "reason": "heuristic max_overlap 0.02 blended 0.14",
+          "source": "heuristic"
+        },
+        "hallucination": {
+          "score": 0.0,
+          "reason": "abstention phrase -> not hallucinated (correct abstention)",
+          "source": "heuristic"
+        },
+        "ambiguity_resolution": {
+          "score": 1.0,
+          "reason": "expected stop, got stop -> correct (no spurious clarify)",
+          "source": "heuristic"
+        },
+        "sticky_persistence": {
+          "score": 0.0,
+          "reason": "subspace_match false (exp general, got None)",
+          "source": "heuristic"
+        },
+        "retrieval_hit": {
+          "score": 1.0,
+          "reason": "hit: 2/5 chunks contain general keywords",
+          "source": "heuristic"
+        },
+        "non_hallucination": {
+          "score": 1.0,
+          "reason": "1 - hallucination (abstention phrase -> not hallucinated (correct abstention))",
+          "source": "heuristic"
+        }
+      }
+    },
+    {
+      "conv_id": "conv_facilities_legal_02",
+      "turn_index": 1,
+      "user": "سلام",
+      "expected_finish": "greeting",
+      "expected_subspace": null,
+      "finish_reason": "stop",
+      "applied_subspace": null,
+      "latency_ms": 1776,
+      "http_status": 200,
+      "error": null,
+      "retrieved_chunks_count": 0,
+      "citations_count": 0,
+      "scores": {
+        "faithfulness": 0.0,
+        "answer_relevancy": 1.0,
+        "context_relevancy": 0.0,
+        "context_recall": 0.0,
+        "hallucination": 0.0,
+        "ambiguity_resolution": 1.0,
+        "sticky_persistence": 1.0,
+        "retrieval_hit": 1.0,
+        "non_hallucination": 1.0
+      },
+      "metrics": {
+        "faithfulness": {
+          "score": 0.0,
+          "reason": "The answer contains claims about the assistant's identity and capabilities that are not supported by any provided context.",
+          "source": "llm"
+        },
+        "answer_relevancy": {
+          "score": 1.0,
+          "reason": "The answer is a direct and appropriate response to a greeting.",
+          "source": "llm"
+        },
+        "context_relevancy": {
+          "score": 0.0,
+          "reason": "No chunks were provided to evaluate against the question.",
+          "source": "llm"
+        },
+        "context_recall": {
+          "score": 0.0,
+          "reason": "no contexts -> no recall",
+          "source": "heuristic"
+        },
+        "hallucination": {
+          "score": 0.0,
+          "reason": "greeting with no contexts -> not hallucinated",
+          "source": "heuristic"
+        },
+        "ambiguity_resolution": {
+          "score": 1.0,
+          "reason": "expected greeting, got stop -> pass",
+          "source": "heuristic"
+        },
+        "sticky_persistence": {
+          "score": 1.0,
+          "reason": "no expected subspace -> sticky N/A (pass)",
+          "source": "heuristic"
+        },
+        "retrieval_hit": {
+          "score": 1.0,
+          "reason": "no expected subspace -> vacuously hit",
+          "source": "heuristic"
+        },
+        "non_hallucination": {
+          "score": 1.0,
+          "reason": "1 - hallucination (greeting with no contexts -> not hallucinated)",
+          "source": "heuristic"
+        }
+      }
+    },
+    {
+      "conv_id": "conv_facilities_legal_02",
+      "turn_index": 2,
+      "user": "تسهیلات اشخاص حقوقی",
+      "expected_finish": "stop",
+      "expected_subspace": "facilities_legal",
+      "finish_reason": "stop",
+      "applied_subspace": "facilities_legal",
+      "latency_ms": 6139,
+      "http_status": 200,
+      "error": null,
+      "retrieved_chunks_count": 0,
+      "citations_count": 0,
+      "scores": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.0,
+        "context_relevancy": 0.0,
+        "context_recall": 0.0,
+        "hallucination": 1.0,
+        "ambiguity_resolution": 1.0,
+        "sticky_persistence": 1.0,
+        "retrieval_hit": 0.0,
+        "non_hallucination": 0.0
+      },
+      "metrics": {
+        "faithfulness": {
+          "score": 1.0,
+          "reason": "The answer is a conversational acknowledgment of the selected topic and does not make any factual claims that require grounding in the provided contexts.",
+          "source": "llm"
+        },
+        "answer_relevancy": {
+          "score": 0.0,
+          "reason": "The answer does not provide information about legal entity facilities; it merely acknowledges the selection of the topic and asks the user to provide a specific question.",
+          "source": "llm"
+        },
+        "context_relevancy": {
+          "score": 0.0,
+          "reason": "No chunks were provided to evaluate against the question.",
+          "source": "llm"
+        },
+        "context_recall": {
+          "score": 0.0,
+          "reason": "no contexts -> no recall",
+          "source": "heuristic"
+        },
+        "hallucination": {
+          "score": 1.0,
+          "reason": "answer with no contexts -> hallucinated (no grounding)",
+          "source": "heuristic"
+        },
+        "ambiguity_resolution": {
+          "score": 1.0,
+          "reason": "expected stop, got stop -> correct (no spurious clarify)",
+          "source": "heuristic"
+        },
+        "sticky_persistence": {
+          "score": 1.0,
+          "reason": "bench subspace_match true",
+          "source": "heuristic"
+        },
+        "retrieval_hit": {
+          "score": 0.0,
+          "reason": "no contexts -> miss for facilities_legal",
+          "source": "heuristic"
+        },
+        "non_hallucination": {
+          "score": 0.0,
+          "reason": "1 - hallucination (answer with no contexts -> hallucinated (no grounding))",
+          "source": "heuristic"
+        }
+      }
+    },
+    {
+      "conv_id": "conv_general_01",
+      "turn_index": 1,
+      "user": "قاسم بور کیه",
+      "expected_finish": "stop",
+      "expected_subspace": "general",
+      "finish_reason": "stop",
+      "applied_subspace": null,
+      "latency_ms": 12204,
+      "http_status": 200,
+      "error": null,
+      "retrieved_chunks_count": 10,
+      "citations_count": 0,
+      "scores": {
+        "faithfulness": 0.0,
+        "answer_relevancy": 0.0,
+        "context_relevancy": 0.4,
+        "context_recall": 0.35,
+        "hallucination": 0.0,
+        "ambiguity_resolution": 1.0,
+        "sticky_persistence": 0.0,
+        "retrieval_hit": 1.0,
+        "non_hallucination": 1.0
+      },
+      "metrics": {
+        "faithfulness": {
+          "score": 0.0,
+          "reason": "The answer claims no information was found, but Context 1 explicitly identifies Reza Ghasempour as the CEO and board member of the Iran Credit Scoring Company (Hoda).",
+          "source": "llm"
+        },
+        "answer_relevancy": {
+          "score": 0.0,
+          "reason": "The answer explicitly states that no information was found to answer the question.",
+          "source": "llm"
+        },
+        "context_relevancy": {
+          "score": 0.4,
+          "reason": "Chunk 1 and Chunk 2 provide information about Reza Ghasempour (CEO of Iran Credit Scoring), while Chunks 3, 4, and 5 are irrelevant.",
+          "source": "llm"
+        },
+        "context_recall": {
+          "score": 0.35,
+          "reason": "heuristic max_overlap 0.02 blended 0.17",
+          "source": "heuristic"
+        },
+        "hallucination": {
+          "score": 0.0,
+          "reason": "abstention phrase -> not hallucinated (correct abstention)",
+          "source": "heuristic"
+        },
+        "ambiguity_resolution": {
+          "score": 1.0,
+          "reason": "expected stop, got stop -> correct (no spurious clarify)",
+          "source": "heuristic"
+        },
+        "sticky_persistence": {
+          "score": 0.0,
+          "reason": "subspace_match false (exp general, got None)",
+          "source": "heuristic"
+        },
+        "retrieval_hit": {
+          "score": 1.0,
+          "reason": "hit: 3/5 chunks contain general keywords",
+          "source": "heuristic"
+        },
+        "non_hallucination": {
+          "score": 1.0,
+          "reason": "1 - hallucination (abstention phrase -> not hallucinated (correct abstention))",
+          "source": "heuristic"
+        }
+      }
+    },
+    {
+      "conv_id": "conv_general_01",
+      "turn_index": 2,
+      "user": "معرفی شرکت اعتبارسنجی ایران",
+      "expected_finish": "stop",
+      "expected_subspace": "general",
+      "finish_reason": "stop",
+      "applied_subspace": "general",
+      "latency_ms": 1631,
+      "http_status": 200,
+      "error": null,
+      "retrieved_chunks_count": 0,
+      "citations_count": 0,
+      "scores": {
+        "faithfulness": 0.0,
+        "answer_relevancy": 0.0,
+        "context_relevancy": 0.0,
+        "context_recall": 0.0,
+        "hallucination": 1.0,
+        "ambiguity_resolution": 1.0,
+        "sticky_persistence": 1.0,
+        "retrieval_hit": 0.0,
+        "non_hallucination": 0.0
+      },
+      "metrics": {
+        "faithfulness": {
+          "score": 0.0,
+          "reason": "The answer does not provide any information about the company requested in the question and is not grounded in any provided context (as no contexts were retrieved).",
+          "source": "llm"
+        },
+        "answer_relevancy": {
+          "score": 0.0,
+          "reason": "The answer is a system prompt asking the user to select a knowledge base category and does not provide any information about the requested company.",
+          "source": "llm"
+        },
+        "context_relevancy": {
+          "score": 0.0,
+          "reason": "No chunks were provided to evaluate against the question.",
+          "source": "llm"
+        },
+        "context_recall": {
+          "score": 0.0,
+          "reason": "no contexts -> no recall",
+          "source": "heuristic"
+        },
+        "hallucination": {
+          "score": 1.0,
+          "reason": "answer with no contexts -> hallucinated (no grounding)",
+          "source": "heuristic"
+        },
+        "ambiguity_resolution": {
+          "score": 1.0,
+          "reason": "expected stop, got stop -> correct (no spurious clarify)",
+          "source": "heuristic"
+        },
+        "sticky_persistence": {
+          "score": 1.0,
+          "reason": "bench subspace_match true",
+          "source": "heuristic"
+        },
+        "retrieval_hit": {
+          "score": 0.0,
+          "reason": "no contexts -> miss for general",
+          "source": "heuristic"
+        },
+        "non_hallucination": {
+          "score": 0.0,
+          "reason": "1 - hallucination (answer with no contexts -> hallucinated (no grounding))",
+          "source": "heuristic"
+        }
+      }
+    },
+    {
+      "conv_id": "conv_general_01",
+      "turn_index": 3,
+      "user": "چک برگشتی چیست",
+      "expected_finish": "stop",
+      "expected_subspace": "cheque",
+      "finish_reason": "stop",
+      "applied_subspace": "cheque",
+      "latency_ms": 15193,
+      "http_status": 200,
+      "error": null,
+      "retrieved_chunks_count": 0,
+      "citations_count": 0,
+      "scores": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.0,
+        "context_relevancy": 0.0,
+        "context_recall": 0.0,
+        "hallucination": 0.0,
+        "ambiguity_resolution": 1.0,
+        "sticky_persistence": 1.0,
+        "retrieval_hit": 0.0,
+        "non_hallucination": 1.0
+      },
+      "metrics": {
+        "faithfulness": {
+          "score": 1.0,
+          "reason": "The answer correctly states that no information was found in the knowledge base, which is faithful to the fact that no contexts were provided.",
+          "source": "llm"
+        },
+        "answer_relevancy": {
+          "score": 0.0,
+          "reason": "The answer states that no information was found in the knowledge base and does not provide any definition or explanation of the question.",
+          "source": "llm"
+        },
+        "context_relevancy": {
+          "score": 0.0,
+          "reason": "No chunks were provided to evaluate against the question.",
+          "source": "llm"
+        },
+        "context_recall": {
+          "score": 0.0,
+          "reason": "no contexts -> no recall",
+          "source": "heuristic"
+        },
+        "hallucination": {
+          "score": 0.0,
+          "reason": "abstention phrase -> not hallucinated (correct abstention)",
+          "source": "heuristic"
+        },
+        "ambiguity_resolution": {
+          "score": 1.0,
+          "reason": "expected stop, got stop -> correct (no spurious clarify)",
+          "source": "heuristic"
+        },
+        "sticky_persistence": {
+          "score": 1.0,
+          "reason": "bench subspace_match true",
+          "source": "heuristic"
+        },
+        "retrieval_hit": {
+          "score": 0.0,
+          "reason": "no contexts -> miss for cheque",
+          "source": "heuristic"
+        },
+        "non_hallucination": {
+          "score": 1.0,
+          "reason": "1 - hallucination (abstention phrase -> not hallucinated (correct abstention))",
+          "source": "heuristic"
+        }
+      }
+    },
+    {
+      "conv_id": "conv_general_02",
+      "turn_index": 1,
+      "user": "وضعیت اعتباری چطور است",
+      "expected_finish": "clarify",
+      "expected_subspace": null,
+      "finish_reason": "stop",
+      "applied_subspace": null,
+      "latency_ms": 20353,
+      "http_status": 200,
+      "error": null,
+      "retrieved_chunks_count": 0,
+      "citations_count": 0,
+      "scores": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.0,
+        "context_relevancy": 0.0,
+        "context_recall": 0.0,
+        "hallucination": 0.0,
+        "ambiguity_resolution": 0.0,
+        "sticky_persistence": 1.0,
+        "retrieval_hit": 1.0,
+        "non_hallucination": 1.0
+      },
+      "metrics": {
+        "faithfulness": {
+          "score": 1.0,
+          "reason": "The answer correctly states that no information was found, which is faithful to the fact that no contexts were provided.",
+          "source": "llm"
+        },
+        "answer_relevancy": {
+          "score": 0.0,
+          "reason": "The answer explicitly states that no information was found to answer the question.",
+          "source": "llm"
+        },
+        "context_relevancy": {
+          "score": 0.0,
+          "reason": "No chunks were provided to evaluate against the question.",
+          "source": "llm"
+        },
+        "context_recall": {
+          "score": 0.0,
+          "reason": "no contexts -> no recall",
+          "source": "heuristic"
+        },
+        "hallucination": {
+          "score": 0.0,
+          "reason": "abstention phrase -> not hallucinated (correct abstention)",
+          "source": "heuristic"
+        },
+        "ambiguity_resolution": {
+          "score": 0.0,
+          "reason": "expected clarify, got stop -> should have clarified",
+          "source": "heuristic"
+        },
+        "sticky_persistence": {
+          "score": 1.0,
+          "reason": "no expected subspace -> sticky N/A (pass)",
+          "source": "heuristic"
+        },
+        "retrieval_hit": {
+          "score": 1.0,
+          "reason": "no expected subspace -> vacuously hit",
+          "source": "heuristic"
+        },
+        "non_hallucination": {
+          "score": 1.0,
+          "reason": "1 - hallucination (abstention phrase -> not hallucinated (correct abstention))",
+          "source": "heuristic"
+        }
+      }
+    },
+    {
+      "conv_id": "conv_general_02",
+      "turn_index": 2,
+      "user": "هیچکدوم موارد بالا نیست، مدیر عامل شرکت کیه؟",
+      "expected_finish": "stop",
+      "expected_subspace": "general",
+      "finish_reason": "stop",
+      "applied_subspace": "general",
+      "latency_ms": 8006,
+      "http_status": 200,
+      "error": null,
+      "retrieved_chunks_count": 10,
+      "citations_count": 0,
+      "scores": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 1.0,
+        "context_relevancy": 0.4,
+        "context_recall": 0.6,
+        "hallucination": 0.0,
+        "ambiguity_resolution": 1.0,
+        "sticky_persistence": 1.0,
+        "retrieval_hit": 1.0,
+        "non_hallucination": 1.0
+      },
+      "metrics": {
+        "faithfulness": {
+          "score": 1.0,
+          "reason": "All claims in the answer regarding the CEO's name, role, start date, education, previous experience, and achievements are explicitly supported by Context 1 and Context 2.",
+          "source": "llm"
+        },
+        "answer_relevancy": {
+          "score": 1.0,
+          "reason": "The answer directly and comprehensively identifies the CEO of the company as requested in the question.",
+          "source": "llm"
+        },
+        "context_relevancy": {
+          "score": 0.4,
+          "reason": "Chunks 1 and 2 directly answer the question about the CEO, while Chunks 3, 4, and 5 are irrelevant.",
+          "source": "llm"
+        },
+        "context_recall": {
+          "score": 0.6,
+          "reason": "heuristic max_overlap 0.04 blended 0.25",
+          "source": "heuristic"
+        },
+        "hallucination": {
+          "score": 0.0,
+          "reason": "coverage 0.56 -> not hallucinated",
+          "source": "heuristic"
+        },
+        "ambiguity_resolution": {
+          "score": 1.0,
+          "reason": "expected stop, got stop -> correct (no spurious clarify)",
+          "source": "heuristic"
+        },
+        "sticky_persistence": {
+          "score": 1.0,
+          "reason": "bench subspace_match true",
+          "source": "heuristic"
+        },
+        "retrieval_hit": {
+          "score": 1.0,
+          "reason": "hit: 5/5 chunks contain general keywords",
+          "source": "heuristic"
+        },
+        "non_hallucination": {
+          "score": 1.0,
+          "reason": "1 - hallucination (coverage 0.56 -> not hallucinated)",
+          "source": "heuristic"
+        }
+      }
+    },
+    {
+      "conv_id": "conv_mixed_01",
+      "turn_index": 1,
+      "user": "چک",
+      "expected_finish": "stop",
+      "expected_subspace": "cheque",
+      "finish_reason": "stop",
+      "applied_subspace": "cheque",
+      "latency_ms": 1244,
+      "http_status": 200,
+      "error": null,
+      "retrieved_chunks_count": 0,
+      "citations_count": 0,
+      "scores": {
+        "faithfulness": 0.0,
+        "answer_relevancy": 0.0,
+        "context_relevancy": 0.0,
+        "context_recall": 0.0,
+        "hallucination": 1.0,
+        "ambiguity_resolution": 1.0,
+        "sticky_persistence": 1.0,
+        "retrieval_hit": 0.0,
+        "non_hallucination": 0.0
+      },
+      "metrics": {
+        "faithfulness": {
+          "score": 0.0,
+          "reason": "The answer provides a response based on a selected category, but there are no contexts provided to ground or support this claim.",
+          "source": "llm"
+        },
+        "answer_relevancy": {
+          "score": 0.0,
+          "reason": "The answer does not provide information about 'checks' but instead asks the user to specify a question within a selected category.",
+          "source": "llm"
+        },
+        "context_relevancy": {
+          "score": 0.0,
+          "reason": "No chunks were provided to evaluate against the question.",
+          "source": "llm"
+        },
+        "context_recall": {
+          "score": 0.0,
+          "reason": "no contexts -> no recall",
+          "source": "heuristic"
+        },
+        "hallucination": {
+          "score": 1.0,
+          "reason": "answer with no contexts -> hallucinated (no grounding)",
+          "source": "heuristic"
+        },
+        "ambiguity_resolution": {
+          "score": 1.0,
+          "reason": "expected stop, got stop -> correct (no spurious clarify)",
+          "source": "heuristic"
+        },
+        "sticky_persistence": {
+          "score": 1.0,
+          "reason": "bench subspace_match true",
+          "source": "heuristic"
+        },
+        "retrieval_hit": {
+          "score": 0.0,
+          "reason": "no contexts -> miss for cheque",
+          "source": "heuristic"
+        },
+        "non_hallucination": {
+          "score": 0.0,
+          "reason": "1 - hallucination (answer with no contexts -> hallucinated (no grounding))",
+          "source": "heuristic"
+        }
+      }
+    },
+    {
+      "conv_id": "conv_mixed_01",
+      "turn_index": 2,
+      "user": "حالا درباره تسهیلات اشخاص حقیقی بگو",
+      "expected_finish": "stop",
+      "expected_subspace": "facilities_person",
+      "finish_reason": "stop",
+      "applied_subspace": "facilities_person",
+      "latency_ms": 1241,
+      "http_status": 200,
+      "error": null,
+      "retrieved_chunks_count": 0,
+      "citations_count": 0,
+      "scores": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.0,
+        "context_relevancy": 0.0,
+        "context_recall": 0.0,
+        "hallucination": 1.0,
+        "ambiguity_resolution": 1.0,
+        "sticky_persistence": 1.0,
+        "retrieval_hit": 0.0,
+        "non_hallucination": 0.0
+      },
+      "metrics": {
+        "faithfulness": {
+          "score": 1.0,
+          "reason": "The answer does not make any factual claims about the topic; it simply acknowledges the selection of the topic and asks for a specific question, which requires no external grounding.",
+          "source": "llm"
+        },
+        "answer_relevancy": {
+          "score": 0.0,
+          "reason": "The answer does not provide any information about the facilities; it only acknowledges the topic and asks the user to ask a specific question.",
+          "source": "llm"
+        },
+        "context_relevancy": {
+          "score": 0.0,
+          "reason": "No chunks were provided to evaluate against the question.",
+          "source": "llm"
+        },
+        "context_recall": {
+          "score": 0.0,
+          "reason": "no contexts -> no recall",
+          "source": "heuristic"
+        },
+        "hallucination": {
+          "score": 1.0,
+          "reason": "answer with no contexts -> hallucinated (no grounding)",
+          "source": "heuristic"
+        },
+        "ambiguity_resolution": {
+          "score": 1.0,
+          "reason": "expected stop, got stop -> correct (no spurious clarify)",
+          "source": "heuristic"
+        },
+        "sticky_persistence": {
+          "score": 1.0,
+          "reason": "bench subspace_match true",
+          "source": "heuristic"
+        },
+        "retrieval_hit": {
+          "score": 0.0,
+          "reason": "no contexts -> miss for facilities_person",
+          "source": "heuristic"
+        },
+        "non_hallucination": {
+          "score": 0.0,
+          "reason": "1 - hallucination (answer with no contexts -> hallucinated (no grounding))",
+          "source": "heuristic"
+        }
+      }
+    },
+    {
+      "conv_id": "conv_greeting_01",
+      "turn_index": 1,
+      "user": "سلام",
+      "expected_finish": "greeting",
+      "expected_subspace": null,
+      "finish_reason": "stop",
+      "applied_subspace": null,
+      "latency_ms": 7059,
+      "http_status": 200,
+      "error": null,
+      "retrieved_chunks_count": 0,
+      "citations_count": 0,
+      "scores": {
+        "faithfulness": 0.0,
+        "answer_relevancy": 1.0,
+        "context_relevancy": 0.0,
+        "context_recall": 0.0,
+        "hallucination": 0.0,
+        "ambiguity_resolution": 1.0,
+        "sticky_persistence": 1.0,
+        "retrieval_hit": 1.0,
+        "non_hallucination": 1.0
+      },
+      "metrics": {
+        "faithfulness": {
+          "score": 0.0,
+          "reason": "The answer contains claims about the assistant's identity and capabilities that are not supported by any provided context.",
+          "source": "llm"
+        },
+        "answer_relevancy": {
+          "score": 1.0,
+          "reason": "The answer is a direct and appropriate response to a greeting.",
+          "source": "llm"
+        },
+        "context_relevancy": {
+          "score": 0.0,
+          "reason": "No chunks were provided to evaluate against the question.",
+          "source": "llm"
+        },
+        "context_recall": {
+          "score": 0.0,
+          "reason": "no contexts -> no recall",
+          "source": "heuristic"
+        },
+        "hallucination": {
+          "score": 0.0,
+          "reason": "greeting with no contexts -> not hallucinated",
+          "source": "heuristic"
+        },
+        "ambiguity_resolution": {
+          "score": 1.0,
+          "reason": "expected greeting, got stop -> pass",
+          "source": "heuristic"
+        },
+        "sticky_persistence": {
+          "score": 1.0,
+          "reason": "no expected subspace -> sticky N/A (pass)",
+          "source": "heuristic"
+        },
+        "retrieval_hit": {
+          "score": 1.0,
+          "reason": "no expected subspace -> vacuously hit",
+          "source": "heuristic"
+        },
+        "non_hallucination": {
+          "score": 1.0,
+          "reason": "1 - hallucination (greeting with no contexts -> not hallucinated)",
+          "source": "heuristic"
+        }
+      }
+    },
+    {
+      "conv_id": "conv_greeting_01",
+      "turn_index": 2,
+      "user": "سلام علیکم",
+      "expected_finish": "greeting",
+      "expected_subspace": null,
+      "finish_reason": "stop",
+      "applied_subspace": null,
+      "latency_ms": 1928,
+      "http_status": 200,
+      "error": null,
+      "retrieved_chunks_count": 0,
+      "citations_count": 0,
+      "scores": {
+        "faithfulness": 0.0,
+        "answer_relevancy": 1.0,
+        "context_relevancy": 0.0,
+        "context_recall": 0.0,
+        "hallucination": 0.0,
+        "ambiguity_resolution": 1.0,
+        "sticky_persistence": 1.0,
+        "retrieval_hit": 1.0,
+        "non_hallucination": 1.0
+      },
+      "metrics": {
+        "faithfulness": {
+          "score": 0.0,
+          "reason": "The answer contains claims about the assistant's identity and capabilities that are not supported by any provided context.",
+          "source": "llm"
+        },
+        "answer_relevancy": {
+          "score": 1.0,
+          "reason": "The answer is a direct and appropriate response to the greeting.",
+          "source": "llm"
+        },
+        "context_relevancy": {
+          "score": 0.0,
+          "reason": "No chunks were provided to evaluate against the question.",
+          "source": "llm"
+        },
+        "context_recall": {
+          "score": 0.0,
+          "reason": "no contexts -> no recall",
+          "source": "heuristic"
+        },
+        "hallucination": {
+          "score": 0.0,
+          "reason": "greeting with no contexts -> not hallucinated",
+          "source": "heuristic"
+        },
+        "ambiguity_resolution": {
+          "score": 1.0,
+          "reason": "expected greeting, got stop -> pass",
+          "source": "heuristic"
+        },
+        "sticky_persistence": {
+          "score": 1.0,
+          "reason": "no expected subspace -> sticky N/A (pass)",
+          "source": "heuristic"
+        },
+        "retrieval_hit": {
+          "score": 1.0,
+          "reason": "no expected subspace -> vacuously hit",
+          "source": "heuristic"
+        },
+        "non_hallucination": {
+          "score": 1.0,
+          "reason": "1 - hallucination (greeting with no contexts -> not hallucinated)",
+          "source": "heuristic"
+        }
+      }
+    },
+    {
+      "conv_id": "conv_greeting_01",
+      "turn_index": 3,
+      "user": "اعتبارسنجی چیست",
+      "expected_finish": "clarify",
+      "expected_subspace": null,
+      "finish_reason": "stop",
+      "applied_subspace": null,
+      "latency_ms": 13141,
+      "http_status": 200,
+      "error": null,
+      "retrieved_chunks_count": 0,
+      "citations_count": 0,
+      "scores": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.0,
+        "context_relevancy": 0.0,
+        "context_recall": 0.0,
+        "hallucination": 0.0,
+        "ambiguity_resolution": 0.0,
+        "sticky_persistence": 1.0,
+        "retrieval_hit": 1.0,
+        "non_hallucination": 1.0
+      },
+      "metrics": {
+        "faithfulness": {
+          "score": 1.0,
+          "reason": "The answer correctly states that no information was found in the knowledge base, which is faithful to the fact that no contexts were provided.",
+          "source": "llm"
+        },
+        "answer_relevancy": {
+          "score": 0.0,
+          "reason": "The answer states that no information was found in the knowledge base and does not provide any definition or explanation of the term.",
+          "source": "llm"
+        },
+        "context_relevancy": {
+          "score": 0.0,
+          "reason": "No chunks were provided to evaluate against the question.",
+          "source": "llm"
+        },
+        "context_recall": {
+          "score": 0.0,
+          "reason": "no contexts -> no recall",
+          "source": "heuristic"
+        },
+        "hallucination": {
+          "score": 0.0,
+          "reason": "abstention phrase -> not hallucinated (correct abstention)",
+          "source": "heuristic"
+        },
+        "ambiguity_resolution": {
+          "score": 0.0,
+          "reason": "expected clarify, got stop -> should have clarified",
+          "source": "heuristic"
+        },
+        "sticky_persistence": {
+          "score": 1.0,
+          "reason": "no expected subspace -> sticky N/A (pass)",
+          "source": "heuristic"
+        },
+        "retrieval_hit": {
+          "score": 1.0,
+          "reason": "no expected subspace -> vacuously hit",
+          "source": "heuristic"
+        },
+        "non_hallucination": {
+          "score": 1.0,
+          "reason": "1 - hallucination (abstention phrase -> not hallucinated (correct abstention))",
+          "source": "heuristic"
+        }
+      }
+    },
+    {
+      "conv_id": "conv_hallucination_01",
+      "turn_index": 1,
+      "user": "نمره اعتباری من G5 است چه امتیازی میگیرم",
+      "expected_finish": "stop",
+      "expected_subspace": null,
+      "finish_reason": "stop",
+      "applied_subspace": null,
+      "latency_ms": 13828,
+      "http_status": 200,
+      "error": null,
+      "retrieved_chunks_count": 0,
+      "citations_count": 0,
+      "scores": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.0,
+        "context_relevancy": 0.0,
+        "context_recall": 0.0,
+        "hallucination": 0.0,
+        "ambiguity_resolution": 1.0,
+        "sticky_persistence": 1.0,
+        "retrieval_hit": 1.0,
+        "non_hallucination": 1.0
+      },
+      "metrics": {
+        "faithfulness": {
+          "score": 1.0,
+          "reason": "The answer correctly states that no information was found in the knowledge base, which is faithful to the fact that no contexts were provided.",
+          "source": "llm"
+        },
+        "answer_relevancy": {
+          "score": 0.0,
+          "reason": "The answer explicitly states that no information was found to answer the question.",
+          "source": "llm"
+        },
+        "context_relevancy": {
+          "score": 0.0,
+          "reason": "No chunks were provided to evaluate against the question.",
+          "source": "llm"
+        },
+        "context_recall": {
+          "score": 0.0,
+          "reason": "no contexts -> no recall",
+          "source": "heuristic"
+        },
+        "hallucination": {
+          "score": 0.0,
+          "reason": "abstention phrase -> not hallucinated (correct abstention)",
+          "source": "heuristic"
+        },
+        "ambiguity_resolution": {
+          "score": 1.0,
+          "reason": "expected stop, got stop -> correct (no spurious clarify)",
+          "source": "heuristic"
+        },
+        "sticky_persistence": {
+          "score": 1.0,
+          "reason": "no expected subspace -> sticky N/A (pass)",
+          "source": "heuristic"
+        },
+        "retrieval_hit": {
+          "score": 1.0,
+          "reason": "no expected subspace -> vacuously hit",
+          "source": "heuristic"
+        },
+        "non_hallucination": {
+          "score": 1.0,
+          "reason": "1 - hallucination (abstention phrase -> not hallucinated (correct abstention))",
+          "source": "heuristic"
+        }
+      }
+    },
+    {
+      "conv_id": "conv_supplement_01",
+      "turn_index": 1,
+      "user": "سهامداران شرکت اعتبارسنجی ایران چه کسانی هستند",
+      "expected_finish": "stop",
+      "expected_subspace": "general",
+      "finish_reason": "stop",
+      "applied_subspace": null,
+      "latency_ms": 9251,
+      "http_status": 200,
+      "error": null,
+      "retrieved_chunks_count": 0,
+      "citations_count": 0,
+      "scores": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.0,
+        "context_relevancy": 0.0,
+        "context_recall": 0.0,
+        "hallucination": 0.0,
+        "ambiguity_resolution": 1.0,
+        "sticky_persistence": 0.0,
+        "retrieval_hit": 0.0,
+        "non_hallucination": 1.0
+      },
+      "metrics": {
+        "faithfulness": {
+          "score": 1.0,
+          "reason": "The answer correctly states that no information was found, which is faithful to the provided empty context.",
+          "source": "llm"
+        },
+        "answer_relevancy": {
+          "score": 0.0,
+          "reason": "The answer explicitly states that no information was found to answer the question.",
+          "source": "llm"
+        },
+        "context_relevancy": {
+          "score": 0.0,
+          "reason": "No chunks were provided to evaluate against the question.",
+          "source": "llm"
+        },
+        "context_recall": {
+          "score": 0.0,
+          "reason": "no contexts -> no recall",
+          "source": "heuristic"
+        },
+        "hallucination": {
+          "score": 0.0,
+          "reason": "abstention phrase -> not hallucinated (correct abstention)",
+          "source": "heuristic"
+        },
+        "ambiguity_resolution": {
+          "score": 1.0,
+          "reason": "expected stop, got stop -> correct (no spurious clarify)",
+          "source": "heuristic"
+        },
+        "sticky_persistence": {
+          "score": 0.0,
+          "reason": "subspace_match false (exp general, got None)",
+          "source": "heuristic"
+        },
+        "retrieval_hit": {
+          "score": 0.0,
+          "reason": "no contexts -> miss for general",
+          "source": "heuristic"
+        },
+        "non_hallucination": {
+          "score": 1.0,
+          "reason": "1 - hallucination (abstention phrase -> not hallucinated (correct abstention))",
+          "source": "heuristic"
+        }
+      }
+    },
+    {
+      "conv_id": "single_cheque_granular",
+      "turn_index": 1,
+      "user": "چک برگشتی چیست و چگونه رفع اثر می‌شود؟",
+      "expected_finish": "stop",
+      "expected_subspace": "cheque",
+      "finish_reason": "stop",
+      "applied_subspace": null,
+      "latency_ms": 10741,
+      "http_status": 200,
+      "error": null,
+      "retrieved_chunks_count": 0,
+      "citations_count": 0,
+      "scores": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.0,
+        "context_relevancy": 0.0,
+        "context_recall": 0.0,
+        "hallucination": 0.0,
+        "ambiguity_resolution": 1.0,
+        "sticky_persistence": 0.0,
+        "retrieval_hit": 0.0,
+        "non_hallucination": 1.0
+      },
+      "metrics": {
+        "faithfulness": {
+          "score": 1.0,
+          "reason": "The answer correctly states that no information was found in the provided contexts, which is faithful to the fact that the contexts were empty.",
+          "source": "llm"
+        },
+        "answer_relevancy": {
+          "score": 0.0,
+          "reason": "The answer states that no information was found in the knowledge base and does not address the question.",
+          "source": "llm"
+        },
+        "context_relevancy": {
+          "score": 0.0,
+          "reason": "No chunks were provided to evaluate against the question.",
+          "source": "llm"
+        },
+        "context_recall": {
+          "score": 0.0,
+          "reason": "no contexts -> no recall",
+          "source": "heuristic"
+        },
+        "hallucination": {
+          "score": 0.0,
+          "reason": "abstention phrase -> not hallucinated (correct abstention)",
+          "source": "heuristic"
+        },
+        "ambiguity_resolution": {
+          "score": 1.0,
+          "reason": "expected stop, got stop -> correct (no spurious clarify)",
+          "source": "heuristic"
+        },
+        "sticky_persistence": {
+          "score": 0.0,
+          "reason": "subspace_match false (exp cheque, got None)",
+          "source": "heuristic"
+        },
+        "retrieval_hit": {
+          "score": 0.0,
+          "reason": "no contexts -> miss for cheque",
+          "source": "heuristic"
+        },
+        "non_hallucination": {
+          "score": 1.0,
+          "reason": "1 - hallucination (abstention phrase -> not hallucinated (correct abstention))",
+          "source": "heuristic"
+        }
+      }
+    },
+    {
+      "conv_id": "single_facilities_person_granular",
+      "turn_index": 1,
+      "user": "امتیاز اعتباری اشخاص حقیقی چگونه محاسبه می‌شود؟",
+      "expected_finish": "stop",
+      "expected_subspace": "facilities_person",
+      "finish_reason": "stop",
+      "applied_subspace": null,
+      "latency_ms": 8797,
+      "http_status": 200,
+      "error": null,
+      "retrieved_chunks_count": 0,
+      "citations_count": 0,
+      "scores": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.0,
+        "context_relevancy": 0.0,
+        "context_recall": 0.0,
+        "hallucination": 0.0,
+        "ambiguity_resolution": 1.0,
+        "sticky_persistence": 0.0,
+        "retrieval_hit": 0.0,
+        "non_hallucination": 1.0
+      },
+      "metrics": {
+        "faithfulness": {
+          "score": 1.0,
+          "reason": "The answer correctly states that no information was found in the knowledge base, which is faithful to the fact that no contexts were provided.",
+          "source": "llm"
+        },
+        "answer_relevancy": {
+          "score": 0.0,
+          "reason": "The answer explicitly states that no information was found to answer the question.",
+          "source": "llm"
+        },
+        "context_relevancy": {
+          "score": 0.0,
+          "reason": "No chunks were provided to evaluate against the question.",
+          "source": "llm"
+        },
+        "context_recall": {
+          "score": 0.0,
+          "reason": "no contexts -> no recall",
+          "source": "heuristic"
+        },
+        "hallucination": {
+          "score": 0.0,
+          "reason": "abstention phrase -> not hallucinated (correct abstention)",
+          "source": "heuristic"
+        },
+        "ambiguity_resolution": {
+          "score": 1.0,
+          "reason": "expected stop, got stop -> correct (no spurious clarify)",
+          "source": "heuristic"
+        },
+        "sticky_persistence": {
+          "score": 0.0,
+          "reason": "subspace_match false (exp facilities_person, got None)",
+          "source": "heuristic"
+        },
+        "retrieval_hit": {
+          "score": 0.0,
+          "reason": "no contexts -> miss for facilities_person",
+          "source": "heuristic"
+        },
+        "non_hallucination": {
+          "score": 1.0,
+          "reason": "1 - hallucination (abstention phrase -> not hallucinated (correct abstention))",
+          "source": "heuristic"
+        }
+      }
+    },
+    {
+      "conv_id": "single_facilities_legal_granular",
+      "turn_index": 1,
+      "user": "الزامات وثایق برای اشخاص حقوقی چیست؟",
+      "expected_finish": "stop",
+      "expected_subspace": "facilities_legal",
+      "finish_reason": "stop",
+      "applied_subspace": null,
+      "latency_ms": 25304,
+      "http_status": 200,
+      "error": null,
+      "retrieved_chunks_count": 0,
+      "citations_count": 0,
+      "scores": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.0,
+        "context_relevancy": 0.0,
+        "context_recall": 0.0,
+        "hallucination": 0.0,
+        "ambiguity_resolution": 1.0,
+        "sticky_persistence": 0.0,
+        "retrieval_hit": 0.0,
+        "non_hallucination": 1.0
+      },
+      "metrics": {
+        "faithfulness": {
+          "score": 1.0,
+          "reason": "The answer correctly states that no information was found in the knowledge base, which is faithful to the fact that no contexts were provided.",
+          "source": "llm"
+        },
+        "answer_relevancy": {
+          "score": 0.0,
+          "reason": "The answer explicitly states that no information was found to answer the question.",
+          "source": "llm"
+        },
+        "context_relevancy": {
+          "score": 0.0,
+          "reason": "No chunks were provided to evaluate against the question.",
+          "source": "llm"
+        },
+        "context_recall": {
+          "score": 0.0,
+          "reason": "no contexts -> no recall",
+          "source": "heuristic"
+        },
+        "hallucination": {
+          "score": 0.0,
+          "reason": "abstention phrase -> not hallucinated (correct abstention)",
+          "source": "heuristic"
+        },
+        "ambiguity_resolution": {
+          "score": 1.0,
+          "reason": "expected stop, got stop -> correct (no spurious clarify)",
+          "source": "heuristic"
+        },
+        "sticky_persistence": {
+          "score": 0.0,
+          "reason": "subspace_match false (exp facilities_legal, got None)",
+          "source": "heuristic"
+        },
+        "retrieval_hit": {
+          "score": 0.0,
+          "reason": "no contexts -> miss for facilities_legal",
+          "source": "heuristic"
+        },
+        "non_hallucination": {
+          "score": 1.0,
+          "reason": "1 - hallucination (abstention phrase -> not hallucinated (correct abstention))",
+          "source": "heuristic"
+        }
+      }
+    },
+    {
+      "conv_id": "single_general_granular",
+      "turn_index": 1,
+      "user": "تاریخچه شرکت اعتبارسنجی ایران را بگو",
+      "expected_finish": "stop",
+      "expected_subspace": "general",
+      "finish_reason": "stop",
+      "applied_subspace": "general",
+      "latency_ms": 17268,
+      "http_status": 200,
+      "error": null,
+      "retrieved_chunks_count": 10,
+      "citations_count": 0,
+      "scores": {
+        "faithfulness": 0.6,
+        "answer_relevancy": 1.0,
+        "context_relevancy": 0.2,
+        "context_recall": 0.6,
+        "hallucination": 0.0,
+        "ambiguity_resolution": 1.0,
+        "sticky_persistence": 1.0,
+        "retrieval_hit": 1.0,
+        "non_hallucination": 1.0
+      },
+      "metrics": {
+        "faithfulness": {
+          "score": 0.6,
+          "reason": "The answer contains several claims not supported by the provided contexts, specifically regarding the Ministry of Economic Affairs and Finance as a supporter, the identity of shareholders, the 1404 check credit report, and future implementation plans. However, the foundation date, legal basis, and the 1395/1398/1403 milestones are correctly grounded.",
+          "source": "llm"
+        },
+        "answer_relevancy": {
+          "score": 1.0,
+          "reason": "The answer provides a detailed chronological history of the company, including its founding date, legal basis, oversight, and the evolution of its services from 2006 to 2025.",
+          "source": "llm"
+        },
+        "context_relevancy": {
+          "score": 0.2,
+          "reason": "Only Chunk 1 provides historical information regarding the company's establishment and milestones; other chunks provide links or general definitions.",
+          "source": "llm"
+        },
+        "context_recall": {
+          "score": 0.6,
+          "reason": "heuristic max_overlap 0.21 blended 0.31",
+          "source": "heuristic"
+        },
+        "hallucination": {
+          "score": 0.0,
+          "reason": "coverage 0.46 -> not hallucinated",
+          "source": "heuristic"
+        },
+        "ambiguity_resolution": {
+          "score": 1.0,
+          "reason": "expected stop, got stop -> correct (no spurious clarify)",
+          "source": "heuristic"
+        },
+        "sticky_persistence": {
+          "score": 1.0,
+          "reason": "bench subspace_match true",
+          "source": "heuristic"
+        },
+        "retrieval_hit": {
+          "score": 1.0,
+          "reason": "hit: 4/5 chunks contain general keywords",
+          "source": "heuristic"
+        },
+        "non_hallucination": {
+          "score": 1.0,
+          "reason": "1 - hallucination (coverage 0.46 -> not hallucinated)",
+          "source": "heuristic"
+        }
+      }
+    },
+    {
+      "conv_id": "single_cheque_bounce_effect",
+      "turn_index": 1,
+      "user": "تاثیر چک برگشتی بر امتیاز اعتباری چقدر است؟",
+      "expected_finish": "stop",
+      "expected_subspace": "cheque",
+      "finish_reason": "stop",
+      "applied_subspace": null,
+      "latency_ms": 11793,
+      "http_status": 200,
+      "error": null,
+      "retrieved_chunks_count": 0,
+      "citations_count": 0,
+      "scores": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.0,
+        "context_relevancy": 0.0,
+        "context_recall": 0.0,
+        "hallucination": 0.0,
+        "ambiguity_resolution": 1.0,
+        "sticky_persistence": 0.0,
+        "retrieval_hit": 0.0,
+        "non_hallucination": 1.0
+      },
+      "metrics": {
+        "faithfulness": {
+          "score": 1.0,
+          "reason": "The answer correctly states that no information was found in the knowledge base, which is faithful to the fact that no contexts were provided.",
+          "source": "llm"
+        },
+        "answer_relevancy": {
+          "score": 0.0,
+          "reason": "The answer states that no information was found in the knowledge base and does not address the question.",
+          "source": "llm"
+        },
+        "context_relevancy": {
+          "score": 0.0,
+          "reason": "No chunks were provided to evaluate against the question.",
+          "source": "llm"
+        },
+        "context_recall": {
+          "score": 0.0,
+          "reason": "no contexts -> no recall",
+          "source": "heuristic"
+        },
+        "hallucination": {
+          "score": 0.0,
+          "reason": "abstention phrase -> not hallucinated (correct abstention)",
+          "source": "heuristic"
+        },
+        "ambiguity_resolution": {
+          "score": 1.0,
+          "reason": "expected stop, got stop -> correct (no spurious clarify)",
+          "source": "heuristic"
+        },
+        "sticky_persistence": {
+          "score": 0.0,
+          "reason": "subspace_match false (exp cheque, got None)",
+          "source": "heuristic"
+        },
+        "retrieval_hit": {
+          "score": 0.0,
+          "reason": "no contexts -> miss for cheque",
+          "source": "heuristic"
+        },
+        "non_hallucination": {
+          "score": 1.0,
+          "reason": "1 - hallucination (abstention phrase -> not hallucinated (correct abstention))",
+          "source": "heuristic"
+        }
+      }
+    },
+    {
+      "conv_id": "single_facilities_person_income",
+      "turn_index": 1,
+      "user": "آیا میزان درآمد یا گردش حساب در رتبه اعتباری تاثیر دارد؟",
+      "expected_finish": "stop",
+      "expected_subspace": "facilities_person",
+      "finish_reason": "stop",
+      "applied_subspace": null,
+      "latency_ms": 6215,
+      "http_status": 200,
+      "error": null,
+      "retrieved_chunks_count": 0,
+      "citations_count": 0,
+      "scores": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.0,
+        "context_relevancy": 0.0,
+        "context_recall": 0.0,
+        "hallucination": 0.0,
+        "ambiguity_resolution": 1.0,
+        "sticky_persistence": 0.0,
+        "retrieval_hit": 0.0,
+        "non_hallucination": 1.0
+      },
+      "metrics": {
+        "faithfulness": {
+          "score": 1.0,
+          "reason": "The answer correctly states that no information was found in the knowledge base, which is faithful to the fact that no contexts were provided.",
+          "source": "llm"
+        },
+        "answer_relevancy": {
+          "score": 0.0,
+          "reason": "The answer explicitly states that no information was found to answer the question, providing no relevant information.",
+          "source": "llm"
+        },
+        "context_relevancy": {
+          "score": 0.0,
+          "reason": "No chunks were provided to evaluate against the question.",
+          "source": "llm"
+        },
+        "context_recall": {
+          "score": 0.0,
+          "reason": "no contexts -> no recall",
+          "source": "heuristic"
+        },
+        "hallucination": {
+          "score": 0.0,
+          "reason": "abstention phrase -> not hallucinated (correct abstention)",
+          "source": "heuristic"
+        },
+        "ambiguity_resolution": {
+          "score": 1.0,
+          "reason": "expected stop, got stop -> correct (no spurious clarify)",
+          "source": "heuristic"
+        },
+        "sticky_persistence": {
+          "score": 0.0,
+          "reason": "subspace_match false (exp facilities_person, got None)",
+          "source": "heuristic"
+        },
+        "retrieval_hit": {
+          "score": 0.0,
+          "reason": "no contexts -> miss for facilities_person",
+          "source": "heuristic"
+        },
+        "non_hallucination": {
+          "score": 1.0,
+          "reason": "1 - hallucination (abstention phrase -> not hallucinated (correct abstention))",
+          "source": "heuristic"
+        }
+      }
+    },
+    {
+      "conv_id": "single_facilities_legal_board",
+      "turn_index": 1,
+      "user": "هیات مدیره شرکت اعتبارسنجی ایران چه کسانی هستند؟",
+      "expected_finish": "stop",
+      "expected_subspace": "general",
+      "finish_reason": "stop",
+      "applied_subspace": null,
+      "latency_ms": 4501,
+      "http_status": 200,
+      "error": null,
+      "retrieved_chunks_count": 10,
+      "citations_count": 0,
+      "scores": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.0,
+        "context_relevancy": 0.0,
+        "context_recall": 0.6,
+        "hallucination": 0.0,
+        "ambiguity_resolution": 1.0,
+        "sticky_persistence": 0.0,
+        "retrieval_hit": 1.0,
+        "non_hallucination": 1.0
+      },
+      "metrics": {
+        "faithfulness": {
+          "score": 1.0,
+          "reason": "The answer correctly states that the information is not available in the provided contexts.",
+          "source": "llm"
+        },
+        "answer_relevancy": {
+          "score": 0.0,
+          "reason": "The answer explicitly states that no information was found to answer the question.",
+          "source": "llm"
+        },
+        "context_relevancy": {
+          "score": 0.0,
+          "reason": "None of the retrieved chunks contain information about the members of the board of directors; they only provide the website, products, and a general definition of the company.",
+          "source": "llm"
+        },
+        "context_recall": {
+          "score": 0.6,
+          "reason": "heuristic max_overlap 0.19 blended 0.27",
+          "source": "heuristic"
+        },
+        "hallucination": {
+          "score": 0.0,
+          "reason": "abstention phrase -> not hallucinated (correct abstention)",
+          "source": "heuristic"
+        },
+        "ambiguity_resolution": {
+          "score": 1.0,
+          "reason": "expected stop, got stop -> correct (no spurious clarify)",
+          "source": "heuristic"
+        },
+        "sticky_persistence": {
+          "score": 0.0,
+          "reason": "subspace_match false (exp general, got None)",
+          "source": "heuristic"
+        },
+        "retrieval_hit": {
+          "score": 1.0,
+          "reason": "hit: 4/5 chunks contain general keywords",
+          "source": "heuristic"
+        },
+        "non_hallucination": {
+          "score": 1.0,
+          "reason": "1 - hallucination (abstention phrase -> not hallucinated (correct abstention))",
+          "source": "heuristic"
+        }
+      }
+    },
+    {
+      "conv_id": "single_general_shareholders",
+      "turn_index": 1,
+      "user": "سهامداران شرکت اعتبارسنجی ایران چه کسانی هستند؟",
+      "expected_finish": "stop",
+      "expected_subspace": "general",
+      "finish_reason": "stop",
+      "applied_subspace": null,
+      "latency_ms": 5677,
+      "http_status": 200,
+      "error": null,
+      "retrieved_chunks_count": 0,
+      "citations_count": 0,
+      "scores": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.0,
+        "context_relevancy": 0.0,
+        "context_recall": 0.0,
+        "hallucination": 0.0,
+        "ambiguity_resolution": 1.0,
+        "sticky_persistence": 0.0,
+        "retrieval_hit": 0.0,
+        "non_hallucination": 1.0
+      },
+      "metrics": {
+        "faithfulness": {
+          "score": 1.0,
+          "reason": "The answer correctly states that no information was found, which is faithful to the provided empty context.",
+          "source": "llm"
+        },
+        "answer_relevancy": {
+          "score": 0.0,
+          "reason": "The answer states that no information was found in the knowledge base, therefore it does not provide the requested information about the shareholders.",
+          "source": "llm"
+        },
+        "context_relevancy": {
+          "score": 0.0,
+          "reason": "No chunks were provided to evaluate against the question.",
+          "source": "llm"
+        },
+        "context_recall": {
+          "score": 0.0,
+          "reason": "no contexts -> no recall",
+          "source": "heuristic"
+        },
+        "hallucination": {
+          "score": 0.0,
+          "reason": "abstention phrase -> not hallucinated (correct abstention)",
+          "source": "heuristic"
+        },
+        "ambiguity_resolution": {
+          "score": 1.0,
+          "reason": "expected stop, got stop -> correct (no spurious clarify)",
+          "source": "heuristic"
+        },
+        "sticky_persistence": {
+          "score": 0.0,
+          "reason": "subspace_match false (exp general, got None)",
+          "source": "heuristic"
+        },
+        "retrieval_hit": {
+          "score": 0.0,
+          "reason": "no contexts -> miss for general",
+          "source": "heuristic"
+        },
+        "non_hallucination": {
+          "score": 1.0,
+          "reason": "1 - hallucination (abstention phrase -> not hallucinated (correct abstention))",
+          "source": "heuristic"
+        }
+      }
+    },
+    {
+      "conv_id": "single_greeting",
+      "turn_index": 1,
+      "user": "سلام",
+      "expected_finish": "greeting",
+      "expected_subspace": null,
+      "finish_reason": "stop",
+      "applied_subspace": null,
+      "latency_ms": 1275,
+      "http_status": 200,
+      "error": null,
+      "retrieved_chunks_count": 0,
+      "citations_count": 0,
+      "scores": {
+        "faithfulness": 0.0,
+        "answer_relevancy": 1.0,
+        "context_relevancy": 0.0,
+        "context_recall": 0.0,
+        "hallucination": 0.0,
+        "ambiguity_resolution": 1.0,
+        "sticky_persistence": 1.0,
+        "retrieval_hit": 1.0,
+        "non_hallucination": 1.0
+      },
+      "metrics": {
+        "faithfulness": {
+          "score": 0.0,
+          "reason": "The answer contains claims about the assistant's identity and capabilities that are not supported by any provided context.",
+          "source": "llm"
+        },
+        "answer_relevancy": {
+          "score": 1.0,
+          "reason": "The answer is a direct and appropriate response to a greeting.",
+          "source": "llm"
+        },
+        "context_relevancy": {
+          "score": 0.0,
+          "reason": "No chunks were provided to evaluate against the question.",
+          "source": "llm"
+        },
+        "context_recall": {
+          "score": 0.0,
+          "reason": "no contexts -> no recall",
+          "source": "heuristic"
+        },
+        "hallucination": {
+          "score": 0.0,
+          "reason": "greeting with no contexts -> not hallucinated",
+          "source": "heuristic"
+        },
+        "ambiguity_resolution": {
+          "score": 1.0,
+          "reason": "expected greeting, got stop -> pass",
+          "source": "heuristic"
+        },
+        "sticky_persistence": {
+          "score": 1.0,
+          "reason": "no expected subspace -> sticky N/A (pass)",
+          "source": "heuristic"
+        },
+        "retrieval_hit": {
+          "score": 1.0,
+          "reason": "no expected subspace -> vacuously hit",
+          "source": "heuristic"
+        },
+        "non_hallucination": {
+          "score": 1.0,
+          "reason": "1 - hallucination (greeting with no contexts -> not hallucinated)",
+          "source": "heuristic"
+        }
+      }
+    },
+    {
+      "conv_id": "single_scattered",
+      "turn_index": 1,
+      "user": "وضعیت اعتباری چطور است",
+      "expected_finish": "clarify",
+      "expected_subspace": null,
+      "finish_reason": "stop",
+      "applied_subspace": null,
+      "latency_ms": 6835,
+      "http_status": 200,
+      "error": null,
+      "retrieved_chunks_count": 0,
+      "citations_count": 0,
+      "scores": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.0,
+        "context_relevancy": 0.0,
+        "context_recall": 0.0,
+        "hallucination": 0.0,
+        "ambiguity_resolution": 0.0,
+        "sticky_persistence": 1.0,
+        "retrieval_hit": 1.0,
+        "non_hallucination": 1.0
+      },
+      "metrics": {
+        "faithfulness": {
+          "score": 1.0,
+          "reason": "The answer correctly states that no information was found, which is faithful to the fact that no contexts were provided.",
+          "source": "llm"
+        },
+        "answer_relevancy": {
+          "score": 0.0,
+          "reason": "The answer explicitly states that no information was found to answer the question.",
+          "source": "llm"
+        },
+        "context_relevancy": {
+          "score": 0.0,
+          "reason": "No chunks were provided to evaluate against the question.",
+          "source": "llm"
+        },
+        "context_recall": {
+          "score": 0.0,
+          "reason": "no contexts -> no recall",
+          "source": "heuristic"
+        },
+        "hallucination": {
+          "score": 0.0,
+          "reason": "abstention phrase -> not hallucinated (correct abstention)",
+          "source": "heuristic"
+        },
+        "ambiguity_resolution": {
+          "score": 0.0,
+          "reason": "expected clarify, got stop -> should have clarified",
+          "source": "heuristic"
+        },
+        "sticky_persistence": {
+          "score": 1.0,
+          "reason": "no expected subspace -> sticky N/A (pass)",
+          "source": "heuristic"
+        },
+        "retrieval_hit": {
+          "score": 1.0,
+          "reason": "no expected subspace -> vacuously hit",
+          "source": "heuristic"
+        },
+        "non_hallucination": {
+          "score": 1.0,
+          "reason": "1 - hallucination (abstention phrase -> not hallucinated (correct abstention))",
+          "source": "heuristic"
+        }
+      }
+    },
+    {
+      "conv_id": "single_hallucination_probe",
+      "turn_index": 1,
+      "user": "نمره اعتباری من G5 است چه امتیازی میگیرم",
+      "expected_finish": "stop",
+      "expected_subspace": "general",
+      "finish_reason": "stop",
+      "applied_subspace": null,
+      "latency_ms": 6782,
+      "http_status": 200,
+      "error": null,
+      "retrieved_chunks_count": 0,
+      "citations_count": 0,
+      "scores": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.0,
+        "context_relevancy": 0.0,
+        "context_recall": 0.0,
+        "hallucination": 0.0,
+        "ambiguity_resolution": 1.0,
+        "sticky_persistence": 0.0,
+        "retrieval_hit": 0.0,
+        "non_hallucination": 1.0
+      },
+      "metrics": {
+        "faithfulness": {
+          "score": 1.0,
+          "reason": "The answer correctly states that no information was found in the knowledge base, which is faithful to the fact that no contexts were provided.",
+          "source": "llm"
+        },
+        "answer_relevancy": {
+          "score": 0.0,
+          "reason": "The answer explicitly states that no information was found to answer the question.",
+          "source": "llm"
+        },
+        "context_relevancy": {
+          "score": 0.0,
+          "reason": "No chunks were provided to evaluate against the question.",
+          "source": "llm"
+        },
+        "context_recall": {
+          "score": 0.0,
+          "reason": "no contexts -> no recall",
+          "source": "heuristic"
+        },
+        "hallucination": {
+          "score": 0.0,
+          "reason": "abstention phrase -> not hallucinated (correct abstention)",
+          "source": "heuristic"
+        },
+        "ambiguity_resolution": {
+          "score": 1.0,
+          "reason": "expected stop, got stop -> correct (no spurious clarify)",
+          "source": "heuristic"
+        },
+        "sticky_persistence": {
+          "score": 0.0,
+          "reason": "subspace_match false (exp general, got None)",
+          "source": "heuristic"
+        },
+        "retrieval_hit": {
+          "score": 0.0,
+          "reason": "no contexts -> miss for general",
+          "source": "heuristic"
+        },
+        "non_hallucination": {
+          "score": 1.0,
+          "reason": "1 - hallucination (abstention phrase -> not hallucinated (correct abstention))",
+          "source": "heuristic"
+        }
+      }
+    },
+    {
+      "conv_id": "single_qasem_bour",
+      "turn_index": 1,
+      "user": "قاسم بور کیه",
+      "expected_finish": "stop",
+      "expected_subspace": "general",
+      "finish_reason": "stop",
+      "applied_subspace": null,
+      "latency_ms": 5920,
+      "http_status": 200,
+      "error": null,
+      "retrieved_chunks_count": 10,
+      "citations_count": 0,
+      "scores": {
+        "faithfulness": 0.0,
+        "answer_relevancy": 0.0,
+        "context_relevancy": 0.4,
+        "context_recall": 0.35,
+        "hallucination": 0.0,
+        "ambiguity_resolution": 1.0,
+        "sticky_persistence": 0.0,
+        "retrieval_hit": 1.0,
+        "non_hallucination": 1.0
+      },
+      "metrics": {
+        "faithfulness": {
+          "score": 0.0,
+          "reason": "The answer claims no information was found, but Context 1 explicitly identifies Reza Ghasempour as the CEO and board member of the Iran Credit Scoring Company (Heda).",
+          "source": "llm"
+        },
+        "answer_relevancy": {
+          "score": 0.0,
+          "reason": "The answer explicitly states that no information was found to answer the question.",
+          "source": "llm"
+        },
+        "context_relevancy": {
+          "score": 0.4,
+          "reason": "Chunk 1 and Chunk 2 provide information about Reza Ghasempour (CEO of Iran Credit Scoring), while Chunks 3, 4, and 5 are irrelevant.",
+          "source": "llm"
+        },
+        "context_recall": {
+          "score": 0.35,
+          "reason": "heuristic max_overlap 0.02 blended 0.17",
+          "source": "heuristic"
+        },
+        "hallucination": {
+          "score": 0.0,
+          "reason": "abstention phrase -> not hallucinated (correct abstention)",
+          "source": "heuristic"
+        },
+        "ambiguity_resolution": {
+          "score": 1.0,
+          "reason": "expected stop, got stop -> correct (no spurious clarify)",
+          "source": "heuristic"
+        },
+        "sticky_persistence": {
+          "score": 0.0,
+          "reason": "subspace_match false (exp general, got None)",
+          "source": "heuristic"
+        },
+        "retrieval_hit": {
+          "score": 1.0,
+          "reason": "hit: 3/5 chunks contain general keywords",
+          "source": "heuristic"
+        },
+        "non_hallucination": {
+          "score": 1.0,
+          "reason": "1 - hallucination (abstention phrase -> not hallucinated (correct abstention))",
+          "source": "heuristic"
+        }
+      }
+    }
+  ]
+}
