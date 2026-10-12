@@ -6,29 +6,38 @@
 
 Umbrella repository for a self-hosted, Persian-capable conversational RAG platform. The implementation is split into independently maintained Git submodules so model/server operations, knowledge-base lifecycle, safety policy, and LangGraph orchestration can evolve without returning to a monolith.
 
-> **Status:** Active on `main`. Deployed on Vast.ai (2026-09-12) with modular component architecture.
+> **Status:** Active on `main`. Deployed on Vast.ai (2026-09-12, RTX 3090) · H200 host via `Work_RAG-Server-Setup` LLM manager `:9000`. Current KB `v13 1405-07-06` — `18` docs / `1123` chunks · `pgvector HNSW` · `MAX_CHUNKS=20`.
 
 ---
 
-## Latest Metrics (1405-07-06)
+## Latest Metrics
 
-*   **Overall Hit Rate (Top-5):** `91.67%`
-*   **Top-1 Hit Rate:** `79.17%`
-*   **Mean Reciprocal Rank (MRR):** `0.844`
-*   **Latency:** Dynamic Thresholding with Cross-Encoder RRF.
+| Layer | Metric | Value | Source |
+|---|---|---|---|
+| **Retrieval (v13, 1123 chunks)** | General Hit@K | `0.600` (best) vs cheque `0.111` | `docs/benchmark-report-2026-10-12.md` (41 turns) |
+| | Overall retrieval_hit | `0.537` | RAGAS, same |
+| **RAG (41-turn multi-agent, 2026-10-12)** | faithfulness / non_hallucination | `0.644` / `0.805` | gemma-4-31b judge via `:9000` |
+| | ambiguity `0.854*` / sticky `0.610` | *`0/6` scattered fails hidden | same |
+| | p50 latency | `8006ms` (`retrieve 1681ms` + `generate 5381ms`) | same |
+| | error_rate | `0.0%` (41/41 `200 OK`) | same |
+| **Retrieval legacy (v8, 6593 chunks, 800 Q)** | MRR (BGE-m3 pool15) | `0.496` vs MiniLM `0.493` | full-800 reranker shootout `2026-09-12/13` |
+| | Hit@5 | `0.536` | same |
+
+> Historical tables kept in [`docs/benchmark-report-2026-10-12.md`](docs/benchmark-report-2026-10-12.md) §2–3 and legacy `archive/migration-history/`.
 
 ## Table of Contents
 
 - [Architecture](#architecture)
 - [Repository Composition](#repository-composition)
-- [MVP Target](#mvp-target)
+- [Request Lifecycle](#request-lifecycle)
 - [Quick Start](#quick-start)
 - [Tester Accounts](#tester-accounts) — **20 sample logins + dashboard**
 - [Models](#models)
 - [Configuration](#configuration)
 - [Observability](#observability)
-- [Latency & Performance](#latency-analysis--performance-optimization) — **measured 2026-09-27**
-- [Evaluation](#evaluation) — **all reports & metrics verified**
+- [Evaluation](#evaluation) — **conversational RAGAS 2026-10-12**
+- [Knowledge Subspaces & Filtering](#knowledge-subspaces--filtering)
+- [Supplementary Data](#supplementary-data)
 - [Done vs Pending](#done-vs-pending)
 - [Verification](#verification)
 - [Archive](#archive)
@@ -38,150 +47,189 @@ Umbrella repository for a self-hosted, Persian-capable conversational RAG platfo
 
 ## Architecture
 
-### System Overview
+### System Overview — Current Deployment (Vast + H200)
 
 ```mermaid
 flowchart TB
     subgraph Client["Client Layer"]
         Browser["🌐 Browser"]
-        WebUI["💬 Open WebUI :13000"]
+        WebUI["💬 Open WebUI :13000\nICS Helper (Arena OFF)\nFilters: rag_trace_capture\nActions: ⭐ rate / 🐛 report / 📄 view / ✅ truth"]
     end
 
-    subgraph API["API Gateway"]
-        Orch["🎯 Orchestrator :8100\nLangGraph + OpenAI-compatible"]
+    subgraph Orchestration["Orchestration — :8100"]
+        Orch["🎯 Orchestrator\nLangGraph (MemorySaver)\nOpenAI-compatible /v1/chat/completions\nX-Request-ID sticky thread"]
+        Classify["classify\n(greeting/spec/question)"]
+        InferSpec["infer_specification\n+ LLM subspace judge"]
+        Clarify["generate_clarification"]
     end
 
-    subgraph Retrieval["Retrieval Layer"]
-        KB["📚 KB Manager :8000\nBM25 + Dense + RRF + Rerank"]
+    subgraph Retrieval["Retrieval — :8000"]
+        KB["📚 KB Manager\nBM25(tantivy) + Dense MiniLM-384\n+ RRF k=60 + CE BGE-v2-m3\npgvector HNSW (1123 chunks)"]
+        Filter["filter_path\nfolder_hierarchy tag"]
+        Suppl["supplement\nentity_lists (MiniLM cos>0.4)\n+ injected_entities (>0.6)"]
     end
 
-    subgraph Safety["Safety Layer"]
-        GR["🛡️ Guardrails :8200\nDeterministic Persian rails\nRisk scoring + Semantic"]
+    subgraph Safety["Safety — :8200"]
+        GR["🛡️ Guardrails\nPOST /v1/rails/check (input)\nPOST /v1/chat/completions (guarded_generate)\nRisk + semantic + HurtLex"]
     end
 
-    subgraph Generation["Generation Layer"]
-        Gemma["🤖 Gemma :18000\nllama.cpp GGUF UD-Q4_K_XL"]
+    subgraph Generation["Generation"]
+        Gemma["🤖 Gemma :18000\nllama-server UD-Q4_K_XL\n--no-mmproj --jinja\ntemp 0.2 ctx 8192"]
+        Manager["🧩 LLM Manager :9000\n( H200: 5× Gemma 8080-84 )"]
+        Embed["🔢 Embed :8001-8003\nE5-small/BGE-m3/MiniLM"]
     end
 
     subgraph Observability["Observability"]
-        LF2["📊 Langfuse v2 :3001"]
-        LF1["📝 Fallback :3000"]
-        Studio["🔍 Studio API :2024"]
-        TraceApp["🔎 Tracing App :3000\n/observe, /studio"]
+        Collector["📝 Collector :3000\nPOST /api/observability/*\nSQLite observability.db"]
+        Dashboard["📊 Dashboard :3000/dashboard/observability\n8-stage chunk cards"]
+        LF2["📊 Langfuse v2 :3001\nPostgres + ClickHouse"]
+        Studio["🔍 Studio :2024\nLangGraph API"]
+        TraceApp["🔎 /observe + /studio"]
     end
 
     Browser --> WebUI
-    WebUI --> Orch
-    Orch --> KB
-    Orch --> GR
+    WebUI -- "OPENAI_API_BASE_URL=8100/v1\n+ X-Request-ID" --> Orch
+    Orch --> Classify
+    Classify --> InferSpec
+    InferSpec -- "should_clarify?" --> Clarify
+    Clarify -- "clarify finish" --> WebUI
+    InferSpec -- "allowed" --> KB
+    KB --> Filter
+    KB --> Suppl
+    Suppl -- "MAX_CHUNKS=20\nMAX_CONTEXT=9000" --> Orch
+    Orch -- "guarded_generate" --> GR
     GR --> Gemma
+    Gemma -.-> Manager
+    Embed -.-> KB
+    Orch -.-> Collector
+    Collector --> Dashboard
     Orch -.-> LF2
-    Orch -.-> LF1
     Orch -.-> Studio
-    Orch -.-> TraceApp
+    Collector --> TraceApp
 ```
 
-### Request Flow (MVP)
+**What changed vs the old diagram:** `LangGraph` now has a **conditional clarify branch** (`should_clarify` → `generate_clarification` with `available_subspaces`) instead of linear 5 nodes; **KB** exposes `filter_path` on `folder_hierarchy` + **supplemental** entity-list injection (tool `POST /search/supplement`); **WebUI** runs `rag_trace_capture` filter that tags `filter_path` into `X-Request-ID` sticky threads; **Observability** is the unified `observability.db` (`dashboard/observability`) not just Langfuse fallback; **Generation** on H200 is fronted by `llm_inference_manager :9000` (Vast uses bare `:18000`).
+
+### Request Flow — Sticky + Filtered RAG
 
 ```mermaid
 sequenceDiagram
     participant U as User
-    participant W as Open WebUI :13000
+    participant W as WebUI :13000 + filter
     participant O as Orchestrator :8100
-    participant K as KB Manager :8000
+    participant K as KB :8000
     participant G as Guardrails :8200
     participant M as Gemma :18000
-    participant L as Langfuse v2 :3001
+    participant Obs as Collector :3000 / Langfuse :3001
 
-    U->>W: Persian question
-    W->>O: POST /v1/chat/completions {X-Request-ID, messages[]}
-    O->>L: trace-create(input)
-    
-    O->>G: validate_input (stage=input)
-    G-->>O: {allowed, categories, reason}
-    
+    U->>W: Persian message (maybe "چک")
+    W->>W: rag_trace_capture: prefix [چک]/scope → filter_path
+    W->>O: POST /v1/chat/completions {messages[], filter_path?, X-Request-ID}
+    O->>Obs: trace-create(input)
+
+    O->>G: validate_input (input rails)
+    G-->>O: {allowed, action, categories}
+
     alt blocked
         O->>O: format_refusal
-        O-->>W: refusal, citations: []
+        O-->>W: refusal (finish=content_filter)
     else allowed
-        O->>K: retrieve (top_k=5)
-        K-->>O: final_results[chunks...]
-        O->>O: build_context (MAX_CHUNKS=5, MAX_CONTEXT_CHARS=6000)
-        O->>G: guarded_generate
-        G->>M: chat/completions {enable_thinking:false}
-        M-->>G: answer
-        G-->>O: {answer, finish_reason}
-        O->>O: format_response (citations)
-        O->>L: trace-create upsert(output, metadata)
-        O-->>W: {choices:[{message,finish_reason}], rag:{citations:N}}
+        O->>O: classify (greeting/spec/question) + infer_specification (LLM)
+        alt should_clarify (scattered / threshold 0.8 / general_exempt)
+            O->>O: generate_clarification {question, available_subspaces}
+            O-->>W: clarify (finish=clarify, no retrieval)
+        else not clarify
+            O->>K: POST /search/api {query (rewritten), top_k=20, filter_path?}
+            K-->>O: SearchSteps {final_results[10], injected_entities, stage_ms}
+            O->>K: POST /search/supplement {query, threshold=0.4} (tool, parallel)
+            K-->>O: supplemental [{list_name, content, similarity}]
+            O->>O: build_context (MAX_CHUNKS=20, MAX_CONTEXT_CHARS=9000, evidence_min_score 0.15 guard)
+            alt no evidence (<0.15)
+                O-->>W: abstain "پاسخی یافت نشد" (finish=stop, 0 citations)
+            else has evidence
+                O->>G: POST /v1/chat/completions (guarded_generate, enable_thinking:false)
+                G->>M: llama-server chat
+                M-->>G: raw answer
+                G-->>O: {answer, guardrail_output}
+                O->>O: format_response (citations ≤20, grounded follow_ups, supplemental envelope)
+                O->>Obs: trace-create upsert(output, audit{retrieved_chunks, stage_timing, applied_subspace, filter_path})
+                O-->>W: {choices[0].message.content, finish=stop, rag:{citations, supplemental, follow_ups}, audit}
+            end
+        end
     end
 ```
 
-### Orchestrator Graph (LangGraph)
+Key differences from MVP flow:
+- `filter_path` travels **WebUI filter → Orchestrator → KB** and **sticks** via `X-Request-ID` thread until re-specified (short token `چک` re-spec switches subspace).
+- `supplemental` is a **second KB call** (`POST /search/supplement`) for shareholder / entity lists, merged into context as `rag.supplemental`.
+- `evidence_min_score 0.15` guards hallucination (G5) — low-score `0.028` cheque hits correctly abstain.
+- `follow_ups` are **grounded** from the same `retrieved_chunks`, not LLM-free.
+
+### Orchestrator Graph (LangGraph `components/orchestrator/src/work_rag_orchestrator/graph.py`)
 
 ```mermaid
 flowchart TD
     START([START]) --> VI[validate_input]
     VI -->|blocked| FR[format_refusal]
-    VI -->|allowed| RET[retrieve]
+    VI -->|allowed| CL[classify]
+    CL --> INF[infer_specification]
+    INF --> SC{should_clarify?}
+    SC -->|yes| GC[generate_clarification]
+    GC --> END([END])
+    SC -->|no| RET[retrieve]
     RET --> BC[build_context]
     BC --> GG[guarded_generate]
     GG --> FRMT[format_response]
-    FRMT --> END([END])
+    FRMT --> END
     FR --> END
+
+    style SC fill:#fff3e0,stroke:#ff9800
+    style GC fill:#fff8e1,stroke:#f57f17
 ```
+
+Old doc showed linear `validate → retrieve → build → generate → format`. Now there is a **diamond** before `retrieve`: ambiguous/scattered queries short-circuit to `generate_clarification` and return `finish=clarify` with `available_subspaces: ["cheque","facilities_person","facilities_legal","general"]`. Sticky is kept in `StateGraph(RAGState, MemorySaver)` checkpoint keyed by `X-Request-ID`.
 
 ---
 
 ## Repository Composition
 
-| Path | Repository | Responsibility | Default Branch | Vast Pin |
-|------|------------|----------------|----------------|----------|
-| `components/server-setup` | [Work_RAG-Server-Setup](https://github.com/AliNikkhah2001/Work_RAG-Server-Setup) | Hardware, model lifecycle, infra (H200) | `main` | `5d5a7e4` |
-| `components/knowledgebase` | [Work_RAG-KB](https://github.com/AliNikkhah2001/Work_RAG-KB) | Ingestion, retrieval, reranking (kb-manager) | `master` | `8b8f6e5` |
-| `components/guardrails` | [Work_RAG-Guardrails](https://github.com/AliNikkhah2001/Work_RAG-Guardrails) | Policy, guarded Gemma, risk/semantic | `main` | `6ce319f` |
-| `components/orchestrator` | [Work_RAG-Orchestrator](https://github.com/AliNikkhah2001/Work_RAG-Orchestrator) | LangGraph workflow, public API | `main` | `cdb6e7d` |
+| Path | Repository | Responsibility | Default Branch | Pin (2026-10-12) |
+|------|------------|----------------|----------------|-------------------|
+| `components/server-setup` | [Work_RAG-Server-Setup](https://github.com/AliNikkhah2001/Work_RAG-Server-Setup) | Hardware, LLM manager `:9000`, embed `:8001-8003`, infra | `main` | `d615f66` |
+| `components/knowledgebase` | [Work_RAG-KB](https://github.com/AliNikkhah2001/Work_RAG-KB) | Ingestion, `folder_hierarchy` tagging, `filter_path`, `supplement` (entity lists), retrieval | `master` | `d040c63` |
+| `components/guardrails` | [Work_RAG-Guardrails](https://github.com/AliNikkhah2001/Work_RAG-Guardrails) | Persian policy, HurtLex allowlist 19 lemmas, guarded Gemma `:8200` | `main` | `c3c7476` |
+| `components/orchestrator` | [Work_RAG-Orchestrator](https://github.com/AliNikkhah2001/Work_RAG-Orchestrator) | LangGraph + sticky + `filter_path` + `evidence 0.15` + supplemental tool, public API `:8100` | `main` | `14c5f97` |
+| `components/tracing` | parent (not submodule) | Fallback collector `:3000`, `observability.db`, `/dashboard/observability` | — | — |
 
 Each gitlink is pinned to an exact commit. Updating a component requires a component-repo commit followed by a parent-repo commit that advances the gitlink.
 
-> **Note:** Run `git submodule status` for current pins.
+> **Note:** Run `git submodule status --recursive` for current pins (Vast) or `git submodule status` for H200.
 
 ```bash
 git submodule status --recursive
-# Run git submodule status for current pins
 ```
 
 ---
 
-## MVP Target
+## Request Lifecycle
 
-The first goal is one small, deterministic, observable request path:
+1. **WebUI filter** (`components/openwebui-filters/rag_trace_capture.py`) — captures `filter_path` from `UserValves.scope` or `[چک]` prefix, injects `X-Request-ID`, records trace start.
+2. **Orchestrator `validate_input`** — Guardrails input rails; short-circuit refusal.
+3. **`classify` + `infer_specification`** — LLM judge (`GuardrailsClient` via `:8200` or `:9000`) classifies `greeting/spec/question`; maps query to `applied_subspace` via `subspace_map` (`cheque` ↔ `گزارش اعتباری چک` …) and `general` exempt.
+4. **`should_clarify?`** — if scattered (low max score, multi-subspace hit, `threshold 0.8`) and not `general` → `generate_clarification` returns `finish=clarify` with pills, **no KB call**.
+5. **`retrieve`** — `POST /search/api` with `query` (rewritten), `top_k=20`, `filter_path` (explicit or sticky `applied_subspace`). KB returns `SearchSteps` + `injected_entities` (cos>0.6). Parallel `POST /search/supplement` (`threshold 0.4`) for entity lists.
+6. **`build_context`** — `MAX_CHUNKS=20` (`v13` up from `5`), `MAX_CONTEXT_CHARS=9000` (`6000` before), evidence guard `0.15` — if `top rerank <0.15` → abstain.
+7. **`guarded_generate`** — `Guardrails :8200 → Gemma :18000` (`chat_template_kwargs enable_thinking:false`, `--no-mmproj --jinja`).
+8. **`format_response`** — citations, `rag.supplemental`, grounded `follow_ups`, DLQ on failure, latency `stage_timing_ms`.
+9. **Observability** — async `POST /api/observability/traces` to `:3000` + Langfuse `:3001`; DLQ `/tmp/dlq_retrieval.jsonl` on empty filtered.
 
-```mermaid
-flowchart LR
-    UI["Open WebUI :13000"] --> ORCH["LangGraph API :8100"]
-    ORCH --> KB["KB retrieval :8000"]
-    ORCH --> GR["Guardrails :8200"]
-    GR --> GEMMA["Gemma :18000 external llama-server"]
-```
-
-**Request order:**
-
-```text
-browser :13000 → Open WebUI → Orchestrator :8100
-  → KB :8000 hybrid retrieval (BM25 + MiniLM-384 + RRF + mmarco cross-encoder)
-  → context construction (MAX_CHUNKS=5, MAX_CONTEXT_CHARS=6000)
-  → Guardrails :8200 → Gemma :18000 (unsloth/gemma-4-31B-it-GGUF:UD-Q4_K_XL)
-  → citation-shaped response (rag.citations) → frontend
-```
-
-**Excluded from MVP:** long-term memory, PostgreSQL LangGraph checkpoints, query rewriting, agent loops, retrieval retries, streaming, GraphRAG, multi-agent routing, Kubernetes.
+**Excluded:** long-term memory beyond `MemorySaver` thread, Kubernetes, GraphRAG, agent loops besides clarify.
 
 ---
 
 ## Quick Start
 
-### Vast.ai (Host Venvs — Docker Unprivileged)
+### Vast.ai (Host Venvs — Docker Unprivileged, RTX 3090)
 
 ```bash
 # 1. Clone with submodules
@@ -195,15 +243,24 @@ bash deploy/vast/start.sh
 
 # 3. Health check
 bash deploy/vast/health.sh
+# or: for p in 18000 8000 8200 8100 3000 9000 13000; do printf "$p: "; curl -s http://127.0.0.1:$p/health | head -c 120; echo; done
 
 # 4. Access via SSH tunnel
 ssh -p <ssh_port> root@<ssh_host> \
   -L 13000:localhost:13000 -L 8100:localhost:8100 \
   -L 3000:localhost:3000 -L 3001:localhost:3001 -L 2024:localhost:2024
-# Open http://localhost:13000 (WebUI)
+# Open http://localhost:13000 (WebUI → ICS Helper)
 # Open http://localhost:3001 (Langfuse, admin@local.test / Langfuse-Admin-139b81ba)
-# Open http://localhost:3000/observe (local trace viewer)
-# Open http://localhost:3000/studio (local graph debugger)
+# Open http://localhost:3000/dashboard/observability (unified trace dashboard)
+# Open http://localhost:3000/observe (legacy timeline)
+```
+
+### H200 Host (Manager `:9000`)
+
+```bash
+# LLM manager (self-hosted OpenRouter analog) + 5× Gemma backends 8080-84 + embed 8001-8003
+# is managed by Work_RAG-Server-Setup; Orchestrator points GUARDRAILS at :9000 there.
+# See Work_RAG-Server-Setup/README.md and AGENTS.md §1 for H200 bring-up.
 ```
 
 ### Docker (Privileged Host Only)
@@ -256,45 +313,45 @@ docker compose up -d --build
 | Role | Model | Version | Size | Key Config |
 |------|-------|---------|------|------------|
 | **Generation** | Gemma 4 31B Instruct | `unsloth/gemma-4-31B-it-GGUF:UD-Q4_K_XL` | 18.8 GiB | `--no-mmproj --jinja --ctx-size 8192 --temp 0.2` + `chat_template_kwargs:{"enable_thinking":false}` |
-| **Embedding** | paraphrase-multilingual-MiniLM-L12-v2 | `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` | 384-dim | `KB_EMBED_DEVICE=cpu/cuda` |
-| **Reranker** | mmarco-mMiniLMv2-L12-H384-v1 | `cross-encoder/mmarco-mMiniLMv2-L12-H384-v1` | 118M | `KB_RERANK_POOL=50`, `KB_RERANKER_DEVICE=cpu/cuda` |
+| **Embedding** | paraphrase-multilingual-MiniLM-L12-v2 | `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` | 384-dim | `KB_EMBED_DEVICE=cpu/cuda` (`dim 384`) |
+| **Reranker** | BGE-m3 `BAAI/bge-reranker-v2-m3` (default) / MiniLM fallback | `BAAI/bge-reranker-v2-m3` (568M) vs `mmarco-mMiniLMv2-L12-H384-v1` (118M) | 2.27 GB / 118M | `KB_RERANK_POOL=15` (CPU) `30` (GPU), `KB_RERANKER_DEVICE=cpu/cuda` |
 | **Guardrails** | Ghadeer mmBERT (toxicity/hate/intent) | — | — | F1 0.94 Persian, thresholds: toxicity 0.80, hate 0.80, PII 0.90, injection 0.85 |
+| **Judge (bench)** | gemma-4-31b | via `:9000` (fallback `:8100` `:18000`) | — | RAGAS `ragas_eval.py` LLM-as-judge |
 
-**Model Cards:** See [AGENTS.md](AGENTS.md) §2 for the service and model table.
+**Model Cards:** See [AGENTS.md](AGENTS.md) §1–2 for the service and model table. Default reranker is `BAAI/bge-reranker-v2-m3` (MRR `0.496` on 800 Persian Q, `pool15`); MiniLM is lightweight fallback (`MRR 0.493`).
 
 ---
 
 ## Configuration
 
-### Key Environment Variables
+### Key Environment Variables (current `v13` + bench)
 
-| Component | Variable | Default | Production |
-|-----------|----------|---------|------------|
-| **Gemma** | `MODEL` | — | `/tmp/hf_clean/.../gemma-4-31B-it-UD-Q4_K_XL.gguf` |
-| | `CTX_SIZE` | 8192 | 8192 (4096 if OOM) |
-| **KB** | `KB_DB_URL` | `sqlite+aiosqlite:///./data/kb_test.db` | `postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/kb_manager` |
-| | `KB_WEB_HOST` | `0.0.0.0` | `0.0.0.0` |
-| | `KB_WEB_PORT` | 8000 | 8000 |
-| | `KB_EMBED_MODEL` | `paraphrase-multilingual-MiniLM-L12-v2` | same |
-| | `KB_EMBED_DEVICE` | `cpu` | `cuda` (on GPU host) |
-| | `KB_RERANKER_MODEL` | `cross-encoder/mmarco-mMiniLMv2-L12-H384-v1` | same |
-| | `KB_KEYWORD_BOOST` | 3.0 | 3.0 |
-| **Guardrails** | `GUARDRAILS_HOST` | `0.0.0.0` | `0.0.0.0` |
-| | `GUARDRAILS_PORT` | 8200 | 8200 |
-| | `UPSTREAM_LLM_BASE_URL` | `http://127.0.0.1:9000/v1` | `http://127.0.0.1:18000/v1` (via `LLM_BASE_URL` alias) |
-| | `UPSTREAM_LLM_MODEL` | `gemma-4-31b` | `unsloth/gemma-4-31B-it-GGUF:UD-Q4_K_XL` |
-| **Orchestrator** | `KB_BASE_URL` | `http://127.0.0.1:8000` | `http://127.0.0.1:8000` |
-| | `GUARDRAILS_BASE_URL` | `http://127.0.0.1:8200` | `http://127.0.0.1:8200` |
-| | `LANGFUSE_HOST` | `http://127.0.0.1:3000` | `http://127.0.0.1:3001` |
-| | `LANGFUSE_PUBLIC_KEY` | `pk-lf-mvp-local` | from `/tmp/opencode/langfuse.env` |
-| | `LANGFUSE_SECRET_KEY` | `sk-lf-mvp-local` | from `/tmp/opencode/langfuse.env` |
-| | `TRACE_ENABLED` | `true` | `true` |
-| **WebUI** | `OPENAI_API_BASE_URL` | — | `http://127.0.0.1:8100/v1` |
-| | `OPENAI_API_KEY` | — | `sk-local-dev` |
-| | `WEBUI_AUTH` | `false` | `false` |
-| | `DATA_DIR` | — | `/tmp/webui-data` |
+| Component | Variable | Default | Production (Vast) | Notes |
+|-----------|----------|---------|------------|---|
+| **Gemma** | `MODEL` | — | `/tmp/hf_clean/.../gemma-4-31B-it-UD-Q4_K_XL.gguf` | H200 uses manager `:9000` |
+| | `CTX_SIZE` | 8192 | 8192 (4096 if OOM) | Gemma |
+| **KB** | `KB_DB_URL` | `sqlite+aiosqlite:///./data/kb_test.db` | `postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/kb_manager` | `mode=pgvector` → HNSW |
+| | `KB_WEB_PORT` | 8000 | 8000 | |
+| | `KB_EMBED_MODEL` | `paraphrase-multilingual-MiniLM-L12-v2` | same | 384-d |
+| | `KB_RERANKER_MODEL` | `BAAI/bge-reranker-v2-m3` | same | or `mmarco-mMiniLMv2-L12-H384-v1` |
+| | `KB_RERANK_POOL` | 15 | 15 (CPU) / 30 (GPU) | |
+| | `KB_KEYWORD_BOOST` | 3.0 | 3.0 | BM25 keyword ×3 |
+| **Guardrails** | `GUARDRAILS_PORT` | 8200 | 8200 | |
+| | `UPSTREAM_LLM_BASE_URL` | `http://127.0.0.1:9000/v1` | `http://127.0.0.1:18000/v1` (alias `LLM_BASE_URL`) | Vast bare |
+| | `UPSTREAM_LLM_MODEL` | `gemma-4-31b` | `unsloth/gemma-4-31B-it-GGUF:UD-Q4_K_XL` | |
+| **Orchestrator** | `KB_BASE_URL` | `http://127.0.0.1:8000` | same | `kb_search_url = {KB}/search/api` |
+| | `GUARDRAILS_BASE_URL` | `http://127.0.0.1:8200` | same | |
+| | `LANGFUSE_HOST` | `http://127.0.0.1:3000` | `http://127.0.0.1:3001` | `TRACE_ENABLED=true` |
+| | `retrieval_top_k` | 20 | 20 | up from `5` (MVP) |
+| | `subspace_map` | `cheque:گزارش اعتباری چک` | same | + `facilities_person/legal`/`general` |
+| | `subspace_threshold` | 0.8 | 0.8 | clarify gate |
+| | `evidence_min_score` | 0.15 | 0.15 | hallucination guard (G5) |
+| | `response_detail` | `production` | `production` | hides GT block |
+| | `MAX_CHUNKS` / `MAX_CONTEXT` | 20 / 9000 | 20 / 9000 | up from `5 / 6000` |
+| **WebUI** | `OPENAI_API_BASE_URL` | — | `http://127.0.0.1:8100/v1` | ICS Helper |
+| | `WEBUI_AUTH` | `false` | `false` | `true` for per-user `user_id` |
 
-**Full reference:** See [AGENTS.md](AGENTS.md) §1–4 for environment variable details.
+**Full reference:** See [AGENTS.md](AGENTS.md) §1–4 and `components/orchestrator/src/work_rag_orchestrator/config.py`.
 
 ---
 
@@ -302,119 +359,69 @@ docker compose up -d --build
 
 | Tool | URL | Purpose |
 |------|-----|---------|
-| **Langfuse v2** | `http://localhost:3001` (via tunnel) | Full trace UI, Postgres-backed. Set `LANGFUSE_ADMIN_EMAIL` / `LANGFUSE_ADMIN_PASSWORD` env vars. |
-| **Fallback Collector** | `http://localhost:3000` | JSONL at `/tmp/langfuse_traces.jsonl`, ingestion API compatible |
-| **Local Trace Viewer** | `http://localhost:3000/observe` | Request list → timeline (request → validate_input → retrieve → build_context → guarded_generate → format_response) |
-| **Local Graph Debugger** | `http://localhost:3000/studio` | Runs `rag` graph via :2024 API server-side, shows state + observe link |
-| **LangGraph Studio** | `https://smith.langchain.com/studio/?baseUrl=http://127.0.0.1:2024` | Visual debugger (needs `-L 2024:localhost:2024` tunnel) |
+| **Unified Dashboard** | `http://localhost:3000/dashboard/observability` (via tunnel) | 8-stage chunk cards (BOTH/CE/RRF), guardrail badges, `applied_subspace` badge, clarifying state, export JSONL/CSV |
+| **Langfuse v2** | `http://localhost:3001` | Full trace UI, Postgres+ClickHouse. Keys in `/tmp/opencode/langfuse.env` |
+| **Fallback Collector** | `http://localhost:3000` | `POST /api/observability/traces` → `observability.db` (SQLite) + JSONL `/tmp/langfuse_traces.jsonl` |
+| **Local Timeline** | `http://localhost:3000/observe` | Request list → timeline (request → validate → classify → infer → retrieve → generate → format) |
+| **Graph Debugger** | `http://localhost:3000/studio` | Drives `:2024` server-side, shows state + observe link |
+| **LangGraph Studio** | `https://smith.langchain.com/studio/?baseUrl=http://127.0.0.1:2024` | Visual debugger (`-L 2024:localhost:2024`) |
+| **Bench Artifacts** | `evaluation/artifacts/` | `bench_results_latest.json` · `ragas_results_latest.json` · `bench_report_latest.html` |
 
 **CLI:**
 ```bash
-# List recent requests
-python components/tracing/observe.py --list --limit 10
+# Unified dashboard API
+curl -s 'http://127.0.0.1:3000/api/observability/traces?limit=3' | jq .
+curl -s 'http://127.0.0.1:3000/api/observability/pipeline/{request_id}' | jq .
 
-# Full timeline for request_id
-python components/tracing/observe.py --request <request_id>
+# Legacy observe CLI
+python components/tracing/observe.py --list --limit 10
 python components/tracing/observe.py --request <request_id> --json
+
+# Bench repro (multi-agent, 391s, 41 turns)
+PYTHONPATH=".:components/orchestrator:$PYTHONPATH" python3 -m evaluation.bench_runner
+PYTHONPATH=".:components/orchestrator:$PYTHONPATH" python3 -m evaluation.ragas_eval --input evaluation/artifacts/bench_results_latest.json
+PYTHONPATH=".:components/orchestrator:$PYTHONPATH" python3 -m evaluation.report --bench evaluation/artifacts/bench_results_latest.json --ragas evaluation/artifacts/ragas_results_latest.json
 ```
 
 > **End-to-end testing (filter_path + clarifying):** see [`components/knowledgebase/kb-manager/README.md` → Testing on Open WebUI](components/knowledgebase/kb-manager/README.md#testing-on-open-webui--end-to-end-rag--filter_path--clarifying) — KB tester `:8000/search`, WebUI scope picker + `rag_trace_capture` filter (`filter_path`), and sticky clarifying (`cheque` / `facilities_person` / `facilities_legal`).
-> Verifies `applied_subspace` + `filter_path` persistence in `http://127.0.0.1:3000/dashboard/observability` (subspace badge, clarifying state, JSONL export).
-> Smoke + clarifying curls are in that section; WebUI at `http://127.0.0.1:13000` is ICS Helper (Arena disabled).
 
 ---
 
-## 📂 Metadata Filtering & Folder Hierarchy
-The chunking pipeline now deeply integrates with the physical directory structure of the knowledge base. 
-During ingestion, the orchestrator parses the path (e.g. `kb-source/1405-07-06/پایگاه دانش/اشخاص حقوقی/...`) and injects the folder hierarchy as dynamic metadata tags on every single chunk.
-When querying the system, you can pass a `filter_path` parameter (e.g. `filter_path="اشخاص حقوقی"`) to instantly restrict the search radius. This guarantees perfect separation of contexts and ensures the RAG pipeline only pulls from the designated semantic sub-tree.
+## Knowledge Subspaces & Filtering
 
-## 🔗 Supplementary Data Architecture (`ضمیمه پایگاه دانش`)
-Not all knowledge is suited for Dense Vector embeddings (e.g. list of bank names, reason codes, shareholder tables). 
-These are now intercepted during ingestion and treated separately:
-*   **System Configurations (`واژگان معادل.xlsx`):** Passed directly to BM25 query expansion as synonyms.
-*   **Guardrails (`سوالات نامربوط.xlsx`):** Ignored from RAG injection to prevent hallucination.
-*   **Entity Lists:** Converted to structured JSON. A MiniLM vector embedding of the *list description* is cached in memory. During search, if the user's query vector is semantically similar to an Entity List description (Cosine > 0.6), the *entire* raw JSON list is injected perfectly intact into the final LLM payload.
+```mermaid
+flowchart LR
+    subgraph KBTree["KB Tree — folder_hierarchy (4 subspaces)"]
+        Root["پایگاه دانش"]
+        Root --> Cheque["گزارش اعتباری چک\n(cheque)"]
+        Root --> FP["اشخاص حقیقی / اعتبارسنجی تسهیلات\n(facilities_person)"]
+        Root --> FL["اشخاص حقوقی / اعتبارسنجی تسهیلات\n(facilities_legal)"]
+        Root --> Gen["پایگاه دانش عمومی\n(general)"]
+    end
 
-For deeper architectural details, see [`data/supplementary_architecture.md`](data/supplementary_architecture.md).
+    WebUI -- "filter_path" --> KB
+    KB -- "chunk.doc_metadata.folder_hierarchy" --> Filter
+    Filter -- "only that sub-tree" --> RRF
+```
+
+- **Ingestion:** `kb-source/1405-07-06/…` path parsed → `doc_metadata.folder_hierarchy: list[str]` per chunk (`components/knowledgebase/kb-manager/kb_manager/models/database.py`).
+- **Query:** `POST /search/api {filter_path}` — if contains `/` matches `"/".join(folder_hierarchy)` else membership; cache key includes `filter_path`.
+- **Sticky:** `filter_path` = `subspace_map[applied_subspace]` persists via `X-Request-ID` thread until re-spec (`چک` → `cheque`); `general` is exempt from clarify gate.
+- **Tracer:** `audit.applied_subspace` + `filter_path` badge on `dashboard/observability`.
+
+## Supplementary Data (`ضمیمه پایگاه دانش`)
+
+Not all knowledge suits Dense vectors (bank lists, reason codes `DCB3-3`, shareholder tables):
+
+- **System configs (`واژگان معادل.xlsx`):** BM25 synonyms via `query_expansion`.
+- **Guardrails (`سوالات نامربوط.xlsx`):** excluded from RAG.
+- **Entity Lists (5):** JSON + MiniLM embedding of `description` cached. During `search`, if `cos(query, description) > 0.6` → `injected_entities` (whole JSON injected); tool `POST /search/supplement` uses `0.4` threshold. Returned as `rag.supplemental` in response.
+
+See `docs/benchmark-report-2026-10-12.md` §7 and `data/supplementary_architecture.md`.
+
+---
 
 ## Evaluation
-
-### Retrieval quality (measured)
-
-Wave-1 full-800 reranker shootout, CPU (2026-09-12/13). Dataset: 800 Persian QA, answer-grounded golds remapped to the live 2077-chunk PG KB (threshold 0.6, 772/800 covered, ~7 gold/query), top_k=5. Method: `archive/migration-history/WAVE2_GPU_RUNBOOK.md` §1.
-
-| Backbone | Pool | Hit@5 | Top-1 | MRR | s/q (CPU) |
-|---|---|---|---|---|---|
-| **BGE-m3 `BAAI/bge-reranker-v2-m3` (default)** | 15 | 0.536 | 0.474 | **0.496** | ~5–15 (rerank solo; pool-15 production cap) |
-| MiniLM-L12 `mmarco-mMiniLMv2-L12-H384-v1` (lightweight fallback) | 15 | 0.536 | 0.469 | 0.493 | 3.9 |
-| MiniLM-L12 | 30 | 0.538 | — | 0.495 | 7.4 |
-| BGE-m3 `BAAI/bge-reranker-v2-m3` | 30 | 0.536 | 0.474 | 0.496 | 52 |
-| Jina-v3 | — | EXCLUDED | — | 0.117 | — |
-
-Decision (2026-09-15): **default is `BAAI/bge-reranker-v2-m3`** — best measured MRR (0.496; hit 0.536, top1 0.474 on 800 Persian credit queries, top-5) plus multilingual/Persian backbone support (see below). MiniLM stays as the lightweight CPU fallback (`KB_RERANKER_MODEL=cross-encoder/mmarco-mMiniLMv2-L12-H384-v1`: 0.493 at pool15, 0.495 at pool30 — within 0.003 at a fraction of the latency). Jina-v3 excluded (classification head failed to load under transformers 5: "MISSING params newly initialized" → near-random scores, MRR 0.117 — not a quality signal). bgemma-2B interim (identical 25-query slice, pool15, detailed prompt): 0.44/0.44/0.186 @ 64 s/q vs MiniLM 0.44/0.44/0.191 @ 6.2 s/q — identical ranking at ~10x cost; heavies must prove on GPU full-800. Qwen3-Reranker-4B (think-disabled, GPU): MRR 0.233 — decisively behind. Production CPU note: 568M → `KB_RERANK_POOL=15`; GPU hosts can raise to 30.
-
-**Persian support:** v2-m3's backbone is BGE-M3 (XLM-RoBERTa-Large base, 568M params, 2.27GB, Apache-2.0) with multilinguality over 100+ languages including Persian; SOTA on MIRACL multilingual (includes Persian `fa`) and MKQA cross-lingual; vendor BGE docs explicitly recommend v2-m3 "for multilingual". Plain cross-encoder loader — no `trust_remote_code`. Default is set in code (`reranker.py _DEFAULT_MODEL`, `config.py RerankerConfig`, `search.py _RERANKER_MODEL` fallback; KB `master` `8d0c506`) and live on production KB `:8000` via `KB_RERANKER_MODEL` + `KB_RERANK_POOL=15`.
-
-Full method: `archive/migration-history/WAVE2_GPU_RUNBOOK.md`. Bench data + session transcripts: `archive/handoff-sessions/`.
-
-### Cross-Encoder Reranker Direct API Benchmark (2026-09-15)
-
-Direct API benchmark on 20 Persian credit queries, KB v8 (6593 chunks), rerankers on CPU (GPU OOM). Latency measured per-query (BM25+Dense+RRF search → rerank 50→5).
-
-| Model | Params | Loader | Avg Rerank (ms) | Search (ms) | Status |
-|---|---|---|---|---|---|
-| **mmarco (baseline)** | 118M | crossencoder | **628** | 902 | ✅ Production |
-| **bge-reranker-v2-m3** | 568M | crossencoder | 3,754 | 660 | ⚠️ 6× slower |
-| bge-reranker-v2-gemma | 2.5B | flag-llm | 43,000 | - | ❌ CPU too slow |
-| Qwen3-Reranker-0.6B | 0.6B | flag-llm | 30,000 | - | ❌ CPU too slow |
-| Qwen3-Reranker-4B | 4B | flag-llm | — | — | ⏳ Pending |
-| jina-reranker-v3 | 0.6B | crossencoder | — | — | ⏳ Pending |
-| gte-multilingual-reranker-base | ~300M | crossencoder | — | — | ⏳ Pending |
-
-**Key Findings:**
-- **mmarco (baseline)** remains best CPU production choice: 628 ms rerank, fastest overall
-- **bge-reranker-v2-m3** gains expected quality but 6× slower (3.7s vs 0.6s) — only justified on GPU (1.6× speedup)
-- **Flag-LLM loaders** (bge-gemma, Qwen3) are LLM-based rerankers → 30-43s/query on CPU → **not viable for CPU production**
-- GPU would give ~1.6× speedup for crossencoder models (HNSW 1.6×, rerank 1.6×) but flag-llm still needs GPU
-
-Full results: `docs/cross_encoder_benchmark_results.md` (raw benchmark data in `data/reranker_benchmarks/` not committed)
-
-### KB Retrieval (v8, 6593 chunks, RTX 6000 Ada)
-
-| Variant | Device | Avg Latency | Hit@5 (5q verbatim) | Rerank 50 |
-|---------|--------|-------------|---------------------|-----------|
-| File-based | CPU | ~22.7s | 0.00* | 439ms |
-| HNSW pgvector CPU | CPU | 23.1s | 0.00 | 439ms |
-| **HNSW pgvector GPU** | **cuda:0** | **18.4s** | 0.00 | **279ms 1.6×** |
-
-*Hit 0/5 on 5q verbatim after re-ingest (mismatched expected IDs). IVA 15 still 73.3% baseline.
-
-### RAG End-to-End (120 questions, after fixes)
-
-| Metric | Result |
-|--------|--------|
-| 20 diverse samples | **20/20 ok** |
-| 120 input guardrail check | **0/120 blocked** |
-| 120 output guardrail check | **0/120 blocked** |
-| Finish `stop` rate | 120/120 |
-| Citations per answer | ≤ 2 (max 2 enforced) |
-
-### LLM-as-Judge (v4 Q8 prompt)
-
-| Metric | Score |
-|--------|-------|
-| Mean cosine similarity | 0.620 |
-| Judge pass rate | 45% |
-| Faithfulness / Correctness / Tone / Citation | 3.65 / 3.14 / 4.90 / 4.95 |
-
-**Reproduction:**
-```bash
-python eval/run_llm_answer_benchmark.py --out eval/results/llm_answer_benchmark_v4.json
-python eval/run_llm_judge.py eval/results/llm_answer_benchmark_v4.json --out eval/results/llm_judge_v4.json
-python eval/make_plots.py ...
-python eval/build_report_site.py  # GitHub Pages at docs/benchmark-report/
-```
 
 ### 🧪 Multi-Agent Conversational Benchmark — 2026-10-12 (NEW)
 
@@ -437,79 +444,100 @@ python eval/build_report_site.py  # GitHub Pages at docs/benchmark-report/
 | facilities_legal | 3 | **0.933** | 0.333 | 0.667 | 11150 ms |
 | general | 10 | 0.660 | **0.600** | 0.300 | 8006 ms |
 
-Latency `p50 8006ms` — `retrieve 1681ms` vs `guarded_generate 5381ms` (65% generation-bound). **Key fixes:** `0/6` scattered queries should clarify, cheque `evidence_min_score 0.15` starves `0.028` hits, sticky drops on generic follow-ups. Repro: `PYTHONPATH=".:components/orchestrator:$PYTHONPATH" python3 -m evaluation.bench_runner && python3 -m evaluation.ragas_eval --input evaluation/artifacts/bench_results_latest.json && python3 -m evaluation.report --bench evaluation/artifacts/bench_results_latest.json --ragas evaluation/artifacts/ragas_results_latest.json` → artfacts in `evaluation/artifacts/`.
+Latency `p50 8006ms` — `retrieve 1681ms` vs `guarded_generate 5381ms` (65% generation-bound). **Key fixes:** `0/6` scattered should clarify, cheque `evidence_min_score 0.15` starves `0.028` hits, sticky drops on generic follow-ups. Repro: `PYTHONPATH=".:components/orchestrator:$PYTHONPATH" python3 -m evaluation.bench_runner && python3 -m evaluation.ragas_eval --input evaluation/artifacts/bench_results_latest.json && python3 -m evaluation.report --bench evaluation/artifacts/bench_results_latest.json --ragas evaluation/artifacts/ragas_results_latest.json` → artfacts in `evaluation/artifacts/`.
 
-**Full details:** [docs/evaluation.md](docs/evaluation.md) · [docs/benchmark-report-2026-10-12.md](docs/benchmark-report-2026-10-12.md) — per-conversation drill-down, hallucination samples, ambiguity scatter, sticky timeline, KB probe table.
+### Retrieval quality (legacy, 800 Q, v8 6593 chunks)
+
+Wave-1 full-800 reranker shootout, CPU (2026-09-12/13). Dataset: 800 Persian QA, answer-grounded golds remapped to live PG KB (threshold 0.6, 772/800 covered, ~7 gold/query), `top_k=5`.
+
+| Backbone | Pool | Hit@5 | Top-1 | MRR | s/q (CPU) |
+|---|---|---|---|---|---|
+| **BGE-m3 `BAAI/bge-reranker-v2-m3` (default)** | 15 | 0.536 | 0.474 | **0.496** | ~5–15 |
+| MiniLM `mmarco-mMiniLMv2-L12-H384-v1` (fallback) | 15 | 0.536 | 0.469 | 0.493 | 3.9 |
+| MiniLM | 30 | 0.538 | — | 0.495 | 7.4 |
+| BGE-m3 | 30 | 0.536 | 0.474 | 0.496 | 52 |
+
+Full method: `archive/migration-history/WAVE2_GPU_RUNBOOK.md`. Historical per-version tables archived.
+
+### Cross-Encoder Direct API (2026-09-15, 20 Q, v8)
+
+| Model | Params | Loader | Avg Rerank | Status |
+|---|---|---|---|---|
+| **mmarco** | 118M | crossencoder | 628 ms | ✅ Production |
+| **bge-reranker-v2-m3** | 568M | crossencoder | 3,754 ms | ⚠️ 6× slower (GPU 1.6×) |
+| bge-gemma / Qwen3-0.6B | 2.5B/0.6B | flag-llm | 30–43s | ❌ CPU too slow |
+
+### RAG End-to-End (120 Q) & LLM-as-Judge
+
+| Metric | Result |
+|--------|--------|
+| 20 diverse samples | 20/20 ok |
+| 120 guardrail checks (in+out) | 0 blocked |
+| LLM-as-Judge (v4 Q8) | cosine 0.620 / pass 45% / faith 3.65 / cit 4.95 |
+
+**Full details:** [docs/evaluation.md](docs/evaluation.md) · [docs/benchmark-report-2026-10-12.md](docs/benchmark-report-2026-10-12.md)
 
 ---
 
 ## Archive
 
-Non-code artifacts moved to `archive/` (not on `main` history before cleanup):
-
-| Archive path | Content | Original location |
-|--------------|---------|-------------------|
-| `archive/handoff-sessions/` | 36 session transcripts + `SESSION_WAVE1_HANDOFF.md` (268KB) | `handoff/sessions/`, `docs/SESSION_WAVE1_HANDOFF.md` |
-| `archive/audit-2026-09-12/` | `documentation_audit.md` + `artifacts/documentation/` audit set | `docs/`, `artifacts/` |
+| Archive path | Content | Original |
+|--------------|---------|----------|
+| `archive/handoff-sessions/` | 36 session transcripts | `handoff/`, `docs/SESSION_WAVE1_HANDOFF.md` |
+| `archive/benchmark-history/` | `docs/benchmark-report/` GH Pages | `docs/benchmark-report/` (now `.gitignore`) |
 | `archive/migration-history/` | `VAST_GEMMA4_MIGRATION.md`, `WAVE2_GPU_RUNBOOK.md` | `docs/` |
-| `archive/benchmark-history/` | `docs/benchmark-report/` duplicated from `eval/results/` (19 files, 1.3MB) | `docs/benchmark-report/` (now `.gitignore`, canonical is `eval/results/`) |
-| `archive/` in `components/knowledgebase/` | Windows `.bat` (17), debug scripts (20), HTML dumps (5), `BEFORE` JSON snapshots, 14MB `persian-rag` duplicate | `kb-manager/` flat root |
-
-See `archive/README.md` for retention policy. All archived data is on `chore/cleanup-consolidated`; `main` keeps only code + canonical `eval/results/`.
 
 ---
 
 ## Done vs Pending
 
-### Done ✓
+### Done ✓ (2026-10-12)
 
-- [x] **Branches** `main` on parent + 4 submodules, pinned and pushed
-- [x] **Environment** validated (1× RTX 3090 24GB, CUDA 12.x, no proxy, host venvs)
-- [x] **KB** v8 pgvector HNSW: 103 docs, 6593 chunks, hybrid retrieval verified
-- [x] **Guardrails** deterministic Persian rails, HurtLex allowlist 19 lemmas, risk scoring, semantic interface
-- [x] **Orchestrator** LangGraph 5 nodes, Persian-only prompt, MAX_CHUNKS=5, 5 citations
-- [x] **Gemma source fix** — llama.cpp 0f3a71b, `--no-mmproj --jinja`, `enable_thinking:false` → clean Persian
-- [x] **HurtLex allowlist** — 19 lemmas with evidence, 26 tests pass, 0/120 blocked
-- [x] **Compose** `compose.mvp.yml` (no gemma-manager, only 13000 public)
-- [x] **Docs** Migration history, evaluation benchmarks, and runbooks documented
-- [x] **Public URL** `http://91.108.80.253:13000` verified
-- [x] **Commits** all pushed to `main` and `vast` branches, no force-push
-- [x] **Merge to `main`** — merged to `main`; `main` is now the current active branch
+- [x] **KB v13** `1405-07-06` · 18 docs / 1123 chunks · `folder_hierarchy` + `filter_path` + `supplement` tool (cos 0.4/0.6) · pgvector HNSW
+- [x] **Orchestrator** LangGraph conditional clarify (`should_clarify` → `generate_clarification`), sticky `MemorySaver` (`X-Request-ID`), `MAX_CHUNKS=20/9000`, `evidence 0.15` G5 guard, grounded `follow_ups`, DLQ
+- [x] **Guardrails** `:8200` Persian rails, HurtLex 19 lemmas, `enable_thinking:false` / `--no-mmproj --jinja` clean Persian
+- [x] **Generation** Gemma 4 31B `UD-Q4_K_XL` via `:18000` (Vast) / `:9000` manager (H200) · embed trio `:8001-8003`
+- [x] **WebUI** `:13000` ICS Helper (Arena OFF) · `rag_trace_capture` filter + 4 actions (`rate`/`report`/`view`/`truth`) · `WEBUI_AUTH=false` direct, `true` for per-user `user_id`
+- [x] **Observability** `:3000/dashboard/observability` (unified `observability.db` chunk cards, subspace badge, export) + Langfuse `:3001` + Studio `:2024`
+- [x] **Benchmark** multi-agent conversational `41` turns · RAGAS per-subspace · `d1c9b33` · `docs/benchmark-report-2026-10-12.md`
+- [x] **Pins** `main` `d1c9b33` (+ submodules `c3c7476`/`d040c63`/`14c5f97`/`d615f66`)
 
 ### Pending ⏳
 
-- [ ] **llama-server process supervision** — currently `nohup` manual, need supervisor with `LD_LIBRARY_PATH=/opt/llama-new/lib:/usr/local/cuda/lib64`
-- [ ] **Docker privileged** — Vast host unprivileged (`unshare` denied); need privileged host or host-network fallback
-- [ ] **KB completeness** — 5 XLSX fail `No valid sheets`; `dense_embeddings.npz` git-ignored
-- [ ] **Vast port mapping** — 13000 not in instance ports; reachable via host but should be explicit
-- [ ] **HurtLex coverage** — audit future false positives via 30-text script
-- [ ] **Orchestrator fallback cleanup** — decide on duplicate fallback in `format_response`
+- [ ] **Clarify gate** `0/6` scattered fail — lower `subspace_threshold` / explicit `ambiguous` classifier
+- [ ] **Evidence threshold per subspace** — cheque `0.028` vs `0.15` → empty; per-subspace tuning
+- [ ] **Sticky carry** — generic follow-ups lose `applied_subspace`; carry `filter_path` from previous turn
+- [ ] **Generation faith** — 2 abstains despite `ctx_rel 1.0`; citation-gate too strict
+- [ ] **Latency** — `generate 5.3s` dominates; batch Gemma / reranker on GPU (1.6×)
+- [ ] **Supervision** — `llama-server` `nohup` → supervisor; Docker privileged vs host-venv split
 
 ---
 
 ## Verification
 
 ```bash
-# Gemma raw clean (5 prompts)
-curl -s http://127.0.0.1:18000/v1/models | jq .data[0].id
-for p in "سلام" "Hello" "اعتبارسنجی چیست" "چگونه گزارش اعتباری خود را دریافت کنم؟" "یک پاسخ کوتاه فارسی بده"; do
-  curl -s http://127.0.0.1:18000/v1/chat/completions -H 'Content-Type: application/json' \
-    -d "{\"model\":\"unsloth/gemma-4-31B-it-GGUF:UD-Q4_K_XL\",\"messages\":[{\"role\":\"user\",\"content\":\"$p\"}],\"temperature\":0,\"max_tokens\":50,\"chat_template_kwargs\":{\"enable_thinking\":false}}" \
-    | python3 -c "import json,sys; j=json.load(sys.stdin); c=j['choices'][0]['message']['content']; print('$p', 'has_unused', '<unused' in c, 'len', len(c))"
-done
+# Health
+for p in 18000 8000 8200 8100 3000 9000 13000; do printf "%s: " "$p"; curl -s http://127.0.0.1:$p/health | head -c 100; echo; done
 
-# Guardrails allowlist (26 tests) + baseline
-PYTHONPATH=components/guardrails/src /tmp/guard-venv/bin/python -m pytest components/guardrails/tests/test_hurtlex_allowlist.py -v
-PYTHONPATH=components/guardrails/src /tmp/guard-venv/bin/python /workspace/Work_Credit-RAG_Phase1/eval/run_guardrails_eval.py
+# Gemma clean (no <unused*>)
+curl -s http://127.0.0.1:18000/v1/chat/completions -H 'Content-Type: application/json' \
+  -d '{"model":"unsloth/gemma-4-31B-it-GGUF:UD-Q4_K_XL","messages":[{"role":"user","content":"سلام"}],"chat_template_kwargs":{"enable_thinking":false}}' \
+  | python3 -c "import json,sys; print('<unused' not in json.load(sys.stdin)['choices'][0]['message']['content'])"
 
-# RAG E2E
-curl -s http://127.0.0.1:8100/v1/chat/completions -H 'Content-Type: application/json' \
-  -d '{"model":"gemma-4-31b","messages":[{"role":"user","content":"چگونه می‌توانم گزارش اعتباری خود را دریافت کنم؟"}]}' \
-  | jq '{finish:.choices[0].finish_reason, citations:(.rag.citations|length), content:.choices[0].message.content}'
+# RAG E2E (sticky + filter_path)
+curl -s http://127.0.0.1:8100/v1/chat/completions -H 'Content-Type: application/json' -H 'X-Request-ID: test-001' \
+  -d '{"model":"ics-helper-agent","messages":[{"role":"user","content":"چک"}],"filter_path":"گزارش اعتباری چک"}' | jq '.audit.applied_subspace'
+curl -s http://127.0.0.1:8100/v1/chat/completions -H 'Content-Type: application/json' -H 'X-Request-ID: test-001' \
+  -d '{"model":"ics-helper-agent","messages":[{"role":"user","content":"تاثیر چک برگشتی بر امتیاز چقدر است؟"}]}' | jq '.choices[0].finish_reason, .rag.citations|length'
 
-# Observe CLI
-python components/tracing/observe.py --list --limit 5
-python components/tracing/observe.py --request <request_id> --json
+# KB filtered vs supplement
+curl -s http://127.0.0.1:8000/search/api -H 'Content-Type: application/json' -d '{"query":"سهامداران","top_k":5}' | jq '.injected_entities|length'
+curl -s http://127.0.0.1:8000/search/supplement -H 'Content-Type: application/json' -d '{"query":"سهامداران","threshold":0.4}' | jq '.results|length'
+
+# Observe / bench
+curl -s 'http://127.0.0.1:3000/api/observability/traces?limit=1' | jq .
+python components/tracing/observe.py --list --limit 3
+PYTHONPATH=".:components/orchestrator:$PYTHONPATH" python3 -m evaluation.bench_runner --dry-run
 ```
 
 ---
@@ -524,7 +552,7 @@ git add components/orchestrator
 git commit -m "chore: advance orchestrator submodule"
 ```
 
-Always run contract and end-to-end tests before advancing a production pin.
+Always run health + `evaluation/bench_runner --dry-run` before advancing a production pin.
 
 ---
 
@@ -536,17 +564,15 @@ See [LICENSE](LICENSE). Each submodule may also declare its own license and depe
 
 ## Links
 
-- **Runbook** (startup, env, ports, troubleshooting): See [AGENTS.md](AGENTS.md) §2–3 and `deploy/vast/start.sh`
-- **Migration log** (discovery, fixes, HurtLex audit): [archive/migration-history/VAST_GEMMA4_MIGRATION.md](archive/migration-history/VAST_GEMMA4_MIGRATION.md)
-- **Compose**: [compose.mvp.yml](compose.mvp.yml) + [deploy/docker/docker-compose.yml](deploy/docker/docker-compose.yml)
-- **Guardrails allowlist**: `components/guardrails/kb/hurtlex_allowlist.json` + `components/guardrails/src/work_rag_guardrails/actions.py` (submodule)
-- **Tests**: guardrails tests (26), orchestrator tests (9), KB tests (32) — all in submodule `tests/` dirs
-- **Evaluation docs**: [docs/evaluation.md](docs/evaluation.md), [docs/cross_encoder_benchmark_results.md](docs/cross_encoder_benchmark_results.md)
-- **Historical planning docs**: Archived in `deprecated/plans/`
+- **Runbook:** [AGENTS.md](AGENTS.md) §2–3 + `deploy/vast/start.sh` + `deploy/vast/health.sh`
+- **Bench report (NEW):** [docs/benchmark-report-2026-10-12.md](docs/benchmark-report-2026-10-12.md) (also `evaluation/artifacts/bench_report_latest.html`)
+- **Migration log:** [archive/migration-history/VAST_GEMMA4_MIGRATION.md](archive/migration-history/VAST_GEMMA4_MIGRATION.md)
+- **Compose:** [compose.mvp.yml](compose.mvp.yml) + [deploy/docker/docker-compose.yml](deploy/docker/docker-compose.yml)
+- **Guardrails allowlist:** `components/guardrails/kb/hurtlex_allowlist.json`
+- **Evaluation docs:** [docs/evaluation.md](docs/evaluation.md) · [docs/cross_encoder_benchmark_results.md](docs/cross_encoder_benchmark_results.md)
 
 ## 🚀 Production Scaling (1 Million+ Users)
-For deploying this RAG engine to millions of concurrent users, the native Python execution (FastAPI locking) and `RankBM25` memory constraints become bottlenecks.
-We have architected a **Million-User Scale Plan** that replaces `RankBM25` with SPLADE, migrates ML execution to NVIDIA Triton + TensorRT, and introduces Semantic Caching.
 
-See the complete architectural design and scaling strategy here:
-👉 [**Million-User Scale Plan**](million-user-scale-plan.md)
+For millions of concurrent users, Python FastAPI + `RankBM25` + CrossEncoder CPU become bottlenecks. Million-User plan replaces `RankBM25` with SPLADE, moves ML to Triton+TensorRT, introduces semantic cache.
+
+See: 👉 [**Million-User Scale Plan**](million-user-scale-plan.md)
