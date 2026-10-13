@@ -59,6 +59,11 @@ class SaveTraceRequest(BaseModel):
     applied_subspace: Optional[str] = None
     available_subspaces: Optional[list] = None
     filter_path: Optional[str] = None
+    # T7 observability for retries
+    fallback_used: Optional[bool] = None
+    fallback_reason: Optional[str] = None
+    retry_stage_timing: Optional[dict] = None
+    broaden_used: Optional[bool] = None
 
     class Config:
         extra = "allow"

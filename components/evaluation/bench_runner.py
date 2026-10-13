@@ -715,6 +715,20 @@ def _extract_turn_result(
     citations = rag.get("citations") if isinstance(rag, dict) else []
     supplemental = rag.get("supplemental") if isinstance(rag, dict) else None
 
+    # T7 retry observability fields
+    fallback_used = audit.get("fallback_used", False) if isinstance(audit, dict) else False
+    fallback_reason = audit.get("fallback_reason") if isinstance(audit, dict) else None
+    retry_stage_timing = audit.get("retry_stage_timing") if isinstance(audit, dict) else None
+    broaden_used = audit.get("broaden_used", False) if isinstance(audit, dict) else False
+    # also capture stage_timing broadening timings separately for fallback view
+    if retry_stage_timing is None and isinstance(stage_timing, dict):
+        # fallback to stage_timing fields if audit.retry_stage_timing missing (old builds)
+        rt = {}
+        if stage_timing.get("retrieve_retry") is not None:
+            rt["retrieve_retry"] = stage_timing.get("retrieve_retry")
+        if stage_timing.get("retrieve_broadened") is not None:
+            rt["retrieve_broadened"] = stage_timing.get("retrieve_broadened")
+        retry_stage_timing = rt if rt else None
     return {
         "user": user_text,
         "expected_finish": turn_def.get("expected_finish"),
@@ -742,7 +756,11 @@ def _extract_turn_result(
         "content": content,
         "content_preview": content[:400] if isinstance(content, str) else "",
         "messages_sent_count": len(messages_sent),
-        "raw_audit": {k: v for k, v in audit.items() if k in ("query", "rewritten_query", "available_subspaces", "filter_path")} if isinstance(audit, dict) else {},
+        "raw_audit": {k: v for k, v in audit.items() if k in ("query", "rewritten_query", "available_subspaces", "filter_path", "fallback_used", "fallback_reason", "retry_stage_timing", "broaden_used")} if isinstance(audit, dict) else {},
+        "fallback_used": bool(fallback_used),
+        "fallback_reason": fallback_reason,
+        "retry_stage_timing": retry_stage_timing,
+        "broaden_used": bool(broaden_used),
     }
 
 

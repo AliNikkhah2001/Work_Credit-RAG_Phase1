@@ -40,7 +40,7 @@ sleep 10
 
 echo "== 4. Langfuse fallback collector :3000 =="
 cd "$ROOT/components/tracing"
-nohup /tmp/orch-venv/bin/python -m uvicorn app:app \
+nohup /tmp/kb-venv/bin/python -m uvicorn app:app \
   --host 0.0.0.0 --port 3000 > /tmp/langfuse.log 2>&1 &
 sleep 6
 
@@ -53,7 +53,7 @@ PYTHONPATH="$ROOT/components/orchestrator/src" KB_BASE_URL=http://127.0.0.1:8000
   UPSTREAM_LLM_MODEL=unsloth/gemma-4-31B-it-GGUF:UD-Q4_K_XL \
   LANGFUSE_HOST="${LANGFUSE_HOST:-http://127.0.0.1:3001}" \
   LANGFUSE_PUBLIC_KEY="${LANGFUSE_PUBLIC_KEY:-changeme}" LANGFUSE_SECRET_KEY="${LANGFUSE_SECRET_KEY:-changeme}" \
-  nohup /tmp/orch-venv/bin/python -m uvicorn work_rag_orchestrator.api:create_app --factory \
+  nohup /tmp/kb-venv/bin/python -m uvicorn work_rag_orchestrator.api:create_app --factory \
   --host 0.0.0.0 --port 8100 > /tmp/orch.log 2>&1 &
 sleep 10
 

@@ -243,12 +243,17 @@ async function loadOverview(){
     let avgStars=avgRating(s.rating_distribution||{});
     let blockPct=s.block_rate!=null? (s.block_rate*100).toFixed(1)+'%':'—';
     let avgLat=s.avg_latency_ms!=null? fmtLatency(Math.round(s.avg_latency_ms)):'—';
+    let fbPct = s.fallback_rate!=null? (s.fallback_rate*100).toFixed(1)+'%':'—';
+    let fbCount = s.fallback_count!=null? s.fallback_count:0;
+    let brCount = s.broaden_count!=null? s.broaden_count:0;
     wrap.innerHTML=
       "<div class='card'><b>"+(s.total_requests||0).toLocaleString()+"</b><span>Requests</span></div>"+
       "<div class='card'><b>"+esc(avgLat)+"</b><span>Avg Latency</span></div>"+
       "<div class='card'><b>"+(s.total_evaluations||0)+"</b><span>Rated</span></div>"+
       "<div class='card'><b>"+esc(blockPct)+"</b><span>Block rate</span></div>"+
-      "<div class='card'><b>"+esc(avgStars)+" ★</b><span>Avg Rating</span></div>";
+      "<div class='card'><b>"+esc(avgStars)+" ★</b><span>Avg Rating</span></div>"+
+      "<div class='card'><b style='color:#92400e'>"+fbCount+"</b><span>Fallback used ("+esc(fbPct)+")</span></div>"+
+      "<div class='card'><b style='color:#5b21b6'>"+brCount+"</b><span>Broaden used</span></div>";
     // charts
     let tsData=null;
     try{let tr=await fetch('/api/observability/timeseries?hours=24');if(tr.ok){let j=await tr.json();tsData=j.data||j}}catch(e){}
@@ -515,11 +520,28 @@ async function loadTraces(){
     let pages=Math.max(1,Math.ceil(trTotal/trLimit));document.getElementById('tr-page').textContent='Page '+(trPage+1)+'/'+pages;
     document.getElementById('tr-prev').disabled=trPage<=0;document.getElementById('tr-next').disabled=(trPage+1)>=pages;
     if(!rows.length){wrap.innerHTML="<p class='muted'>No traces yet</p>";setLastRefresh();return}
-    let h="<table><tr><th>✓</th><th>Request ID</th><th>Model</th><th>Time</th><th>Latency</th><th>Query Preview</th><th>Spans</th></tr>";
+    let h="<table><tr><th>✓</th><th>Request ID</th><th>Model</th><th>Time</th><th>Latency</th><th>Query Preview</th><th>Spans</th><th>Retry</th></tr>";
     rows.forEach(t=>{
       let hasResp=t.response? '✓':'…';
       let spanCount=(t.retrieved_chunks||[]).length||(t.citations||[]).length||'—';
       let preview=trunc(t.user_query||t.context_preview||'',60);
+      let retryCell="";
+      if(t.fallback_used){
+        let reason = t.fallback_reason ? trunc(t.fallback_reason,40) : "fallback";
+        let rt = t.retry_stage_timing || {};
+        // also fallback to stage_timing fields
+        if(!rt.retrieve_retry && t.stage_timing && t.stage_timing.retrieve_retry!=null) rt.retrieve_retry=t.stage_timing.retrieve_retry;
+        let tm = rt.retrieve_retry!=null? " "+fmtLatency(Math.round(rt.retrieve_retry)):"";
+        retryCell="<span class='badge' style='background:#fef3c7;border-color:#fde68a;color:#92400e' title='"+esc(t.fallback_reason||"")+"'>↻ fallback"+tm+"</span>";
+        if(t.broaden_used) retryCell+="<br><span class='badge' style='background:#ede9fe;border-color:#ddd6fe;color:#5b21b6;font-size:10px'>broaden</span>";
+      } else if(t.broaden_used){
+        let rt2 = t.retry_stage_timing || {};
+        if(!rt2.retrieve_broadened && t.stage_timing && t.stage_timing.retrieve_broadened!=null) rt2.retrieve_broadened=t.stage_timing.retrieve_broadened;
+        let tm2 = rt2.retrieve_broadened!=null? " "+fmtLatency(Math.round(rt2.retrieve_broadened)):"";
+        retryCell="<span class='badge' style='background:#ede9fe;border-color:#ddd6fe;color:#5b21b6'>↻ broaden"+tm2+"</span>";
+      } else {
+        retryCell="<span class='muted' style='font-size:10px'>—</span>";
+      }
       h+="<tr>"+
         "<td>"+hasResp+"</td>"+
         "<td><a href='#' class='pipe-link' data-rid='"+esc(t.request_id)+"'>"+esc(t.request_id)+"</a></td>"+
@@ -528,6 +550,7 @@ async function loadTraces(){
         "<td>"+esc(fmtLatency(t.latency_ms))+"</td>"+
         "<td dir='auto' class='trunc' title='"+esc(t.user_query||'')+"'>"+esc(preview)+"</td>"+
         "<td>"+esc(spanCount)+"</td>"+
+        "<td>"+retryCell+"</td>"+
         "</tr>";
     });
     h+="</table>";wrap.innerHTML=h;
@@ -706,13 +729,38 @@ function renderPipeline(d){
           subspaceBadge += " <span class='muted' style='font-size:10px'>filter: "+esc(d.filter_path)+"</span>";
         }
       }
+      // T7 retry badge
+      let retryBadge="";
+      if(d.fallback_used){
+        let reason = d.fallback_reason ? esc(d.fallback_reason) : "filtered→whole KB";
+        let timing = "";
+        // retry_stage_timing may be in top-level or inside stage_timing
+        let rt = d.retry_stage_timing || {};
+        // also try stage_timing.retrieve_retry / retrieve_broadened
+        if(!rt.retrieve_retry && st.retrieve_retry!=null) rt.retrieve_retry = st.retrieve_retry;
+        if(!rt.retrieve_broadened && st.retrieve_broadened!=null) rt.retrieve_broadened = st.retrieve_broadened;
+        if(rt.retrieve_retry!=null) timing += " retry "+fmtLatency(Math.round(rt.retrieve_retry));
+        if(rt.retrieve_broadened!=null) timing += " broadened "+fmtLatency(Math.round(rt.retrieve_broadened));
+        let broadenTag = d.broaden_used ? " · broaden" : "";
+        retryBadge = "<span class='badge' style='background:#fef3c7;border-color:#fde68a;color:#92400e' title='"+reason+timing+"'>↻ fallback"+broadenTag+"</span> <span class='muted' style='font-size:10px' title='"+reason+"'>"+reason+"</span>" + (timing? "<span class='muted' style='font-size:10px'>"+esc(timing)+"</span>" : "");
+      } else if(d.broaden_used){
+        let rt2 = d.retry_stage_timing || {};
+        if(!rt2.retrieve_broadened && st.retrieve_broadened!=null) rt2.retrieve_broadened = st.retrieve_broadened;
+        let t2 = rt2.retrieve_broadened!=null? " "+fmtLatency(Math.round(rt2.retrieve_broadened)):"";
+        retryBadge = "<span class='badge' style='background:#ede9fe;border-color:#ddd6fe;color:#5b21b6'>↻ broaden"+esc(t2)+"</span>";
+      }
       let h="<div style='display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px'>"
         +"<span class='badge'>"+rc.length+" chunks</span>"
         +(cits.length? "<span class='badge'>"+cits.length+" citations</span>":"")
         +(d.retrieval_method? "<span class='badge'>"+esc(d.retrieval_method)+"</span>":"")
         + subspaceBadge
+        +(retryBadge? " "+retryBadge : "")
         +"</div>";
-      if(!rc.length) return h+"<span class='muted'>No chunks retrieved — KB returned empty or retrieval was skipped.</span>";
+      if(!rc.length){
+        // still show retry info even when empty (no chunks but fallback attempted)
+        if(d.fallback_used||d.broaden_used) return h+"<span class='muted'>No chunks retrieved — KB returned empty or retrieval was skipped.</span><div style='margin-top:6px;font-size:11px;color:#92400e'>Fallback attempted: "+(d.fallback_reason? esc(d.fallback_reason):"—")+"</div>";
+        return h+"<span class='muted'>No chunks retrieved — KB returned empty or retrieval was skipped.</span>";
+      }
       rc.forEach((c,i)=>{ h+=renderChunkCard(c,i); });
       if(cits.length){
         h+="<h4 style='margin:10px 0 4px;font-size:12px'>Citations linked from answer</h4>";
@@ -800,7 +848,7 @@ function renderPipeline(d){
   bottom.style.display='block';
   let total=d.latency_ms!=null? fmtLatency(d.latency_ms) : (st.total!=null? fmtLatency(Math.round(st.total)) : '—');
   let totalMs=d.latency_ms||st.total||Object.values(st).reduce((a,b)=>a+(typeof b==='number'?b:0),0);
-  // F7 subspace badge in summary
+  // F7 subspace badge in summary + T7 retry badge
   let subspaceSummary="";
   if(d.applied_subspace){
     let _lab=d.applied_subspace;
@@ -809,8 +857,24 @@ function renderPipeline(d){
   } else if(d.filter_path){
     subspaceSummary=" · <span class='badge' style='font-size:11px'>"+esc(d.filter_path)+"</span>";
   }
+  let retrySummary="";
+  if(d.fallback_used){
+    let rtSum = d.retry_stage_timing || {};
+    if(!rtSum.retrieve_retry && st.retrieve_retry!=null) rtSum.retrieve_retry = st.retrieve_retry;
+    if(!rtSum.retrieve_broadened && st.retrieve_broadened!=null) rtSum.retrieve_broadened = st.retrieve_broadened;
+    let tm = "";
+    if(rtSum.retrieve_retry!=null) tm += " retry "+fmtLatency(Math.round(rtSum.retrieve_retry));
+    if(rtSum.retrieve_broadened!=null) tm += " broadened "+fmtLatency(Math.round(rtSum.retrieve_broadened));
+    let broadenTag = d.broaden_used ? " · broaden" : "";
+    retrySummary = " · <span class='badge' style='background:#fef3c7;border-color:#fde68a;color:#92400e;font-size:11px'>↻ fallback"+broadenTag+esc(tm)+"</span> <span class='muted' style='font-size:10px'>"+esc(d.fallback_reason||"")+"</span>";
+  } else if(d.broaden_used){
+    let rtSum2 = d.retry_stage_timing || {};
+    if(!rtSum2.retrieve_broadened && st.retrieve_broadened!=null) rtSum2.retrieve_broadened = st.retrieve_broadened;
+    let tm2 = rtSum2.retrieve_broadened!=null? " "+fmtLatency(Math.round(rtSum2.retrieve_broadened)):"";
+    retrySummary = " · <span class='badge' style='background:#ede9fe;border-color:#ddd6fe;color:#5b21b6;font-size:11px'>↻ broaden"+esc(tm2)+"</span>";
+  }
   bottom.innerHTML=
-    "<div style='display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap'><span><b>Total latency:</b> "+esc(total)+subspaceSummary+"</span><span class='muted'>Request "+esc(d.request_id||'')+" · Model "+esc(d.model||'—')+"</span></div>"+
+    "<div style='display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap'><span><b>Total latency:</b> "+esc(total)+subspaceSummary+retrySummary+"</span><span class='muted'>Request "+esc(d.request_id||'')+" · Model "+esc(d.model||'—')+"</span></div>"+
     (timeline? "<div class='muted' style='margin-top:6px'>Observer timeline: "+(timeline.spans?timeline.spans.length:0)+" spans · "+esc(timeline.name||'')+"</div>":"");
 }
 

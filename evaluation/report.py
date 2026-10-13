@@ -539,6 +539,7 @@ def generate_html(bench: Dict[str, Any], ragas: Dict[str, Any]) -> str:
                       '<li><a href="#ambiguity">Ambiguity Resolution Scatter</a></li>'
                       '<li><a href="#sticky">Sticky Persistence Timeline</a></li>'
                       '<li><a href="#kbprobe">Direct Retrieval Probe</a></li>'
+                      '<li><a href="#fallback">Retry / Fallback Observability</a></li>'
                       '</ol></div>')
 
     # Overall metrics bar chart
@@ -931,6 +932,144 @@ def generate_html(bench: Dict[str, Any], ragas: Dict[str, Any]) -> str:
         total_n = sum(counts.values())
         html_parts.append(f'<div class="alert alert-info">Overall Hit: no_filter {total_no}/{total_n} ({total_no/total_n:.1%}) vs with_filter {total_with}/{total_n} ({total_with/total_n:.1%}) across {total_n} probes.</div>')
 
+    # T7 Retry / Fallback Observability
+    html_parts.append('<h2 id="fallback">8. Retry / Fallback Observability (T7)</h2>')
+    # Compute fallback stats from bench turns (audit fallback_used/broaden_used)
+    def _collect_fallback(bench_obj: Dict[str, Any]) -> Dict[str, Any]:
+        total = 0
+        fb_cnt = 0
+        br_cnt = 0
+        by_sub: Dict[str, Dict[str, int]] = {}
+        details: List[Dict[str, Any]] = []
+        for conv in bench_obj.get("conversations", []) or []:
+            cid = conv.get("id", "")
+            csub = conv.get("subspace", "unknown")
+            for t in conv.get("turns", []) or []:
+                total += 1
+                fb = bool(t.get("fallback_used"))
+                br = bool(t.get("broaden_used"))
+                if fb:
+                    fb_cnt += 1
+                if br:
+                    br_cnt += 1
+                sub = t.get("expected_subspace") or t.get("applied_subspace") or csub or "none"
+                sub = str(sub) if sub is not None else "none"
+                if sub not in by_sub:
+                    by_sub[sub] = {"total": 0, "fallback": 0, "broaden": 0}
+                by_sub[sub]["total"] += 1
+                if fb:
+                    by_sub[sub]["fallback"] += 1
+                if br:
+                    by_sub[sub]["broaden"] += 1
+                if fb or br:
+                    details.append({"id": cid, "turn": t.get("turn_index"), "subspace": sub, "query": t.get("user","")[:50], "fallback_used": fb, "broaden_used": br, "fallback_reason": t.get("fallback_reason") or "", "retry_stage_timing": t.get("retry_stage_timing") or t.get("stage_timing_ms")})
+        for s in bench_obj.get("single_baselines", []) or []:
+            total += 1
+            fb = bool(s.get("fallback_used"))
+            br = bool(s.get("broaden_used"))
+            if fb:
+                fb_cnt += 1
+            if br:
+                br_cnt += 1
+            sub = s.get("expected_subspace") or s.get("subspace") or s.get("applied_subspace") or "none"
+            sub = str(sub) if sub is not None else "none"
+            if sub not in by_sub:
+                by_sub[sub] = {"total": 0, "fallback": 0, "broaden": 0}
+            by_sub[sub]["total"] += 1
+            if fb:
+                by_sub[sub]["fallback"] += 1
+            if br:
+                by_sub[sub]["broaden"] += 1
+            if fb or br:
+                details.append({"id": s.get("id","single"), "turn": 1, "subspace": sub, "query": s.get("query","")[:50], "fallback_used": fb, "broaden_used": br, "fallback_reason": s.get("fallback_reason") or "", "retry_stage_timing": s.get("retry_stage_timing") or s.get("stage_timing_ms")})
+        return {"total": total, "fallback": fb_cnt, "broaden": br_cnt, "by_sub": by_sub, "details": details}
+
+    fb_stats = _collect_fallback(bench)
+    fb_total = fb_stats["total"]
+    fb_cnt = fb_stats["fallback"]
+    br_cnt = fb_stats["broaden"]
+    html_parts.append(f'<div class="alert alert-info">Total turns {fb_total} — <strong>fallback_used {fb_cnt}</strong> ({fb_cnt/fb_total:.1%} if {fb_total} else "0%") — <strong>broaden_used {br_cnt}</strong> ({br_cnt/fb_total:.1%} if {fb_total} else "0%"). Fallback = filtered→whole-KB retry (T1) when filtered evidence &lt; threshold; broaden = second-leg broadened retry (T2, top_k 30, boost 1.5).</div>')
+    html_parts.append('<table><tr><th>Subspace</th><th>turns</th><th>fallback_used</th><th>fallback rate</th><th>broaden_used</th><th>broaden rate</th></tr>')
+    for sub in sorted(fb_stats["by_sub"].keys()):
+        d = fb_stats["by_sub"][sub]
+        tot = d["total"]
+        fb = d["fallback"]
+        br = d["broaden"]
+        fb_rate = f"{fb/tot:.1%}" if tot else "—"
+        br_rate = f"{br/tot:.1%}" if tot else "—"
+        color = SUBSPACE_COLORS.get(sub, "#9e9e9e")
+        html_parts.append(f'<tr><td><span style="display:inline-block;width:10px;height:10px;background:{color};border-radius:2px;margin-right:4px;vertical-align:middle;"></span>{esc(sub)}</td><td>{tot}</td><td>{fb}</td><td>{fb_rate}</td><td>{br}</td><td>{br_rate}</td></tr>')
+    html_parts.append('</table>')
+    if fb_stats["details"]:
+        html_parts.append('<h3>Fallback detail (per turn where fallback or broaden triggered)</h3>')
+        html_parts.append('<table><tr><th>ID / Turn</th><th>Subspace</th><th>Query (RTL)</th><th>Fallback?</th><th>Broaden?</th><th>Reason</th><th>Timing (ms)</th></tr>')
+        for det in fb_stats["details"][:30]:
+            fb_badge = "<span class=\'badge\' style=\'background:#fef3c7;color:#92400e;border:1px solid #fde68a\'>↻ fallback</span>" if det["fallback_used"] else "<span style=\'color:#999\'>—</span>"
+            br_badge = "<span class=\'badge\' style=\'background:#ede9fe;color:#5b21b6;border:1px solid #ddd6fe\'>↻ broaden</span>" if det["broaden_used"] else "<span style=\'color:#999\'>—</span>"
+            rt = det.get("retry_stage_timing") or {}
+            timing = ""
+            if isinstance(rt, dict):
+                parts = []
+                if rt.get("retrieve_retry") is not None:
+                    parts.append(f"retry {rt.get('retrieve_retry')}ms")
+                if rt.get("retrieve_broadened") is not None:
+                    parts.append(f"broad {rt.get('retrieve_broadened')}ms")
+                timing = "<br>".join(esc(p) for p in parts) if parts else "—"
+            else:
+                timing = esc(str(rt)[:80])
+            html_parts.append(f'<tr><td>{esc(det["id"])} T{det["turn"]}</td><td>{esc(det["subspace"])}</td><td><div class="rtl" dir="rtl">{esc(det["query"])}</div></td><td>{fb_badge}</td><td>{br_badge}</td><td style="font-size:11px;text-align:left;max-width:220px;word-break:break-word;">{esc(det["fallback_reason"])}</td><td style="font-size:11px;">{timing}</td></tr>')
+        html_parts.append('</table>')
+        if len(fb_stats["details"]) > 30:
+            html_parts.append(f'<div class="muted" style="font-size:11px;">+ {len(fb_stats["details"])-30} more fallback rows not shown (see JSON for full list)</div>')
+    else:
+        html_parts.append('<div class="alert alert-success">No fallback or broaden retries triggered in this bench run — all retrievals had sufficient evidence on first attempt (or were greetings/clarify with no retrieval).</div>')
+    # Also show aggregate retry timing avg if any
+    retry_vals = []
+    broad_vals = []
+    for conv in bench.get("conversations", []) or []:
+        for t in conv.get("turns", []) or []:
+            rt = t.get("retry_stage_timing") or {}
+            if isinstance(rt, dict):
+                if rt.get("retrieve_retry") is not None:
+                    try:
+                        retry_vals.append(float(rt.get("retrieve_retry")))
+                    except Exception:
+                        pass
+                if rt.get("retrieve_broadened") is not None:
+                    try:
+                        broad_vals.append(float(rt.get("retrieve_broadened")))
+                    except Exception:
+                        pass
+            elif t.get("stage_timing_ms"):
+                st = t.get("stage_timing_ms") or {}
+                if st.get("retrieve_retry") is not None:
+                    try:
+                        retry_vals.append(float(st.get("retrieve_retry")))
+                    except Exception:
+                        pass
+                if st.get("retrieve_broadened") is not None:
+                    try:
+                        broad_vals.append(float(st.get("retrieve_broadened")))
+                    except Exception:
+                        pass
+    for s in bench.get("single_baselines", []) or []:
+        rt = s.get("retry_stage_timing") or {}
+        if isinstance(rt, dict):
+            if rt.get("retrieve_retry") is not None:
+                try:
+                    retry_vals.append(float(rt.get("retrieve_retry")))
+                except Exception:
+                    pass
+            if rt.get("retrieve_broadened") is not None:
+                try:
+                    broad_vals.append(float(rt.get("retrieve_broadened")))
+                except Exception:
+                    pass
+    if retry_vals or broad_vals:
+        avg_retry = f"{sum(retry_vals)/len(retry_vals):.1f} ms avg (n={len(retry_vals)})" if retry_vals else "— no fallback timing"
+        avg_broad = f"{sum(broad_vals)/len(broad_vals):.1f} ms avg (n={len(broad_vals)})" if broad_vals else "— no broaden timing"
+        html_parts.append(f'<div class="alert alert-info" style="margin-top:10px;">Retry timing: fallback <strong>retrieve_retry {esc(avg_retry)}</strong> · broaden <strong>retrieve_broadened {esc(avg_broad)}</strong></div>')
+
     # Footer
     html_parts.append('<hr style="margin:28px 0;border:none;border-top:1px solid #e0e0e0;">')
     html_parts.append(f'<div style="font-size:11px;color:#888;text-align:center;">Work Credit RAG Benchmark Report — generated {esc(date_pretty)} · total turns {esc(str(total_turns))} · error rate {error_rate:.1%} · judge {esc(ragas.get("meta",{}).get("model_judge",""))}<br>Artifacts: bench_results_latest.json + ragas_results_latest.json → bench_report_latest.html</div>')
@@ -1162,6 +1301,93 @@ def generate_markdown(bench: Dict[str, Any], ragas: Dict[str, Any]) -> str:
             nf_s = nf.get("top1_score")
             wf_s = wf.get("top1_score")
             lines.append(f"| {sid} | {fp} | {q} | {fmt_score(nf_s)} | {'✓' if nf.get('has_results') else '✗'} | {fmt_score(wf_s)} | {'✓' if wf.get('has_results') else '✗'} | {pr.get('filter_improves')} |")
+        lines.append("")
+    # T7 fallback markdown
+    lines.append("## 8. Retry / Fallback Observability (T7)")
+    lines.append("")
+    fb_total_m = 0
+    fb_cnt_m = 0
+    br_cnt_m = 0
+    by_sub_m: Dict[str, Dict[str, int]] = {}
+    for conv in bench.get("conversations", []) or []:
+        for t in conv.get("turns", []) or []:
+            fb_total_m += 1
+            fb = bool(t.get("fallback_used"))
+            br = bool(t.get("broaden_used"))
+            if fb:
+                fb_cnt_m += 1
+            if br:
+                br_cnt_m += 1
+            sub = t.get("expected_subspace") or t.get("applied_subspace") or conv.get("subspace", "unknown") or "none"
+            sub = str(sub) if sub is not None else "none"
+            if sub not in by_sub_m:
+                by_sub_m[sub] = {"total": 0, "fallback": 0, "broaden": 0}
+            by_sub_m[sub]["total"] += 1
+            if fb:
+                by_sub_m[sub]["fallback"] += 1
+            if br:
+                by_sub_m[sub]["broaden"] += 1
+    for s in bench.get("single_baselines", []) or []:
+        fb_total_m += 1
+        fb = bool(s.get("fallback_used"))
+        br = bool(s.get("broaden_used"))
+        if fb:
+            fb_cnt_m += 1
+        if br:
+            br_cnt_m += 1
+        sub = s.get("expected_subspace") or s.get("subspace") or s.get("applied_subspace") or "none"
+        sub = str(sub) if sub is not None else "none"
+        if sub not in by_sub_m:
+            by_sub_m[sub] = {"total": 0, "fallback": 0, "broaden": 0}
+        by_sub_m[sub]["total"] += 1
+        if fb:
+            by_sub_m[sub]["fallback"] += 1
+        if br:
+            by_sub_m[sub]["broaden"] += 1
+    lines.append(f"Total turns {fb_total_m} — fallback_used {fb_cnt_m} ({fb_cnt_m/fb_total_m:.1%} if fb_total_m else '0%') — broaden_used {br_cnt_m} ({br_cnt_m/fb_total_m:.1%} if fb_total_m else '0%')")
+    lines.append("")
+    lines.append("| Subspace | turns | fallback_used | fallback rate | broaden_used | broaden rate |")
+    lines.append("|---|---|---|---|---|---|")
+    for sub in sorted(by_sub_m.keys()):
+        d = by_sub_m[sub]
+        tot = d["total"]
+        fb = d["fallback"]
+        br = d["broaden"]
+        lines.append(f"| {sub} | {tot} | {fb} | {fb/tot:.1%} | {br} | {br/tot:.1%} |")
+    lines.append("")
+    # detail table if any fallback
+    any_fb = any(v["fallback"] > 0 or v["broaden"] > 0 for v in by_sub_m.values())
+    if any_fb:
+        lines.append("| ID / Turn | Subspace | Query | Fallback? | Broaden? | Reason | Timing |")
+        lines.append("|---|---|---|---|---|---|---|")
+        for conv in bench.get("conversations", []) or []:
+            for t in conv.get("turns", []) or []:
+                if t.get("fallback_used") or t.get("broaden_used"):
+                    rt = t.get("retry_stage_timing") or t.get("stage_timing_ms") or {}
+                    tm = ""
+                    if isinstance(rt, dict):
+                        parts = []
+                        if rt.get("retrieve_retry") is not None:
+                            parts.append(f"retry {rt.get('retrieve_retry')}ms")
+                        if rt.get("retrieve_broadened") is not None:
+                            parts.append(f"broad {rt.get('retrieve_broadened')}ms")
+                        tm = " ".join(parts)
+                    lines.append(f"| {conv.get('id')} T{t.get('turn_index')} | {t.get('expected_subspace') or t.get('applied_subspace') or conv.get('subspace')} | {(t.get('user') or '')[:40].replace('|','/')} | {'yes' if t.get('fallback_used') else '—'} | {'yes' if t.get('broaden_used') else '—'} | {(t.get('fallback_reason') or '')[:60].replace('|','/')} | {tm} |")
+        for s in bench.get("single_baselines", []) or []:
+            if s.get("fallback_used") or s.get("broaden_used"):
+                rt = s.get("retry_stage_timing") or s.get("stage_timing_ms") or {}
+                tm = ""
+                if isinstance(rt, dict):
+                    parts = []
+                    if rt.get("retrieve_retry") is not None:
+                        parts.append(f"retry {rt.get('retrieve_retry')}ms")
+                    if rt.get("retrieve_broadened") is not None:
+                        parts.append(f"broad {rt.get('retrieve_broadened')}ms")
+                    tm = " ".join(parts)
+                lines.append(f"| {s.get('id')} | {s.get('subspace')} | {(s.get('query') or '')[:40].replace('|','/')} | {'yes' if s.get('fallback_used') else '—'} | {'yes' if s.get('broaden_used') else '—'} | {(s.get('fallback_reason') or '')[:60].replace('|','/')} | {tm} |")
+        lines.append("")
+    else:
+        lines.append("(No fallback or broaden retries triggered — all retrievals sufficient on first attempt.)")
         lines.append("")
     lines.append("---")
     lines.append(f"_Generated {date_pretty} · bench {meta_bench.get('timestamp','')} · judge {ragas.get('meta',{}).get('model_judge','')} · error_rate {error_rate:.1%}_")

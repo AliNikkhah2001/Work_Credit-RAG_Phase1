@@ -69,13 +69,23 @@ def init_db():
                 created_at REAL,
                 applied_subspace TEXT,
                 available_subspaces TEXT,
-                filter_path TEXT
+                filter_path TEXT,
+                fallback_used INTEGER,
+                fallback_reason TEXT,
+                retry_stage_timing TEXT,
+                broaden_used INTEGER
             )
         """)
-        # Migration: add new columns if DB predates F7
-        for _col in ("applied_subspace", "available_subspaces", "filter_path"):
+        # Migration: add new columns if DB predates F7/T7
+        for _col in ("applied_subspace", "available_subspaces", "filter_path", "fallback_used", "fallback_reason", "retry_stage_timing", "broaden_used"):
             try:
                 conn.execute(f"ALTER TABLE traces ADD COLUMN {_col} TEXT")
+            except Exception:
+                pass
+        # Ensure integer-typed fallback/broaden columns have correct type (SQLite flexible, but keep INT for boolean)
+        for _col in ("fallback_used", "broaden_used"):
+            try:
+                conn.execute(f"ALTER TABLE traces ADD COLUMN {_col} INTEGER")
             except Exception:
                 pass
         # Indexes for evaluations
@@ -132,7 +142,7 @@ def _eval_row_to_dict(row: sqlite3.Row) -> dict:
 
 def _trace_row_to_dict(row: sqlite3.Row) -> dict:
     d = dict(row)
-    for field in ("stage_timing", "guardrail_input", "guardrail_output", "retrieved_chunks", "citations"):
+    for field in ("stage_timing", "guardrail_input", "guardrail_output", "retrieved_chunks", "citations", "retry_stage_timing"):
         raw = d.get(field)
         if raw is None:
             # default for array fields
@@ -148,6 +158,8 @@ def _trace_row_to_dict(row: sqlite3.Row) -> dict:
                     # Use {} for timing, None for guardrails
                     if field in ("guardrail_input", "guardrail_output"):
                         d[field] = None
+                if field == "retry_stage_timing":
+                    d[field] = None
                 continue
         else:
             try:
@@ -163,6 +175,10 @@ def _trace_row_to_dict(row: sqlite3.Row) -> dict:
         d["citations"] = []
     if d.get("stage_timing") is None:
         d["stage_timing"] = {}
+    if d.get("retry_stage_timing") is None:
+        # keep as None unless explicitly set
+        if "retry_stage_timing" in d and d["retry_stage_timing"] == {}:
+            d["retry_stage_timing"] = {}
     # F7 subspace fields — available_subspaces stored as JSON array string
     if "available_subspaces" in d:
         raw_av = d.get("available_subspaces")
@@ -171,6 +187,26 @@ def _trace_row_to_dict(row: sqlite3.Row) -> dict:
                 d["available_subspaces"] = json.loads(raw_av)
             except Exception:
                 d["available_subspaces"] = None
+    # T7 retry fields — fallback_used / broaden_used stored as INTEGER 0/1
+    for bool_field in ("fallback_used", "broaden_used"):
+        if bool_field in d:
+            v = d.get(bool_field)
+            if isinstance(v, str):
+                # migration columns added as TEXT may store "0"/"1" or "true"/"false"
+                if v in ("1", "true", "True"):
+                    d[bool_field] = True
+                elif v in ("0", "false", "False", ""):
+                    d[bool_field] = False if v != "" else None
+                else:
+                    try:
+                        d[bool_field] = bool(int(v))
+                    except Exception:
+                        d[bool_field] = bool(v)
+            elif isinstance(v, int):
+                d[bool_field] = bool(v)
+            elif v is None:
+                # leave as None or False for fallback semantics; keep None to distinguish missing
+                pass
     return d
 
 
@@ -444,6 +480,35 @@ def save_trace(data: dict) -> dict:
     avail_val = data.get("available_subspaces")
     avail_str = _dumps(avail_val) if avail_val is not None else None
     filter_path_val = data.get("filter_path")
+    # T7 retry fields
+    fallback_used_val = data.get("fallback_used")
+    # Normalize bool to int for storage (None stays None)
+    if fallback_used_val is True:
+        fallback_used_int = 1
+    elif fallback_used_val is False:
+        fallback_used_int = 0
+    elif fallback_used_val is None:
+        fallback_used_int = None
+    else:
+        try:
+            fallback_used_int = 1 if int(fallback_used_val) else 0
+        except Exception:
+            fallback_used_int = 1 if bool(fallback_used_val) else 0
+    fallback_reason_val = data.get("fallback_reason")
+    retry_stage_timing_val = data.get("retry_stage_timing")
+    retry_stage_str = _dumps(retry_stage_timing_val) if retry_stage_timing_val is not None else None
+    broaden_used_val = data.get("broaden_used")
+    if broaden_used_val is True:
+        broaden_used_int = 1
+    elif broaden_used_val is False:
+        broaden_used_int = 0
+    elif broaden_used_val is None:
+        broaden_used_int = None
+    else:
+        try:
+            broaden_used_int = 1 if int(broaden_used_val) else 0
+        except Exception:
+            broaden_used_int = 1 if bool(broaden_used_val) else 0
 
     conn = get_db()
     try:
@@ -460,7 +525,8 @@ def save_trace(data: dict) -> dict:
                     chat_id=?, user_id=?, model=?, user_query=?, rewritten_query=?,
                     response=?, stage_timing=?, guardrail_input=?, guardrail_output=?,
                     retrieved_chunks=?, citations=?, context_preview=?, latency_ms=?,
-                    applied_subspace=?, available_subspaces=?, filter_path=?
+                    applied_subspace=?, available_subspaces=?, filter_path=?,
+                    fallback_used=?, fallback_reason=?, retry_stage_timing=?, broaden_used=?
                 WHERE request_id=?
             """, (
                 data.get("chat_id"),
@@ -479,14 +545,18 @@ def save_trace(data: dict) -> dict:
                 applied_subspace_val,
                 avail_str,
                 filter_path_val,
+                fallback_used_int,
+                fallback_reason_val,
+                retry_stage_str,
+                broaden_used_int,
                 request_id,
             ))
         else:
             created_at = data.get("created_at") or now
             conn.execute("""
                 INSERT INTO traces
-                (id, request_id, chat_id, user_id, model, user_query, rewritten_query, response, stage_timing, guardrail_input, guardrail_output, retrieved_chunks, citations, context_preview, latency_ms, created_at, applied_subspace, available_subspaces, filter_path)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                (id, request_id, chat_id, user_id, model, user_query, rewritten_query, response, stage_timing, guardrail_input, guardrail_output, retrieved_chunks, citations, context_preview, latency_ms, created_at, applied_subspace, available_subspaces, filter_path, fallback_used, fallback_reason, retry_stage_timing, broaden_used)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             """, (
                 trace_id,
                 request_id,
@@ -507,6 +577,10 @@ def save_trace(data: dict) -> dict:
                 applied_subspace_val,
                 avail_str,
                 filter_path_val,
+                fallback_used_int,
+                fallback_reason_val,
+                retry_stage_str,
+                broaden_used_int,
             ))
         conn.commit()
         row = conn.execute("SELECT * FROM traces WHERE request_id=?", (request_id,)).fetchone()
@@ -726,6 +800,29 @@ def get_overview_stats() -> dict:
 
         evaluations_per_rating = dict(rating_dist)
 
+        # T7 fallback / retry stats
+        fallback_count = 0
+        broaden_count = 0
+        try:
+            fallback_count = conn.execute("SELECT COUNT(*) FROM traces WHERE fallback_used=1").fetchone()[0]
+        except Exception:
+            pass
+        try:
+            broaden_count = conn.execute("SELECT COUNT(*) FROM traces WHERE broaden_used=1").fetchone()[0]
+        except Exception:
+            pass
+        fallback_rate = round(fallback_count / total_requests, 4) if total_requests else 0.0
+        broaden_rate = round(broaden_count / total_requests, 4) if total_requests else 0.0
+        # fallback by applied_subspace (top 8)
+        fallback_by_subspace: Dict[str, int] = {}
+        try:
+            cur = conn.execute("SELECT applied_subspace, COUNT(*) as cnt FROM traces WHERE fallback_used=1 GROUP BY applied_subspace")
+            for r in cur.fetchall():
+                key = str(r[0]) if r[0] is not None else "none"
+                fallback_by_subspace[key] = r[1]
+        except Exception:
+            pass
+
         return {
             "total_requests": total_requests,
             "total_evaluations": total_evaluations,
@@ -739,6 +836,11 @@ def get_overview_stats() -> dict:
             "model_distribution": model_dist,
             "requests_per_hour": requests_per_hour,
             "evaluations_per_rating": evaluations_per_rating,
+            "fallback_count": fallback_count,
+            "fallback_rate": fallback_rate,
+            "broaden_count": broaden_count,
+            "broaden_rate": broaden_rate,
+            "fallback_by_subspace": fallback_by_subspace,
         }
     finally:
         conn.close()
