@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="RAC, ICR, Qulac/ClariQ/ClariT, CLARITY - Retrieval-grounded clarification, iterative clarify-rewrite loops, multi-facet ambiguity">
+  
+  <title>Ambiguity & Clarification Papers - Multi-Turn RAG Research | Multi-Turn RAG Research: Problems, Solutions & State-of-the-Art (2025-2026)</title>
+  
+  <!-- SEO -->
+  <meta name="author" content="Work Credit RAG Team">
+  <meta property="og:title" content="Ambiguity & Clarification Papers - Multi-Turn RAG Research | Multi-Turn RAG Research: Problems, Solutions & State-of-the-Art (2025-2026)">
+  <meta property="og:description" content="RAC, ICR, Qulac/ClariQ/ClariT, CLARITY - Retrieval-grounded clarification, iterative clarify-rewrite loops, multi-facet ambiguity">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- Mermaid -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+  
+  <!-- Styles -->
+  <link rel="stylesheet" href="/assets/css/main.css">
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+  
+  <!-- Begin Jekyll SEO tag v2.9.1 -->
+<title>Ambiguity &amp; Clarification Papers - Multi-Turn RAG Research | Multi-Turn RAG Research: Problems, Solutions &amp; State-of-the-Art (2025-2026)</title>
+<meta name="generator" content="Jekyll v4.4.1" />
+<meta property="og:title" content="Ambiguity &amp; Clarification Papers - Multi-Turn RAG Research" />
+<meta name="author" content="Work Credit RAG Team" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="RAC, ICR, Qulac/ClariQ/ClariT, CLARITY - Retrieval-grounded clarification, iterative clarify-rewrite loops, multi-facet ambiguity" />
+<meta name="twitter:description" property="og:description" content="RAC, ICR, Qulac/ClariQ/ClariT, CLARITY - Retrieval-grounded clarification, iterative clarify-rewrite loops, multi-facet ambiguity" />
+<meta property="og:site_name" content="Multi-Turn RAG Research: Problems, Solutions &amp; State-of-the-Art (2025-2026)" />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:title" content="Ambiguity &amp; Clarification Papers - Multi-Turn RAG Research" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebPage","author":{"@type":"Person","name":"Work Credit RAG Team"},"description":"RAC, ICR, Qulac/ClariQ/ClariT, CLARITY - Retrieval-grounded clarification, iterative clarify-rewrite loops, multi-facet ambiguity","headline":"Ambiguity \u0026amp; Clarification Papers - Multi-Turn RAG Research","url":"/papers/ambiguity-clarification.html"}</script>
+<!-- End Jekyll SEO tag -->
+
+</head>
+
+<body>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+  
+  <header class="site-header" role="banner">
+    <div class="header-inner">
+      <a class="site-title" href="/">
+        <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+          <path d="M6.5 2H20v20"/>
+          <line x1="6.5" y1="2" x2="6.5" y2="22"/>
+        </svg>
+        <span>Multi-Turn RAG Research</span>
+      </a>
+      
+      <nav class="main-nav" role="navigation" aria-label="Main navigation">
+        <button class="nav-toggle" aria-expanded="false" aria-controls="nav-menu" aria-label="Toggle navigation">
+          <span class="hamburger"></span>
+        </button>
+        <ul id="nav-menu" class="nav-list">
+          <li><a href="/" class="">Overview</a></li>
+          <li class="has-dropdown">
+            <a href="/problems/index.html" class="">Problems</a>
+            <ul class="dropdown">
+              <li><a href="/problems/subspace-filtering.html">Subspace Filtering</a></li>
+              <li><a href="/problems/ambiguity-resolution.html">Ambiguity Resolution</a></li>
+              <li><a href="/problems/sticky-context.html">Sticky Context</a></li>
+              <li><a href="/problems/retrieval-degradation.html">Retrieval Degradation</a></li>
+              <li><a href="/problems/hallucination.html">Hallucination Control</a></li>
+            </ul>
+          </li>
+          <li class="has-dropdown">
+            <a href="/papers/index.html" class="active">Papers & Solutions</a>
+            <ul class="dropdown">
+              <li><a href="/papers/subspace-filtering.html">Subspace & Domain Partitioning</a></li>
+              <li><a href="/papers/ambiguity-clarification.html">Ambiguity & Clarification</a></li>
+              <li><a href="/papers/sticky-context.html">Sticky Context & Memory</a></li>
+              <li><a href="/papers/retrieval-fusion.html">Retrieval Fusion & RRF</a></li>
+              <li><a href="/papers/faithfulness.html">Faithfulness & Hallucination</a></li>
+              <li><a href="/papers/memory-architectures.html">Memory Architectures</a></li>
+              <li><a href="/papers/benchmarks.html">Benchmarks & Evaluation</a></li>
+            </ul>
+          </li>
+          <li><a href="/architectures.html" class="">Architectures</a></li>
+          <li><a href="/relevance.html" class="">Relevance Mapping</a></li>
+          <li><a href="/benchmarks.html" class="">Benchmarks</a></li>
+          <li><a href="/our-impl.html" class="">Our Implementation</a></li>
+        </ul>
+      </nav>
+      
+      <a href="https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1" class="github-link" target="_blank" rel="noopener" aria-label="View on GitHub">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.305-.536-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
+        </svg>
+      </a>
+    </div>
+  </header>
+
+  <main id="main-content" class="site-main" role="main">
+    <div class="page-header">
+  <h1>Ambiguity & Clarification Papers</h1>
+  <p class="lead">RAC, ICR, Qulac/ClariQ/ClariT, CLARITY - Retrieval-grounded clarification, iterative clarify-rewrite loops, multi-facet ambiguity</p>
+</div>
+
+## Paper Summaries
+
+### RAC: Retrieval-Augmented Clarification
+
+| Field | Detail |
+|-------|--------|
+| **Title** | RAC: Retrieval-Augmented Clarification for Faithful Conversational Search |
+| **Authors** | Multiple |
+| **Venue** | arXiv:2601.11722 (2026) |
+| **Key Innovation** | Ground clarifications IN THE CORPUS, not LLM hallucination |
+
+**Key Claims**:
+- **Problem**: Prior work focuses on fluency/alignment, not grounding clarifications in corpus
+- **Solution**: Retrieve top-k passages → LLM generates clarifying question grounded in retrieved facets
+- **Mechanism**: Implicit facet extraction via supplying top-k passages to LLM
+- **Evaluation**: Qulac, ClariQ, PaQa, CambigNQ — faithfulness to retrieved content
+
+**Key Insight**: "Facet extraction is performed implicitly by supplying the top-k retrieved passages to the LLM, which then generates the clarifying question."
+
+**Relevance to Our Fix**: 
+- Our `is_scattered_ambiguous()` detects vague queries → triggers clarify
+- RAC shows: **clarifications should be grounded in retrieved passages**, not just LLM-generated
+- Future: Use retrieved facets to generate clarification pills
+
+---
+
+### ICR: Iterative Clarification and Rewriting
+
+| Field | Detail |
+|-------|--------|
+| **Title** | ICR: Iterative Clarification and Rewriting for Conversational Search |
+| **Authors** | Sifei Meng, Dmitry Ilvovsky |
+| **Venue** | EMNLP 2025 |
+| **Code** | https://github.com/mengsifei/MultiturnRAG |
+
+**Key Claims**:
+- **Problem**: CQR ignores feedback from retrieval/generation
+- **Solution**: Iterative loop: `clarify → rewrite → retrieve → repeat`
+- **Loop**: `c_i ∼ M(r_{i-1})`, `r_i ∼ M(c_i, H, r_{i-1})`
+- **Results**: 0.5453 nDCG@5 on Task A (Rank 3/38)
+
+**Algorithm**:
+```
+for e = 1 to I:
+    c_i ∼ M(r_{i-1})          # Generate clarification
+    r_i ∼ M(c_i, H, r_{i-1})  # Rewrite with clarification
+    if retrieval_confident(r_i): break
+return r_i
+```
+
+**Relevance to Our Fix**:
+- Our T5 = single-shot clarify (no iteration)
+- ICR shows: **iterative clarify-rewrite** improves retrieval confidence
+- Future: Add iteration for complex ambiguous queries
+
+---
+
+### Qulac / ClariQ / ClariT Datasets
+
+| Dataset | Source | Size | Focus |
+|---------|--------|------|-------|
+| **Qulac** | Aliannejadi et al. 2019 | 10,277 single-turn | Faceted ambiguous queries from TREC Web Track |
+| **ClariQ** | Aliannejadi et al. 2020 | Extended Qulac | Crowdsourced clarifications + answers |
+| **ClariT** | Feng et al. 2023 | 108k multi-turn | Task-oriented clarification with user profiles |
+
+**Key Stats**:
+- Qulac: 198 topics, 762 facets, 10,277 query-facet-question triplets
+- ClariQ: Extended with new topics, crowdsourced
+- ClariT: 108k multi-turn conversations with user profiles
+
+**Relevance**: Our 6 scattered queries map to Qulac/ClariQ patterns:
+- `وضعیت اعتباری چطور است` → faceted (cheque vs facilities vs general)
+- `بدهکار شدم چیکار کنم` → underspecified intent
+
+---
+
+### CLARITY: Multi-Facet Ambiguity in NL2SQL
+
+| Field | Detail |
+|-------|--------|
+| **Title** | CLARITY: A Framework for Conversational Language Ambiguity and Unanswerability in Interactive NL2SQL Systems |
+| **Venue** | ACL 2026 |
+| **Key Innovation** | Multi-facet ambiguity + unanswerability with grounded continuations |
+
+**Key Claims**:
+- **Multi-facet ambiguity**: Query contains multiple interacting ambiguity sources
+- **Framework**: Constraint-driven pipeline generating ambiguous NL2SQL with grounded continuations
+- **User behaviors**: Models partially helpful/unhelpful responses
+
+**Relevance**: Our clarify pills = single-facet; CLARITY shows **multi-facet ambiguity** needs multi-turn resolution.
+
+---
+
+## Clarification Approaches Comparison
+
+| Approach | Paper | Mechanism | Iterative? | Grounded? |
+|----------|-------|-----------|------------|-----------|
+| **Our T5** | — | Keyword-based scattered detection | No | No (static pills) |
+| **RAC** | arXiv:2601.11722 | Retrieve → LLM generates clarification from passages | No | **Yes** (corpus-grounded) |
+| **ICR** | EMNLP 2025 | Clarify → Rewrite → Retrieve loop | **Yes** | Implicit (via rewrite) |
+| **Qulac/ClariQ** | ACL 2019/2020 | Facet annotations for ambiguous queries | No | Facet-based |
+| **CLARITY** | ACL 2026 | Multi-facet ambiguity + grounded continuations | Yes (multi-turn) | **Yes** |
+
+---
+
+## Our Implementation vs State-of-the-Art
+
+| Aspect | Our T5 | RAC | ICR | Gap |
+|--------|--------|-----|-----|-----|
+| **Detection** | Keyword-based | Implicit (retrieve first) | Implicit (via rewrite) | Detection could be learned |
+| **Clarification** | Static pills (4 subspaces) | LLM-generated from passages | Iterative clarify-rewrite | Static vs dynamic |
+| **Grounding** | None (predefined) | **Corpus-grounded** | Implicit via rewrite | **Major gap** |
+| **Iteration** | Single-shot | Single-shot | **Multi-iteration** | No iteration |
+| **Feedback** | None | Retrieval confidence | Retrieval + generation | No feedback loop |
+
+---
+
+## Future: Iterative Clarify-Rewrite Loop
+
+Based on ICR + RAC:
+
+```python
+async def iterative_clarify_rewrite(query, history, max_iter=3):
+    rewritten = query
+    for i in range(max_iter):
+        # 1. Retrieve with current rewrite
+        results = await retrieve(rewritten, top_k=10)
+        
+        # 2. Generate clarification grounded in results
+        clarification = await generate_clarification_grounded(
+            rewritten, results, history
+        )
+        
+        # 3. Get user response (or simulate)
+        user_response = await get_user_input(clarification)
+        
+        # 4. Rewrite with clarification
+        rewritten = await rewrite_query(user_response, history, rewritten)
+        
+        # 5. Check retrieval confidence
+        if await is_retrieval_confident(rewritten):
+            break
+    
+    return rewritten
+```
+
+---
+
+## Architecture: Clarification Flow
+
+```mermaid
+flowchart TD
+    A[User Query] --> B[Scattered Detector]
+    B -->|Ambiguous| C[Retrieve Top-K Passages]
+    C --> D[RAC: Generate Clarification from Passages]
+    D --> E[Show Pills to User]
+    E --> F[User Selects/Types]
+    F --> G[ICR: Rewrite Query with Clarification]
+    G --> H[Retrieve with Rewritten Query]
+    H --> I{Confident?}
+    I -->|No| C
+    I -->|Yes| J[Generate Answer]
+    
+    style C fill:#dcfce7,stroke:#166534
+    style D fill:#fef3e0,stroke:#f57f17
+```
+
+---
+
+## Related Pages
+
+- [Problem: Ambiguity Resolution](../problems/ambiguity-resolution.html)
+- [Paper: Retrieval Fusion & RRF](./retrieval-fusion.html)
+- [Paper: Sticky Context & Memory](./sticky-context.html)
+- [Architecture: RAC/ICR](../architectures.html#rac-icr)
+  </main>
+
+  <footer class="site-footer" role="contentinfo">
+    <div class="footer-inner">
+      <div class="footer-links">
+        <a href="https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1" target="_blank" rel="noopener">GitHub Repository</a>
+        <a href="https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1/tree/main/docs/research-site" target="_blank" rel="noopener">Site Source</a>
+        <a href="https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1/issues" target="_blank" rel="noopener">Issues</a>
+      </div>
+      <p class="copyright">© 2026 Work Credit RAG Team. Licensed under MIT.</p>
+      <p class="footer-note">Built with Jekyll · Hosted on GitHub Pages · Last updated: October 14, 2026</p>
+    </div>
+  </footer>
+
+  <script src="/assets/js/main.js"></script>
+  <script>
+    mermaid.initialize({ 
+      startOnLoad: true,
+      theme: 'default',
+      securityLevel: 'loose',
+      flowchart: { useMaxWidth: true, htmlLabels: true }
+    });
+  </script>
+</body>
+</html>

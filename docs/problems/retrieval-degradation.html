@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Filtered retrieval = hard filter, no fallback. Fixed with RRF fusion + broadened retry + GPU acceleration.">
+  
+  <title>Retrieval Degradation - Multi-Turn RAG Research | Multi-Turn RAG Research: Problems, Solutions & State-of-the-Art (2025-2026)</title>
+  
+  <!-- SEO -->
+  <meta name="author" content="Work Credit RAG Team">
+  <meta property="og:title" content="Retrieval Degradation - Multi-Turn RAG Research | Multi-Turn RAG Research: Problems, Solutions & State-of-the-Art (2025-2026)">
+  <meta property="og:description" content="Filtered retrieval = hard filter, no fallback. Fixed with RRF fusion + broadened retry + GPU acceleration.">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- Mermaid -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+  
+  <!-- Styles -->
+  <link rel="stylesheet" href="/assets/css/main.css">
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+  
+  <!-- Begin Jekyll SEO tag v2.9.1 -->
+<title>Retrieval Degradation - Multi-Turn RAG Research | Multi-Turn RAG Research: Problems, Solutions &amp; State-of-the-Art (2025-2026)</title>
+<meta name="generator" content="Jekyll v4.4.1" />
+<meta property="og:title" content="Retrieval Degradation - Multi-Turn RAG Research" />
+<meta name="author" content="Work Credit RAG Team" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Filtered retrieval = hard filter, no fallback. Fixed with RRF fusion + broadened retry + GPU acceleration." />
+<meta name="twitter:description" property="og:description" content="Filtered retrieval = hard filter, no fallback. Fixed with RRF fusion + broadened retry + GPU acceleration." />
+<meta property="og:site_name" content="Multi-Turn RAG Research: Problems, Solutions &amp; State-of-the-Art (2025-2026)" />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:title" content="Retrieval Degradation - Multi-Turn RAG Research" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebPage","author":{"@type":"Person","name":"Work Credit RAG Team"},"description":"Filtered retrieval = hard filter, no fallback. Fixed with RRF fusion + broadened retry + GPU acceleration.","headline":"Retrieval Degradation - Multi-Turn RAG Research","url":"/problems/retrieval-degradation.html"}</script>
+<!-- End Jekyll SEO tag -->
+
+</head>
+
+<body>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+  
+  <header class="site-header" role="banner">
+    <div class="header-inner">
+      <a class="site-title" href="/">
+        <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+          <path d="M6.5 2H20v20"/>
+          <line x1="6.5" y1="2" x2="6.5" y2="22"/>
+        </svg>
+        <span>Multi-Turn RAG Research</span>
+      </a>
+      
+      <nav class="main-nav" role="navigation" aria-label="Main navigation">
+        <button class="nav-toggle" aria-expanded="false" aria-controls="nav-menu" aria-label="Toggle navigation">
+          <span class="hamburger"></span>
+        </button>
+        <ul id="nav-menu" class="nav-list">
+          <li><a href="/" class="">Overview</a></li>
+          <li class="has-dropdown">
+            <a href="/problems/index.html" class="active">Problems</a>
+            <ul class="dropdown">
+              <li><a href="/problems/subspace-filtering.html">Subspace Filtering</a></li>
+              <li><a href="/problems/ambiguity-resolution.html">Ambiguity Resolution</a></li>
+              <li><a href="/problems/sticky-context.html">Sticky Context</a></li>
+              <li><a href="/problems/retrieval-degradation.html">Retrieval Degradation</a></li>
+              <li><a href="/problems/hallucination.html">Hallucination Control</a></li>
+            </ul>
+          </li>
+          <li class="has-dropdown">
+            <a href="/papers/index.html" class="">Papers & Solutions</a>
+            <ul class="dropdown">
+              <li><a href="/papers/subspace-filtering.html">Subspace & Domain Partitioning</a></li>
+              <li><a href="/papers/ambiguity-clarification.html">Ambiguity & Clarification</a></li>
+              <li><a href="/papers/sticky-context.html">Sticky Context & Memory</a></li>
+              <li><a href="/papers/retrieval-fusion.html">Retrieval Fusion & RRF</a></li>
+              <li><a href="/papers/faithfulness.html">Faithfulness & Hallucination</a></li>
+              <li><a href="/papers/memory-architectures.html">Memory Architectures</a></li>
+              <li><a href="/papers/benchmarks.html">Benchmarks & Evaluation</a></li>
+            </ul>
+          </li>
+          <li><a href="/architectures.html" class="">Architectures</a></li>
+          <li><a href="/relevance.html" class="">Relevance Mapping</a></li>
+          <li><a href="/benchmarks.html" class="">Benchmarks</a></li>
+          <li><a href="/our-impl.html" class="">Our Implementation</a></li>
+        </ul>
+      </nav>
+      
+      <a href="https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1" class="github-link" target="_blank" rel="noopener" aria-label="View on GitHub">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.305-.536-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
+        </svg>
+      </a>
+    </div>
+  </header>
+
+  <main id="main-content" class="site-main" role="main">
+    <div class="page-header">
+  <h1>Retrieval Degradation</h1>
+  <p class="lead">Filtered retrieval = hard filter, no fallback. Fixed with RRF fusion + broadened retry + GPU acceleration.</p>
+</div>
+
+## Problem Summary
+
+| Aspect | Detail |
+|--------|--------|
+| **Severity** | Critical |
+| **Category** | Retrieval / Fallback |
+| **Status** | ✅ Fixed |
+| **Bench Impact** | Hit: 0.537 → 0.780; p50: 8006ms → 4872ms |
+| **Key Papers** | GUIR (SemEval 2026), 5ting (SemEval 2026), H-RAG (SemEval 2026), Sifei (SemEval 2026) |
+
+---
+
+## Root Cause
+
+### The Hard Filter Problem
+
+Our retrieval pipeline:
+```python
+# retrieve.py - primary path
+result = await client.retrieve(search_query, top_k, request_id, filter_path=sticky_filter)
+
+# If weak (0 chunks or max_score < threshold):
+# ❌ OLD: Clear chunks → abstention
+# ✅ NEW: Whole-KB fallback → RRF fusion → broadened retry
+```
+
+### The Degradation Pattern
+
+| Turn Type | Filter | Chunks | Score | Outcome |
+|-----------|--------|--------|-------|---------|
+| New chat | None | 10 | 0.032 | Answer ✅ |
+| After sticky | `گزارش اعتباراتنجی چک` | 0 | — | Abstain ❌ |
+| Whole-KB | None | 10 | 0.028 | Answer (but weak) |
+
+The filter **removed** relevant chunks because KB filter checks exact element membership.
+
+---
+
+## The Fix: Multi-Stage Fallback Cascade
+
+### Stage 1: Primary Filtered Retrieval
+```python
+# retrieve.py - explicit scope
+result = await client.retrieve(
+    search_query, primary_top_k, request_id,
+    filter_path=explicit_filter,
+    keyword_boost=_subspace_keyword_boost(subspace)
+)
+```
+
+### Stage 2: RRF Fusion Fallback (T1)
+```python
+# If weak → whole-KB retry → RRF FUSION (not replace)
+async def _t1_try_whole_kb_fallback(state, search_query, request_id, active_filter):
+    fb_result = await fb_client.retrieve(search_query, top_k, request_id, filter_path=None)
+    if fb_result:
+        # RRF FUSION instead of hard replace
+        state["retrieved_chunks"] = _fuse_subspace_rrf(current, fb_result)[:20]
+        state["fallback_used"] = True
+        state["fallback_reason"] = f"low_score top={cur_top:.4f} < thr={thr:.3f} | fused rrf(cur=N,fb=M -> K)"
+```
+
+### Stage 3: Broadened Retry (T2)
+```python
+# If still weak → broadened params
+async def _t2_try_broadened_retry(state, search_query, request_id, top_k=30, keyword_boost=1.5):
+    # top_k=30, keyword_boost=1.5, beam=5
+    fb_result = await client.retrieve(search_query, 30, request_id, filter_path=None, keyword_boost=1.5)
+    # FUSE with previous
+    state["retrieved_chunks"] = _fuse_subspace_rrf(previous, fb_result)[:20]
+    state["broaden_used"] = True
+```
+
+### Stage 4: LLM-Judge Broadening (F5)
+```python
+# If still weak → LLM infers subspace → filtered re-retrieve
+llm_choice = await infer_subspace_llm(query, history, request_id)
+if llm_choice and llm_choice != sticky:
+    # Explicit re-spec → switch subspace
+    new_filter = subspace_map[llm_choice]
+    result = await client.retrieve(search_query, top_k, request_id, filter_path=new_filter)
+```
+
+---
+
+## RRF Fusion Algorithm
+
+```python
+def _fuse_subspace_rrf(filtered, whole, filtered_weight=1.3):
+    """
+    Reciprocal Rank Fusion with filtered boost
+    score = 1/(60 + rank) * weight
+    """
+    merged = {}
+    # Filtered leg: weight 1.3x
+    for rank, chunk in enumerate(filtered):
+        key = chunk.chunk_id
+        score = filtered_weight / (60 + rank + 1)
+        merged[key] = max(merged.get(key, 0), score)
+    
+    # Whole-KB leg: weight 1.0
+    for rank, chunk in enumerate(whole):
+        key = chunk.chunk_id
+        score = 1.0 / (60 + rank + 1)
+        merged[key] = max(merged.get(key, 0), score)
+    
+    # Sort by fused score, take top 20
+    return sorted(merged.values(), key=lambda x: x.fused_score, reverse=True)[:20]
+```
+
+---
+
+## Benchmark Delta
+
+| Metric | Before | After | Δ |
+|--------|--------|-------|---|
+| Retrieval hit | 0.537 | **0.780** | +0.243 |
+| Cheque hit | 0.111 | **0.667** | +0.556 |
+| Fallback usage | 0% | 32% | +32% |
+| Broaden usage | 0% | 18% | +18% |
+| p50 latency | 8006ms | **4872ms** | -39% |
+
+---
+
+## Related Papers
+
+| Paper | Venue | Key Contribution |
+|-------|-------|------------------|
+| **GUIR** | SemEval 2026 | Multi-query fusion (LT + RW + QS) → RRF → +12.3% nDCG@5 |
+| **5ting** | SemEval 2026 | Dual-query merged retrieval + LLM reranking + faithfulness control |
+| **H-RAG** | SemEval 2026 | Hierarchical parent-child retrieval + hybrid retrieval + parent-level context |
+| **Sifei** | SemEval 2026 | Hybrid dense+sparse + query rewrite + cross-encoder → 0.5453 nDCG@5 (Rank 3/38) |
+| **Sifei** | SemEval 2026 | Hybrid dense+sparse + query rewrite + cross-encoder → 0.5453 nDCG@5 (Rank 3/38) |
+| **IITKanBDone** | SemEval 2026 | ELSER + Mistral-7B → end-to-end multi-turn RAG |
+| **AILS-NTUA** | SemEval 2026 | Multi-strategy rewriting (Minimal + Corpus-Specific + CoT) + Nested-RRF |
+
+---
+
+## Architecture: Fallback Cascade
+
+```mermaid
+flowchart TD
+    A[Query + Filter] --> B[Primary Filtered Retrieval]
+    B --> C{Strong Evidence?}
+    C -->|Yes| D[Build Context → Generate]
+    C -->|No| E[T1: Whole-KB Fallback<br/>RRF Fusion (weight 1.3x)]
+    E --> F{Strong Evidence?}
+    F -->|Yes| D
+    F -->|No| G[T2: Broadened Retry<br/>top_k=30, boost=1.5, beam=5]
+    G --> H{Strong Evidence?}
+    H -->|Yes| D
+    H -->|No| I[F5: LLM-Judge Broadening<br/>infer_subspace_llm]
+    I --> J{LLM Chooses Subspace?}
+    J -->|Yes| K[Filtered Re-retrieve]
+    J -->|No| L[Abstain: 'پاسخی یافت نشد']
+    K --> F
+    
+    style E fill:#fef3e0,stroke:#f57f17
+    style G fill:#fef3e0,stroke:#f57f17
+    style I fill:#fef3e0,stroke:#f57f17
+```
+
+---
+
+## Code Pointers
+
+| File | Function | Line |
+|------|----------|------|
+| `retrieve.py` | `_fuse_subspace_rrf` | 143 |
+| `retrieve.py` | `_t1_try_whole_kb_fallback` | 220 |
+| `retrieve.py` | `_t2_try_broadened_retry` | 220 |
+| `retrieve.py` | F5 LLM-judge | 1640 |
+| `clients/knowledgebase.py` | `retrieve()` with boost | 61 |
+| `config.py` | `subspace_keyword_boost` | 34 |
+
+---
+
+## Validation Commands
+
+```bash
+# Test fallback cascade
+curl -s http://127.0.0.1:8100/v1/chat/completions \
+  -H 'Content-Type: application/json' -H 'X-Request-ID: fallback-test' \
+  -d '{"model":"ics-helper-agent","messages":[{"role":"user","content":"چک برگشتی چیست"}],"filter_path":"گزارش اعتباراتنجی چک"}' \
+  | jq '.audit.fallback_used, .audit.broaden_used, .audit.retry_stage_timing, .audit.retrieved_chunks|length'
+
+# Test broadened retry
+curl -s http://127.0.0.1:8100/v1/chat/completions \
+  -H 'Content-Type: application/json' -H 'X-Request-ID: broaden-test' \
+  -d '{"model":"ics-helper-agent","messages":[{"role":"user","content":"سوال بسیار مبهم..."}]}' \
+  | jq '.audit.broaden_used, .audit.retry_stage_timing.retrieve_broadened'
+```
+
+---
+
+## Related Problems
+
+- [Subspace Filtering](./subspace-filtering.html) — Map mismatch caused 0 chunks
+- [Sticky Context Decay](./sticky-context.html) — Context loss on generic follow-ups
+- [Hallucination Control](./hallucination.html) — Weak-evidence answers hallucinated
+  </main>
+
+  <footer class="site-footer" role="contentinfo">
+    <div class="footer-inner">
+      <div class="footer-links">
+        <a href="https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1" target="_blank" rel="noopener">GitHub Repository</a>
+        <a href="https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1/tree/main/docs/research-site" target="_blank" rel="noopener">Site Source</a>
+        <a href="https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1/issues" target="_blank" rel="noopener">Issues</a>
+      </div>
+      <p class="copyright">© 2026 Work Credit RAG Team. Licensed under MIT.</p>
+      <p class="footer-note">Built with Jekyll · Hosted on GitHub Pages · Last updated: October 14, 2026</p>
+    </div>
+  </footer>
+
+  <script src="/assets/js/main.js"></script>
+  <script>
+    mermaid.initialize({ 
+      startOnLoad: true,
+      theme: 'default',
+      securityLevel: 'loose',
+      flowchart: { useMaxWidth: true, htmlLabels: true }
+    });
+  </script>
+</body>
+</html>

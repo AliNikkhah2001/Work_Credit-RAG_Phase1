@@ -1,0 +1,161 @@
+---
+layout: default
+title: "Benchmarks & Evaluation Papers - Multi-Turn RAG Research"
+description: "MTRAG, MTRAGEval, CORAL, RAD-Bench, SemEval 2026 Task 8 - 842-turn multi-turn benchmark, nDCG@5, RAGAS, human evaluation, automated eval"
+---
+
+<div class="page-header">
+  <h1>Benchmarks & Evaluation Papers</h1>
+  <p class="lead">MTRAG, MTRAGEval, CORAL, RAD-Bench, SemEval 2026 Task 8 - 842-turn multi-turn benchmark, nDCG@5, RAGAS, human evaluation, automated eval</p>
+</div>
+
+## Paper Summaries
+
+### MTRAG: The Gold Standard Benchmark
+
+| Field | Detail |
+|-------|--------|
+| **Title** | MTRAG: A Multi-Turn Conversational Benchmark for Evaluating Retrieval-Augmented Generation Systems |
+| **Authors** | Katsis et al. (IBM Research) |
+| **Venue** | ACL 2025 (arXiv:2501.03468) |
+| **Benchmark** | https://github.com/ibm/mt-rag-benchmark |
+
+**Key Stats**:
+- **110 conversations**, 7.7 turns avg, **842 turns** total
+- **4 domains**: ClapNQ, FiQA, Govt, Cloud
+- **777 answerable turns** (after filtering unanswerable)
+- **16.9 unique relevant passages** per conversation
+- **87% non-standalone turns** (require context)
+- **13% clarification turns**, 74% follow-up
+
+**Retrieval Evaluation**:
+- **Metrics**: nDCG@1/3/5/10, Recall@1/3/5/10
+- **Models**: Lexical (BM25), Dense (BGE, E5), Sparse (ELSER)
+- **Settings**: Last-turn only vs Query rewrite
+
+**Generation Evaluation**:
+- **Models**: 9 LLMs evaluated
+- **Settings**: Reference, Reference+RAG, Full RAG
+- **Human eval**: Rigorous annotation
+
+**Key Finding**: ELSER R@5 drops **0.89 → 0.47** (first → later turns) = **51% degradation**
+
+---
+
+### MTRAGEval: SemEval 2026 Task 8
+
+| Field | Detail |
+|-------|--------|
+| **Title** | SemEval-2026 Task 8: MTRAGEval - Evaluating Multi-Turn RAG Conversations |
+| **Venue** | SemEval 2026 (ACL Anthology: 2026.semeval-1) |
+| **Subtasks** | A: Retrieval (nDCG@5), B: Generation with gold, C: End-to-end RAG |
+
+**Benchmark**: MTRAG-UN (unanswerable, underspecified, non-standalone)
+- **842 multi-turn dialogues** across 4 domains
+- **Domains**: ClapNQ (26.6%), FiQA (23.6%), Govt (25.4%), Cloud (24.4%)
+- **Task A**: nDCG@1/3/5/10, Recall@1/3/5/10
+- **Task C**: Harmonic mean of quality + faithfulness (IDK-conditioned)
+
+**Top Systems**:
+| Team | Task A nDCG@5 | Task C Score |
+|------|---------------|--------------|
+| Sifei | **0.5453** (Rank 3) | 0.5312 (Rank 15) |
+| GUIR | 0.5453 (Rank 3) | - |
+| uva-irlab | - | - |
+
+---
+
+### CORAL & RAD-Bench
+
+| Benchmark | Description |
+|-----------|-------------|
+| **CORAL** (Cheng et al., 2025) | Conversational retrieval benchmark showing cross-turn evidence selection challenges |
+| **RAD-Bench** (Kuo et al., 2024) | Retrieval and reasoning across dialogue turns |
+
+---
+
+## Evaluation Metrics
+
+### Retrieval Metrics
+
+| Metric | Formula | Use Case |
+|--------|---------|----------|
+| **nDCG@k** | Normalized Discounted Cumulative Gain | Ranking quality |
+| **Recall@k** | Fraction of relevant in top-k | Coverage |
+| **MRR** | Mean Reciprocal Rank | First relevant position |
+| **Hit@k** | Binary: any relevant in top-k | Binary success |
+
+### Generation Metrics (RAGAS)
+
+| Metric | Description | Higher Better |
+|--------|-------------|---------------|
+| **Faithfulness** | Answer grounded in contexts | ✅ |
+| **Answer Relevancy** | Answer addresses question | ✅ |
+| **Context Relevancy** | Retrieved chunks relevant to question | ✅ |
+| **Context Recall** | Fraction of answer covered by context | ✅ |
+| **Hallucination** | Facts not in context | ❌ (lower better) |
+
+### Custom Metrics (Our Bench)
+
+| Metric | Description |
+|--------|-------------|
+| **Ambiguity Resolution** | Clarified when should, didn't spuriously |
+| **Sticky Persistence** | Kept subspace across generic turns |
+| **Retrieval Hit** | Expected subspace in top-K |
+
+---
+
+## Our Benchmark Results
+
+### 41-Turn Multi-Agent Benchmark
+
+| Metric | Before (2026-10-12) | After (2026-10-14) | Δ |
+|--------|---------------------|--------------------|---|
+| **Finish mismatches** | 6/41 | **0/41** | -6 |
+| **Retrieval hit** | 0.537 | **0.780** | +0.243 |
+| **Cheque hit** | 0.111 | **0.667** | +0.556 |
+| **Context recall** | 0.113 | **0.340** | +0.227 |
+| **Answer relevancy** | 0.212 | **0.568** | +0.356 |
+| **Ambiguity resolution** | 0.854 | **1.000** | +0.146 |
+| **Sticky persistence** | 0.610 | **0.683** | +0.073 |
+| **p50 latency** | 8006ms | **4872ms** | -39% |
+
+### Subspace Breakdown (After)
+
+| Subspace | Count | Hit | Faith | Sticky | p50 |
+|----------|-------|-----|-------|--------|-----|
+| Cheque | 9 | 0.667 | 0.422 | 0.444 | 10301ms |
+| Facilities Person | 6 | 0.500 | 0.967 | 0.667 | 10718ms |
+| Facilities Legal | 3 | 0.667 | 0.917 | 0.333 | 10498ms |
+| General | 10 | 0.800 | 0.655 | 0.600 | 6981ms |
+
+---
+
+## Reproduction
+
+```bash
+# Full benchmark (214s)
+cd Work_Credit-RAG_Phase1
+PYTHONPATH=".:components/orchestrator:$PYTHONPATH" python3 -m evaluation.bench_runner
+
+# RAGAS evaluation
+PYTHONPATH=".:components/orchestrator:$PYTHONPATH" python3 -m evaluation.ragas_eval \
+  --input evaluation/artifacts/bench_results_latest.json \
+  --output evaluation/artifacts/ragas_results_latest.json
+
+# Report generation
+PYTHONPATH=".:components/orchestrator:$PYTHONPATH" python3 -m evaluation.report \
+  --bench evaluation/artifacts/bench_results_latest.json \
+  --ragas evaluation/artifacts/ragas_results_latest.json \
+  --out evaluation/artifacts/bench_report_latest.html
+```
+
+---
+
+## Related Pages
+
+- [Paper: Subspace Filtering](./subspace-filtering.html)
+- [Paper: Ambiguity & Clarification](./ambiguity-clarification.html)
+- [Paper: Retrieval Fusion & RRF](./retrieval-fusion.html)
+- [Paper: Faithfulness & Hallucination](./faithfulness.html)
+- [Our Implementation](../our-impl.html)

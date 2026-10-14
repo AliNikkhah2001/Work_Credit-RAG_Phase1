@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="PC-RAG, SPLIT-RAG, DSRAG, EvoRAG - Domain-partitioned retrieval, question-driven graph partitioning, hierarchical KGs">
+  
+  <title>Subspace & Domain Partitioning Papers - Multi-Turn RAG Research | Multi-Turn RAG Research: Problems, Solutions & State-of-the-Art (2025-2026)</title>
+  
+  <!-- SEO -->
+  <meta name="author" content="Work Credit RAG Team">
+  <meta property="og:title" content="Subspace & Domain Partitioning Papers - Multi-Turn RAG Research | Multi-Turn RAG Research: Problems, Solutions & State-of-the-Art (2025-2026)">
+  <meta property="og:description" content="PC-RAG, SPLIT-RAG, DSRAG, EvoRAG - Domain-partitioned retrieval, question-driven graph partitioning, hierarchical KGs">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- Mermaid -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+  
+  <!-- Styles -->
+  <link rel="stylesheet" href="/assets/css/main.css">
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+  
+  <!-- Begin Jekyll SEO tag v2.9.1 -->
+<title>Subspace &amp; Domain Partitioning Papers - Multi-Turn RAG Research | Multi-Turn RAG Research: Problems, Solutions &amp; State-of-the-Art (2025-2026)</title>
+<meta name="generator" content="Jekyll v4.4.1" />
+<meta property="og:title" content="Subspace &amp; Domain Partitioning Papers - Multi-Turn RAG Research" />
+<meta name="author" content="Work Credit RAG Team" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="PC-RAG, SPLIT-RAG, DSRAG, EvoRAG - Domain-partitioned retrieval, question-driven graph partitioning, hierarchical KGs" />
+<meta name="twitter:description" property="og:description" content="PC-RAG, SPLIT-RAG, DSRAG, EvoRAG - Domain-partitioned retrieval, question-driven graph partitioning, hierarchical KGs" />
+<meta property="og:site_name" content="Multi-Turn RAG Research: Problems, Solutions &amp; State-of-the-Art (2025-2026)" />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:title" content="Subspace &amp; Domain Partitioning Papers - Multi-Turn RAG Research" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebPage","author":{"@type":"Person","name":"Work Credit RAG Team"},"description":"PC-RAG, SPLIT-RAG, DSRAG, EvoRAG - Domain-partitioned retrieval, question-driven graph partitioning, hierarchical KGs","headline":"Subspace \u0026amp; Domain Partitioning Papers - Multi-Turn RAG Research","url":"/papers/subspace-filtering.html"}</script>
+<!-- End Jekyll SEO tag -->
+
+</head>
+
+<body>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+  
+  <header class="site-header" role="banner">
+    <div class="header-inner">
+      <a class="site-title" href="/">
+        <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+          <path d="M6.5 2H20v20"/>
+          <line x1="6.5" y1="2" x2="6.5" y2="22"/>
+        </svg>
+        <span>Multi-Turn RAG Research</span>
+      </a>
+      
+      <nav class="main-nav" role="navigation" aria-label="Main navigation">
+        <button class="nav-toggle" aria-expanded="false" aria-controls="nav-menu" aria-label="Toggle navigation">
+          <span class="hamburger"></span>
+        </button>
+        <ul id="nav-menu" class="nav-list">
+          <li><a href="/" class="">Overview</a></li>
+          <li class="has-dropdown">
+            <a href="/problems/index.html" class="">Problems</a>
+            <ul class="dropdown">
+              <li><a href="/problems/subspace-filtering.html">Subspace Filtering</a></li>
+              <li><a href="/problems/ambiguity-resolution.html">Ambiguity Resolution</a></li>
+              <li><a href="/problems/sticky-context.html">Sticky Context</a></li>
+              <li><a href="/problems/retrieval-degradation.html">Retrieval Degradation</a></li>
+              <li><a href="/problems/hallucination.html">Hallucination Control</a></li>
+            </ul>
+          </li>
+          <li class="has-dropdown">
+            <a href="/papers/index.html" class="active">Papers & Solutions</a>
+            <ul class="dropdown">
+              <li><a href="/papers/subspace-filtering.html">Subspace & Domain Partitioning</a></li>
+              <li><a href="/papers/ambiguity-clarification.html">Ambiguity & Clarification</a></li>
+              <li><a href="/papers/sticky-context.html">Sticky Context & Memory</a></li>
+              <li><a href="/papers/retrieval-fusion.html">Retrieval Fusion & RRF</a></li>
+              <li><a href="/papers/faithfulness.html">Faithfulness & Hallucination</a></li>
+              <li><a href="/papers/memory-architectures.html">Memory Architectures</a></li>
+              <li><a href="/papers/benchmarks.html">Benchmarks & Evaluation</a></li>
+            </ul>
+          </li>
+          <li><a href="/architectures.html" class="">Architectures</a></li>
+          <li><a href="/relevance.html" class="">Relevance Mapping</a></li>
+          <li><a href="/benchmarks.html" class="">Benchmarks</a></li>
+          <li><a href="/our-impl.html" class="">Our Implementation</a></li>
+        </ul>
+      </nav>
+      
+      <a href="https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1" class="github-link" target="_blank" rel="noopener" aria-label="View on GitHub">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.305-.536-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
+        </svg>
+      </a>
+    </div>
+  </header>
+
+  <main id="main-content" class="site-main" role="main">
+    <div class="page-header">
+  <h1>Subspace & Domain Partitioning Papers</h1>
+  <p class="lead">PC-RAG, SPLIT-RAG, DSRAG, EvoRAG - Domain-partitioned retrieval, question-driven graph partitioning, hierarchical KGs</p>
+</div>
+
+## Paper Summaries
+
+### PC-RAG: Domain-Partitioned Retrieval as Hallucination Mitigation
+
+| Field | Detail |
+|-------|--------|
+| **Title** | Domain-Partitioned Retrieval as a Hallucination Mitigation Strategy in Conversational RAG: The PC-RAG Architecture |
+| **Authors** | Ruben Alejandro Jaime |
+| **Venue** | ResearchSquare (2026-04-16) |
+| **DOI** | 10.21203/rs.3.rs-9334334/v1 |
+| **Code** | Not specified |
+
+**Key Claims**:
+- **Primary cause of hallucination**: Context window contamination from cross-domain chunk aggregation
+- **Solution**: Domain-partitioned retrieval — decompose query into domain-isolated sub-tasks, independent retrieval per partition
+- **Results**: 51% reduction in false-positive chunk inclusion; human-rated quality 3.1→4.1/5 (κ=0.79, p<0.001)
+- **Full system**: 4.2/5, beats HyDE (3.6), multi-query (3.7), RAPTOR (3.9)
+
+**Relevance to Our Fix**: 
+- Our `subspace_map` fix = domain-partitioned retrieval
+- PC-RAG validates: **partitioning alone reduces cross-domain noise by 51%**
+- Our cheque map fix ("چک" → "گزارش اعتباراتنجی چک") = exactly domain partitioning
+
+---
+
+### SPLIT-RAG: Question-Driven Graph Partitioning
+
+| Field | Detail |
+|-------|--------|
+| **Title** | Divide by Question, Conquer by Agent: SPLIT-RAG with Question-Driven Graph Partitioning |
+| **Authors** | Multiple authors |
+| **Venue** | arXiv:2505.13994 (2025), ICML 2025 |
+| **Code** | Not specified |
+
+**Key Claims**:
+- **Problem**: Full-graph retrieval searches all n triples → cost C(n)
+- **Solution**: Partition KG by reasoning paths from training questions → assign specialized agents to partitions
+- **Inference**: Query-specific planner activates relevant partition-agents → parallel subgraph retrieval
+- **Result**: Strong performance on WebQSP, CWQ, MetaQA with reduced latency
+
+**Architecture**:
+1. **Question-Type Clustering** → KG Partitioning (from training Q reasoning paths)
+2. **Agent-Subgraph Assignment** → Specialized retrieval agents per partition
+3. **Retrieval Plan Selection** → Entity-type similarity + relation-path sketch
+4. **Multi-Agent RAG** → Parallel subgraph retrieval
+5. **Conflict Resolution** → Compatibility-based evidence filtering
+
+**Relevance to Our Fix**:
+- Our static `subspace_map` = manual partitioning
+- SPLIT-RAG shows: **learn routing from training queries** instead of static map
+- Future: Learn `subspace_map` from training Qs instead of hardcoding
+
+---
+
+### DSRAG: Domain-Specific RAG with Hierarchical KG
+
+| Field | Detail |
+|-------|--------|
+| **Title** | DSRAG: A Domain-Specific Retrieval Framework Based on Document-derived Multimodal Knowledge Graph |
+| **Venue** | arXiv:2509.10467 (2025) |
+| **Key Innovation** | Hierarchical KG: Concept KG (domain concepts/workflows) + Instance KG (facts) |
+
+**Key Claims**:
+- **Multimodal KG**: Text + images + tables → Concept KG + Instance KG
+- **Concept KG**: Core domain concepts/workflows from document structure
+- **Instance KG**: Fine-grained facts from document content
+- **Retrieval**: Semantic subgraph retrieval + vector matching
+
+**Relevance**: Our KB has implicit hierarchy (پایگاه دانش → اشخاص حقیقی → گزارش اعتباراتنجی چک) — DSRAG formalizes this.
+
+---
+
+### EvoRAG: Evolving Graph-Based Context Modeling
+
+| Field | Detail |
+|-------|--------|
+| **Title** | Evolving Graph-Based Context Modeling for Multi-Turn Conversational RAG |
+| **Venue** | ACM DL 2024 (or similar) |
+| **Key Innovation** | Dynamic knowledge graph evolving with conversation |
+
+**Key Claims**:
+- Maintains evolving KG of logical relations among queries, responses, passages across turns
+- Captures contextual dependencies → improves retrieval + generation
+- Tested on 4 conversational RAG datasets
+
+**Relevance**: Our sticky context = simple version of evolving context graph. EvoRAG shows full graph approach.
+
+---
+
+## Comparison Table
+
+| Paper | Approach | Partitioning | Routing | Validation |
+|-------|----------|--------------|---------|------------|
+| **PC-RAG** | Domain-partitioned retrieval | Manual domains (HR, legal, compliance) | Query decomposition → domain-isolated retrieval | 51% false-positive reduction; 3.1→4.1 quality |
+| **SPLIT-RAG** | Question-driven KG partitioning | Learned from training Q reasoning paths | Query-specific planner → partition-agents | WebQSP, CWQ, MetaQA SOTA |
+| **DSRAG** | Hierarchical multimodal KG | Document-derived (Concept + Instance KG) | Semantic subgraph + vector matching | Domain-specific QA excellence |
+| **EvoRAG** | Evolving conversation KG | Dynamic (evolves with conversation) | Graph-based context tracking | 4 conversational RAG datasets |
+
+---
+
+## Our Implementation vs Papers
+
+| Aspect | PC-RAG | SPLIT-RAG | Our Implementation |
+|--------|--------|-----------|-------------------|
+| **Partitioning** | Manual domains | Learned from training Qs | Manual `subspace_map` (fixed) |
+| **Routing** | Query decomposition | Query-specific planner | Static `subspace_map` + fuzzy match |
+| **Retrieval** | Domain-isolated independent | Parallel partition-agents | Single KB with `filter_path` |
+| **Fusion** | Independent per domain | RRF across agents | RRF fusion (filtered + whole-KB) |
+| **Validation** | Human eval (3.1→4.1) | WebQSP/CWQ/MetaQA | 41-turn bench (hit 0.78) |
+
+---
+
+## Future Work: From Static Map to Learned Routing
+
+Based on SPLIT-RAG, our next evolution:
+
+```python
+# Future: Learned subspace router
+class SubspaceRouter:
+    def __init__(self):
+        self.encoder = SentenceTransformer("bge-m3")
+        self.classifier = LogisticRegression()
+    
+    def train(self, queries, subspace_labels):
+        embeddings = self.encoder.encode(queries)
+        self.classifier.fit(embeddings, subspace_labels)
+    
+    def route(self, query):
+        emb = self.encoder.encode([query])
+        return self.classifier.predict(emb)[0]
+```
+
+Training data: Our 41-turn benchmark + historical queries → learn `subspace_map` instead of hardcoding.
+
+---
+
+## Related Pages
+
+- [Problem: Subspace Filtering](../problems/subspace-filtering.html)
+- [Paper: Retrieval Fusion & RRF](./retrieval-fusion.html)
+- [Paper: Memory Architectures](./memory-architectures.html)
+- [Architecture: SPLIT-RAG](../architectures.html#split-rag)
+  </main>
+
+  <footer class="site-footer" role="contentinfo">
+    <div class="footer-inner">
+      <div class="footer-links">
+        <a href="https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1" target="_blank" rel="noopener">GitHub Repository</a>
+        <a href="https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1/tree/main/docs/research-site" target="_blank" rel="noopener">Site Source</a>
+        <a href="https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1/issues" target="_blank" rel="noopener">Issues</a>
+      </div>
+      <p class="copyright">© 2026 Work Credit RAG Team. Licensed under MIT.</p>
+      <p class="footer-note">Built with Jekyll · Hosted on GitHub Pages · Last updated: October 14, 2026</p>
+    </div>
+  </footer>
+
+  <script src="/assets/js/main.js"></script>
+  <script>
+    mermaid.initialize({ 
+      startOnLoad: true,
+      theme: 'default',
+      securityLevel: 'loose',
+      flowchart: { useMaxWidth: true, htmlLabels: true }
+    });
+  </script>
+</body>
+</html>

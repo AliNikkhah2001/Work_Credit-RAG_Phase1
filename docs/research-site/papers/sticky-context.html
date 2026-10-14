@@ -1,0 +1,188 @@
+---
+layout: default
+title: "Sticky Context & Memory Papers - Multi-Turn RAG Research"
+description: "CPP, CALMem, Context Recycling, Rag.NET, OpenAI Sessions - Segmented episodic memory, dual memory layers, bounded hierarchical context"
+---
+
+<div class="page-header">
+  <h1>Sticky Context & Memory Papers</h1>
+  <p class="lead">CPP, CALMem, Context Recycling, Rag.NET, OpenAI Sessions - Segmented episodic memory, dual memory layers, bounded hierarchical context</p>
+</div>
+
+## Paper Summaries
+
+### CPP: Context Persistence Protocol
+
+| Field | Detail |
+|-------|--------|
+| **Title** | Bounded Conversational Memory with Hybrid Retrieval and Evidence Highlighting for Multi-Session Dialogue Systems |
+| **Venue** | SIGDIAL 2026 |
+| **Key Innovation** | Context Persistence Protocol (CPP) — segmented episodic memory with hybrid retrieval |
+
+**Key Claims**:
+- **Problem**: Context overload — retaining every turn fills context window, dilutes attention
+- **Solution**: 
+  1. **Segmentation**: Group turns into topically coherent segments (3-10 turns, cosine δ threshold)
+  2. **Dual-indexing**: Lexical + semantic indexing per segment
+  3. **Budgeted retrieval**: Retrieve top segments under hard storage budget
+  4. **Evidence highlighting**: Highlight single most informative sentence per segment
+
+**Results**:
+- Matches unbounded baseline on LoCoMo
+- Better on multi-hop questions (segments preserve topical context)
+- Marginal deficit on open-domain inferential questions
+
+**Segmentation Threshold**: Cosine similarity drop below δ between consecutive turns
+
+---
+
+### CALMem: Dual Memory for Conversational AI
+
+| Field | Detail |
+|-------|--------|
+| **Title** | Application-Layer Dual Memory for Conversational AI: Achieving Virtually Unbounded Context Without Model Modification |
+| **Venue** | arXiv:2605.20724 (2026) |
+| **Key Innovation** | Dual memory: Episodic (sliding-window vector embeddings) + Semantic (agent-writable structured facts) |
+
+**Key Claims**:
+- **Two layers**:
+  1. **Episodic**: Sliding-window vector embeddings of conversation history
+  2. **Semantic**: Agent-writable structured facts (MOIM - Message of Injected Memory)
+- **MOIM Injector**: Auto-retrieves relevant past context each turn, scales injection depth inversely with context pressure
+- **Cross-session**: Embeds each exchange, stores in vector store keyed by sessionId
+
+**Results**:
+- Bounded active context (~750 tokens/turn vs 22K baseline by T15)
+- 1-2 orders magnitude lower API cost vs naïve large window
+- Intra-session retrieval over compacted-away turns (novel vs standard cross-session RAG)
+
+**Architecture**:
+```
+Session → Hook → Background Indexing → MOIM Injector → Prepend to System Context
+```
+
+---
+
+### Context Recycling: Hierarchical Memory Architecture
+
+| Field | Detail |
+|-------|--------|
+| **Title** | Context Recycling for Long-Horizon LLM Inference: A Hierarchical Memory Architecture for Managing Fixed Context Budgets Across Unbounded Sessions |
+| **Venue** | arXiv:2606.26105 (2026) |
+| **Key Innovation** | Hierarchical layers: L0 (permanent 500 tok) + L1 (loaded branch 2-10K) + Compacted history (~1K) |
+
+**Key Claims**:
+- **Hierarchical layers**:
+  - **L0 Permanent**: 500 tokens (system prompt, core facts)
+  - **L1 Loaded Branch**: 2-10K tokens (active knowledge)
+  - **Compacted History**: ~1K tokens (compressed session history)
+- **Bounded Active Context**: ~850 tokens/turn regardless of conversation length
+- **Context Recycling**: Loaded branch released, next query reuses budget
+
+**Results**:
+| Turn | Baseline Tokens | Context Recycling |
+|------|-----------------|-------------------|
+| 1 | ~500 | ~850 |
+| 50 | ~22,000 | ~850 |
+| 1K | ~200,000 | ~850 |
+
+---
+
+### Rag.NET: Composable Memory Layers
+
+| Field | Detail |
+|-------|--------|
+| **Source** | GitHub: MarcelRoozekrans/Rag.NET |
+| **Key Innovation** | Two composable layers: In-session trimming + Persistent cross-session recall |
+
+**Two Layers**:
+1. **ConversationMemoryPipeline** (In-session):
+   - Sliding window (MaxExchanges)
+   - Token budget trimming (MaxTokens)
+   - Optional LLM summary (UseSummary)
+
+2. **PersistentConversationMemory** (Cross-session):
+   - Embeds each exchange → vector store
+   - Keyed by sessionId
+   - Injects relevant past exchanges as system prefix
+
+---
+
+### OpenAI Session Memory
+
+| Field | Detail |
+|-------|--------|
+| **Source** | OpenAI Cookbook / Responses API |
+| **Key Innovation** | Built-in session memory with trimming/summarization |
+
+**Implementations**:
+- **TrimmingSession**: Keep last N user turns (max_turns=3 default)
+- **SummarizingSession**: LLM summarizes older turns into compact prefix
+
+---
+
+## Comparison Table
+
+| System | Segmentation | Retrieval | Budget | Cross-Session | Novelty |
+|--------|--------------|-----------|--------|---------------|---------|
+| **CPP** | Cosine δ threshold (3-10 turns) | Hybrid (lexical + semantic) | Hard budget | Yes (segments) | Segment-level evidence highlighting |
+| **CALMem** | Sliding window + semantic facts | Episodic (vector) + Semantic (facts) | Token-budget adaptive | Yes (semantic layer) | Dual memory + MOIM injector |
+| **Context Recycling** | Hierarchical (L0/L1/L2) | Layer-based | Fixed budget | Yes (hierarchical) | Bounded context (850 tok/turn) |
+| **Rag.NET** | Sliding window + optional summary | Vector store | MaxExchanges/MaxTokens | Yes (vector store) | Composable layers |
+| **OpenAI Sessions** | Trimming / Summarizing | Built-in | Max turns / summary | Yes (session object) | Built-in API |
+
+---
+
+## Our Implementation vs Papers
+
+| Aspect | Our Fix (T4+T8) | CPP | CALMem | Context Recycling |
+|--------|----------------|-----|--------|-------------------|
+| **Segmentation** | Implicit (generic turn count) | Cosine δ threshold | Sliding window | Hierarchical L0/L1/L2 |
+| **Sticky Carry** | Filter_path injection | Segment retrieval | Episodic recall | L1 branch loading |
+| **Decay** | After 3 generic turns | Segment boundary | Sliding window | L2 compaction |
+| **Budget** | Implicit (filter_path) | Hard storage budget | Token-budget adaptive | Fixed 850 tok/turn |
+| **Cross-Session** | No (single session) | Yes (segment store) | Yes (semantic layer) | Yes (hierarchical) |
+
+---
+
+## Architecture: Our Sticky Flow vs Papers
+
+```mermaid
+flowchart TD
+    A[User Query] --> B[Load Checkpoint]
+    B --> C{Sticky Applied?}
+    C -->|Yes| D[Count Generic Turns<br/>(our T8: simple count)]
+    D --> E{> decay_threshold?}
+    E -->|Yes| F[Decay: sticky=None<br/>(CPP: segment boundary)]
+    E -->|No| G[Inject filter_path<br/>(CALMem: episodic recall)]
+    C -->|No| H[Normal Classify/Infer]
+    F --> H
+    G --> I[Retrieve with filter_path]
+    H --> I
+    I --> J[Generate]
+    J --> K[Save Checkpoint]
+    
+    style F fill:#fef2f2,stroke:#ef4444
+    style G fill:#dcfce7,stroke:#166534
+```
+
+---
+
+## Future: Toward CALMem/CPP
+
+| Enhancement | Based On | Effort |
+|-------------|----------|--------|
+| **Cosine-based segmentation** | CPP | Medium |
+| **Semantic fact layer** | CALMem | High |
+| **Hierarchical context (L0/L1/L2)** | Context Recycling | High |
+| **Cross-session vector recall** | Rag.NET / CALMem | Medium |
+| **Evidence highlighting per segment** | CPP | Low |
+
+---
+
+## Related Pages
+
+- [Problem: Sticky Context Decay](../problems/sticky-context.html)
+- [Paper: Subspace Filtering](./subspace-filtering.html)
+- [Paper: Retrieval Fusion & RRF](./retrieval-fusion.html)
+- [Architecture: CPP/CALMem](../architectures.html#cpp-calmem)

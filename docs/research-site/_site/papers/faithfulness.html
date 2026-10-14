@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="DUTIR, Reflective RAG, 5ting, CoRAG, CoopRAG, CalibRAG - Faithfulness guards, self-evaluation, evidence-constrained generation, calibration">
+  
+  <title>Faithfulness & Hallucination Papers - Multi-Turn RAG Research | Multi-Turn RAG Research: Problems, Solutions & State-of-the-Art (2025-2026)</title>
+  
+  <!-- SEO -->
+  <meta name="author" content="Work Credit RAG Team">
+  <meta property="og:title" content="Faithfulness & Hallucination Papers - Multi-Turn RAG Research | Multi-Turn RAG Research: Problems, Solutions & State-of-the-Art (2025-2026)">
+  <meta property="og:description" content="DUTIR, Reflective RAG, 5ting, CoRAG, CoopRAG, CalibRAG - Faithfulness guards, self-evaluation, evidence-constrained generation, calibration">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- Mermaid -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+  
+  <!-- Styles -->
+  <link rel="stylesheet" href="/assets/css/main.css">
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+  
+  <!-- Begin Jekyll SEO tag v2.9.1 -->
+<title>Faithfulness &amp; Hallucination Papers - Multi-Turn RAG Research | Multi-Turn RAG Research: Problems, Solutions &amp; State-of-the-Art (2025-2026)</title>
+<meta name="generator" content="Jekyll v4.4.1" />
+<meta property="og:title" content="Faithfulness &amp; Hallucination Papers - Multi-Turn RAG Research" />
+<meta name="author" content="Work Credit RAG Team" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="DUTIR, Reflective RAG, 5ting, CoRAG, CoopRAG, CalibRAG - Faithfulness guards, self-evaluation, evidence-constrained generation, calibration" />
+<meta name="twitter:description" property="og:description" content="DUTIR, Reflective RAG, 5ting, CoRAG, CoopRAG, CalibRAG - Faithfulness guards, self-evaluation, evidence-constrained generation, calibration" />
+<meta property="og:site_name" content="Multi-Turn RAG Research: Problems, Solutions &amp; State-of-the-Art (2025-2026)" />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:title" content="Faithfulness &amp; Hallucination Papers - Multi-Turn RAG Research" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebPage","author":{"@type":"Person","name":"Work Credit RAG Team"},"description":"DUTIR, Reflective RAG, 5ting, CoRAG, CoopRAG, CalibRAG - Faithfulness guards, self-evaluation, evidence-constrained generation, calibration","headline":"Faithfulness \u0026amp; Hallucination Papers - Multi-Turn RAG Research","url":"/papers/faithfulness.html"}</script>
+<!-- End Jekyll SEO tag -->
+
+</head>
+
+<body>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+  
+  <header class="site-header" role="banner">
+    <div class="header-inner">
+      <a class="site-title" href="/">
+        <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+          <path d="M6.5 2H20v20"/>
+          <line x1="6.5" y1="2" x2="6.5" y2="22"/>
+        </svg>
+        <span>Multi-Turn RAG Research</span>
+      </a>
+      
+      <nav class="main-nav" role="navigation" aria-label="Main navigation">
+        <button class="nav-toggle" aria-expanded="false" aria-controls="nav-menu" aria-label="Toggle navigation">
+          <span class="hamburger"></span>
+        </button>
+        <ul id="nav-menu" class="nav-list">
+          <li><a href="/" class="">Overview</a></li>
+          <li class="has-dropdown">
+            <a href="/problems/index.html" class="">Problems</a>
+            <ul class="dropdown">
+              <li><a href="/problems/subspace-filtering.html">Subspace Filtering</a></li>
+              <li><a href="/problems/ambiguity-resolution.html">Ambiguity Resolution</a></li>
+              <li><a href="/problems/sticky-context.html">Sticky Context</a></li>
+              <li><a href="/problems/retrieval-degradation.html">Retrieval Degradation</a></li>
+              <li><a href="/problems/hallucination.html">Hallucination Control</a></li>
+            </ul>
+          </li>
+          <li class="has-dropdown">
+            <a href="/papers/index.html" class="active">Papers & Solutions</a>
+            <ul class="dropdown">
+              <li><a href="/papers/subspace-filtering.html">Subspace & Domain Partitioning</a></li>
+              <li><a href="/papers/ambiguity-clarification.html">Ambiguity & Clarification</a></li>
+              <li><a href="/papers/sticky-context.html">Sticky Context & Memory</a></li>
+              <li><a href="/papers/retrieval-fusion.html">Retrieval Fusion & RRF</a></li>
+              <li><a href="/papers/faithfulness.html">Faithfulness & Hallucination</a></li>
+              <li><a href="/papers/memory-architectures.html">Memory Architectures</a></li>
+              <li><a href="/papers/benchmarks.html">Benchmarks & Evaluation</a></li>
+            </ul>
+          </li>
+          <li><a href="/architectures.html" class="">Architectures</a></li>
+          <li><a href="/relevance.html" class="">Relevance Mapping</a></li>
+          <li><a href="/benchmarks.html" class="">Benchmarks</a></li>
+          <li><a href="/our-impl.html" class="">Our Implementation</a></li>
+        </ul>
+      </nav>
+      
+      <a href="https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1" class="github-link" target="_blank" rel="noopener" aria-label="View on GitHub">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.305-.536-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
+        </svg>
+      </a>
+    </div>
+  </header>
+
+  <main id="main-content" class="site-main" role="main">
+    <div class="page-header">
+  <h1>Faithfulness & Hallucination Papers</h1>
+  <p class="lead">DUTIR, Reflective RAG, 5ting, CoRAG, CoopRAG, CalibRAG - Faithfulness guards, self-evaluation, evidence-constrained generation, calibration</p>
+</div>
+
+## Paper Summaries
+
+### DUTIR: Hybrid Retrieval + Faithfulness Guard
+
+| Field | Detail |
+|-------|--------|
+| **Title** | DUTIR at SemEval-2026 Task 8: A Hybrid Retrieval and Faithfulness-Guarded Framework for Multi-Turn RAG |
+| **Venue** | SemEval 2026 (ACL Anthology: 2026.semeval-1.48) |
+| **Key Innovation** | Confidence-based answerability gating + hybrid retrieval (BGE-M3 + BM25 + RRF) |
+
+**Key Claims**:
+- **Pipeline**: 
+  1. LLM query rewriting (GPT-5.2) → resolve conversational dependencies
+  2. Hybrid retrieval: BGE-M3 + BM25 → RRF
+  3. **Confidence-based answerability gating** → minimizes hallucination
+  4. Faithfulness-guarded generation
+- **Trade-off**: Over-conservative → unwarranted "I Don't Know" for partially answerable queries
+
+**Relevance to Our Fix**:
+- Our `get_evidence_threshold()` = per-subspace confidence gating
+- DUTIR validates: **confidence-based gating reduces hallucination**
+- Our `FAITH_GUARD_MIN_SCORE = 0.5` = similar to confidence gating
+
+---
+
+### Reflective RAG: Self-Evaluation Driven Strategy
+
+| Field | Detail |
+|-------|--------|
+| **Title** | Reflective RAG: Self-Evaluation Driven Strategy Optimization in Agentic Retrieval-Augmented Generation |
+| **Venue** | ACL 2026 Findings (ACL Anthology: 2026.findings-acl.648) |
+| **Key Innovation** | Self-evaluation tagging → RL strategy optimization |
+
+**Key Claims**:
+- **Problem**: Agentic RAG lacks capacity to evaluate retrieved info utility → brittle reasoning
+- **Solution**: 
+  1. **Reflection tagging**: Model critiques relevance of retrieved content
+  2. **Two-stage training**: SFT (reflection signals) → RL (strategy optimization with dynamic KL)
+- **Results**: Outperforms strong agentic baselines on 5 knowledge-intensive QA benchmarks
+
+**Relevance**: Our faith guard = simplified reflection (coverage + score check). Reflective RAG shows **explicit self-evaluation** improves robustness.
+
+---
+
+### 5ting: Evidence-Constrained Generation + IDK-Conditioned Scoring
+
+| Field | Detail |
+|-------|--------|
+| **Title** | 5ting at SemEval-2026 Task 8: Strong End-to-End Multi-Turn RAG via LLM-Based Reranking and Faithfulness Control |
+| **Venue** | SemEval 2026 |
+| **Key Innovation** | Evidence-constrained generation + IDK-conditioned harmonic mean |
+
+**Key Claims**:
+- **Evidence-constrained generation**: Only generate if evidence supports
+- **IDK-conditioned harmonic mean**: Harmonic mean of quality and faithfulness, conditioned on "I Don't Know" rate
+- **Pipeline**: Dense retrieval → FAISS → LLM reranking → Evidence-constrained generation
+
+**Relevance**: Our `FAITH_GUARD_MIN_SCORE = 0.5` + `FAITH_GUARD_MIN_COVERAGE = 0.20` = simplified evidence constraint.
+
+---
+
+### CoRAG: Chain-of-Retrieval Augmented Generation
+
+| Field | Detail |
+|-------|--------|
+| **Title** | CoRAG: Chain-of-Retrieval Augmented Generation |
+| **Venue** | NeurIPS 2025 (Poster) |
+| **Key Innovation** | Iterative retrieval + reasoning chains (o1-like RAG) |
+
+**Key Claims**:
+- **CoRAG**: Teaches LLMs to conduct iterative retrieval + reasoning step-by-step
+- **Mechanism**: Dynamic query reformulation based on evolving state
+- **Training**: Rejection sampling to generate intermediate retrieval chains
+- **Results**: > SOTA on multi-hop QA, KILT benchmark
+
+**Relevance**: Our T1+T2 fallback cascade = simplified multi-step retrieval. CoRAG shows **iterative retrieval+reasoning** for complex queries.
+
+---
+
+### CoopRAG: Cooperative Retrieval + LLM Encoder
+
+| Field | Detail |
+|-------|--------|
+| **Title** | Cooperative Retrieval-Augmented Generation for Question Answering |
+| **Venue** | NeurIPS 2025 |
+| **Key Innovation** | Retriever + LLM fine-tuned encoder → mutual information exchange + contrastive ranking |
+
+**Key Claims**:
+- **CoopRAG**: Retriever + LLM fine-tuned encoder cooperate
+- **Mechanism**: Unrolling-augmented retrieval (UAR) + token-level embeddings
+- **Results**: +5.3% on multi-hop QA, +35.2% on simple QA vs SOTA
+
+**Relevance**: Our KB retrieval + Gemma generation = separate components. CoopRAG shows **tight coupling** improves performance.
+
+---
+
+### CalibRAG: Calibrated Retrieval-Augmented Generation
+
+| Field | Detail |
+|-------|--------|
+| **Title** | Reliable Decision-Making via Calibration-Oriented Retrieval-Augmented Generation (CalibRAG) |
+| **Venue** | NeurIPS 2025 |
+| **Key Innovation** | Calibrated confidence scores for retrieved documents |
+
+**Key Claims**:
+- **Problem**: RAG decisions uncalibrated → unreliable
+- **Solution**: Calibrated Retrieval → rerank by predicted confidence
+- **Mechanism**: Sort documents by predicted confidence, not similarity score
+- **Results**: Improves calibration + accuracy across datasets
+
+**Relevance**: Our `_top_evidence_score()` = simplified confidence. CalibRAG shows **calibrated confidence** improves decision-making.
+
+---
+
+## Faithfulness Approaches Comparison
+
+| Paper | Mechanism | Guard Type | Training | Our Equivalent |
+|-------|-----------|------------|----------|----------------|
+| **DUTIR** | Confidence gating | Answerability gate | GPT-5.2 rewrite | `get_evidence_threshold()` |
+| **Reflective RAG** | Self-evaluation tags | Reflection + RL | SFT + RL | Faith guard (simplified) |
+| **5ting** | Evidence constraint + IDK | IDK-conditioned harmonic mean | LLM rerank | `FAITH_GUARD_MIN_SCORE` |
+| **CoRAG** | Iterative retrieval-reasoning | Chain-of-retrieval | Rejection sampling | T1+T2 cascade (simplified) |
+| **CoopRAG** | Cooperative retriever+encoder | Mutual info + contrastive | Fine-tuned encoder | Separate retriever/generator |
+| **CalibRAG** | Calibrated confidence | Confidence rerank | Calibration training | `_top_evidence_score()` |
+
+---
+
+## Our Faith Guard Implementation
+
+```python
+# format_response.py
+FAITH_GUARD_MIN_SCORE = 0.5
+FAITH_GUARD_MIN_COVERAGE = 0.20
+
+async def format_response(state):
+    # ... generation ...
+    
+    # F: Faith/Hall guard on weak-evidence answers
+    if (state.get("fallback_used") or state.get("broaden_used")) and ABSTENTION_PHRASE not in content:
+        used_top = _top_evidence_score(chosen_chunks)
+        coverage = _token_coverage(content, chosen_chunks)
+        
+        if used_top < FAITH_GUARD_MIN_SCORE and coverage < FAITH_GUARD_MIN_COVERAGE:
+            log.info(f"Faith guard fired: coverage={coverage:.3f} top={used_top:.3f}")
+            content = NO_EVIDENCE_MSG
+            citations = []
+            faith_refused = True
+```
+
+### Coverage Metric
+
+```python
+def _token_coverage(answer, chunks):
+    a_tokens = set(answer.split())
+    if not a_tokens: return 1.0
+    corpus = " ".join(c.get("content", "") for c in chunks)
+    c_tokens = set(corpus.split())
+    return len(a_tokens & c_tokens) / len(a_tokens) if c_tokens else 0.0
+```
+
+---
+
+## Benchmark Delta
+
+| Metric | Before | After | Note |
+|--------|--------|-------|------|
+| Hallucination | 0.195 | **0.254** | +0.059 (tradeoff) |
+| Non-hallucination | 0.805 | **0.746** | Tradeoff for recall |
+| G5 refusal | ✅ | ✅ | Maintained |
+| Cheque T3 citations | 0 | **5** | Fixed (lexical guard) |
+| Facilities T3 citations | 0 | **5** | Fixed (lexical guard) |
+
+---
+
+## Architecture: Faith Guard Flow
+
+```mermaid
+flowchart TD
+    A[Retrieved Chunks] --> B{Strong Evidence?}
+    B -->|No| C{fallback_used or broaden_used?}
+    C -->|Yes| D[Compute top_score + coverage]
+    C -->|No| E[Normal Generation]
+    D --> F{top_score < 0.5 AND coverage < 0.20?}
+    F -->|Yes| G[REPLACE with NO_EVIDENCE_MSG<br/>citations=[]]
+    F -->|No| E
+    E --> H[Generate Answer]
+    H --> I[Return]
+    G --> I
+    
+    style G fill:#fef2f2,stroke:#ef4444
+    style C fill:#fef3e0,stroke:#f57f17
+```
+
+---
+
+## Related Pages
+
+- [Problem: Hallucination Control](../problems/hallucination.html)
+- [Paper: Retrieval Fusion & RRF](./retrieval-fusion.html)
+- [Paper: Subspace Filtering](./subspace-filtering.html)
+- [Architecture: Faith Guard](../architectures.html#faith-guard)
+  </main>
+
+  <footer class="site-footer" role="contentinfo">
+    <div class="footer-inner">
+      <div class="footer-links">
+        <a href="https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1" target="_blank" rel="noopener">GitHub Repository</a>
+        <a href="https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1/tree/main/docs/research-site" target="_blank" rel="noopener">Site Source</a>
+        <a href="https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1/issues" target="_blank" rel="noopener">Issues</a>
+      </div>
+      <p class="copyright">© 2026 Work Credit RAG Team. Licensed under MIT.</p>
+      <p class="footer-note">Built with Jekyll · Hosted on GitHub Pages · Last updated: October 14, 2026</p>
+    </div>
+  </footer>
+
+  <script src="/assets/js/main.js"></script>
+  <script>
+    mermaid.initialize({ 
+      startOnLoad: true,
+      theme: 'default',
+      securityLevel: 'loose',
+      flowchart: { useMaxWidth: true, htmlLabels: true }
+    });
+  </script>
+</body>
+</html>

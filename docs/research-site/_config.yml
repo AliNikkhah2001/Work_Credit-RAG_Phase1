@@ -1,0 +1,89 @@
+title: "Multi-Turn RAG Research: Problems, Solutions & State-of-the-Art (2025-2026)"
+description: "Comprehensive research on multi-turn RAG challenges: subspace filtering, ambiguity resolution, sticky context, and their 2025-2026 state-of-the-art solutions from ACL, EMNLP, SIGIR, SIGDIAL, SemEval, NeurIPS, ICML"
+author: "Work Credit RAG Team"
+email: "research@work-credit-rag.org"
+
+# Build settings
+markdown: kramdown
+highlighter: rouge
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+  syntax_highlighter_opts:
+    disable: false
+
+# Collections
+collections:
+  papers:
+    output: true
+    permalink: /papers/:name/
+  problems:
+    output: true
+    permalink: /problems/:name/
+
+# Plugins
+plugins:
+  - jekyll-feed
+  - jekyll-sitemap
+  - jekyll-seo-tag
+  - jekyll-include-cache
+
+# Defaults
+defaults:
+  - scope:
+      path: ""
+      type: "pages"
+    values:
+      layout: "default"
+  - scope:
+      path: ""
+      type: "papers"
+    values:
+      layout: "paper"
+  - scope:
+      path: ""
+      type: "problems"
+    values:
+      layout: "problem"
+
+# Navigation
+nav:
+  - title: "Overview"
+    url: /index.html
+  - title: "Problems"
+    url: /problems/index.html
+  - title: "Papers & Solutions"
+    url: /papers/index.html
+  - title: "Architectures"
+    url: /architectures.html
+  - title: "Relevance Mapping"
+    url: /relevance.html
+  - title: "Benchmarks"
+    url: /benchmarks.html
+  - title: "Our Implementation"
+    url: /our-impl.html
+
+# SEO
+lang: en
+locale: en_US
+
+# Exclude from build
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/
+  - README.md
+  - .git/
+  - .gitignore
+
+# Pagination
+paginate: 10
+paginate_path: "/page:num/"
+
+# Mermaid support
+mermaid:
+  version: "10.6.1"

@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Detailed breakdown of each multi-turn RAG problem: root cause, production impact, and our fixes">
+  
+  <title>Problems - Multi-Turn RAG Research | Multi-Turn RAG Research: Problems, Solutions & State-of-the-Art (2025-2026)</title>
+  
+  <!-- SEO -->
+  <meta name="author" content="Work Credit RAG Team">
+  <meta property="og:title" content="Problems - Multi-Turn RAG Research | Multi-Turn RAG Research: Problems, Solutions & State-of-the-Art (2025-2026)">
+  <meta property="og:description" content="Detailed breakdown of each multi-turn RAG problem: root cause, production impact, and our fixes">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- Mermaid -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+  
+  <!-- Styles -->
+  <link rel="stylesheet" href="/assets/css/main.css">
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+  
+  <!-- Begin Jekyll SEO tag v2.9.1 -->
+<title>Problems - Multi-Turn RAG Research | Multi-Turn RAG Research: Problems, Solutions &amp; State-of-the-Art (2025-2026)</title>
+<meta name="generator" content="Jekyll v4.4.1" />
+<meta property="og:title" content="Problems - Multi-Turn RAG Research" />
+<meta name="author" content="Work Credit RAG Team" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Detailed breakdown of each multi-turn RAG problem: root cause, production impact, and our fixes" />
+<meta name="twitter:description" property="og:description" content="Detailed breakdown of each multi-turn RAG problem: root cause, production impact, and our fixes" />
+<meta property="og:site_name" content="Multi-Turn RAG Research: Problems, Solutions &amp; State-of-the-Art (2025-2026)" />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:title" content="Problems - Multi-Turn RAG Research" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebPage","author":{"@type":"Person","name":"Work Credit RAG Team"},"description":"Detailed breakdown of each multi-turn RAG problem: root cause, production impact, and our fixes","headline":"Problems - Multi-Turn RAG Research","url":"/problems/"}</script>
+<!-- End Jekyll SEO tag -->
+
+</head>
+
+<body>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+  
+  <header class="site-header" role="banner">
+    <div class="header-inner">
+      <a class="site-title" href="/">
+        <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+          <path d="M6.5 2H20v20"/>
+          <line x1="6.5" y1="2" x2="6.5" y2="22"/>
+        </svg>
+        <span>Multi-Turn RAG Research</span>
+      </a>
+      
+      <nav class="main-nav" role="navigation" aria-label="Main navigation">
+        <button class="nav-toggle" aria-expanded="false" aria-controls="nav-menu" aria-label="Toggle navigation">
+          <span class="hamburger"></span>
+        </button>
+        <ul id="nav-menu" class="nav-list">
+          <li><a href="/" class="">Overview</a></li>
+          <li class="has-dropdown">
+            <a href="/problems/index.html" class="active">Problems</a>
+            <ul class="dropdown">
+              <li><a href="/problems/subspace-filtering.html">Subspace Filtering</a></li>
+              <li><a href="/problems/ambiguity-resolution.html">Ambiguity Resolution</a></li>
+              <li><a href="/problems/sticky-context.html">Sticky Context</a></li>
+              <li><a href="/problems/retrieval-degradation.html">Retrieval Degradation</a></li>
+              <li><a href="/problems/hallucination.html">Hallucination Control</a></li>
+            </ul>
+          </li>
+          <li class="has-dropdown">
+            <a href="/papers/index.html" class="">Papers & Solutions</a>
+            <ul class="dropdown">
+              <li><a href="/papers/subspace-filtering.html">Subspace & Domain Partitioning</a></li>
+              <li><a href="/papers/ambiguity-clarification.html">Ambiguity & Clarification</a></li>
+              <li><a href="/papers/sticky-context.html">Sticky Context & Memory</a></li>
+              <li><a href="/papers/retrieval-fusion.html">Retrieval Fusion & RRF</a></li>
+              <li><a href="/papers/faithfulness.html">Faithfulness & Hallucination</a></li>
+              <li><a href="/papers/memory-architectures.html">Memory Architectures</a></li>
+              <li><a href="/papers/benchmarks.html">Benchmarks & Evaluation</a></li>
+            </ul>
+          </li>
+          <li><a href="/architectures.html" class="">Architectures</a></li>
+          <li><a href="/relevance.html" class="">Relevance Mapping</a></li>
+          <li><a href="/benchmarks.html" class="">Benchmarks</a></li>
+          <li><a href="/our-impl.html" class="">Our Implementation</a></li>
+        </ul>
+      </nav>
+      
+      <a href="https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1" class="github-link" target="_blank" rel="noopener" aria-label="View on GitHub">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.305-.536-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
+        </svg>
+      </a>
+    </div>
+  </header>
+
+  <main id="main-content" class="site-main" role="main">
+    <div class="page-header">
+  <h1>Problems</h1>
+  <p class="lead">Detailed breakdown of each multi-turn RAG problem with root cause analysis</p>
+</div>
+
+<div class="alert alert-info">
+  <strong>Context:</strong> Production system serving Persian credit-scoring QA across 4 subspaces (cheque, facilities_person, facilities_legal, general) with 1123 chunks over 18 documents. Benchmark: 41 turns (12 multi-turn + 12 single) across 4 subspaces.
+</div>
+
+<div class="card-grid">
+  <a href="/problems/subspace-filtering.html" class="card" style="text-decoration: none; color: inherit;">
+    <h3>🔍 Subspace Filtering Failure</h3>
+    <p class="meta"><strong>Impact:</strong> 0-chunk retrieval despite relevant content | <strong>Fix:</strong> Map correction + RRF fusion</p>
+    <p>Static <code>subspace_map</code> had <code>"cheque": "چک"</code> but KB folders used <code>"گزارش اعتباراتنجی چک"</code>. The filter <code>"چک"</code> matched zero chunks because KB filter checks exact element membership in <code>folder_hierarchy</code>, not substring.</p>
+    <div class="tags"><span class="tag primary">Root Cause</span><span class="tag">Map Mismatch</span><span class="tag">PC-RAG</span></div>
+  </a>
+  
+  <a href="/problems/ambiguity-resolution.html" class="card" style="text-decoration: none; color: inherit;">
+    <h3>❓ Ambiguity Resolution Failure</h3>
+    <p class="meta"><strong>Impact:</strong> 6/6 scattered queries answered instead of clarifying | <strong>Fix:</strong> Retrieval-grounded clarification + iterative loop</p>
+    <p>Queries like <code>"وضعیت اعتباری چطور است"</code> (credit status how is it) and <code>"بدهکار شدم چیکار کنم"</code> (I became debtor what to do) are scattered across subspaces. System answered <code>"پاسخی یافت نشد"</code> instead of clarifying with <code>"چک / تسهیلات / شرکت"</code> pills.</p>
+    <div class="tags"><span class="tag primary">Root Cause</span><span class="tag">Keyword Gate</span><span class="tag">RAC</span></div>
+  </a>
+  
+  <a href="/problems/sticky-context.html" class="card" style="text-decoration: none; color: inherit;">
+    <h3>🔗 Sticky Context Decay</h3>
+    <p class="meta"><strong>Impact:</strong> Context lost after 3-4 generic turns | <strong>Fix:</strong> Sticky carry + decay after 3 generic turns</p>
+    <p>After explicit subspace selection <code>"چک"</code> → <code>applied_subspace=cheque</code>, follow-up <code>"تاثیر چک برگشتی..."</code> lost sticky (became <code>None</code>). Generic follow-ups like <code>"آیا درآمد..."</code> didn't carry <code>filter_path</code>.</p>
+    <div class="tags"><span class="tag primary">Root Cause</span><span class="tag">Decay</span><span class="tag">CPP</span></div>
+  </a>
+  
+  <a href="/problems/retrieval-degradation.html" class="card" style="text-decoration: none; color: inherit;">
+    <h3>📉 Retrieval Degradation</h3>
+    <p class="meta"><strong>Impact:</strong> Filtered retrieval = hard filter, no fallback | <strong>Fix:</strong> RRF fusion + broadened retry + GPU</p>
+    <p>Filtered retrieval was treated as authoritative with NO fallback. When <code>filter_path</code> returned weak scores (<0.15), chunks cleared → abstention. No whole-KB fallback, no broadened params, no GPU.</p>
+    <div class="tags"><span class="tag primary">Root Cause</span><span class="tag">No Fallback</span><span class="tag">GUIR</span></div>
+  </a>
+  
+  <a href="/problems/hallucination.html" class="card" style="text-decoration: none; color: inherit;">
+    <h3>🛡️ Hallucination Control</h3>
+    <p class="meta"><strong>Impact:</strong> Weak-evidence answers hallucinated | <strong>Fix:</strong> Coverage+score guard + lexical bypass</p>
+    <p>Answers on weak evidence (fallback/broadened paths) hallucinated. G5 fake grade was correctly refused, but other weak-evidence answers invented facts. Hallucination rate 0.195 → 0.254 (tradeoff for recall).</p>
+    <div class="tags"><span class="tag primary">Root Cause</span><span class="tag">DUTIR</span><span class="tag">Faith Guard</span></div>
+  </a>
+  
+  <a href="/problems/latency.html" class="card" style="text-decoration: none; color: inherit;">
+    <h3>⚡ CPU Latency Bottleneck</h3>
+    <p class="meta"><strong>Impact:</strong> Dense embed 2.3s dominated latency | <strong>Fix:</strong> GPU embed + rerank pool 30</p>
+    <p>KB search: <code>dense 2325ms</code> (99.5% of search time). Rerank was <code>1.1ms</code> (not bottleneck!). GPU: <code>dense 19ms</code> (100×), <code>rerank 52ms</code> (real BGE-m3 scores), total <code>2333ms → 70ms</code>.</p>
+    <div class="tags"><span class="tag primary">Root Cause</span><span class="tag">CPU Embed</span><span class="tag">GPU KB</span></div>
+  </a>
+</div>
+
+---
+
+## Problem Taxonomy
+
+| # | Problem | Category | Severity | Status | Key Paper |
+|---|---------|----------|----------|--------|-----------|
+| 1 | Subspace map mismatch | Retrieval | Critical | ✅ Fixed | PC-RAG, SPLIT-RAG |
+| 2 | No filtered fallback | Retrieval | Critical | ✅ Fixed | GUIR, 5ting |
+| 3 | Global evidence threshold | Generation | High | ✅ Fixed | PC-RAG, DUTIR |
+| 4 | Sticky decay | Context | High | ✅ Fixed | CPP, CALMem |
+| 5 | No clarification gate | Safety | Critical | ✅ Fixed | RAC, ICR, Qulac |
+| 6 | No retrieval fallback | Retrieval | Critical | ✅ Fixed | GUIR, 5ting |
+| 7 | No per-subspace boost | Retrieval | Medium | ✅ Fixed | GUIR, SPLIT-RAG |
+| 7 | No faith guard | Safety | Medium | ✅ Fixed | DUTIR, Reflective RAG |
+| 8 | CPU-only embed | Performance | High | ✅ Fixed | SPLIT-RAG, GPU KB |
+| 9 | No decay mechanism | Context | Medium | ✅ Fixed | CPP, CALMem |
+
+---
+
+## Root Cause Analysis Diagram
+
+```mermaid
+flowchart TD
+    A[User Query] --> B{Subspace Map Match?}
+    B -->|No Match| C[Zero Chunks Retrieved]
+    B -->|Match| D[Filtered Retrieval]
+    C --> E[Abstention: 'پاسخی یافت نشد']
+    D --> F{Scores > Threshold?}
+    F -->|No| G[Chunks Cleared]
+    F -->|Yes| H[Build Context]
+    G --> E
+    H --> I{Generation}
+    I --> J[Answer]
+    I --> K[Hallucination?]
+    K -->|Yes| L[Hallucinated Answer]
+    K -->|No| J
+    
+    style C fill:#fef2f2,stroke:#ef4444
+    style E fill:#fef2f2,stroke:#ef4444
+    style G fill:#fef2f2,stroke:#ef4444
+    style L fill:#fef2f2,stroke:#ef4444
+    
+    M[Fixes] --> N[T1: RRF Fusion]
+    M --> O[T2: Broaden Retry]
+    M --> P[T3: Per-Subspace Threshold]
+    M --> Q[T4: Sticky Carry]
+    M --> R[T5: Clarify Gate]
+    M --> S[T6: Lexical Guard]
+    M --> T[T7: Observability]
+```
+
+---
+
+## Production Impact Quantification
+
+| Metric | Before Fix | After Fix | Business Impact |
+|--------|------------|-----------|-----------------|
+| **Cheque hit rate** | 11.1% | 66.7% | 5x more cheque queries answered |
+| **Clarification accuracy** | 0% (0/6) | 100% (6/6) | Users guided instead of dead ends |
+| **Sticky persistence** | 61% | 68% | Fewer re-specifications needed |
+| **Answer relevancy** | 21% | 57% | 2.7x more relevant answers |
+| **p50 latency** | 8.0s | 4.9s | 39% faster responses |
+| **KB search time** | 2.3s | 70ms | 33× faster retrieval |
+
+---
+
+## Next Steps
+
+1. **Read individual problem pages** for deep technical details
+2. **Explore Papers & Solutions** for academic backing
+3. **Review Architectures** for implementation patterns
+4. **Check Relevance Mapping** for direct fix-to-paper links
+4. **Run Benchmarks** with `evaluation/bench_runner.py`
+  </main>
+
+  <footer class="site-footer" role="contentinfo">
+    <div class="footer-inner">
+      <div class="footer-links">
+        <a href="https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1" target="_blank" rel="noopener">GitHub Repository</a>
+        <a href="https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1/tree/main/docs/research-site" target="_blank" rel="noopener">Site Source</a>
+        <a href="https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1/issues" target="_blank" rel="noopener">Issues</a>
+      </div>
+      <p class="copyright">© 2026 Work Credit RAG Team. Licensed under MIT.</p>
+      <p class="footer-note">Built with Jekyll · Hosted on GitHub Pages · Last updated: October 14, 2026</p>
+    </div>
+  </footer>
+
+  <script src="/assets/js/main.js"></script>
+  <script>
+    mermaid.initialize({ 
+      startOnLoad: true,
+      theme: 'default',
+      securityLevel: 'loose',
+      flowchart: { useMaxWidth: true, htmlLabels: true }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Detailed table mapping each of our fixes to the specific paper, section, and mechanism that validates it">
+  
+  <title>Relevance Mapping - Multi-Turn RAG Research | Multi-Turn RAG Research: Problems, Solutions & State-of-the-Art (2025-2026)</title>
+  
+  <!-- SEO -->
+  <meta name="author" content="Work Credit RAG Team">
+  <meta property="og:title" content="Relevance Mapping - Multi-Turn RAG Research | Multi-Turn RAG Research: Problems, Solutions & State-of-the-Art (2025-2026)">
+  <meta property="og:description" content="Detailed table mapping each of our fixes to the specific paper, section, and mechanism that validates it">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- Mermaid -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+  
+  <!-- Styles -->
+  <link rel="stylesheet" href="/assets/css/main.css">
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+  
+  <!-- Begin Jekyll SEO tag v2.9.1 -->
+<title>Relevance Mapping - Multi-Turn RAG Research | Multi-Turn RAG Research: Problems, Solutions &amp; State-of-the-Art (2025-2026)</title>
+<meta name="generator" content="Jekyll v4.4.1" />
+<meta property="og:title" content="Relevance Mapping - Multi-Turn RAG Research" />
+<meta name="author" content="Work Credit RAG Team" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Detailed table mapping each of our fixes to the specific paper, section, and mechanism that validates it" />
+<meta name="twitter:description" property="og:description" content="Detailed table mapping each of our fixes to the specific paper, section, and mechanism that validates it" />
+<meta property="og:site_name" content="Multi-Turn RAG Research: Problems, Solutions &amp; State-of-the-Art (2025-2026)" />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:title" content="Relevance Mapping - Multi-Turn RAG Research" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebPage","author":{"@type":"Person","name":"Work Credit RAG Team"},"description":"Detailed table mapping each of our fixes to the specific paper, section, and mechanism that validates it","headline":"Relevance Mapping - Multi-Turn RAG Research","url":"/relevance.html"}</script>
+<!-- End Jekyll SEO tag -->
+
+</head>
+
+<body>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+  
+  <header class="site-header" role="banner">
+    <div class="header-inner">
+      <a class="site-title" href="/">
+        <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+          <path d="M6.5 2H20v20"/>
+          <line x1="6.5" y1="2" x2="6.5" y2="22"/>
+        </svg>
+        <span>Multi-Turn RAG Research</span>
+      </a>
+      
+      <nav class="main-nav" role="navigation" aria-label="Main navigation">
+        <button class="nav-toggle" aria-expanded="false" aria-controls="nav-menu" aria-label="Toggle navigation">
+          <span class="hamburger"></span>
+        </button>
+        <ul id="nav-menu" class="nav-list">
+          <li><a href="/" class="">Overview</a></li>
+          <li class="has-dropdown">
+            <a href="/problems/index.html" class="">Problems</a>
+            <ul class="dropdown">
+              <li><a href="/problems/subspace-filtering.html">Subspace Filtering</a></li>
+              <li><a href="/problems/ambiguity-resolution.html">Ambiguity Resolution</a></li>
+              <li><a href="/problems/sticky-context.html">Sticky Context</a></li>
+              <li><a href="/problems/retrieval-degradation.html">Retrieval Degradation</a></li>
+              <li><a href="/problems/hallucination.html">Hallucination Control</a></li>
+            </ul>
+          </li>
+          <li class="has-dropdown">
+            <a href="/papers/index.html" class="">Papers & Solutions</a>
+            <ul class="dropdown">
+              <li><a href="/papers/subspace-filtering.html">Subspace & Domain Partitioning</a></li>
+              <li><a href="/papers/ambiguity-clarification.html">Ambiguity & Clarification</a></li>
+              <li><a href="/papers/sticky-context.html">Sticky Context & Memory</a></li>
+              <li><a href="/papers/retrieval-fusion.html">Retrieval Fusion & RRF</a></li>
+              <li><a href="/papers/faithfulness.html">Faithfulness & Hallucination</a></li>
+              <li><a href="/papers/memory-architectures.html">Memory Architectures</a></li>
+              <li><a href="/papers/benchmarks.html">Benchmarks & Evaluation</a></li>
+            </ul>
+          </li>
+          <li><a href="/architectures.html" class="">Architectures</a></li>
+          <li><a href="/relevance.html" class="active">Relevance Mapping</a></li>
+          <li><a href="/benchmarks.html" class="">Benchmarks</a></li>
+          <li><a href="/our-impl.html" class="">Our Implementation</a></li>
+        </ul>
+      </nav>
+      
+      <a href="https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1" class="github-link" target="_blank" rel="noopener" aria-label="View on GitHub">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.305-.536-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
+        </svg>
+      </a>
+    </div>
+  </header>
+
+  <main id="main-content" class="site-main" role="main">
+    <div class="page-header">
+  <h1>Relevance Mapping</h1>
+  <p class="lead">Detailed table mapping each of our fixes to the specific paper, section, and mechanism that validates it</p>
+</div>
+
+## Fix-to-Paper Mapping
+
+| Our Fix | Problem Solved | Paper | Section/Mechanism | Validation |
+|---------|----------------|-------|-------------------|------------|
+| **Map Fix** | Cheque filter matched 0 chunks | **PC-RAG** | Domain-partitioned retrieval | 51% false-positive reduction |
+| | | **SPLIT-RAG** | Question-driven partitioning | Learned routing from training Qs |
+| | | **DSRAG** | Hierarchical KG | Concept/Instance KG hierarchy |
+| **T1: RRF Fusion** | Hard filter replace → fusion | **GUIR** | Dual-query merged retrieval | +12.3% nDCG@5 |
+| | | **5ting** | Dual-query strategy | Last-turn + rewrite merge |
+| | | **Sifei** | Hybrid dense+sparse + RRF | 0.5453 nDCG@5 (Rank 3/38) |
+| | | **AILS-NTUA** | Nested-RRF | Multi-strategy rewriting |
+| **T2: Broadened Retry** | Filtered weak → whole-KB + broadened | **GUIR** | Multi-query generation + fusion | LT + RW + QS fusion |
+| | | **Sifei** | Hybrid dense+sparse + beam | keyword_boost + beam |
+| | | **5ting** | Dual-query + rerank | Last-turn + rewrite |
+| **T3: Per-Subspace Threshold** | Global 0.15 starved cheque | **PC-RAG** | Domain-specific thresholds | Domain-specific evidence |
+| | | **DUTIR** | Confidence-based gating | Per-domain confidence |
+| **T4: Sticky Carry** | Generic follow-ups lost context | **CALMem** | Episodic memory carry | Intra-session retrieval |
+| | | **CPP** | Segment persistence | Segment-based recall |
+| | | **Context Recycling** | L1 branch loading | Hierarchical context |
+| **T5: Scattered Gate** | 6/6 scattered failed to clarify | **RAC** | Retrieval-grounded clarify | Corpus-grounded clarification |
+| | | **ICR** | Iterative clarify-rewrite | Clarify→rewrite loop |
+| | | **Qulac/ClariQ** | Facet-based datasets | 10k+ ambiguous queries |
+| | | **CLARITY** | Multi-facet ambiguity | Multi-turn resolution |
+| **T6: Lexical Bypass** | Rerank 0.0 but text relevant | **5ting** | Corpus-specific rewrite | Preserves terminology |
+| | | **AILS-NTUA** | Corpus-specific rewrite | Domain terminology |
+| | | **H-RAG** | Parent-child retrieval | Context reconstruction |
+| **T3+F: Faith Guard** | Weak-evidence hallucination | **DUTIR** | Confidence gating | Answerability gate |
+| | | **Reflective RAG** | Self-evaluation + RL | Reflection + RL |
+| | | **5ting** | Evidence constraint | IDK-conditioned harmonic mean |
+| | | **CoRAG** | Iterative retrieval | Chain-of-retrieval |
+| | | **CoopRAG** | Cooperative retriever | Mutual information |
+| | | **CalibRAG** | Calibrated confidence | Calibrated rerank |
+| **C: GPU KB** | Dense 2325ms → 19ms | **SPLIT-RAG** | Parallel subgraph retrieval | Parallel retrieval |
+| | | **H-RAG** | Hierarchical retrieval | GPU-friendly config |
+| | | **Sifei** | Hybrid dense+sparse | GPU cross-encoder |
+| | | **CoRAG** | Chain-of-retrieval | Iterative retrieval |
+
+---
+
+## Per-Fix Deep Dive
+
+### Fix 1: Subspace Map Correction → PC-RAG + SPLIT-RAG
+
+**Our Issue**: `subspace_map["cheque"] = "چک"` matched 0 chunks. KB folder = `"گزارش اعتباراتنجی چک"`.
+
+**PC-RAG Validation**: "Domain-partitioned retrieval: decompose query into domain-isolated sub-tasks, independent retrieval per partition."
+
+**SPLIT-RAG Validation**: "Question-driven graph partitioning: partitions KG by reasoning paths from training questions, assigns specialized agents."
+
+**Our Fix**: Map correction + future learned routing.
+
+---
+
+### Fix 2: RRF Fusion (T1) → GUIR + Sifei + AILS-NTUA
+
+**Our Issue**: Hard filter replace lost relevant chunks when filtered weak.
+
+**GUIR**: "Dual-query merged retrieval: last-turn + rewrite → merge captures both entity matching and semantic relevance."
+
+**Sifei**: "Hybrid dense+sparse + RRF → 0.5453 nDCG@5 (Rank 3/38)."
+
+**AILS-NTUA**: "Nested-RRF: Minimal + Corpus-Specific + HyDE + CoT → RRF ensemble."
+
+**Our Implementation**: `_fuse_subspace_rrf(filtered, whole, filtered_weight=1.3)` — filtered leg gets 1.3x boost.
+
+---
+
+### Fix 3: Broadened Retry (T2) → GUIR + Sifei
+
+**Our Issue**: Filtered retrieval weak → no fallback.
+
+**GUIR**: "Multi-query generation and fusion: LT + RW + QS → RRF fusion."
+
+**Sifei**: "Hybrid dense+sparse + controlled query rewriting + cross-encoder reranking."
+
+**Our Implementation**: `_t2_try_broadened_retry(top_k=30, keyword_boost=1.5)` with RRF fusion.
+
+---
+
+### Fix 4: Per-Subspace Threshold (T3) → PC-RAG + DUTIR
+
+**Our Issue**: Global `evidence_min_score=0.15` starved cheque (scores 0.028).
+
+**PC-RAG**: "Domain-partitioned retrieval with domain-specific evidence thresholds."
+
+**DUTIR**: "Confidence-based answerability gating minimizes hallucination."
+
+**Our Implementation**: `get_evidence_threshold(cheque)=0.05, person=0.10, legal=0.15, general=0.15`.
+
+---
+
+### Fix 5: Sticky Carry + Decay (T4+T8) → CALMem + CPP
+
+**Our Issue**: Generic follow-ups lost sticky context; no decay mechanism.
+
+**CALMem**: "Episodic memory (intra-session) + Semantic memory (cross-session). MOIM injector auto-retrieves relevant context."
+
+**CPP**: "Segmentation (cosine δ) → dual-indexing → budgeted retrieval → evidence highlighting."
+
+**Our Implementation**: Sticky carry for generic follow-ups + decay after 3 generic turns.
+
+---
+
+### Fix 6: Scattered Clarify Gate (T5) → RAC + ICR
+
+**Our Issue**: 6/6 scattered queries failed to clarify.
+
+**RAC**: "Retrieval-augmented clarification: retrieve top-k passages → LLM generates facet-grounded clarifying question."
+
+**ICR**: "Iterative clarification-rewriting: c_i ∼ M(r_{i-1}), r_i ∼ M(c_i, H, r_{i-1}) until confident."
+
+**Our Implementation**: `is_scattered_ambiguous(query)` detects vague terms without subspace keywords → forces clarify.
+
+---
+
+### Fix 7: Lexical Evidence Bypass (T6) → 5ting + AILS-NTUA
+
+**Our Issue**: Rerank 0.0 but text relevant → abstained despite evidence.
+
+**5ting**: "Corpus-specific rewrite preserves terminology gaps."
+
+**AILS-NTUA**: "Corpus-specific rewriting addresses terminology gaps."
+
+**Our Implementation**: `_has_lexical_evidence(query, chunks, subspace)` checks subspace keywords + query tokens in chunk content.
+
+---
+
+### Fix 8: Faith/Hall Guard (F) → DUTIR + Reflective RAG + 5ting
+
+**Our Issue**: Weak-evidence answers hallucinated (hall 0.195 → 0.254).
+
+**DUTIR**: "Confidence-based answerability gating minimizes hallucination."
+
+**Reflective RAG**: "Reflection tagging → RL strategy optimization. Two-stage: SFT (reflection) → RL (strategy + dynamic KL)."
+
+**5ting**: "Evidence-constrained generation + IDK-conditioned harmonic mean."
+
+**Our Implementation**: Coverage+score guard on weak-evidence paths replaces answer with refusal.
+
+---
+
+### Fix 9: GPU KB (C) → SPLIT-RAG + H-RAG
+
+**Our Issue**: Dense embed 2325ms on CPU dominated latency.
+
+**SPLIT-RAG**: "Parallel subgraph retrieval on partitioned KG → efficiency."
+
+**H-RAG**: "Hierarchical parent-child retrieval + GPU-friendly configuration."
+
+**Our Implementation**: `KB_EMBED_DEVICE=cuda:0 KB_RERANKER_DEVICE=cuda:0 KB_RERANK_POOL=30`.
+
+---
+
+## Summary Table
+
+| Fix | Papers | Key Mechanism | Our Code Location |
+|-----|--------|---------------|-------------------|
+| Map Fix | PC-RAG, SPLIT-RAG | Domain partitioning | `config.py:34` |
+| T1 RRF Fusion | GUIR, Sifei, AILS-NTUA | RRF fusion (1.3x filtered) | `retrieve.py:143` |
+| T2 Broaden | GUIR, Sifei | Multi-query fusion | `retrieve.py:220` |
+| T3 Threshold | PC-RAG, DUTIR | Per-subspace evidence | `config.py:44` |
+| T4 Sticky | CALMem, CPP | Episodic memory | `api.py:386` |
+| T5 Clarify | RAC, ICR | Retrieval-grounded clarify | `infer_specification.py:24` |
+| T6 Lexical | 5ting, AILS-NTUA | Corpus-specific rewrite | `format_response.py:279` |
+| F Faith Guard | DUTIR, Reflective RAG, 5ting | Evidence constraint | `format_response.py:483` |
+| C GPU KB | SPLIT-RAG, H-RAG | Parallel retrieval | `KB_EMBED_DEVICE=cuda:0` |
+
+---
+
+## Related Pages
+
+- [Problems](../problems/index.html) — Root causes and fixes
+- [Papers & Solutions](../papers/index.html) — Paper summaries
+- [Architectures](../architectures.html) — Architecture diagrams
+- [Our Implementation](../our-impl.html) — Code pointers and benchmarks
+  </main>
+
+  <footer class="site-footer" role="contentinfo">
+    <div class="footer-inner">
+      <div class="footer-links">
+        <a href="https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1" target="_blank" rel="noopener">GitHub Repository</a>
+        <a href="https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1/tree/main/docs/research-site" target="_blank" rel="noopener">Site Source</a>
+        <a href="https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1/issues" target="_blank" rel="noopener">Issues</a>
+      </div>
+      <p class="copyright">© 2026 Work Credit RAG Team. Licensed under MIT.</p>
+      <p class="footer-note">Built with Jekyll · Hosted on GitHub Pages · Last updated: October 14, 2026</p>
+    </div>
+  </footer>
+
+  <script src="/assets/js/main.js"></script>
+  <script>
+    mermaid.initialize({ 
+      startOnLoad: true,
+      theme: 'default',
+      securityLevel: 'loose',
+      flowchart: { useMaxWidth: true, htmlLabels: true }
+    });
+  </script>
+</body>
+</html>
