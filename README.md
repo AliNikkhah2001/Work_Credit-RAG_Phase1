@@ -10,6 +10,19 @@ Umbrella repository for a self-hosted, Persian-capable conversational RAG platfo
 
 ---
 
+## 🌐 Research Site (NEW)
+
+**Interactive multi-page research site:** [https://alinikkhah2001.github.io/Work_Credit-RAG_Phase1/research-site/](https://alinikkhah2001.github.io/Work_Credit-RAG_Phase1/research-site/)
+
+- **Problems**: Detailed root cause analysis for all 6 problems
+- **Papers & Solutions**: 25+ papers from ACL 2025, EMNLP 2025, SIGIR 2024/25, SIGDIAL 2025/26, SemEval 2026, NeurIPS 2025
+- **Architectures**: Mermaid diagrams for SPLIT-RAG, PC-RAG, RAC, ICR, CPP, CALMem, H-RAG, 5ting, GUIR, DUTIR, CoRAG, IM-RAG
+- **Relevance Mapping**: 10 fixes → 25+ papers with section-level mapping
+- **Benchmarks**: MTRAG, MTRAGEval, CORAL, RAD-Bench, our 41-turn results
+- **Our Implementation**: T1-T8 fixes, code pointers, benchmark deltas, deployment notes
+
+---
+
 ## Latest Metrics
 
 | Layer | Metric | Value | Source |
