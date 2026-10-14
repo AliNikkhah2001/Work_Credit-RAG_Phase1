@@ -254,6 +254,51 @@ async function loadOverview(){
       "<div class='card'><b>"+esc(avgStars)+" ★</b><span>Avg Rating</span></div>"+
       "<div class='card'><b style='color:#92400e'>"+fbCount+"</b><span>Fallback used ("+esc(fbPct)+")</span></div>"+
       "<div class='card'><b style='color:#5b21b6'>"+brCount+"</b><span>Broaden used</span></div>";
+    // Inject fallback alerts & subspace breakdown after the cards
+    if(afterCards){
+      let ovCards = document.getElementById('ov-cards');
+      if(ovCards && ovCards.parentNode){
+        let container = document.createElement('div');
+        container.className = 'fallback-alerts';
+        container.innerHTML = afterCards;
+        ovCards.parentNode.insertBefore(container, ovCards.nextSibling);
+      }
+    }
+    // Fallback alerts & subspace breakdown
+    let fbBySub = s.fallback_by_subspace || {};
+    let alertHtml = "";
+    let alertCount = 0;
+    let subTableRows = "";
+    for(let sub in fbBySub){
+      let d = fbBySub[sub];
+      let rate = d.rate != null ? (d.rate * 100).toFixed(1) : '—';
+      let cnt = d.count || 0;
+      let color = rate !== '—' && parseFloat(rate) > 30 ? '#b91c1c' : '#374151';
+      if(rate !== '—' && parseFloat(rate) > 30) alertCount++;
+      let badgeColor = color === '#b91c1c' ? '#fee2e2' : '#f1f5f9';
+      let badgeBorder = color === '#b91c1c' ? '#fecaca' : '#e5e7eb';
+      let badgeTextColor = color === '#b91c1c' ? '#b91c1c' : '#374151';
+      subTableRows += "<tr>"
+        +"<td><span style='background:"+color+";border-color:"+color+";color:#fff;padding:2px 6px;border-radius:8px;font-size:10px;font-weight:600'>"+esc(sub)+"</span></td>"
+        +"<td style='text-align:center'><b>"+esc(cnt)+"</b></td>"
+        +"<td style='text-align:center'><span style='background:"+badgeColor+";border:1px solid "+(color==='#b91c1c'?'#fecaca':'#e5e7eb')+";color:"+badgeTextColor+";padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600'>"+rate+"%</span></td>"
+        +"</tr>";
+    }
+    if(alertCount > 0){
+      alertHtml = "<div class='alert' style='background:#fee2e2;border:1px solid #fecaca;color:#b91c1c;padding:10px 14px;border-radius:8px;margin:10px 0;font-size:13px'>"
+        +"<b>⚠ Fallback Alert: </b>"+alertCount+" subspace(s) exceed 30% fallback rate. "
+        +"High fallback means filtered retrieval is frequently failing — check subspace_map, evidence thresholds, or KB coverage for those subspaces."
+        +"</div>";
+    }
+    if(subTableRows){
+      let subTable = "<div style='margin:12px 0'><h4 style='margin:0 0 8px;font-size:13px'>Fallback by Subspace</h4>"
+        +"<table style='width:100%;border-collapse:collapse;font-size:12px'><thead>"
+        +"<tr style='background:#f8fafc'><th style='border:1px solid var(--line);padding:6px;text-align:left'>Subspace</th>"
+        +"<th style='border:1px solid var(--line);padding:6px;text-align:center'>Turns</th>"
+        +"<th style='border:1px solid var(--line);padding:6px;text-align:center'>Fallback Rate</th></tr></thead><tbody>"
+        + subTableRows + "</tbody></table></div>";
+    }
+    let afterCards = (alertHtml ? alertHtml : "") + subTable;
     // charts
     let tsData=null;
     try{let tr=await fetch('/api/observability/timeseries?hours=24');if(tr.ok){let j=await tr.json();tsData=j.data||j}}catch(e){}
