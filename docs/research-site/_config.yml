@@ -3,6 +3,9 @@ description: "Comprehensive research on multi-turn RAG challenges: subspace filt
 author: "Work Credit RAG Team"
 email: "research@work-credit-rag.org"
 
+# GitHub Pages baseurl for project page
+baseurl: "/Work_Credit-RAG_Phase1"
+
 # Build settings
 markdown: kramdown
 highlighter: rouge
