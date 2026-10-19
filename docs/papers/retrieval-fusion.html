@@ -106,182 +106,365 @@
 
   <main id="main-content" class="site-main" role="main">
     <div class="page-header">
-  <h1>Retrieval Fusion & RRF Papers</h1>
+  <h1>Retrieval Fusion &amp; RRF Papers</h1>
   <p class="lead">GUIR, 5ting, H-RAG, Sifei, IITKanBDone, AILS-NTUA, uva-irlab - Multi-query fusion, dual-query merge, nested-RRF, hybrid dense+sparse, parent-child retrieval</p>
 </div>
 
-## Paper Summaries
+<h2 id="paper-summaries">Paper Summaries</h2>
 
-### GUIR: Multi-Query Fusion for Conversational Retrieval
+<h3 id="guir-multi-query-fusion-for-conversational-retrieval">GUIR: Multi-Query Fusion for Conversational Retrieval</h3>
 
-| Field | Detail |
-|-------|--------|
-| **Title** | GUIR at SemEval-2026 Task 8: Training-Free Multi-Query Fusion for Robust Conversational Retrieval |
-| **Authors** | Pasha Abrishamchian, Ophir Frieder, Nazli Goharian |
-| **Venue** | SemEval 2026 (ACL Anthology: 2026.semeval-1.32) |
-| **Code** | Not specified |
+<table>
+  <thead>
+    <tr>
+      <th>Field</th>
+      <th>Detail</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Title</strong></td>
+      <td>GUIR at SemEval-2026 Task 8: Training-Free Multi-Query Fusion for Robust Conversational Retrieval</td>
+    </tr>
+    <tr>
+      <td><strong>Authors</strong></td>
+      <td>Pasha Abrishamchian, Ophir Frieder, Nazli Goharian</td>
+    </tr>
+    <tr>
+      <td><strong>Venue</strong></td>
+      <td>SemEval 2026 (ACL Anthology: 2026.semeval-1.32)</td>
+    </tr>
+    <tr>
+      <td><strong>Code</strong></td>
+      <td>Not specified</td>
+    </tr>
+  </tbody>
+</table>
 
-**Key Claims**:
-- **Three query representations**:
-  1. **LT (Last-Turn)**: Raw user input, preserves original terminology
-  2. **RW (Rewritten)**: LLM rewrite with context
-  3. **QS (Query-Specific)**: Corpus-adapted terminology
-- **Fusion**: Pool-then-rerank → RRF across all three
-- **Results**: 0.5453 nDCG@5 (Rank 3/38) vs baseline 0.4795 (+12.3%)
+<p><strong>Key Claims</strong>:</p>
+<ul>
+  <li><strong>Three query representations</strong>:
+    <ol>
+      <li><strong>LT (Last-Turn)</strong>: Raw user input, preserves original terminology</li>
+      <li><strong>RW (Rewritten)</strong>: LLM rewrite with context</li>
+      <li><strong>QS (Query-Specific)</strong>: Corpus-adapted terminology</li>
+    </ol>
+  </li>
+  <li><strong>Fusion</strong>: Pool-then-rerank → RRF across all three</li>
+  <li><strong>Results</strong>: 0.5453 nDCG@5 (Rank 3/38) vs baseline 0.4795 (+12.3%)</li>
+</ul>
 
-**Key Insight**: "Optimal retrieval strategies vary significantly at the query level, making a single universal strategy inherently suboptimal."
+<p><strong>Key Insight</strong>: “Optimal retrieval strategies vary significantly at the query level, making a single universal strategy inherently suboptimal.”</p>
 
-**Relevance to Our Fix**: Our T1 RRF fusion = simplified GUIR (filtered + whole-KB instead of LT+RW+QS).
+<p><strong>Relevance to Our Fix</strong>: Our T1 RRF fusion = simplified GUIR (filtered + whole-KB instead of LT+RW+QS).</p>
 
----
+<hr />
 
-### 5ting: LLM Reranking + Faithfulness Control
+<h3 id="5ting-llm-reranking--faithfulness-control">5ting: LLM Reranking + Faithfulness Control</h3>
 
-| Field | Detail |
-|-------|--------|
-| **Title** | 5ting at SemEval-2026 Task 8: Strong End-to-End Multi-Turn RAG via LLM-Based Reranking and Faithfulness Control |
-| **Venue** | SemEval 2026 (ACL Anthology: 2026.semeval-1.145) |
-| **Key Innovation** | LLM-based reranking + evidence-constrained generation |
+<table>
+  <thead>
+    <tr>
+      <th>Field</th>
+      <th>Detail</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Title</strong></td>
+      <td>5ting at SemEval-2026 Task 8: Strong End-to-End Multi-Turn RAG via LLM-Based Reranking and Faithfulness Control</td>
+    </tr>
+    <tr>
+      <td><strong>Venue</strong></td>
+      <td>SemEval 2026 (ACL Anthology: 2026.semeval-1.145)</td>
+    </tr>
+    <tr>
+      <td><strong>Key Innovation</strong></td>
+      <td>LLM-based reranking + evidence-constrained generation</td>
+    </tr>
+  </tbody>
+</table>
 
-**Key Claims**:
-- **Pipeline**: Dense retrieval → FAISS → LLM reranking (listwise) → Evidence-constrained generation
-- **Dual-query strategy**: Last-turn + rewrite → merge → captures both entity matching and semantic relevance
-- **Faithfulness**: IDK-conditioned harmonic mean scoring
+<p><strong>Key Claims</strong>:</p>
+<ul>
+  <li><strong>Pipeline</strong>: Dense retrieval → FAISS → LLM reranking (listwise) → Evidence-constrained generation</li>
+  <li><strong>Dual-query strategy</strong>: Last-turn + rewrite → merge → captures both entity matching and semantic relevance</li>
+  <li><strong>Faithfulness</strong>: IDK-conditioned harmonic mean scoring</li>
+</ul>
 
-**Results**: MTRAGEval Task A/C participant
+<p><strong>Results</strong>: MTRAGEval Task A/C participant</p>
 
----
+<hr />
 
-### H-RAG: Hierarchical Parent-Child Retrieval
+<h3 id="h-rag-hierarchical-parent-child-retrieval">H-RAG: Hierarchical Parent-Child Retrieval</h3>
 
-| Field | Detail |
-|-------|--------|
-| **Title** | H-RAG at SemEval-2026 Task 8: Hierarchical Parent–Child Retrieval for Multi-Turn RAG Conversations |
-| **Venue** | SemEval 2026 (ACL Anthology: 2026.semeval-1.155) |
-| **Key Innovation** | Parent-child document hierarchy + hybrid retrieval + parent-level context reconstruction |
+<table>
+  <thead>
+    <tr>
+      <th>Field</th>
+      <th>Detail</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Title</strong></td>
+      <td>H-RAG at SemEval-2026 Task 8: Hierarchical Parent–Child Retrieval for Multi-Turn RAG Conversations</td>
+    </tr>
+    <tr>
+      <td><strong>Venue</strong></td>
+      <td>SemEval 2026 (ACL Anthology: 2026.semeval-1.155)</td>
+    </tr>
+    <tr>
+      <td><strong>Key Innovation</strong></td>
+      <td>Parent-child document hierarchy + hybrid retrieval + parent-level context reconstruction</td>
+    </tr>
+  </tbody>
+</table>
 
-**Key Claims**:
-- **Parent-child hierarchy**: Documents → parent chunks (summary) → child chunks (details)
-- **Retrieval**: Hybrid (BM25 + dense) → cross-encoder rerank → parent-level context reconstruction
-- **Results**: nDCG@5 0.4271 (Task A), harmonic mean 0.3241 (Task C)
+<p><strong>Key Claims</strong>:</p>
+<ul>
+  <li><strong>Parent-child hierarchy</strong>: Documents → parent chunks (summary) → child chunks (details)</li>
+  <li><strong>Retrieval</strong>: Hybrid (BM25 + dense) → cross-encoder rerank → parent-level context reconstruction</li>
+  <li><strong>Results</strong>: nDCG@5 0.4271 (Task A), harmonic mean 0.3241 (Task C)</li>
+</ul>
 
-**Relevance**: Our KB could benefit from parent-child chunking (current: flat chunks).
+<p><strong>Relevance</strong>: Our KB could benefit from parent-child chunking (current: flat chunks).</p>
 
----
+<hr />
 
-### Sifei: Hybrid Retrieval + Query Rewriting
+<h3 id="sifei-hybrid-retrieval--query-rewriting">Sifei: Hybrid Retrieval + Query Rewriting</h3>
 
-| Field | Detail |
-|-------|--------|
-| **Title** | Sifei at SemEval-2026 Task 8: Hybrid Retrieval and Query Rewriting for Multi-Turn RAG |
-| **Authors** | Sifei Meng, Dmitry Ilvovsky |
-| **Venue** | SemEval 2026 (ACL Anthology: 2026.semeval-1.32) |
-| **Code** | https://github.com/mengsifei/MultiturnRAG |
+<table>
+  <thead>
+    <tr>
+      <th>Field</th>
+      <th>Detail</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Title</strong></td>
+      <td>Sifei at SemEval-2026 Task 8: Hybrid Retrieval and Query Rewriting for Multi-Turn RAG</td>
+    </tr>
+    <tr>
+      <td><strong>Authors</strong></td>
+      <td>Sifei Meng, Dmitry Ilvovsky</td>
+    </tr>
+    <tr>
+      <td><strong>Venue</strong></td>
+      <td>SemEval 2026 (ACL Anthology: 2026.semeval-1.32)</td>
+    </tr>
+    <tr>
+      <td><strong>Code</strong></td>
+      <td>https://github.com/mengsifei/MultiturnRAG</td>
+    </tr>
+  </tbody>
+</table>
 
-**Key Claims**:
-- **Pipeline**: Dense (BGE-M3) + Sparse (BM25) → RRF → Cross-encoder rerank (BGE-reranker-large)
-- **Query Rewriting**: Controlled LLM rewrite
-- **Results**: 0.5453 nDCG@5 (Rank 3/38) vs baseline 0.4795 (+12.3%)
+<p><strong>Key Claims</strong>:</p>
+<ul>
+  <li><strong>Pipeline</strong>: Dense (BGE-M3) + Sparse (BM25) → RRF → Cross-encoder rerank (BGE-reranker-large)</li>
+  <li><strong>Query Rewriting</strong>: Controlled LLM rewrite</li>
+  <li><strong>Results</strong>: 0.5453 nDCG@5 (Rank 3/38) vs baseline 0.4795 (+12.3%)</li>
+</ul>
 
----
+<hr />
 
-### IITKanBDone: ELSER + Mistral
+<h3 id="iitkanbdone-elser--mistral">IITKanBDone: ELSER + Mistral</h3>
 
-| Field | Detail |
-|-------|--------|
-| **Title** | IITKanBDone at SemEval-2026 Task 8: MTRAGEval |
-| **Venue** | SemEval 2026 |
-| **Key Claims** | ELSER (learned sparse) + Mistral-7B-Instruct → nDCG@5 0.4018 (Rank 24/38) |
+<table>
+  <thead>
+    <tr>
+      <th>Field</th>
+      <th>Detail</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Title</strong></td>
+      <td>IITKanBDone at SemEval-2026 Task 8: MTRAGEval</td>
+    </tr>
+    <tr>
+      <td><strong>Venue</strong></td>
+      <td>SemEval 2026</td>
+    </tr>
+    <tr>
+      <td><strong>Key Claims</strong></td>
+      <td>ELSER (learned sparse) + Mistral-7B-Instruct → nDCG@5 0.4018 (Rank 24/38)</td>
+    </tr>
+  </tbody>
+</table>
 
----
+<hr />
 
-### AILS-NTUA: Nested-RRF Multi-Strategy Rewriting
+<h3 id="ails-ntua-nested-rrf-multi-strategy-rewriting">AILS-NTUA: Nested-RRF Multi-Strategy Rewriting</h3>
 
-| Field | Detail |
-|-------|--------|
-| **Title** | AILS-NTUA at SemEval-2026 Task 8: Evaluating Multi-Turn RAG Conversations |
-| **Venue** | SemEval 2026 |
-| **Key Claims** | 4 rewriting strategies → Nested-RRF fusion |
+<table>
+  <thead>
+    <tr>
+      <th>Field</th>
+      <th>Detail</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Title</strong></td>
+      <td>AILS-NTUA at SemEval-2026 Task 8: Evaluating Multi-Turn RAG Conversations</td>
+    </tr>
+    <tr>
+      <td><strong>Venue</strong></td>
+      <td>SemEval 2026</td>
+    </tr>
+    <tr>
+      <td><strong>Key Claims</strong></td>
+      <td>4 rewriting strategies → Nested-RRF fusion</td>
+    </tr>
+  </tbody>
+</table>
 
-**Rewriting Strategies**:
-1. **Minimal**: Coreference resolution
-2. **Corpus-Specific**: Domain terminology adaptation
-3. **HyDE**: Hypothetical document embedding
-4. **Chain-of-Thought**: Multi-faceted inference
+<p><strong>Rewriting Strategies</strong>:</p>
+<ol>
+  <li><strong>Minimal</strong>: Coreference resolution</li>
+  <li><strong>Corpus-Specific</strong>: Domain terminology adaptation</li>
+  <li><strong>HyDE</strong>: Hypothetical document embedding</li>
+  <li><strong>Chain-of-Thought</strong>: Multi-faceted inference</li>
+</ol>
 
-**Fusion**: Nested-RRF (RRF of RRFs) → ensemble gains
+<p><strong>Fusion</strong>: Nested-RRF (RRF of RRFs) → ensemble gains</p>
 
----
+<hr />
 
-### uva-irlab: Learned Sparse + Listwise Reranking
+<h3 id="uva-irlab-learned-sparse--listwise-reranking">uva-irlab: Learned Sparse + Listwise Reranking</h3>
 
-| Field | Detail |
-|-------|--------|
-| **Title** | uva-irlab-conv at SemEval-2026 Task 8: Multi-Turn RAG with Learned Sparse Retrieval and Listwise Reranking |
-| **Venue** | SemEval 2026 |
-| **Key Claims** | Learned sparse retrieval (LSR) + LLM listwise reranking |
+<table>
+  <thead>
+    <tr>
+      <th>Field</th>
+      <th>Detail</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Title</strong></td>
+      <td>uva-irlab-conv at SemEval-2026 Task 8: Multi-Turn RAG with Learned Sparse Retrieval and Listwise Reranking</td>
+    </tr>
+    <tr>
+      <td><strong>Venue</strong></td>
+      <td>SemEval 2026</td>
+    </tr>
+    <tr>
+      <td><strong>Key Claims</strong></td>
+      <td>Learned sparse retrieval (LSR) + LLM listwise reranking</td>
+    </tr>
+  </tbody>
+</table>
 
----
+<hr />
 
-## Fusion Techniques Comparison
+<h2 id="fusion-techniques-comparison">Fusion Techniques Comparison</h2>
 
-| Paper | Fusion Method | Query Variants | Reranking | Score |
-|-------|---------------|----------------|-----------|-------|
-| **Our T1** | RRF Fusion (filtered + whole-KB) | 2 (filtered + whole) | BGE-m3 | Hit 0.78 |
-| **GUIR** | RRF Fusion | 3 (LT + RW + QS) | Cross-encoder | 0.545 nDCG@5 |
-| **Sifei** | RRF (dense + sparse) | 1 (rewritten) | BGE-reranker-large | 0.545 nDCG@5 |
-| **5ting** | Dual-query merge + LLM rerank | 2 (last + rewrite) | LLM listwise | MTRAGEval |
-| **AILS-NTUA** | Nested-RRF | 4 (Minimal, Corpus, HyDE, CoT) | RRF ensemble | MTRAGEval |
-| **uva-irlab** | LSR + listwise rerank | 1 (rewritten) | LLM listwise | MTRAGEval |
+<table>
+  <thead>
+    <tr>
+      <th>Paper</th>
+      <th>Fusion Method</th>
+      <th>Query Variants</th>
+      <th>Reranking</th>
+      <th>Score</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Our T1</strong></td>
+      <td>RRF Fusion (filtered + whole-KB)</td>
+      <td>2 (filtered + whole)</td>
+      <td>BGE-m3</td>
+      <td>Hit 0.78</td>
+    </tr>
+    <tr>
+      <td><strong>GUIR</strong></td>
+      <td>RRF Fusion</td>
+      <td>3 (LT + RW + QS)</td>
+      <td>Cross-encoder</td>
+      <td>0.545 nDCG@5</td>
+    </tr>
+    <tr>
+      <td><strong>Sifei</strong></td>
+      <td>RRF (dense + sparse)</td>
+      <td>1 (rewritten)</td>
+      <td>BGE-reranker-large</td>
+      <td>0.545 nDCG@5</td>
+    </tr>
+    <tr>
+      <td><strong>5ting</strong></td>
+      <td>Dual-query merge + LLM rerank</td>
+      <td>2 (last + rewrite)</td>
+      <td>LLM listwise</td>
+      <td>MTRAGEval</td>
+    </tr>
+    <tr>
+      <td><strong>AILS-NTUA</strong></td>
+      <td>Nested-RRF</td>
+      <td>4 (Minimal, Corpus, HyDE, CoT)</td>
+      <td>RRF ensemble</td>
+      <td>MTRAGEval</td>
+    </tr>
+    <tr>
+      <td><strong>uva-irlab</strong></td>
+      <td>LSR + listwise rerank</td>
+      <td>1 (rewritten)</td>
+      <td>LLM listwise</td>
+      <td>MTRAGEval</td>
+    </tr>
+  </tbody>
+</table>
 
----
+<hr />
 
-## Our RRF Fusion Implementation
+<h2 id="our-rrf-fusion-implementation">Our RRF Fusion Implementation</h2>
 
-```python
-# retrieve.py - _fuse_subspace_rrf()
-def _fuse_subspace_rrf(filtered, whole, filtered_weight=1.3):
-    """
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># retrieve.py - _fuse_subspace_rrf()
+</span><span class="k">def</span> <span class="nf">_fuse_subspace_rrf</span><span class="p">(</span><span class="n">filtered</span><span class="p">,</span> <span class="n">whole</span><span class="p">,</span> <span class="n">filtered_weight</span><span class="o">=</span><span class="mf">1.3</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">
     Reciprocal Rank Fusion with filtered boost
     score = 1/(60 + rank) * weight
-    """
-    merged = {}
-    # Filtered leg: weight 1.3x (boosted)
-    for rank, chunk in enumerate(filtered):
-        key = chunk.chunk_id
-        score = filtered_weight / (60 + rank + 1)
-        merged[key] = max(merged.get(key, 0), score)
+    </span><span class="sh">"""</span>
+    <span class="n">merged</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="c1"># Filtered leg: weight 1.3x (boosted)
+</span>    <span class="k">for</span> <span class="n">rank</span><span class="p">,</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="nf">enumerate</span><span class="p">(</span><span class="n">filtered</span><span class="p">):</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="n">chunk</span><span class="p">.</span><span class="n">chunk_id</span>
+        <span class="n">score</span> <span class="o">=</span> <span class="n">filtered_weight</span> <span class="o">/</span> <span class="p">(</span><span class="mi">60</span> <span class="o">+</span> <span class="n">rank</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">merged</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="nf">max</span><span class="p">(</span><span class="n">merged</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">score</span><span class="p">)</span>
     
-    # Whole-KB leg: weight 1.0
-    for rank, chunk in enumerate(whole):
-        key = chunk.chunk_id
-        score = 1.0 / (60 + rank + 1)
-        merged[key] = max(merged.get(key, 0), score)
+    <span class="c1"># Whole-KB leg: weight 1.0
+</span>    <span class="k">for</span> <span class="n">rank</span><span class="p">,</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="nf">enumerate</span><span class="p">(</span><span class="n">whole</span><span class="p">):</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="n">chunk</span><span class="p">.</span><span class="n">chunk_id</span>
+        <span class="n">score</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="mi">60</span> <span class="o">+</span> <span class="n">rank</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">merged</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="nf">max</span><span class="p">(</span><span class="n">merged</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">score</span><span class="p">)</span>
     
-    # Sort by fused score, take top 20
-    return sorted(merged.values(), key=lambda x: x.fused_score, reverse=True)[:20]
-```
+    <span class="c1"># Sort by fused score, take top 20
+</span>    <span class="k">return</span> <span class="nf">sorted</span><span class="p">(</span><span class="n">merged</span><span class="p">.</span><span class="nf">values</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">.</span><span class="n">fused_score</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="bp">True</span><span class="p">)[:</span><span class="mi">20</span><span class="p">]</span>
+</code></pre></div></div>
 
----
+<hr />
 
-## Architecture: Our Fusion vs Papers
+<h2 id="architecture-our-fusion-vs-papers">Architecture: Our Fusion vs Papers</h2>
 
-```mermaid
-flowchart TD
-    A[Query] --> B[Filtered Retrieval<br/>(subspace filter)]
-    A --> C[Whole-KB Retrieval<br/>(no filter)]
-    B --> D{Strong?}
-    C --> D
-    D -->|Weak| E[RRF Fusion<br/>filtered 1.3x + whole 1.0x]
-    E --> F[Top 20 Results]
+<pre><code class="language-mermaid">flowchart TD
+    A[Query] --&gt; B[Filtered Retrieval&lt;br/&gt;(subspace filter)]
+    A --&gt; C[Whole-KB Retrieval&lt;br/&gt;(no filter)]
+    B --&gt; D{Strong?}
+    C --&gt; D
+    D --&gt;|Weak| E[RRF Fusion&lt;br/&gt;filtered 1.3x + whole 1.0x]
+    E --&gt; F[Top 20 Results]
     
     subgraph GUIR [GUIR: 3 queries]
         G1[LT: Last Turn]
         G2[RW: Rewritten]
         G3[QS: Query-Specific]
-        G1 --> H[RRF Fusion]
-        G2 --> H
-        G3 --> H
+        G1 --&gt; H[RRF Fusion]
+        G2 --&gt; H
+        G3 --&gt; H
     end
     
     subgraph GUIR2 [GUIR: 3 queries]
@@ -289,21 +472,24 @@ flowchart TD
         I2[Corpus-Specific]
         I3[HyDE]
         I4[CoT]
-        I1 --> J[Nested-RRF]
-        I2 --> J
-        I3 --> J
-        I4 --> J
+        I1 --&gt; J[Nested-RRF]
+        I2 --&gt; J
+        I3 --&gt; J
+        I4 --&gt; J
     end
-```
+</code></pre>
 
----
+<hr />
 
-## Related Pages
+<h2 id="related-pages">Related Pages</h2>
 
-- [Problem: Retrieval Degradation](../problems/retrieval-degradation.html)
-- [Paper: Subspace Filtering](./subspace-filtering.html)
-- [Paper: Hallucination Control](./faithfulness.html)
-- [Architecture: RRF Fusion](../architectures.html#rrf-fusion)
+<ul>
+  <li><a href="../problems/retrieval-degradation.html">Problem: Retrieval Degradation</a></li>
+  <li><a href="./subspace-filtering.html">Paper: Subspace Filtering</a></li>
+  <li><a href="./faithfulness.html">Paper: Hallucination Control</a></li>
+  <li><a href="../architectures.html#rrf-fusion">Architecture: RRF Fusion</a></li>
+</ul>
+
   </main>
 
   <footer class="site-footer" role="contentinfo">

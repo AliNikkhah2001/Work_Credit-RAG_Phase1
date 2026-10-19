@@ -74,34 +74,30 @@ Our production system serves Persian credit-scoring QA across **4 subspaces** (c
 ## Quick Navigation
 
 <div class="card-grid">
-  <a href="{{ '/problems/index.html' | relative_url }}" class="card" style="text-decoration: none; color: inherit;">
+  <a href="{{ '/problems/index.html' | relative_url }}" class="card" style="text-decoration:none;color:inherit">
     <h3>📋 All Problems</h3>
-    <p>Detailed breakdown of each problem with root cause analysis, production impact, and our fixes.</  </div>
-  
-  <a href="{{ '/papers/index.html' | relative_url }}" class="card" style="text-decoration: none; color: inherit;">
-    <h3>📚 Papers & Solutions</h3>
-    <p>40+ papers from ACL 2025, EMNLP 2025, SIGIR 2024/25, SIGDIAL 2025/26, SemEval 2026, NeurIPS 2025, ICML 2025.
-  </div>
-  
-  <a href="{{ '/architectures.html' | relative_url }}" class="card" style="text-decoration: none; color: inherit;">
+    <p>Detailed breakdown of each problem with root cause analysis, production impact, and our fixes.</p>
+  </a>
+  <a href="{{ '/papers/index.html' | relative_url }}" class="card" style="text-decoration:none;color:inherit">
+    <h3>📚 Papers &amp; Solutions</h3>
+    <p>40+ papers from ACL 2025, EMNLP 2025, SIGIR 2024/25, SIGDIAL 2025/26, SemEval 2026, NeurIPS 2025, ICML 2025.</p>
+  </a>
+  <a href="{{ '/architectures.html' | relative_url }}" class="card" style="text-decoration:none;color:inherit">
     <h3>🏗️ Architectures</h3>
-    <p>Mermaid diagrams of paper architectures: SPLIT-RAG, PC-RAG, RAC, ICR, CPP, CALMem, SPLIT-RAG, H-RAG, 5ting, GUIR, DUTIR.
-  </div>
-  
-  <a href="{{ '/relevance.html' | relative_url }}" class="card" style="text-decoration: none; color: inherit;">
+    <p>Mermaid diagrams of paper architectures: SPLIT-RAG, PC-RAG, RAC, ICR, CPP, CALMem, H-RAG, 5ting, GUIR, DUTIR.</p>
+  </a>
+  <a href="{{ '/relevance.html' | relative_url }}" class="card" style="text-decoration:none;color:inherit">
     <h3>🔗 Relevance Mapping</h3>
-    <p>Detailed table mapping each of our fixes to the specific paper, section, and mechanism that validates it.
-  </div>
-  
-  <a href="{{ '/benchmarks.html' | relative_url }}" class="card" style="text-decoration: none; color: inherit;">
+    <p>Detailed table mapping each of our fixes to the specific paper, section, and mechanism that validates it.</p>
+  </a>
+  <a href="{{ '/benchmarks.html' | relative_url }}" class="card" style="text-decoration:none;color:inherit">
     <h3>📊 Benchmarks</h3>
-    <p>MTRAG (842 turns), MTRAGEval (SemEval 2026), CORAL, RAD-Bench. Our 41-turn benchmark results with RAGAS.
-  </div>
-  
-  <a href="{{ '/our-impl.html' | relative_url }}" class="card" style="text-decoration: none; color: inherit;">
+    <p>MTRAG (842 turns), MTRAGEval (SemEval 2026), CORAL, RAD-Bench. Our 41-turn benchmark results with RAGAS.</p>
+  </a>
+  <a href="{{ '/our-impl.html' | relative_url }}" class="card" style="text-decoration:none;color:inherit">
     <h3>⚙️ Our Implementation</h3>
-    <p>T1-T8 fixes, code pointers, benchmark deltas, deployment notes, and remaining gaps.
-  </div>
+    <p>T1-T8 fixes, code pointers, benchmark deltas, deployment notes, and remaining gaps.</p>
+  </a>
 </div>
 
 ---

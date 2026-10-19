@@ -38,6 +38,7 @@ description: "MTRAG, MTRAGEval, CORAL, RAD-Bench, SemEval 2026 Task 8 - 842-turn
 **Domains**: ClapNQ (26.6%), FiQA (23.6%), Govt (25.4%), Cloud (24.4%)
 
 **Top Results (Task A)**:
+
 | Team | nDCG@5 | Rank |
 |------|--------|------|
 | Sifei | 0.5453 | 3/38 |

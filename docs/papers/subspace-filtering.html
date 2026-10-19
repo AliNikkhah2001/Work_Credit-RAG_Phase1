@@ -106,152 +106,315 @@
 
   <main id="main-content" class="site-main" role="main">
     <div class="page-header">
-  <h1>Subspace & Domain Partitioning Papers</h1>
+  <h1>Subspace &amp; Domain Partitioning Papers</h1>
   <p class="lead">PC-RAG, SPLIT-RAG, DSRAG, EvoRAG - Domain-partitioned retrieval, question-driven graph partitioning, hierarchical KGs</p>
 </div>
 
-## Paper Summaries
+<h2 id="paper-summaries">Paper Summaries</h2>
 
-### PC-RAG: Domain-Partitioned Retrieval as Hallucination Mitigation
+<h3 id="pc-rag-domain-partitioned-retrieval-as-hallucination-mitigation">PC-RAG: Domain-Partitioned Retrieval as Hallucination Mitigation</h3>
 
-| Field | Detail |
-|-------|--------|
-| **Title** | Domain-Partitioned Retrieval as a Hallucination Mitigation Strategy in Conversational RAG: The PC-RAG Architecture |
-| **Authors** | Ruben Alejandro Jaime |
-| **Venue** | ResearchSquare (2026-04-16) |
-| **DOI** | 10.21203/rs.3.rs-9334334/v1 |
-| **Code** | Not specified |
+<table>
+  <thead>
+    <tr>
+      <th>Field</th>
+      <th>Detail</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Title</strong></td>
+      <td>Domain-Partitioned Retrieval as a Hallucination Mitigation Strategy in Conversational RAG: The PC-RAG Architecture</td>
+    </tr>
+    <tr>
+      <td><strong>Authors</strong></td>
+      <td>Ruben Alejandro Jaime</td>
+    </tr>
+    <tr>
+      <td><strong>Venue</strong></td>
+      <td>ResearchSquare (2026-04-16)</td>
+    </tr>
+    <tr>
+      <td><strong>DOI</strong></td>
+      <td>10.21203/rs.3.rs-9334334/v1</td>
+    </tr>
+    <tr>
+      <td><strong>Code</strong></td>
+      <td>Not specified</td>
+    </tr>
+  </tbody>
+</table>
 
-**Key Claims**:
-- **Primary cause of hallucination**: Context window contamination from cross-domain chunk aggregation
-- **Solution**: Domain-partitioned retrieval — decompose query into domain-isolated sub-tasks, independent retrieval per partition
-- **Results**: 51% reduction in false-positive chunk inclusion; human-rated quality 3.1→4.1/5 (κ=0.79, p<0.001)
-- **Full system**: 4.2/5, beats HyDE (3.6), multi-query (3.7), RAPTOR (3.9)
+<p><strong>Key Claims</strong>:</p>
+<ul>
+  <li><strong>Primary cause of hallucination</strong>: Context window contamination from cross-domain chunk aggregation</li>
+  <li><strong>Solution</strong>: Domain-partitioned retrieval — decompose query into domain-isolated sub-tasks, independent retrieval per partition</li>
+  <li><strong>Results</strong>: 51% reduction in false-positive chunk inclusion; human-rated quality 3.1→4.1/5 (κ=0.79, p&lt;0.001)</li>
+  <li><strong>Full system</strong>: 4.2/5, beats HyDE (3.6), multi-query (3.7), RAPTOR (3.9)</li>
+</ul>
 
-**Relevance to Our Fix**: 
-- Our `subspace_map` fix = domain-partitioned retrieval
-- PC-RAG validates: **partitioning alone reduces cross-domain noise by 51%**
-- Our cheque map fix ("چک" → "گزارش اعتباراتنجی چک") = exactly domain partitioning
+<p><strong>Relevance to Our Fix</strong>:</p>
+<ul>
+  <li>Our <code class="language-plaintext highlighter-rouge">subspace_map</code> fix = domain-partitioned retrieval</li>
+  <li>PC-RAG validates: <strong>partitioning alone reduces cross-domain noise by 51%</strong></li>
+  <li>Our cheque map fix (“چک” → “گزارش اعتباراتنجی چک”) = exactly domain partitioning</li>
+</ul>
 
----
+<hr />
 
-### SPLIT-RAG: Question-Driven Graph Partitioning
+<h3 id="split-rag-question-driven-graph-partitioning">SPLIT-RAG: Question-Driven Graph Partitioning</h3>
 
-| Field | Detail |
-|-------|--------|
-| **Title** | Divide by Question, Conquer by Agent: SPLIT-RAG with Question-Driven Graph Partitioning |
-| **Authors** | Multiple authors |
-| **Venue** | arXiv:2505.13994 (2025), ICML 2025 |
-| **Code** | Not specified |
+<table>
+  <thead>
+    <tr>
+      <th>Field</th>
+      <th>Detail</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Title</strong></td>
+      <td>Divide by Question, Conquer by Agent: SPLIT-RAG with Question-Driven Graph Partitioning</td>
+    </tr>
+    <tr>
+      <td><strong>Authors</strong></td>
+      <td>Multiple authors</td>
+    </tr>
+    <tr>
+      <td><strong>Venue</strong></td>
+      <td>arXiv:2505.13994 (2025), ICML 2025</td>
+    </tr>
+    <tr>
+      <td><strong>Code</strong></td>
+      <td>Not specified</td>
+    </tr>
+  </tbody>
+</table>
 
-**Key Claims**:
-- **Problem**: Full-graph retrieval searches all n triples → cost C(n)
-- **Solution**: Partition KG by reasoning paths from training questions → assign specialized agents to partitions
-- **Inference**: Query-specific planner activates relevant partition-agents → parallel subgraph retrieval
-- **Result**: Strong performance on WebQSP, CWQ, MetaQA with reduced latency
+<p><strong>Key Claims</strong>:</p>
+<ul>
+  <li><strong>Problem</strong>: Full-graph retrieval searches all n triples → cost C(n)</li>
+  <li><strong>Solution</strong>: Partition KG by reasoning paths from training questions → assign specialized agents to partitions</li>
+  <li><strong>Inference</strong>: Query-specific planner activates relevant partition-agents → parallel subgraph retrieval</li>
+  <li><strong>Result</strong>: Strong performance on WebQSP, CWQ, MetaQA with reduced latency</li>
+</ul>
 
-**Architecture**:
-1. **Question-Type Clustering** → KG Partitioning (from training Q reasoning paths)
-2. **Agent-Subgraph Assignment** → Specialized retrieval agents per partition
-3. **Retrieval Plan Selection** → Entity-type similarity + relation-path sketch
-4. **Multi-Agent RAG** → Parallel subgraph retrieval
-5. **Conflict Resolution** → Compatibility-based evidence filtering
+<p><strong>Architecture</strong>:</p>
+<ol>
+  <li><strong>Question-Type Clustering</strong> → KG Partitioning (from training Q reasoning paths)</li>
+  <li><strong>Agent-Subgraph Assignment</strong> → Specialized retrieval agents per partition</li>
+  <li><strong>Retrieval Plan Selection</strong> → Entity-type similarity + relation-path sketch</li>
+  <li><strong>Multi-Agent RAG</strong> → Parallel subgraph retrieval</li>
+  <li><strong>Conflict Resolution</strong> → Compatibility-based evidence filtering</li>
+</ol>
 
-**Relevance to Our Fix**:
-- Our static `subspace_map` = manual partitioning
-- SPLIT-RAG shows: **learn routing from training queries** instead of static map
-- Future: Learn `subspace_map` from training Qs instead of hardcoding
+<p><strong>Relevance to Our Fix</strong>:</p>
+<ul>
+  <li>Our static <code class="language-plaintext highlighter-rouge">subspace_map</code> = manual partitioning</li>
+  <li>SPLIT-RAG shows: <strong>learn routing from training queries</strong> instead of static map</li>
+  <li>Future: Learn <code class="language-plaintext highlighter-rouge">subspace_map</code> from training Qs instead of hardcoding</li>
+</ul>
 
----
+<hr />
 
-### DSRAG: Domain-Specific RAG with Hierarchical KG
+<h3 id="dsrag-domain-specific-rag-with-hierarchical-kg">DSRAG: Domain-Specific RAG with Hierarchical KG</h3>
 
-| Field | Detail |
-|-------|--------|
-| **Title** | DSRAG: A Domain-Specific Retrieval Framework Based on Document-derived Multimodal Knowledge Graph |
-| **Venue** | arXiv:2509.10467 (2025) |
-| **Key Innovation** | Hierarchical KG: Concept KG (domain concepts/workflows) + Instance KG (facts) |
+<table>
+  <thead>
+    <tr>
+      <th>Field</th>
+      <th>Detail</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Title</strong></td>
+      <td>DSRAG: A Domain-Specific Retrieval Framework Based on Document-derived Multimodal Knowledge Graph</td>
+    </tr>
+    <tr>
+      <td><strong>Venue</strong></td>
+      <td>arXiv:2509.10467 (2025)</td>
+    </tr>
+    <tr>
+      <td><strong>Key Innovation</strong></td>
+      <td>Hierarchical KG: Concept KG (domain concepts/workflows) + Instance KG (facts)</td>
+    </tr>
+  </tbody>
+</table>
 
-**Key Claims**:
-- **Multimodal KG**: Text + images + tables → Concept KG + Instance KG
-- **Concept KG**: Core domain concepts/workflows from document structure
-- **Instance KG**: Fine-grained facts from document content
-- **Retrieval**: Semantic subgraph retrieval + vector matching
+<p><strong>Key Claims</strong>:</p>
+<ul>
+  <li><strong>Multimodal KG</strong>: Text + images + tables → Concept KG + Instance KG</li>
+  <li><strong>Concept KG</strong>: Core domain concepts/workflows from document structure</li>
+  <li><strong>Instance KG</strong>: Fine-grained facts from document content</li>
+  <li><strong>Retrieval</strong>: Semantic subgraph retrieval + vector matching</li>
+</ul>
 
-**Relevance**: Our KB has implicit hierarchy (پایگاه دانش → اشخاص حقیقی → گزارش اعتباراتنجی چک) — DSRAG formalizes this.
+<p><strong>Relevance</strong>: Our KB has implicit hierarchy (پایگاه دانش → اشخاص حقیقی → گزارش اعتباراتنجی چک) — DSRAG formalizes this.</p>
 
----
+<hr />
 
-### EvoRAG: Evolving Graph-Based Context Modeling
+<h3 id="evorag-evolving-graph-based-context-modeling">EvoRAG: Evolving Graph-Based Context Modeling</h3>
 
-| Field | Detail |
-|-------|--------|
-| **Title** | Evolving Graph-Based Context Modeling for Multi-Turn Conversational RAG |
-| **Venue** | ACM DL 2024 (or similar) |
-| **Key Innovation** | Dynamic knowledge graph evolving with conversation |
+<table>
+  <thead>
+    <tr>
+      <th>Field</th>
+      <th>Detail</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Title</strong></td>
+      <td>Evolving Graph-Based Context Modeling for Multi-Turn Conversational RAG</td>
+    </tr>
+    <tr>
+      <td><strong>Venue</strong></td>
+      <td>ACM DL 2024 (or similar)</td>
+    </tr>
+    <tr>
+      <td><strong>Key Innovation</strong></td>
+      <td>Dynamic knowledge graph evolving with conversation</td>
+    </tr>
+  </tbody>
+</table>
 
-**Key Claims**:
-- Maintains evolving KG of logical relations among queries, responses, passages across turns
-- Captures contextual dependencies → improves retrieval + generation
-- Tested on 4 conversational RAG datasets
+<p><strong>Key Claims</strong>:</p>
+<ul>
+  <li>Maintains evolving KG of logical relations among queries, responses, passages across turns</li>
+  <li>Captures contextual dependencies → improves retrieval + generation</li>
+  <li>Tested on 4 conversational RAG datasets</li>
+</ul>
 
-**Relevance**: Our sticky context = simple version of evolving context graph. EvoRAG shows full graph approach.
+<p><strong>Relevance</strong>: Our sticky context = simple version of evolving context graph. EvoRAG shows full graph approach.</p>
 
----
+<hr />
 
-## Comparison Table
+<h2 id="comparison-table">Comparison Table</h2>
 
-| Paper | Approach | Partitioning | Routing | Validation |
-|-------|----------|--------------|---------|------------|
-| **PC-RAG** | Domain-partitioned retrieval | Manual domains (HR, legal, compliance) | Query decomposition → domain-isolated retrieval | 51% false-positive reduction; 3.1→4.1 quality |
-| **SPLIT-RAG** | Question-driven KG partitioning | Learned from training Q reasoning paths | Query-specific planner → partition-agents | WebQSP, CWQ, MetaQA SOTA |
-| **DSRAG** | Hierarchical multimodal KG | Document-derived (Concept + Instance KG) | Semantic subgraph + vector matching | Domain-specific QA excellence |
-| **EvoRAG** | Evolving conversation KG | Dynamic (evolves with conversation) | Graph-based context tracking | 4 conversational RAG datasets |
+<table>
+  <thead>
+    <tr>
+      <th>Paper</th>
+      <th>Approach</th>
+      <th>Partitioning</th>
+      <th>Routing</th>
+      <th>Validation</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>PC-RAG</strong></td>
+      <td>Domain-partitioned retrieval</td>
+      <td>Manual domains (HR, legal, compliance)</td>
+      <td>Query decomposition → domain-isolated retrieval</td>
+      <td>51% false-positive reduction; 3.1→4.1 quality</td>
+    </tr>
+    <tr>
+      <td><strong>SPLIT-RAG</strong></td>
+      <td>Question-driven KG partitioning</td>
+      <td>Learned from training Q reasoning paths</td>
+      <td>Query-specific planner → partition-agents</td>
+      <td>WebQSP, CWQ, MetaQA SOTA</td>
+    </tr>
+    <tr>
+      <td><strong>DSRAG</strong></td>
+      <td>Hierarchical multimodal KG</td>
+      <td>Document-derived (Concept + Instance KG)</td>
+      <td>Semantic subgraph + vector matching</td>
+      <td>Domain-specific QA excellence</td>
+    </tr>
+    <tr>
+      <td><strong>EvoRAG</strong></td>
+      <td>Evolving conversation KG</td>
+      <td>Dynamic (evolves with conversation)</td>
+      <td>Graph-based context tracking</td>
+      <td>4 conversational RAG datasets</td>
+    </tr>
+  </tbody>
+</table>
 
----
+<hr />
 
-## Our Implementation vs Papers
+<h2 id="our-implementation-vs-papers">Our Implementation vs Papers</h2>
 
-| Aspect | PC-RAG | SPLIT-RAG | Our Implementation |
-|--------|--------|-----------|-------------------|
-| **Partitioning** | Manual domains | Learned from training Qs | Manual `subspace_map` (fixed) |
-| **Routing** | Query decomposition | Query-specific planner | Static `subspace_map` + fuzzy match |
-| **Retrieval** | Domain-isolated independent | Parallel partition-agents | Single KB with `filter_path` |
-| **Fusion** | Independent per domain | RRF across agents | RRF fusion (filtered + whole-KB) |
-| **Validation** | Human eval (3.1→4.1) | WebQSP/CWQ/MetaQA | 41-turn bench (hit 0.78) |
+<table>
+  <thead>
+    <tr>
+      <th>Aspect</th>
+      <th>PC-RAG</th>
+      <th>SPLIT-RAG</th>
+      <th>Our Implementation</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Partitioning</strong></td>
+      <td>Manual domains</td>
+      <td>Learned from training Qs</td>
+      <td>Manual <code class="language-plaintext highlighter-rouge">subspace_map</code> (fixed)</td>
+    </tr>
+    <tr>
+      <td><strong>Routing</strong></td>
+      <td>Query decomposition</td>
+      <td>Query-specific planner</td>
+      <td>Static <code class="language-plaintext highlighter-rouge">subspace_map</code> + fuzzy match</td>
+    </tr>
+    <tr>
+      <td><strong>Retrieval</strong></td>
+      <td>Domain-isolated independent</td>
+      <td>Parallel partition-agents</td>
+      <td>Single KB with <code class="language-plaintext highlighter-rouge">filter_path</code></td>
+    </tr>
+    <tr>
+      <td><strong>Fusion</strong></td>
+      <td>Independent per domain</td>
+      <td>RRF across agents</td>
+      <td>RRF fusion (filtered + whole-KB)</td>
+    </tr>
+    <tr>
+      <td><strong>Validation</strong></td>
+      <td>Human eval (3.1→4.1)</td>
+      <td>WebQSP/CWQ/MetaQA</td>
+      <td>41-turn bench (hit 0.78)</td>
+    </tr>
+  </tbody>
+</table>
 
----
+<hr />
 
-## Future Work: From Static Map to Learned Routing
+<h2 id="future-work-from-static-map-to-learned-routing">Future Work: From Static Map to Learned Routing</h2>
 
-Based on SPLIT-RAG, our next evolution:
+<p>Based on SPLIT-RAG, our next evolution:</p>
 
-```python
-# Future: Learned subspace router
-class SubspaceRouter:
-    def __init__(self):
-        self.encoder = SentenceTransformer("bge-m3")
-        self.classifier = LogisticRegression()
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Future: Learned subspace router
+</span><span class="k">class</span> <span class="nc">SubspaceRouter</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="n">self</span><span class="p">):</span>
+        <span class="n">self</span><span class="p">.</span><span class="n">encoder</span> <span class="o">=</span> <span class="nc">SentenceTransformer</span><span class="p">(</span><span class="sh">"</span><span class="s">bge-m3</span><span class="sh">"</span><span class="p">)</span>
+        <span class="n">self</span><span class="p">.</span><span class="n">classifier</span> <span class="o">=</span> <span class="nc">LogisticRegression</span><span class="p">()</span>
     
-    def train(self, queries, subspace_labels):
-        embeddings = self.encoder.encode(queries)
-        self.classifier.fit(embeddings, subspace_labels)
+    <span class="k">def</span> <span class="nf">train</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">queries</span><span class="p">,</span> <span class="n">subspace_labels</span><span class="p">):</span>
+        <span class="n">embeddings</span> <span class="o">=</span> <span class="n">self</span><span class="p">.</span><span class="n">encoder</span><span class="p">.</span><span class="nf">encode</span><span class="p">(</span><span class="n">queries</span><span class="p">)</span>
+        <span class="n">self</span><span class="p">.</span><span class="n">classifier</span><span class="p">.</span><span class="nf">fit</span><span class="p">(</span><span class="n">embeddings</span><span class="p">,</span> <span class="n">subspace_labels</span><span class="p">)</span>
     
-    def route(self, query):
-        emb = self.encoder.encode([query])
-        return self.classifier.predict(emb)[0]
-```
+    <span class="k">def</span> <span class="nf">route</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">query</span><span class="p">):</span>
+        <span class="n">emb</span> <span class="o">=</span> <span class="n">self</span><span class="p">.</span><span class="n">encoder</span><span class="p">.</span><span class="nf">encode</span><span class="p">([</span><span class="n">query</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">self</span><span class="p">.</span><span class="n">classifier</span><span class="p">.</span><span class="nf">predict</span><span class="p">(</span><span class="n">emb</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+</code></pre></div></div>
 
-Training data: Our 41-turn benchmark + historical queries → learn `subspace_map` instead of hardcoding.
+<p>Training data: Our 41-turn benchmark + historical queries → learn <code class="language-plaintext highlighter-rouge">subspace_map</code> instead of hardcoding.</p>
 
----
+<hr />
 
-## Related Pages
+<h2 id="related-pages">Related Pages</h2>
 
-- [Problem: Subspace Filtering](../problems/subspace-filtering.html)
-- [Paper: Retrieval Fusion & RRF](./retrieval-fusion.html)
-- [Paper: Memory Architectures](./memory-architectures.html)
-- [Architecture: SPLIT-RAG](../architectures.html#split-rag)
+<ul>
+  <li><a href="../problems/subspace-filtering.html">Problem: Subspace Filtering</a></li>
+  <li><a href="./retrieval-fusion.html">Paper: Retrieval Fusion &amp; RRF</a></li>
+  <li><a href="./memory-architectures.html">Paper: Memory Architectures</a></li>
+  <li><a href="../architectures.html#split-rag">Architecture: SPLIT-RAG</a></li>
+</ul>
+
   </main>
 
   <footer class="site-footer" role="contentinfo">

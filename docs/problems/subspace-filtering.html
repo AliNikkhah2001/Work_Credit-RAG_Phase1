@@ -110,173 +110,316 @@
   <p class="lead">Root cause: <code>subspace_map</code> mismatch (<code>"چک"</code> vs KB folder <code>"گزارش اعتباراتنجی چک"</code>). Fixed with map correction + RRF fusion.</p>
 </div>
 
-## Problem Summary
+<h2 id="problem-summary">Problem Summary</h2>
 
-| Aspect | Detail |
-|--------|--------|
-| **Severity** | Critical |
-| **Category** | Retrieval / Routing |
-| **Status** | ✅ Fixed |
-| **Bench Impact** | Cheque hit: 0.111 → 0.667 (+499%) |
-| **Key Papers** | PC-RAG (2026), SPLIT-RAG (2025), GUIR (SemEval 2026) |
+<table>
+  <thead>
+    <tr>
+      <th>Aspect</th>
+      <th>Detail</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Severity</strong></td>
+      <td>Critical</td>
+    </tr>
+    <tr>
+      <td><strong>Category</strong></td>
+      <td>Retrieval / Routing</td>
+    </tr>
+    <tr>
+      <td><strong>Status</strong></td>
+      <td>✅ Fixed</td>
+    </tr>
+    <tr>
+      <td><strong>Bench Impact</strong></td>
+      <td>Cheque hit: 0.111 → 0.667 (+499%)</td>
+    </tr>
+    <tr>
+      <td><strong>Key Papers</strong></td>
+      <td>PC-RAG (2026), SPLIT-RAG (2025), GUIR (SemEval 2026)</td>
+    </tr>
+  </tbody>
+</table>
 
----
+<hr />
 
-## Root Cause
+<h2 id="root-cause">Root Cause</h2>
 
-### The Mismatch
+<h3 id="the-mismatch">The Mismatch</h3>
 
-Our `subspace_map` in `config.py`:
-```python
-subspace_map: dict = {
-    "cheque": "چک",  # ❌ WRONG - doesn't match KB folder
-    "facilities_person": "اشخاص حقیقی/اعتبارسنجی تسهیلات",  # ✅ CORRECT
-    "facilities_legal": "اشخاص حقوقی/اعتبارسنجی تسهیلات",  # ✅ CORRECT
-    "general": "پایگاه دانش عمومی"  # ✅ CORRECT
-}
-```
+<p>Our <code class="language-plaintext highlighter-rouge">subspace_map</code> in <code class="language-plaintext highlighter-rouge">config.py</code>:</p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">subspace_map</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="sh">"</span><span class="s">cheque</span><span class="sh">"</span><span class="p">:</span> <span class="sh">"</span><span class="s">چک</span><span class="sh">"</span><span class="p">,</span>  <span class="c1"># ❌ WRONG - doesn't match KB folder
+</span>    <span class="sh">"</span><span class="s">facilities_person</span><span class="sh">"</span><span class="p">:</span> <span class="sh">"</span><span class="s">اشخاص حقیقی/اعتبارسنجی تسهیلات</span><span class="sh">"</span><span class="p">,</span>  <span class="c1"># ✅ CORRECT
+</span>    <span class="sh">"</span><span class="s">facilities_legal</span><span class="sh">"</span><span class="p">:</span> <span class="sh">"</span><span class="s">اشخاص حقوقی/اعتبارسنجی تسهیلات</span><span class="sh">"</span><span class="p">,</span>  <span class="c1"># ✅ CORRECT
+</span>    <span class="sh">"</span><span class="s">general</span><span class="sh">"</span><span class="p">:</span> <span class="sh">"</span><span class="s">پایگاه دانش عمومی</span><span class="sh">"</span>  <span class="c1"># ✅ CORRECT
+</span><span class="p">}</span>
+</code></pre></div></div>
 
-KB actual folder hierarchy (from `search.py`):
-```python
-# Cheque docs live under:
-['پایگاه دانش', 'اشخاص حقیقی', 'گزارش اعتباراتنجی چک', ...]
+<p>KB actual folder hierarchy (from <code class="language-plaintext highlighter-rouge">search.py</code>):</p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Cheque docs live under:
+</span><span class="p">[</span><span class="sh">'</span><span class="s">پایگاه دانش</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">اشخاص حقیقی</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">گزارش اعتباراتنجی چک</span><span class="sh">'</span><span class="p">,</span> <span class="p">...]</span>
 
-# NOT under 'چک' as a standalone element
-```
+<span class="c1"># NOT under 'چک' as a standalone element
+</span></code></pre></div></div>
 
-### KB Filter Logic (from `search.py:634`)
+<h3 id="kb-filter-logic-from-searchpy634">KB Filter Logic (from <code class="language-plaintext highlighter-rouge">search.py:634</code>)</h3>
 
-```python
-def _filter_by_path(chunks, filter_path):
-    if "/" in filter_path:
-        # Match joined path: "/".join(folder_hierarchy)
-        return [c for c in chunks if filter_path in "/".join(c.folder_hierarchy)]
-    else:
-        # Exact element membership
-        return [c for c in chunks if filter_path in c.folder_hierarchy]
-```
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">_filter_by_path</span><span class="p">(</span><span class="n">chunks</span><span class="p">,</span> <span class="n">filter_path</span><span class="p">):</span>
+    <span class="k">if</span> <span class="sh">"</span><span class="s">/</span><span class="sh">"</span> <span class="ow">in</span> <span class="n">filter_path</span><span class="p">:</span>
+        <span class="c1"># Match joined path: "/".join(folder_hierarchy)
+</span>        <span class="k">return</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">chunks</span> <span class="k">if</span> <span class="n">filter_path</span> <span class="ow">in</span> <span class="sh">"</span><span class="s">/</span><span class="sh">"</span><span class="p">.</span><span class="nf">join</span><span class="p">(</span><span class="n">c</span><span class="p">.</span><span class="n">folder_hierarchy</span><span class="p">)]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># Exact element membership
+</span>        <span class="k">return</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">chunks</span> <span class="k">if</span> <span class="n">filter_path</span> <span class="ow">in</span> <span class="n">c</span><span class="p">.</span><span class="n">folder_hierarchy</span><span class="p">]</span>
+</code></pre></div></div>
 
-Since `"چک"` has no `/`, it checks exact membership: `"چک" in folder_hierarchy`.
-But folder hierarchy contains `"گزارش اعتباراتنجی چک"`, not `"چک"`.
+<p>Since <code class="language-plaintext highlighter-rouge">"چک"</code> has no <code class="language-plaintext highlighter-rouge">/</code>, it checks exact membership: <code class="language-plaintext highlighter-rouge">"چک" in folder_hierarchy</code>.
+But folder hierarchy contains <code class="language-plaintext highlighter-rouge">"گزارش اعتباراتنجی چک"</code>, not <code class="language-plaintext highlighter-rouge">"چک"</code>.</p>
 
-**Result**: Filter matched **zero chunks** for all cheque queries.
+<p><strong>Result</strong>: Filter matched <strong>zero chunks</strong> for all cheque queries.</p>
 
----
+<hr />
 
-## Evidence from Benchmarks
+<h2 id="evidence-from-benchmarks">Evidence from Benchmarks</h2>
 
-### Before Fix (2026-10-12)
+<h3 id="before-fix-2026-10-12">Before Fix (2026-10-12)</h3>
 
-| Query | Filter Applied | Results | Rerank Score |
-|-------|---------------|---------|--------------|
-| `چک برگشتی چیست` | `گزارش اعتباری چک` | 0 chunks | — |
-| `تاثیر چک برگشتی` | `گزارش اعتباری چک` | 0 chunks | — |
+<table>
+  <thead>
+    <tr>
+      <th>Query</th>
+      <th>Filter Applied</th>
+      <th>Results</th>
+      <th>Rerank Score</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">چک برگشتی چیست</code></td>
+      <td><code class="language-plaintext highlighter-rouge">گزارش اعتباری چک</code></td>
+      <td>0 chunks</td>
+      <td>—</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">تاثیر چک برگشتی</code></td>
+      <td><code class="language-plaintext highlighter-rouge">گزارش اعتباری چک</code></td>
+      <td>0 chunks</td>
+      <td>—</td>
+    </tr>
+  </tbody>
+</table>
 
-KB Probe (without filter): 10 chunks, top rerank 0.028
+<p>KB Probe (without filter): 10 chunks, top rerank 0.028</p>
 
-### After Fix (2026-10-14)
+<h3 id="after-fix-2026-10-14">After Fix (2026-10-14)</h3>
 
-| Query | Filter Applied | Results | Rerank Score |
-|-------|---------------|---------|--------------|
-| `چک برگشتی چیست` | `گزارش اعتباراتنجی چک` | 10 chunks | 0.863 |
-| `تاثیر چک برگشتی` | `گزارش اعتباراتنجی چک` | 10 chunks | 0.863 |
+<table>
+  <thead>
+    <tr>
+      <th>Query</th>
+      <th>Filter Applied</th>
+      <th>Results</th>
+      <th>Rerank Score</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">چک برگشتی چیست</code></td>
+      <td><code class="language-plaintext highlighter-rouge">گزارش اعتباراتنجی چک</code></td>
+      <td>10 chunks</td>
+      <td>0.863</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">تاثیر چک برگشتی</code></td>
+      <td><code class="language-plaintext highlighter-rouge">گزارش اعتباراتنجی چک</code></td>
+      <td>10 chunks</td>
+      <td>0.863</td>
+    </tr>
+  </tbody>
+</table>
 
----
+<hr />
 
-## The Fix
+<h2 id="the-fix">The Fix</h2>
 
-### 1. Map Correction (1-line change)
+<h3 id="1-map-correction-1-line-change">1. Map Correction (1-line change)</h3>
 
-```python
-# config.py
-subspace_map: dict = {
-    "cheque": "گزارش اعتباراتنجی چک",  # ✅ FIXED
-    ...
-}
-```
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># config.py
+</span><span class="n">subspace_map</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="sh">"</span><span class="s">cheque</span><span class="sh">"</span><span class="p">:</span> <span class="sh">"</span><span class="s">گزارش اعتباراتنجی چک</span><span class="sh">"</span><span class="p">,</span>  <span class="c1"># ✅ FIXED
+</span>    <span class="bp">...</span>
+<span class="p">}</span>
+</code></pre></div></div>
 
-### 2. RRF Fusion Fallback (T1)
+<h3 id="2-rrf-fusion-fallback-t1">2. RRF Fusion Fallback (T1)</h3>
 
-Instead of hard-replacing weak filtered results, **fuse** filtered + whole-KB:
+<p>Instead of hard-replacing weak filtered results, <strong>fuse</strong> filtered + whole-KB:</p>
 
-```python
-# retrieve.py - _fuse_subspace_rrf()
-def _fuse_subspace_rrf(filtered, whole, filtered_weight=1.3):
-    """RRF fusion: score = 1/(60+rank) * weight"""
-    # Filtered leg gets 1.3x boost
-    # Both-list chunks win, filtered-only beats whole-KB noise
-    # whole-KB-only enters tail
-    return fused[:20]
-```
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># retrieve.py - _fuse_subspace_rrf()
+</span><span class="k">def</span> <span class="nf">_fuse_subspace_rrf</span><span class="p">(</span><span class="n">filtered</span><span class="p">,</span> <span class="n">whole</span><span class="p">,</span> <span class="n">filtered_weight</span><span class="o">=</span><span class="mf">1.3</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">RRF fusion: score = 1/(60+rank) * weight</span><span class="sh">"""</span>
+    <span class="c1"># Filtered leg gets 1.3x boost
+</span>    <span class="c1"># Both-list chunks win, filtered-only beats whole-KB noise
+</span>    <span class="c1"># whole-KB-only enters tail
+</span>    <span class="k">return</span> <span class="n">fused</span><span class="p">[:</span><span class="mi">20</span><span class="p">]</span>
+</code></pre></div></div>
 
-### 3. Per-Subspace Evidence Threshold (T3)
+<h3 id="3-per-subspace-evidence-threshold-t3">3. Per-Subspace Evidence Threshold (T3)</h3>
 
-```python
-# config.py
-def get_evidence_threshold(self, applied_subspace):
-    if "چک" in subspace or subspace == "cheque": return 0.05
-    if "حقیقی" in subspace or subspace == "facilities_person": return 0.10
-    return 0.15  # legal, general
-```
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># config.py
+</span><span class="k">def</span> <span class="nf">get_evidence_threshold</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">applied_subspace</span><span class="p">):</span>
+    <span class="k">if</span> <span class="sh">"</span><span class="s">چک</span><span class="sh">"</span> <span class="ow">in</span> <span class="n">subspace</span> <span class="ow">or</span> <span class="n">subspace</span> <span class="o">==</span> <span class="sh">"</span><span class="s">cheque</span><span class="sh">"</span><span class="p">:</span> <span class="k">return</span> <span class="mf">0.05</span>
+    <span class="k">if</span> <span class="sh">"</span><span class="s">حقیقی</span><span class="sh">"</span> <span class="ow">in</span> <span class="n">subspace</span> <span class="ow">or</span> <span class="n">subspace</span> <span class="o">==</span> <span class="sh">"</span><span class="s">facilities_person</span><span class="sh">"</span><span class="p">:</span> <span class="k">return</span> <span class="mf">0.10</span>
+    <span class="k">return</span> <span class="mf">0.15</span>  <span class="c1"># legal, general
+</span></code></pre></div></div>
 
----
+<hr />
 
-## Benchmark Delta
+<h2 id="benchmark-delta">Benchmark Delta</h2>
 
-| Metric | Before | After | Δ |
-|--------|--------|-------|---|
-| Cheque hit | 0.111 | **0.667** | +0.556 |
-| Cheque rerank top | 0.028 | **0.863** | +0.835 |
-| Cheque citations | 0 | **5** | +5 |
-| Fallback usage | 100% | 0% | -100% |
+<table>
+  <thead>
+    <tr>
+      <th>Metric</th>
+      <th>Before</th>
+      <th>After</th>
+      <th>Δ</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Cheque hit</td>
+      <td>0.111</td>
+      <td><strong>0.667</strong></td>
+      <td>+0.556</td>
+    </tr>
+    <tr>
+      <td>Cheque rerank top</td>
+      <td>0.028</td>
+      <td><strong>0.863</strong></td>
+      <td>+0.835</td>
+    </tr>
+    <tr>
+      <td>Cheque citations</td>
+      <td>0</td>
+      <td><strong>5</strong></td>
+      <td>+5</td>
+    </tr>
+    <tr>
+      <td>Fallback usage</td>
+      <td>100%</td>
+      <td>0%</td>
+      <td>-100%</td>
+    </tr>
+  </tbody>
+</table>
 
----
+<hr />
 
-## Related Papers
+<h2 id="related-papers">Related Papers</h2>
 
-| Paper | Venue | Relevance |
-|-------|-------|-----------|
-| **PC-RAG** (2026) | ResearchSquare | Domain-partitioned retrieval validated our map fix; 51% false-positive reduction |
-| **SPLIT-RAG** (2025) | arXiv:2505.13994 | Question-driven graph partitioning → learned routing replaces static map |
-| **GUIR** (2026) | SemEval 2026 | Multi-query fusion → our RRF fusion is simplified version |
-| **SPLIT-RAG** (2025) | arXiv:2505.13994 | Question-driven partitioning → learned routing from training Qs |
+<table>
+  <thead>
+    <tr>
+      <th>Paper</th>
+      <th>Venue</th>
+      <th>Relevance</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>PC-RAG</strong> (2026)</td>
+      <td>ResearchSquare</td>
+      <td>Domain-partitioned retrieval validated our map fix; 51% false-positive reduction</td>
+    </tr>
+    <tr>
+      <td><strong>SPLIT-RAG</strong> (2025)</td>
+      <td>arXiv:2505.13994</td>
+      <td>Question-driven graph partitioning → learned routing replaces static map</td>
+    </tr>
+    <tr>
+      <td><strong>GUIR</strong> (2026)</td>
+      <td>SemEval 2026</td>
+      <td>Multi-query fusion → our RRF fusion is simplified version</td>
+    </tr>
+    <tr>
+      <td><strong>SPLIT-RAG</strong> (2025)</td>
+      <td>arXiv:2505.13994</td>
+      <td>Question-driven partitioning → learned routing from training Qs</td>
+    </tr>
+  </tbody>
+</table>
 
----
+<hr />
 
-## Code Pointers
+<h2 id="code-pointers">Code Pointers</h2>
 
-| File | Function | Line |
-|------|----------|------|
-| `config.py` | `subspace_map` | 34 |
-| `retrieve.py` | `_fuse_subspace_rrf` | ~143 |
-| `retrieve.py` | `_t1_try_whole_kb_fallback` | ~220 |
-| `api.py` | Sticky injection | ~386 |
-| `search.py` | `_filter_by_path` | 634 |
+<table>
+  <thead>
+    <tr>
+      <th>File</th>
+      <th>Function</th>
+      <th>Line</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">config.py</code></td>
+      <td><code class="language-plaintext highlighter-rouge">subspace_map</code></td>
+      <td>34</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">retrieve.py</code></td>
+      <td><code class="language-plaintext highlighter-rouge">_fuse_subspace_rrf</code></td>
+      <td>~143</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">retrieve.py</code></td>
+      <td><code class="language-plaintext highlighter-rouge">_t1_try_whole_kb_fallback</code></td>
+      <td>~220</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">api.py</code></td>
+      <td>Sticky injection</td>
+      <td>~386</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">search.py</code></td>
+      <td><code class="language-plaintext highlighter-rouge">_filter_by_path</code></td>
+      <td>634</td>
+    </tr>
+  </tbody>
+</table>
 
----
+<hr />
 
-## Validation Commands
+<h2 id="validation-commands">Validation Commands</h2>
 
-```bash
-# Test cheque filter directly
-curl -s http://127.0.0.1:8000/search/api -H 'Content-Type: application/json' \
-  -d '{"query":"چک برگشتی چیست","top_k":10,"filter_path":"گزارش اعتباراتنجی چک"}' \
-  | jq '.final_results[0].rerank_score'
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Test cheque filter directly</span>
+curl <span class="nt">-s</span> http://127.0.0.1:8000/search/api <span class="nt">-H</span> <span class="s1">'Content-Type: application/json'</span> <span class="se">\</span>
+  <span class="nt">-d</span> <span class="s1">'{"query":"چک برگشتی چیست","top_k":10,"filter_path":"گزارش اعتباراتنجی چک"}'</span> <span class="se">\</span>
+  | jq <span class="s1">'.final_results[0].rerank_score'</span>
 
-# Test E2E sticky cheque
-curl -s http://127.0.0.1:8100/v1/chat/completions \
-  -H 'Content-Type: application/json' -H 'X-Request-ID: test' \
-  -d '{"model":"ics-helper-agent","messages":[{"role":"user","content":"چک"},{"role":"assistant","content":"حوزه گزارش اعتباراتنجی چک انتخاب شد."},{"role":"user","content":"تاثیر چک برگشتی بر امتیاز چقدر است؟"}]}' \
-  | jq '.audit.applied_subspace, .audit.retrieved_chunks|length, .rag.citations|length'
-```
+<span class="c"># Test E2E sticky cheque</span>
+curl <span class="nt">-s</span> http://127.0.0.1:8100/v1/chat/completions <span class="se">\</span>
+  <span class="nt">-H</span> <span class="s1">'Content-Type: application/json'</span> <span class="nt">-H</span> <span class="s1">'X-Request-ID: test'</span> <span class="se">\</span>
+  <span class="nt">-d</span> <span class="s1">'{"model":"ics-helper-agent","messages":[{"role":"user","content":"چک"},{"role":"assistant","content":"حوزه گزارش اعتباراتنجی چک انتخاب شد."},{"role":"user","content":"تاثیر چک برگشتی بر امتیاز چقدر است؟"}]}'</span> <span class="se">\</span>
+  | jq <span class="s1">'.audit.applied_subspace, .audit.retrieved_chunks|length, .rag.citations|length'</span>
+</code></pre></div></div>
 
----
+<hr />
 
-## Related Problems
+<h2 id="related-problems">Related Problems</h2>
 
-- [Ambiguity Resolution Failure](./ambiguity-resolution.html) — Clarify gate for scattered queries
-- [Retrieval Degradation](./retrieval-degradation.html) — No fallback when filtered weak
-- [Sticky Context Decay](./sticky-context.html) — Context loss on generic follow-ups
+<ul>
+  <li><a href="./ambiguity-resolution.html">Ambiguity Resolution Failure</a> — Clarify gate for scattered queries</li>
+  <li><a href="./retrieval-degradation.html">Retrieval Degradation</a> — No fallback when filtered weak</li>
+  <li><a href="./sticky-context.html">Sticky Context Decay</a> — Context loss on generic follow-ups</li>
+</ul>
+
   </main>
 
   <footer class="site-footer" role="contentinfo">

@@ -80,6 +80,7 @@ Session → Hook → Background Indexing → MOIM Injector → Prepend to System
 - **Context Recycling**: Loaded branch released, next query reuses budget
 
 **Results**:
+
 | Turn | Baseline Tokens | Context Recycling |
 |------|-----------------|-------------------|
 | 1 | ~500 | ~850 |

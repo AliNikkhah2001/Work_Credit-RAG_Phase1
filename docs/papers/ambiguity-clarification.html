@@ -106,185 +106,363 @@
 
   <main id="main-content" class="site-main" role="main">
     <div class="page-header">
-  <h1>Ambiguity & Clarification Papers</h1>
+  <h1>Ambiguity &amp; Clarification Papers</h1>
   <p class="lead">RAC, ICR, Qulac/ClariQ/ClariT, CLARITY - Retrieval-grounded clarification, iterative clarify-rewrite loops, multi-facet ambiguity</p>
 </div>
 
-## Paper Summaries
+<h2 id="paper-summaries">Paper Summaries</h2>
 
-### RAC: Retrieval-Augmented Clarification
+<h3 id="rac-retrieval-augmented-clarification">RAC: Retrieval-Augmented Clarification</h3>
 
-| Field | Detail |
-|-------|--------|
-| **Title** | RAC: Retrieval-Augmented Clarification for Faithful Conversational Search |
-| **Authors** | Multiple |
-| **Venue** | arXiv:2601.11722 (2026) |
-| **Key Innovation** | Ground clarifications IN THE CORPUS, not LLM hallucination |
+<table>
+  <thead>
+    <tr>
+      <th>Field</th>
+      <th>Detail</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Title</strong></td>
+      <td>RAC: Retrieval-Augmented Clarification for Faithful Conversational Search</td>
+    </tr>
+    <tr>
+      <td><strong>Authors</strong></td>
+      <td>Multiple</td>
+    </tr>
+    <tr>
+      <td><strong>Venue</strong></td>
+      <td>arXiv:2601.11722 (2026)</td>
+    </tr>
+    <tr>
+      <td><strong>Key Innovation</strong></td>
+      <td>Ground clarifications IN THE CORPUS, not LLM hallucination</td>
+    </tr>
+  </tbody>
+</table>
 
-**Key Claims**:
-- **Problem**: Prior work focuses on fluency/alignment, not grounding clarifications in corpus
-- **Solution**: Retrieve top-k passages → LLM generates clarifying question grounded in retrieved facets
-- **Mechanism**: Implicit facet extraction via supplying top-k passages to LLM
-- **Evaluation**: Qulac, ClariQ, PaQa, CambigNQ — faithfulness to retrieved content
+<p><strong>Key Claims</strong>:</p>
+<ul>
+  <li><strong>Problem</strong>: Prior work focuses on fluency/alignment, not grounding clarifications in corpus</li>
+  <li><strong>Solution</strong>: Retrieve top-k passages → LLM generates clarifying question grounded in retrieved facets</li>
+  <li><strong>Mechanism</strong>: Implicit facet extraction via supplying top-k passages to LLM</li>
+  <li><strong>Evaluation</strong>: Qulac, ClariQ, PaQa, CambigNQ — faithfulness to retrieved content</li>
+</ul>
 
-**Key Insight**: "Facet extraction is performed implicitly by supplying the top-k retrieved passages to the LLM, which then generates the clarifying question."
+<p><strong>Key Insight</strong>: “Facet extraction is performed implicitly by supplying the top-k retrieved passages to the LLM, which then generates the clarifying question.”</p>
 
-**Relevance to Our Fix**: 
-- Our `is_scattered_ambiguous()` detects vague queries → triggers clarify
-- RAC shows: **clarifications should be grounded in retrieved passages**, not just LLM-generated
-- Future: Use retrieved facets to generate clarification pills
+<p><strong>Relevance to Our Fix</strong>:</p>
+<ul>
+  <li>Our <code class="language-plaintext highlighter-rouge">is_scattered_ambiguous()</code> detects vague queries → triggers clarify</li>
+  <li>RAC shows: <strong>clarifications should be grounded in retrieved passages</strong>, not just LLM-generated</li>
+  <li>Future: Use retrieved facets to generate clarification pills</li>
+</ul>
 
----
+<hr />
 
-### ICR: Iterative Clarification and Rewriting
+<h3 id="icr-iterative-clarification-and-rewriting">ICR: Iterative Clarification and Rewriting</h3>
 
-| Field | Detail |
-|-------|--------|
-| **Title** | ICR: Iterative Clarification and Rewriting for Conversational Search |
-| **Authors** | Sifei Meng, Dmitry Ilvovsky |
-| **Venue** | EMNLP 2025 |
-| **Code** | https://github.com/mengsifei/MultiturnRAG |
+<table>
+  <thead>
+    <tr>
+      <th>Field</th>
+      <th>Detail</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Title</strong></td>
+      <td>ICR: Iterative Clarification and Rewriting for Conversational Search</td>
+    </tr>
+    <tr>
+      <td><strong>Authors</strong></td>
+      <td>Sifei Meng, Dmitry Ilvovsky</td>
+    </tr>
+    <tr>
+      <td><strong>Venue</strong></td>
+      <td>EMNLP 2025</td>
+    </tr>
+    <tr>
+      <td><strong>Code</strong></td>
+      <td>https://github.com/mengsifei/MultiturnRAG</td>
+    </tr>
+  </tbody>
+</table>
 
-**Key Claims**:
-- **Problem**: CQR ignores feedback from retrieval/generation
-- **Solution**: Iterative loop: `clarify → rewrite → retrieve → repeat`
-- **Loop**: `c_i ∼ M(r_{i-1})`, `r_i ∼ M(c_i, H, r_{i-1})`
-- **Results**: 0.5453 nDCG@5 on Task A (Rank 3/38)
+<p><strong>Key Claims</strong>:</p>
+<ul>
+  <li><strong>Problem</strong>: CQR ignores feedback from retrieval/generation</li>
+  <li><strong>Solution</strong>: Iterative loop: <code class="language-plaintext highlighter-rouge">clarify → rewrite → retrieve → repeat</code></li>
+  <li><strong>Loop</strong>: <code class="language-plaintext highlighter-rouge">c_i ∼ M(r_{i-1})</code>, <code class="language-plaintext highlighter-rouge">r_i ∼ M(c_i, H, r_{i-1})</code></li>
+  <li><strong>Results</strong>: 0.5453 nDCG@5 on Task A (Rank 3/38)</li>
+</ul>
 
-**Algorithm**:
-```
-for e = 1 to I:
+<p><strong>Algorithm</strong>:</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>for e = 1 to I:
     c_i ∼ M(r_{i-1})          # Generate clarification
     r_i ∼ M(c_i, H, r_{i-1})  # Rewrite with clarification
     if retrieval_confident(r_i): break
 return r_i
-```
+</code></pre></div></div>
 
-**Relevance to Our Fix**:
-- Our T5 = single-shot clarify (no iteration)
-- ICR shows: **iterative clarify-rewrite** improves retrieval confidence
-- Future: Add iteration for complex ambiguous queries
+<p><strong>Relevance to Our Fix</strong>:</p>
+<ul>
+  <li>Our T5 = single-shot clarify (no iteration)</li>
+  <li>ICR shows: <strong>iterative clarify-rewrite</strong> improves retrieval confidence</li>
+  <li>Future: Add iteration for complex ambiguous queries</li>
+</ul>
 
----
+<hr />
 
-### Qulac / ClariQ / ClariT Datasets
+<h3 id="qulac--clariq--clarit-datasets">Qulac / ClariQ / ClariT Datasets</h3>
 
-| Dataset | Source | Size | Focus |
-|---------|--------|------|-------|
-| **Qulac** | Aliannejadi et al. 2019 | 10,277 single-turn | Faceted ambiguous queries from TREC Web Track |
-| **ClariQ** | Aliannejadi et al. 2020 | Extended Qulac | Crowdsourced clarifications + answers |
-| **ClariT** | Feng et al. 2023 | 108k multi-turn | Task-oriented clarification with user profiles |
+<table>
+  <thead>
+    <tr>
+      <th>Dataset</th>
+      <th>Source</th>
+      <th>Size</th>
+      <th>Focus</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Qulac</strong></td>
+      <td>Aliannejadi et al. 2019</td>
+      <td>10,277 single-turn</td>
+      <td>Faceted ambiguous queries from TREC Web Track</td>
+    </tr>
+    <tr>
+      <td><strong>ClariQ</strong></td>
+      <td>Aliannejadi et al. 2020</td>
+      <td>Extended Qulac</td>
+      <td>Crowdsourced clarifications + answers</td>
+    </tr>
+    <tr>
+      <td><strong>ClariT</strong></td>
+      <td>Feng et al. 2023</td>
+      <td>108k multi-turn</td>
+      <td>Task-oriented clarification with user profiles</td>
+    </tr>
+  </tbody>
+</table>
 
-**Key Stats**:
-- Qulac: 198 topics, 762 facets, 10,277 query-facet-question triplets
-- ClariQ: Extended with new topics, crowdsourced
-- ClariT: 108k multi-turn conversations with user profiles
+<p><strong>Key Stats</strong>:</p>
+<ul>
+  <li>Qulac: 198 topics, 762 facets, 10,277 query-facet-question triplets</li>
+  <li>ClariQ: Extended with new topics, crowdsourced</li>
+  <li>ClariT: 108k multi-turn conversations with user profiles</li>
+</ul>
 
-**Relevance**: Our 6 scattered queries map to Qulac/ClariQ patterns:
-- `وضعیت اعتباری چطور است` → faceted (cheque vs facilities vs general)
-- `بدهکار شدم چیکار کنم` → underspecified intent
+<p><strong>Relevance</strong>: Our 6 scattered queries map to Qulac/ClariQ patterns:</p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">وضعیت اعتباری چطور است</code> → faceted (cheque vs facilities vs general)</li>
+  <li><code class="language-plaintext highlighter-rouge">بدهکار شدم چیکار کنم</code> → underspecified intent</li>
+</ul>
 
----
+<hr />
 
-### CLARITY: Multi-Facet Ambiguity in NL2SQL
+<h3 id="clarity-multi-facet-ambiguity-in-nl2sql">CLARITY: Multi-Facet Ambiguity in NL2SQL</h3>
 
-| Field | Detail |
-|-------|--------|
-| **Title** | CLARITY: A Framework for Conversational Language Ambiguity and Unanswerability in Interactive NL2SQL Systems |
-| **Venue** | ACL 2026 |
-| **Key Innovation** | Multi-facet ambiguity + unanswerability with grounded continuations |
+<table>
+  <thead>
+    <tr>
+      <th>Field</th>
+      <th>Detail</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Title</strong></td>
+      <td>CLARITY: A Framework for Conversational Language Ambiguity and Unanswerability in Interactive NL2SQL Systems</td>
+    </tr>
+    <tr>
+      <td><strong>Venue</strong></td>
+      <td>ACL 2026</td>
+    </tr>
+    <tr>
+      <td><strong>Key Innovation</strong></td>
+      <td>Multi-facet ambiguity + unanswerability with grounded continuations</td>
+    </tr>
+  </tbody>
+</table>
 
-**Key Claims**:
-- **Multi-facet ambiguity**: Query contains multiple interacting ambiguity sources
-- **Framework**: Constraint-driven pipeline generating ambiguous NL2SQL with grounded continuations
-- **User behaviors**: Models partially helpful/unhelpful responses
+<p><strong>Key Claims</strong>:</p>
+<ul>
+  <li><strong>Multi-facet ambiguity</strong>: Query contains multiple interacting ambiguity sources</li>
+  <li><strong>Framework</strong>: Constraint-driven pipeline generating ambiguous NL2SQL with grounded continuations</li>
+  <li><strong>User behaviors</strong>: Models partially helpful/unhelpful responses</li>
+</ul>
 
-**Relevance**: Our clarify pills = single-facet; CLARITY shows **multi-facet ambiguity** needs multi-turn resolution.
+<p><strong>Relevance</strong>: Our clarify pills = single-facet; CLARITY shows <strong>multi-facet ambiguity</strong> needs multi-turn resolution.</p>
 
----
+<hr />
 
-## Clarification Approaches Comparison
+<h2 id="clarification-approaches-comparison">Clarification Approaches Comparison</h2>
 
-| Approach | Paper | Mechanism | Iterative? | Grounded? |
-|----------|-------|-----------|------------|-----------|
-| **Our T5** | — | Keyword-based scattered detection | No | No (static pills) |
-| **RAC** | arXiv:2601.11722 | Retrieve → LLM generates clarification from passages | No | **Yes** (corpus-grounded) |
-| **ICR** | EMNLP 2025 | Clarify → Rewrite → Retrieve loop | **Yes** | Implicit (via rewrite) |
-| **Qulac/ClariQ** | ACL 2019/2020 | Facet annotations for ambiguous queries | No | Facet-based |
-| **CLARITY** | ACL 2026 | Multi-facet ambiguity + grounded continuations | Yes (multi-turn) | **Yes** |
+<table>
+  <thead>
+    <tr>
+      <th>Approach</th>
+      <th>Paper</th>
+      <th>Mechanism</th>
+      <th>Iterative?</th>
+      <th>Grounded?</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Our T5</strong></td>
+      <td>—</td>
+      <td>Keyword-based scattered detection</td>
+      <td>No</td>
+      <td>No (static pills)</td>
+    </tr>
+    <tr>
+      <td><strong>RAC</strong></td>
+      <td>arXiv:2601.11722</td>
+      <td>Retrieve → LLM generates clarification from passages</td>
+      <td>No</td>
+      <td><strong>Yes</strong> (corpus-grounded)</td>
+    </tr>
+    <tr>
+      <td><strong>ICR</strong></td>
+      <td>EMNLP 2025</td>
+      <td>Clarify → Rewrite → Retrieve loop</td>
+      <td><strong>Yes</strong></td>
+      <td>Implicit (via rewrite)</td>
+    </tr>
+    <tr>
+      <td><strong>Qulac/ClariQ</strong></td>
+      <td>ACL 2019/2020</td>
+      <td>Facet annotations for ambiguous queries</td>
+      <td>No</td>
+      <td>Facet-based</td>
+    </tr>
+    <tr>
+      <td><strong>CLARITY</strong></td>
+      <td>ACL 2026</td>
+      <td>Multi-facet ambiguity + grounded continuations</td>
+      <td>Yes (multi-turn)</td>
+      <td><strong>Yes</strong></td>
+    </tr>
+  </tbody>
+</table>
 
----
+<hr />
 
-## Our Implementation vs State-of-the-Art
+<h2 id="our-implementation-vs-state-of-the-art">Our Implementation vs State-of-the-Art</h2>
 
-| Aspect | Our T5 | RAC | ICR | Gap |
-|--------|--------|-----|-----|-----|
-| **Detection** | Keyword-based | Implicit (retrieve first) | Implicit (via rewrite) | Detection could be learned |
-| **Clarification** | Static pills (4 subspaces) | LLM-generated from passages | Iterative clarify-rewrite | Static vs dynamic |
-| **Grounding** | None (predefined) | **Corpus-grounded** | Implicit via rewrite | **Major gap** |
-| **Iteration** | Single-shot | Single-shot | **Multi-iteration** | No iteration |
-| **Feedback** | None | Retrieval confidence | Retrieval + generation | No feedback loop |
+<table>
+  <thead>
+    <tr>
+      <th>Aspect</th>
+      <th>Our T5</th>
+      <th>RAC</th>
+      <th>ICR</th>
+      <th>Gap</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Detection</strong></td>
+      <td>Keyword-based</td>
+      <td>Implicit (retrieve first)</td>
+      <td>Implicit (via rewrite)</td>
+      <td>Detection could be learned</td>
+    </tr>
+    <tr>
+      <td><strong>Clarification</strong></td>
+      <td>Static pills (4 subspaces)</td>
+      <td>LLM-generated from passages</td>
+      <td>Iterative clarify-rewrite</td>
+      <td>Static vs dynamic</td>
+    </tr>
+    <tr>
+      <td><strong>Grounding</strong></td>
+      <td>None (predefined)</td>
+      <td><strong>Corpus-grounded</strong></td>
+      <td>Implicit via rewrite</td>
+      <td><strong>Major gap</strong></td>
+    </tr>
+    <tr>
+      <td><strong>Iteration</strong></td>
+      <td>Single-shot</td>
+      <td>Single-shot</td>
+      <td><strong>Multi-iteration</strong></td>
+      <td>No iteration</td>
+    </tr>
+    <tr>
+      <td><strong>Feedback</strong></td>
+      <td>None</td>
+      <td>Retrieval confidence</td>
+      <td>Retrieval + generation</td>
+      <td>No feedback loop</td>
+    </tr>
+  </tbody>
+</table>
 
----
+<hr />
 
-## Future: Iterative Clarify-Rewrite Loop
+<h2 id="future-iterative-clarify-rewrite-loop">Future: Iterative Clarify-Rewrite Loop</h2>
 
-Based on ICR + RAC:
+<p>Based on ICR + RAC:</p>
 
-```python
-async def iterative_clarify_rewrite(query, history, max_iter=3):
-    rewritten = query
-    for i in range(max_iter):
-        # 1. Retrieve with current rewrite
-        results = await retrieve(rewritten, top_k=10)
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">async</span> <span class="k">def</span> <span class="nf">iterative_clarify_rewrite</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">history</span><span class="p">,</span> <span class="n">max_iter</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
+    <span class="n">rewritten</span> <span class="o">=</span> <span class="n">query</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="n">max_iter</span><span class="p">):</span>
+        <span class="c1"># 1. Retrieve with current rewrite
+</span>        <span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">retrieve</span><span class="p">(</span><span class="n">rewritten</span><span class="p">,</span> <span class="n">top_k</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
         
-        # 2. Generate clarification grounded in results
-        clarification = await generate_clarification_grounded(
-            rewritten, results, history
-        )
+        <span class="c1"># 2. Generate clarification grounded in results
+</span>        <span class="n">clarification</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">generate_clarification_grounded</span><span class="p">(</span>
+            <span class="n">rewritten</span><span class="p">,</span> <span class="n">results</span><span class="p">,</span> <span class="n">history</span>
+        <span class="p">)</span>
         
-        # 3. Get user response (or simulate)
-        user_response = await get_user_input(clarification)
+        <span class="c1"># 3. Get user response (or simulate)
+</span>        <span class="n">user_response</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">get_user_input</span><span class="p">(</span><span class="n">clarification</span><span class="p">)</span>
         
-        # 4. Rewrite with clarification
-        rewritten = await rewrite_query(user_response, history, rewritten)
+        <span class="c1"># 4. Rewrite with clarification
+</span>        <span class="n">rewritten</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">rewrite_query</span><span class="p">(</span><span class="n">user_response</span><span class="p">,</span> <span class="n">history</span><span class="p">,</span> <span class="n">rewritten</span><span class="p">)</span>
         
-        # 5. Check retrieval confidence
-        if await is_retrieval_confident(rewritten):
-            break
+        <span class="c1"># 5. Check retrieval confidence
+</span>        <span class="k">if</span> <span class="k">await</span> <span class="nf">is_retrieval_confident</span><span class="p">(</span><span class="n">rewritten</span><span class="p">):</span>
+            <span class="k">break</span>
     
-    return rewritten
-```
+    <span class="k">return</span> <span class="n">rewritten</span>
+</code></pre></div></div>
 
----
+<hr />
 
-## Architecture: Clarification Flow
+<h2 id="architecture-clarification-flow">Architecture: Clarification Flow</h2>
 
-```mermaid
-flowchart TD
-    A[User Query] --> B[Scattered Detector]
-    B -->|Ambiguous| C[Retrieve Top-K Passages]
-    C --> D[RAC: Generate Clarification from Passages]
-    D --> E[Show Pills to User]
-    E --> F[User Selects/Types]
-    F --> G[ICR: Rewrite Query with Clarification]
-    G --> H[Retrieve with Rewritten Query]
-    H --> I{Confident?}
-    I -->|No| C
-    I -->|Yes| J[Generate Answer]
+<pre><code class="language-mermaid">flowchart TD
+    A[User Query] --&gt; B[Scattered Detector]
+    B --&gt;|Ambiguous| C[Retrieve Top-K Passages]
+    C --&gt; D[RAC: Generate Clarification from Passages]
+    D --&gt; E[Show Pills to User]
+    E --&gt; F[User Selects/Types]
+    F --&gt; G[ICR: Rewrite Query with Clarification]
+    G --&gt; H[Retrieve with Rewritten Query]
+    H --&gt; I{Confident?}
+    I --&gt;|No| C
+    I --&gt;|Yes| J[Generate Answer]
     
     style C fill:#dcfce7,stroke:#166534
     style D fill:#fef3e0,stroke:#f57f17
-```
+</code></pre>
 
----
+<hr />
 
-## Related Pages
+<h2 id="related-pages">Related Pages</h2>
 
-- [Problem: Ambiguity Resolution](../problems/ambiguity-resolution.html)
-- [Paper: Retrieval Fusion & RRF](./retrieval-fusion.html)
-- [Paper: Sticky Context & Memory](./sticky-context.html)
-- [Architecture: RAC/ICR](../architectures.html#rac-icr)
+<ul>
+  <li><a href="../problems/ambiguity-resolution.html">Problem: Ambiguity Resolution</a></li>
+  <li><a href="./retrieval-fusion.html">Paper: Retrieval Fusion &amp; RRF</a></li>
+  <li><a href="./sticky-context.html">Paper: Sticky Context &amp; Memory</a></li>
+  <li><a href="../architectures.html#rac-icr">Architecture: RAC/ICR</a></li>
+</ul>
+
   </main>
 
   <footer class="site-footer" role="contentinfo">

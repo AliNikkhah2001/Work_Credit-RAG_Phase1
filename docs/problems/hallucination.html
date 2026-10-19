@@ -110,178 +110,325 @@
   <p class="lead">Weak-evidence answers hallucinated. Fixed with coverage+score guard + lexical evidence bypass + per-subspace thresholds.</p>
 </div>
 
-## Problem Summary
+<h2 id="problem-summary">Problem Summary</h2>
 
-| Aspect | Detail |
-|--------|--------|
-| **Severity** | Medium |
-| **Category** | Safety / Generation |
-| **Status** | ✅ Improved |
-| **Bench Impact** | Hallucination: 0.195 → 0.254 (tradeoff for recall) |
-| **Key Papers** | DUTIR (SemEval 2026), Reflective RAG (ACL 2026), Faith Guard (our impl) |
+<table>
+  <thead>
+    <tr>
+      <th>Aspect</th>
+      <th>Detail</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Severity</strong></td>
+      <td>Medium</td>
+    </tr>
+    <tr>
+      <td><strong>Category</strong></td>
+      <td>Safety / Generation</td>
+    </tr>
+    <tr>
+      <td><strong>Status</strong></td>
+      <td>✅ Improved</td>
+    </tr>
+    <tr>
+      <td><strong>Bench Impact</strong></td>
+      <td>Hallucination: 0.195 → 0.254 (tradeoff for recall)</td>
+    </tr>
+    <tr>
+      <td><strong>Key Papers</strong></td>
+      <td>DUTIR (SemEval 2026), Reflective RAG (ACL 2026), Faith Guard (our impl)</td>
+    </tr>
+  </tbody>
+</table>
 
----
+<hr />
 
-## Root Cause
+<h2 id="root-cause">Root Cause</h2>
 
-### The Hallucination Pattern
+<h3 id="the-hallucination-pattern">The Hallucination Pattern</h3>
 
-When retrieval was weak (fallback/broadened paths), generation still produced answers:
+<p>When retrieval was weak (fallback/broadened paths), generation still produced answers:</p>
 
-| Scenario | Retrieval | Generation | Issue |
-|----------|-----------|------------|-------|
-| G5 fake grade | 0 chunks | "پاسخی یافت نشد" ✅ | Correct refusal |
-| Cheque T3 (before fix) | 10 chunks, rerank 0.0 | "پاسخی یافت نشد" ❌ | Had evidence but abstained |
-| Facilities T3 (before fix) | 10 chunks, rerank 0.0 | "پاسخی یافت نشد" ❌ | Had evidence but abstained |
-| Weak fallback | 10 chunks, rerank 0.03 | Invented facts ❌ | Hallucinated |
+<table>
+  <thead>
+    <tr>
+      <th>Scenario</th>
+      <th>Retrieval</th>
+      <th>Generation</th>
+      <th>Issue</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>G5 fake grade</td>
+      <td>0 chunks</td>
+      <td>“پاسخی یافت نشد” ✅</td>
+      <td>Correct refusal</td>
+    </tr>
+    <tr>
+      <td>Cheque T3 (before fix)</td>
+      <td>10 chunks, rerank 0.0</td>
+      <td>“پاسخی یافت نشد” ❌</td>
+      <td>Had evidence but abstained</td>
+    </tr>
+    <tr>
+      <td>Facilities T3 (before fix)</td>
+      <td>10 chunks, rerank 0.0</td>
+      <td>“پاسخی یافت نشد” ❌</td>
+      <td>Had evidence but abstained</td>
+    </tr>
+    <tr>
+      <td>Weak fallback</td>
+      <td>10 chunks, rerank 0.03</td>
+      <td>Invented facts ❌</td>
+      <td>Hallucinated</td>
+    </tr>
+  </tbody>
+</table>
 
-### The Evidence Threshold Problem
+<h3 id="the-evidence-threshold-problem">The Evidence Threshold Problem</h3>
 
-Global `evidence_min_score: 0.15` starved cheque (scores 0.028) but passed general (0.033).
+<p>Global <code class="language-plaintext highlighter-rouge">evidence_min_score: 0.15</code> starved cheque (scores 0.028) but passed general (0.033).</p>
 
----
+<hr />
 
-## The Fix
+<h2 id="the-fix">The Fix</h2>
 
-### 1. Per-Subspace Evidence Thresholds (T3)
+<h3 id="1-per-subspace-evidence-thresholds-t3">1. Per-Subspace Evidence Thresholds (T3)</h3>
 
-```python
-# config.py
-def get_evidence_threshold(self, applied_subspace):
-    if "چک" in subspace or subspace == "cheque": return 0.05
-    if "حقیقی" in subspace or subspace == "facilities_person": return 0.10
-    if "حقوقی" in subspace or subspace == "facilities_legal": return 0.15
-    if "عمومی" in subspace or subspace == "general": return 0.15
-    return 0.15
-```
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># config.py
+</span><span class="k">def</span> <span class="nf">get_evidence_threshold</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">applied_subspace</span><span class="p">):</span>
+    <span class="k">if</span> <span class="sh">"</span><span class="s">چک</span><span class="sh">"</span> <span class="ow">in</span> <span class="n">subspace</span> <span class="ow">or</span> <span class="n">subspace</span> <span class="o">==</span> <span class="sh">"</span><span class="s">cheque</span><span class="sh">"</span><span class="p">:</span> <span class="k">return</span> <span class="mf">0.05</span>
+    <span class="k">if</span> <span class="sh">"</span><span class="s">حقیقی</span><span class="sh">"</span> <span class="ow">in</span> <span class="n">subspace</span> <span class="ow">or</span> <span class="n">subspace</span> <span class="o">==</span> <span class="sh">"</span><span class="s">facilities_person</span><span class="sh">"</span><span class="p">:</span> <span class="k">return</span> <span class="mf">0.10</span>
+    <span class="k">if</span> <span class="sh">"</span><span class="s">حقوقی</span><span class="sh">"</span> <span class="ow">in</span> <span class="n">subspace</span> <span class="ow">or</span> <span class="n">subspace</span> <span class="o">==</span> <span class="sh">"</span><span class="s">facilities_legal</span><span class="sh">"</span><span class="p">:</span> <span class="k">return</span> <span class="mf">0.15</span>
+    <span class="k">if</span> <span class="sh">"</span><span class="s">عمومی</span><span class="sh">"</span> <span class="ow">in</span> <span class="n">subspace</span> <span class="ow">or</span> <span class="n">subspace</span> <span class="o">==</span> <span class="sh">"</span><span class="s">general</span><span class="sh">"</span><span class="p">:</span> <span class="k">return</span> <span class="mf">0.15</span>
+    <span class="k">return</span> <span class="mf">0.15</span>
+</code></pre></div></div>
 
-### 2. Lexical Evidence Bypass (T6)
+<h3 id="2-lexical-evidence-bypass-t6">2. Lexical Evidence Bypass (T6)</h3>
 
-```python
-# format_response.py
-def _has_lexical_evidence(query, chunks, applied_subspace):
-    """Does any chunk contain query/subspace keywords?"""
-    keywords = set()
-    if "چک" in applied_subspace: keywords.update(["چک"])
-    elif "حقیقی" in applied_subspace: keywords.update(["تسهیلات", "وام", "قسط", "حقیقی"])
-    # ... add query tokens len>=2
-    
-    corpus = " ".join(c.get("content", "") for c in chunks[:10])
-    return any(kw in corpus for kw in keywords)
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># format_response.py
+</span><span class="k">def</span> <span class="nf">_has_lexical_evidence</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">chunks</span><span class="p">,</span> <span class="n">applied_subspace</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">Does any chunk contain query/subspace keywords?</span><span class="sh">"""</span>
+    <span class="n">keywords</span> <span class="o">=</span> <span class="nf">set</span><span class="p">()</span>
+    <span class="k">if</span> <span class="sh">"</span><span class="s">چک</span><span class="sh">"</span> <span class="ow">in</span> <span class="n">applied_subspace</span><span class="p">:</span> <span class="n">keywords</span><span class="p">.</span><span class="nf">update</span><span class="p">([</span><span class="sh">"</span><span class="s">چک</span><span class="sh">"</span><span class="p">])</span>
+    <span class="k">elif</span> <span class="sh">"</span><span class="s">حقیقی</span><span class="sh">"</span> <span class="ow">in</span> <span class="n">applied_subspace</span><span class="p">:</span> <span class="n">keywords</span><span class="p">.</span><span class="nf">update</span><span class="p">([</span><span class="sh">"</span><span class="s">تسهیلات</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">وام</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">قسط</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">حقیقی</span><span class="sh">"</span><span class="p">])</span>
+    <span class="c1"># ... add query tokens len&gt;=2
+</span>    
+    <span class="n">corpus</span> <span class="o">=</span> <span class="sh">"</span><span class="s"> </span><span class="sh">"</span><span class="p">.</span><span class="nf">join</span><span class="p">(</span><span class="n">c</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="sh">"</span><span class="s">content</span><span class="sh">"</span><span class="p">,</span> <span class="sh">""</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">chunks</span><span class="p">[:</span><span class="mi">10</span><span class="p">])</span>
+    <span class="k">return</span> <span class="nf">any</span><span class="p">(</span><span class="n">kw</span> <span class="ow">in</span> <span class="n">corpus</span> <span class="k">for</span> <span class="n">kw</span> <span class="ow">in</span> <span class="n">keywords</span><span class="p">)</span>
 
-# In no-evidence guard:
-if (not chunks or top_score < threshold) and not supplement and not _has_lexical_evidence(...):
-    return NO_EVIDENCE_MSG  # Refuse
+<span class="c1"># In no-evidence guard:
+</span><span class="nf">if </span><span class="p">(</span><span class="ow">not</span> <span class="n">chunks</span> <span class="ow">or</span> <span class="n">top_score</span> <span class="o">&lt;</span> <span class="n">threshold</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">supplement</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nf">_has_lexical_evidence</span><span class="p">(...):</span>
+    <span class="k">return</span> <span class="n">NO_EVIDENCE_MSG</span>  <span class="c1"># Refuse
 # Else: KEEP chunks, let generation proceed
-```
+</span></code></pre></div></div>
 
-### 3. Faith/Hall Guard on Weak Evidence (F)
+<h3 id="3-faithhall-guard-on-weak-evidence-f">3. Faith/Hall Guard on Weak Evidence (F)</h3>
 
-```python
-# format_response.py - post-generation
-if (fallback_used or broaden_used) and ABSTENTION_PHRASE not in content:
-    used_top = _top_evidence_score(chosen_chunks)
-    coverage = _token_coverage(answer, chosen_chunks)
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># format_response.py - post-generation
+</span><span class="nf">if </span><span class="p">(</span><span class="n">fallback_used</span> <span class="ow">or</span> <span class="n">broaden_used</span><span class="p">)</span> <span class="ow">and</span> <span class="n">ABSTENTION_PHRASE</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">content</span><span class="p">:</span>
+    <span class="n">used_top</span> <span class="o">=</span> <span class="nf">_top_evidence_score</span><span class="p">(</span><span class="n">chosen_chunks</span><span class="p">)</span>
+    <span class="n">coverage</span> <span class="o">=</span> <span class="nf">_token_coverage</span><span class="p">(</span><span class="n">answer</span><span class="p">,</span> <span class="n">chosen_chunks</span><span class="p">)</span>
     
-    if used_top < 0.5 and coverage < 0.20:
-        # Hallucination detected → refuse
-        content = NO_EVIDENCE_MSG
-        citations = []
-        log.info(f"Faith guard fired: coverage={coverage:.3f} top={used_top:.3f}")
-```
+    <span class="k">if</span> <span class="n">used_top</span> <span class="o">&lt;</span> <span class="mf">0.5</span> <span class="ow">and</span> <span class="n">coverage</span> <span class="o">&lt;</span> <span class="mf">0.20</span><span class="p">:</span>
+        <span class="c1"># Hallucination detected → refuse
+</span>        <span class="n">content</span> <span class="o">=</span> <span class="n">NO_EVIDENCE_MSG</span>
+        <span class="n">citations</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">log</span><span class="p">.</span><span class="nf">info</span><span class="p">(</span><span class="sa">f</span><span class="sh">"</span><span class="s">Faith guard fired: coverage=</span><span class="si">{</span><span class="n">coverage</span><span class="si">:</span><span class="p">.</span><span class="mi">3</span><span class="n">f</span><span class="si">}</span><span class="s"> top=</span><span class="si">{</span><span class="n">used_top</span><span class="si">:</span><span class="p">.</span><span class="mi">3</span><span class="n">f</span><span class="si">}</span><span class="sh">"</span><span class="p">)</span>
+</code></pre></div></div>
 
-### 4. Token Coverage Metric
+<h3 id="4-token-coverage-metric">4. Token Coverage Metric</h3>
 
-```python
-def _token_coverage(answer, chunks):
-    a_tokens = set(answer.split())
-    c_tokens = set(" ".join(c.get("content","") for c in chunks).split())
-    return len(a_tokens & c_tokens) / len(a_tokens) if a_tokens else 1.0
-```
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">_token_coverage</span><span class="p">(</span><span class="n">answer</span><span class="p">,</span> <span class="n">chunks</span><span class="p">):</span>
+    <span class="n">a_tokens</span> <span class="o">=</span> <span class="nf">set</span><span class="p">(</span><span class="n">answer</span><span class="p">.</span><span class="nf">split</span><span class="p">())</span>
+    <span class="n">c_tokens</span> <span class="o">=</span> <span class="nf">set</span><span class="p">(</span><span class="sh">"</span><span class="s"> </span><span class="sh">"</span><span class="p">.</span><span class="nf">join</span><span class="p">(</span><span class="n">c</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="sh">"</span><span class="s">content</span><span class="sh">"</span><span class="p">,</span><span class="sh">""</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">chunks</span><span class="p">).</span><span class="nf">split</span><span class="p">())</span>
+    <span class="k">return</span> <span class="nf">len</span><span class="p">(</span><span class="n">a_tokens</span> <span class="o">&amp;</span> <span class="n">c_tokens</span><span class="p">)</span> <span class="o">/</span> <span class="nf">len</span><span class="p">(</span><span class="n">a_tokens</span><span class="p">)</span> <span class="k">if</span> <span class="n">a_tokens</span> <span class="k">else</span> <span class="mf">1.0</span>
+</code></pre></div></div>
 
----
+<hr />
 
-## Benchmark Delta
+<h2 id="benchmark-delta">Benchmark Delta</h2>
 
-| Metric | Before | After | Note |
-|--------|--------|-------|------|
-| Hallucination rate | 0.195 | **0.254** | +0.059 (tradeoff) |
-| Non-hallucination | 0.805 | **0.746** | -0.059 |
-| G5 refusal | ✅ | ✅ | Maintained |
-| Cheque T3 citations | 0 | **5** | Fixed |
-| Facilities T3 citations | 0 | **5** | Fixed |
+<table>
+  <thead>
+    <tr>
+      <th>Metric</th>
+      <th>Before</th>
+      <th>After</th>
+      <th>Note</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Hallucination rate</td>
+      <td>0.195</td>
+      <td><strong>0.254</strong></td>
+      <td>+0.059 (tradeoff)</td>
+    </tr>
+    <tr>
+      <td>Non-hallucination</td>
+      <td>0.805</td>
+      <td><strong>0.746</strong></td>
+      <td>-0.059</td>
+    </tr>
+    <tr>
+      <td>G5 refusal</td>
+      <td>✅</td>
+      <td>✅</td>
+      <td>Maintained</td>
+    </tr>
+    <tr>
+      <td>Cheque T3 citations</td>
+      <td>0</td>
+      <td><strong>5</strong></td>
+      <td>Fixed</td>
+    </tr>
+    <tr>
+      <td>Facilities T3 citations</td>
+      <td>0</td>
+      <td><strong>5</strong></td>
+      <td>Fixed</td>
+    </tr>
+  </tbody>
+</table>
 
----
+<hr />
 
-## Related Papers
+<h2 id="related-papers">Related Papers</h2>
 
-| Paper | Venue | Key Contribution |
-|-------|-------|------------------|
-| **DUTIR** | SemEval 2026 | Hybrid retrieval + confidence-based answerability → faithfulness guard |
-| **Reflective RAG** | ACL 2026 Findings | Self-evaluation tagging → RL strategy optimization → robust learning |
-| **5ting** | SemEval 2026 | Evidence-constrained generation + IDK-conditioned harmonic mean |
-| **CoopRAG** | NeurIPS 2025 | Cooperative retriever + LLM fine-tuned encoder → mutual information exchange |
-| **CoRAG** | NeurIPS 2025 | Chain-of-Retrieval → iterative retrieval+reasoning for multi-hop QA |
+<table>
+  <thead>
+    <tr>
+      <th>Paper</th>
+      <th>Venue</th>
+      <th>Key Contribution</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>DUTIR</strong></td>
+      <td>SemEval 2026</td>
+      <td>Hybrid retrieval + confidence-based answerability → faithfulness guard</td>
+    </tr>
+    <tr>
+      <td><strong>Reflective RAG</strong></td>
+      <td>ACL 2026 Findings</td>
+      <td>Self-evaluation tagging → RL strategy optimization → robust learning</td>
+    </tr>
+    <tr>
+      <td><strong>5ting</strong></td>
+      <td>SemEval 2026</td>
+      <td>Evidence-constrained generation + IDK-conditioned harmonic mean</td>
+    </tr>
+    <tr>
+      <td><strong>CoopRAG</strong></td>
+      <td>NeurIPS 2025</td>
+      <td>Cooperative retriever + LLM fine-tuned encoder → mutual information exchange</td>
+    </tr>
+    <tr>
+      <td><strong>CoRAG</strong></td>
+      <td>NeurIPS 2025</td>
+      <td>Chain-of-Retrieval → iterative retrieval+reasoning for multi-hop QA</td>
+    </tr>
+  </tbody>
+</table>
 
----
+<hr />
 
-## Architecture: Faith Guard Flow
+<h2 id="architecture-faith-guard-flow">Architecture: Faith Guard Flow</h2>
 
-```mermaid
-flowchart TD
-    A[Retrieved Chunks] --> B{Strong Evidence?}
-    B -->|No| C{fallback_used or broaden_used?}
-    C -->|Yes| D[Compute top_score + coverage]
-    C -->|No| E[Normal Generation]
-    D --> F{top_score < 0.5 AND coverage < 0.20?}
-    F -->|Yes| G[REPLACE with NO_EVIDENCE_MSG<br/>citations=[]]
-    F -->|No| E
-    E --> H[Generate Answer]
-    H --> I[Return]
-    G --> I
+<pre><code class="language-mermaid">flowchart TD
+    A[Retrieved Chunks] --&gt; B{Strong Evidence?}
+    B --&gt;|No| C{fallback_used or broaden_used?}
+    C --&gt;|Yes| D[Compute top_score + coverage]
+    C --&gt;|No| E[Normal Generation]
+    D --&gt; F{top_score &lt; 0.5 AND coverage &lt; 0.20?}
+    F --&gt;|Yes| G[REPLACE with NO_EVIDENCE_MSG&lt;br/&gt;citations=[]]
+    F --&gt;|No| E
+    E --&gt; H[Generate Answer]
+    H --&gt; I[Return]
+    G --&gt; I
     
     style G fill:#fef2f2,stroke:#ef4444
     style C fill:#fef3e0,stroke:#f57f17
-```
+</code></pre>
 
----
+<hr />
 
-## Code Pointers
+<h2 id="code-pointers">Code Pointers</h2>
 
-| File | Function | Line |
-|------|----------|------|
-| `format_response.py` | `_has_lexical_evidence` | 279 |
-| `format_response.py` | `_token_coverage` | 336 |
-| `format_response.py` | faith guard block | 483 |
-| `format_response.py` | `_top_evidence_score` | 261 |
-| `config.py` | `get_evidence_threshold` | 44 |
-| `retrieve.py` | lexical evidence check | 70 |
+<table>
+  <thead>
+    <tr>
+      <th>File</th>
+      <th>Function</th>
+      <th>Line</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">format_response.py</code></td>
+      <td><code class="language-plaintext highlighter-rouge">_has_lexical_evidence</code></td>
+      <td>279</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">format_response.py</code></td>
+      <td><code class="language-plaintext highlighter-rouge">_token_coverage</code></td>
+      <td>336</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">format_response.py</code></td>
+      <td>faith guard block</td>
+      <td>483</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">format_response.py</code></td>
+      <td><code class="language-plaintext highlighter-rouge">_top_evidence_score</code></td>
+      <td>261</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">config.py</code></td>
+      <td><code class="language-plaintext highlighter-rouge">get_evidence_threshold</code></td>
+      <td>44</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">retrieve.py</code></td>
+      <td>lexical evidence check</td>
+      <td>70</td>
+    </tr>
+  </tbody>
+</table>
 
----
+<hr />
 
-## Validation Commands
+<h2 id="validation-commands">Validation Commands</h2>
 
-```bash
-# Test G5 refusal
-curl -s http://127.0.0.1:8100/v1/chat/completions \
-  -H 'Content-Type: application/json' \
-  -d '{"model":"ics-helper-agent","messages":[{"role":"user","content":"نمره اعتباری من G5 است چه امتیازی میگیرم"}]}' \
-  | jq '.choices[0].finish_reason, .choices[0].message.content'
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Test G5 refusal</span>
+curl <span class="nt">-s</span> http://127.0.0.1:8100/v1/chat/completions <span class="se">\</span>
+  <span class="nt">-H</span> <span class="s1">'Content-Type: application/json'</span> <span class="se">\</span>
+  <span class="nt">-d</span> <span class="s1">'{"model":"ics-helper-agent","messages":[{"role":"user","content":"نمره اعتباری من G5 است چه امتیازی میگیرم"}]}'</span> <span class="se">\</span>
+  | jq <span class="s1">'.choices[0].finish_reason, .choices[0].message.content'</span>
 
-# Test cheque T3 (should now answer with citations)
-curl -s http://127.0.0.1:8100/v1/chat/completions \
-  -H 'Content-Type: application/json' -H 'X-Request-ID: faith-test' \
-  -d '{"model":"ics-helper-agent","messages":[{"role":"user","content":"چک"},{"role":"assistant","content":"..."},{"role":"user","content":"تاثیر چک برگشتی بر امتیاز چقدر است؟"}]}' \
-  | jq '.rag.citations|length, .choices[0].message.content[:200]'
-```
+<span class="c"># Test cheque T3 (should now answer with citations)</span>
+curl <span class="nt">-s</span> http://127.0.0.1:8100/v1/chat/completions <span class="se">\</span>
+  <span class="nt">-H</span> <span class="s1">'Content-Type: application/json'</span> <span class="nt">-H</span> <span class="s1">'X-Request-ID: faith-test'</span> <span class="se">\</span>
+  <span class="nt">-d</span> <span class="s1">'{"model":"ics-helper-agent","messages":[{"role":"user","content":"چک"},{"role":"assistant","content":"..."},{"role":"user","content":"تاثیر چک برگشتی بر امتیاز چقدر است؟"}]}'</span> <span class="se">\</span>
+  | jq <span class="s1">'.rag.citations|length, .choices[0].message.content[:200]'</span>
+</code></pre></div></div>
 
----
+<hr />
 
-## Related Problems
+<h2 id="related-problems">Related Problems</h2>
 
-- [Retrieval Degradation](./retrieval-degradation.html) — No fallback when filtered weak
-- [Subspace Filtering](./subspace-filtering.html) — Map mismatch caused 0 chunks
-- [Sticky Context](./sticky-context.html) — Context loss on generic follow-ups
+<ul>
+  <li><a href="./retrieval-degradation.html">Retrieval Degradation</a> — No fallback when filtered weak</li>
+  <li><a href="./subspace-filtering.html">Subspace Filtering</a> — Map mismatch caused 0 chunks</li>
+  <li><a href="./sticky-context.html">Sticky Context</a> — Context loss on generic follow-ups</li>
+</ul>
+
   </main>
 
   <footer class="site-footer" role="contentinfo">

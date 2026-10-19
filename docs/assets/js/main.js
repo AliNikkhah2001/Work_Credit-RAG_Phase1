@@ -70,8 +70,30 @@
   // ==========================================================================
   // Mermaid Diagram Rendering
   // ==========================================================================
+  // Kramdown renders ```mermaid fences as <pre><code class="language-mermaid">.
+  // Mermaid only auto-processes elements with class="mermaid", so convert the
+  // code blocks into mermaid containers before initialising the renderer.
+  function convertMermaidCodeBlocks() {
+    const blocks = document.querySelectorAll(
+      'pre > code.language-mermaid, pre > code.lang-mermaid, pre > code[class*="mermaid"]'
+    );
+    blocks.forEach(function(code) {
+      const div = document.createElement('div');
+      div.className = 'mermaid';
+      div.textContent = code.textContent;
+      const pre = code.closest('pre');
+      if (pre) {
+        pre.replaceWith(div);
+      } else if (code.parentNode) {
+        code.parentNode.replaceChild(div, code);
+      }
+    });
+    return blocks.length;
+  }
+
   function initMermaid() {
     if (typeof mermaid !== 'undefined') {
+      const converted = convertMermaidCodeBlocks();
       mermaid.initialize({
         startOnLoad: true,
         theme: 'default',
@@ -90,6 +112,15 @@
           tertiaryColor: '#f1f5f9'
         }
       });
+      // Explicitly render the converted blocks (startOnLoad has already been
+      // scheduled by the inline initialiser in the layout).
+      try {
+        mermaid.run({ querySelector: '.mermaid:not([data-processed])' });
+      } catch (e) {
+        // Older mermaid builds expose init() instead of run()
+        try { mermaid.init(undefined, document.querySelectorAll('.mermaid')); } catch (_) {}
+      }
+      if (converted) console.log('Converted ' + converted + ' mermaid code blocks');
       
       // Re-render on dynamic content
       const observer = new MutationObserver(() => {

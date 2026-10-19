@@ -110,12 +110,11 @@
   <p class="lead">Mermaid diagrams of paper architectures: SPLIT-RAG, PC-RAG, RAC, ICR, CPP, CALMem, H-RAG, 5ting, GUIR, DUTIR, CoRAG, IM-RAG</p>
 </div>
 
-## System Architectures
+<h2 id="system-architectures">System Architectures</h2>
 
-### Our Current Architecture (Post T1-T7 Fixes)
+<h3 id="our-current-architecture-post-t1-t7-fixes">Our Current Architecture (Post T1-T7 Fixes)</h3>
 
-```mermaid
-flowchart TD
+<pre><code class="language-mermaid">flowchart TD
     subgraph Client["Client Layer"]
         Browser["🌐 Browser"]
         WebUI["💬 Open WebUI :13000\nICS Helper (Arena OFF)\nFilters: rag_trace_capture\nActions: ⭐ rate / 🐛 report / 📄 view / ✅ truth"]
@@ -131,7 +130,7 @@ flowchart TD
     subgraph Retrieval["Retrieval — :8000"]
         KB["📚 KB Manager\nBM25(tantivy) + Dense MiniLM-384\n+ RRF k=60 + CE BGE-v2-m3\npgvector HNSW (1123 chunks)"]
         Filter["filter_path\nfolder_hierarchy tag"]
-        Suppl["supplement\nentity_lists (MiniLM cos>0.4)\n+ injected_entities (>0.6)"]
+        Suppl["supplement\nentity_lists (MiniLM cos&gt;0.4)\n+ injected_entities (&gt;0.6)"]
     end
 
     subgraph Safety["Safety — :8200"]
@@ -152,260 +151,248 @@ flowchart TD
         TraceApp["🔎 /observe + /studio"]
     end
 
-    Browser --> WebUI
-    WebUI -- "OPENAI_API_BASE_URL=8100/v1\n+ X-Request-ID" --> Orch
-    Orch --> Classify
-    Classify --> InferSpec
-    InferSpec -- "should_clarify?" --> Clarify
-    Clarify -- "clarify finish" --> WebUI
-    InferSpec -- "allowed" --> KB
-    KB --> Filter
-    KB --> Suppl
-    Suppl -- "MAX_CHUNKS=20\nMAX_CONTEXT=9000" --> Orch
-    Orch -- "guarded_generate" --> GR
-    GR --> Gemma
-    Gemma -.-> Manager
-    Embed -.-> KB
-    Orch -.-> Collector
-    Collector --> Dashboard
-    Orch -.-> LF2
-    Orch -.-> Studio
-    Collector --> TraceApp
-```
+    Browser --&gt; WebUI
+    WebUI -- "OPENAI_API_BASE_URL=8100/v1\n+ X-Request-ID" --&gt; Orch
+    Orch --&gt; Classify
+    Classify --&gt; InferSpec
+    InferSpec -- "should_clarify?" --&gt; Clarify
+    Clarify -- "clarify finish" --&gt; WebUI
+    InferSpec -- "allowed" --&gt; KB
+    KB --&gt; Filter
+    KB --&gt; Suppl
+    Suppl -- "MAX_CHUNKS=20\nMAX_CONTEXT=9000" --&gt; Orch
+    Orch -- "guarded_generate" --&gt; GR
+    GR --&gt; Gemma
+    Gemma -.-&gt; Manager
+    Embed -.-&gt; KB
+    Orch -.-&gt; Collector
+    Collector --&gt; Dashboard
+    Orch -.-&gt; LF2
+    Orch -.-&gt; Studio
+    Collector --&gt; TraceApp
+</code></pre>
 
----
+<hr />
 
-### SPLIT-RAG Architecture
+<h3 id="split-rag-architecture">SPLIT-RAG Architecture</h3>
 
-```mermaid
-flowchart TD
+<pre><code class="language-mermaid">flowchart TD
     subgraph Training["Training Phase"]
-        TrainQ[Training Questions] --> QPP[Question Preprocessing]
-        QPP --> QTC[Question-Type Clustering]
-        QTC --> KGPart[KG Partitioning]
-        KGPart --> AgentAssign[Agent-Subgraph Assignment]
+        TrainQ[Training Questions] --&gt; QPP[Question Preprocessing]
+        QPP --&gt; QTC[Question-Type Clustering]
+        QTC --&gt; KGPart[KG Partitioning]
+        KGPart --&gt; AgentAssign[Agent-Subgraph Assignment]
     end
 
     subgraph Inference["Inference Phase"]
-        Query[User Query] --> Planner[Query-Specific Planner]
-        Planner --> AgentSelect[Relevant Agent Selection]
-        AgentSelect --> ParallelRet[Parallel Subgraph Retrieval]
-        ParallelRet --> EvidenceFilter[Compatibility Filtering]
-        EvidenceFilter --> HeadAgent[Head Agent Generation]
+        Query[User Query] --&gt; Planner[Query-Specific Planner]
+        Planner --&gt; AgentSelect[Relevant Agent Selection]
+        AgentSelect --&gt; ParallelRet[Parallel Subgraph Retrieval]
+        ParallelRet --&gt; EvidenceFilter[Compatibility Filtering]
+        EvidenceFilter --&gt; HeadAgent[Head Agent Generation]
     end
 
-    KG[(Knowledge Graph)] --> KGPart
-    KGPart --> Agent1[Agent 1: Subgraph 1]
-    KGPart --> Agent2[Agent 2: Subgraph 2]
-    KGPart --> AgentN[Agent N: Subgraph N]
-    Agent1 --> ParallelRet
-    Agent2 --> ParallelRet
-    AgentN --> ParallelRet
-    ParallelRet --> EvidenceFilter
-    EvidenceFilter --> HeadAgent
-```
+    KG[(Knowledge Graph)] --&gt; KGPart
+    KGPart --&gt; Agent1[Agent 1: Subgraph 1]
+    KGPart --&gt; Agent2[Agent 2: Subgraph 2]
+    KGPart --&gt; AgentN[Agent N: Subgraph N]
+    Agent1 --&gt; ParallelRet
+    Agent2 --&gt; ParallelRet
+    AgentN --&gt; ParallelRet
+    ParallelRet --&gt; EvidenceFilter
+    EvidenceFilter --&gt; HeadAgent
+</code></pre>
 
----
+<hr />
 
-### PC-RAG Architecture
+<h3 id="pc-rag-architecture">PC-RAG Architecture</h3>
 
-```mermaid
-flowchart TD
-    Query[User Query] --> Decompose[Query Decomposition]
-    Decompose --> SubTask1[Sub-task 1: HR]
-    Decompose --> SubTask2[Sub-task 2: Legal]
-    Decompose --> SubTask3[Sub-task 3: Compliance]
+<pre><code class="language-mermaid">flowchart TD
+    Query[User Query] --&gt; Decompose[Query Decomposition]
+    Decompose --&gt; SubTask1[Sub-task 1: HR]
+    Decompose --&gt; SubTask2[Sub-task 2: Legal]
+    Decompose --&gt; SubTask3[Sub-task 3: Compliance]
     
-    SubTask1 --> Ret1[Retrieval: HR Partition]
-    SubTask2 --> Ret2[Retrieval: Legal Partition]
-    SubTask3 --> Ret3[Retrieval: Compliance Partition]
+    SubTask1 --&gt; Ret1[Retrieval: HR Partition]
+    SubTask2 --&gt; Ret2[Retrieval: Legal Partition]
+    SubTask3 --&gt; Ret3[Retrieval: Compliance Partition]
     
-    Ret1 --> Gen1[Generation 1]
-    Ret2 --> Gen2[Generation 2]
-    Ret3 --> Gen3[Generation 3]
+    Ret1 --&gt; Gen1[Generation 1]
+    Ret2 --&gt; Gen2[Generation 2]
+    Ret3 --&gt; Gen3[Generation 3]
     
-    Gen1 --> Synth[Synthesis]
-    Gen2 --> Synth
-    Gen3 --> Synth
-    Synth --> Answer[Final Answer]
+    Gen1 --&gt; Synth[Synthesis]
+    Gen2 --&gt; Synth
+    Gen3 --&gt; Synth
+    Synth --&gt; Answer[Final Answer]
     
     classDef domain fill:#dbeafe,stroke:#1e40af;
     class Ret1,Ret2,Ret3,Gen1,Gen2,Gen3 domain;
-```
+</code></pre>
 
----
+<hr />
 
-### RAC Architecture
+<h3 id="rac-architecture">RAC Architecture</h3>
 
-```mermaid
-flowchart TD
-    Query[Ambiguous Query] --> Retrieve[Retrieve Top-K Passages]
-    Retrieve --> LLM[LLM Generates Clarification\nGrounded in Retrieved Facets]
-    LLM --> Clarify[Clarifying Question]
-    Clarify --> User[User Response]
-    User --> Rewrite[Rewrite Query with Clarification]
-    Rewrite --> Retrieve2[Retrieve with Rewritten Query]
-    Retrieve2 --> Generate[Generate Answer]
+<pre><code class="language-mermaid">flowchart TD
+    Query[Ambiguous Query] --&gt; Retrieve[Retrieve Top-K Passages]
+    Retrieve --&gt; LLM[LLM Generates Clarification\nGrounded in Retrieved Facets]
+    LLM --&gt; Clarify[Clarifying Question]
+    Clarify --&gt; User[User Response]
+    User --&gt; Rewrite[Rewrite Query with Clarification]
+    Rewrite --&gt; Retrieve2[Retrieve with Rewritten Query]
+    Retrieve2 --&gt; Generate[Generate Answer]
     
     style Retrieve fill:#dcfce7,stroke:#166534
     style LLM fill:#fef3e0,stroke:#f57f17
     style Clarify fill:#fef3e0,stroke:#f57f17
-```
+</code></pre>
 
----
+<hr />
 
-### ICR Architecture
+<h3 id="icr-architecture">ICR Architecture</h3>
 
-```mermaid
-flowchart TD
-    Query[Initial Query] --> Loop[Iteration Loop]
-    Loop --> Clarify[Generate Clarification c_i]
-    Clarify --> Rewrite[Rewrite Query r_i]
-    Rewrite --> Retrieve[Retrieve with r_i]
-    Retrieve --> Confident{Confident?}
-    Confident -->|No| Loop
-    Confident -->|Yes| Generate[Generate Final Answer]
+<pre><code class="language-mermaid">flowchart TD
+    Query[Initial Query] --&gt; Loop[Iteration Loop]
+    Loop --&gt; Clarify[Generate Clarification c_i]
+    Clarify --&gt; Rewrite[Rewrite Query r_i]
+    Rewrite --&gt; Retrieve[Retrieve with r_i]
+    Retrieve --&gt; Confident{Confident?}
+    Confident --&gt;|No| Loop
+    Confident --&gt;|Yes| Generate[Generate Final Answer]
     
     style Loop fill:#fef3e0,stroke:#f57f17
     style Generate fill:#dcfce7,stroke:#166534
-```
+</code></pre>
 
----
+<hr />
 
-### CPP Architecture
+<h3 id="cpp-architecture">CPP Architecture</h3>
 
-```mermaid
-flowchart TD
-    Turns[Raw Turns] --> Seg[Segmentation\nCosine δ threshold]
-    Seg --> Segments[Segments: 3-10 turns]
-    Segments --> DualIdx[Dual Indexing\nLexical + Semantic]
-    DualIdx --> Budget[Budgeted Retrieval\nHard storage budget]
-    Budget --> Highlight[Evidence Highlighting\nTop sentence per segment]
-    Highlight --> Gen[Generation]
+<pre><code class="language-mermaid">flowchart TD
+    Turns[Raw Turns] --&gt; Seg[Segmentation\nCosine δ threshold]
+    Seg --&gt; Segments[Segments: 3-10 turns]
+    Segments --&gt; DualIdx[Dual Indexing\nLexical + Semantic]
+    DualIdx --&gt; Budget[Budgeted Retrieval\nHard storage budget]
+    Budget --&gt; Highlight[Evidence Highlighting\nTop sentence per segment]
+    Highlight --&gt; Gen[Generation]
     
     classDef cpp fill:#e0e7ff,stroke:#3730a3;
     class Seg,Segments,DualIdx,Budget,Highlight cpp;
-```
+</code></pre>
 
----
+<hr />
 
-### CALMem Architecture
+<h3 id="calmem-architecture">CALMem Architecture</h3>
 
-```mermaid
-flowchart TD
+<pre><code class="language-mermaid">flowchart TD
     subgraph CALMem["CALMem Dual Memory"]
         Episodic[Episodic Memory\nSliding window vector embeddings\nIntra-session retrieval]
         Semantic[Semantic Memory\nAgent-writable structured facts\nCross-session persistence]
         MOIM[MOIM Injector\nToken-budget adaptive\nAuto-retrieves context]
     end
     
-    Session[Session] --> Hook[Hook in persistence path]
-    Hook --> Episodic
-    Hook --> Semantic
-    Episodic --> MOIM
-    Semantic --> MOIM
-    MOIM --> SystemPrompt[Prepend to System Prompt]
-    SystemPrompt --> LLM[LLM Generation]
-```
+    Session[Session] --&gt; Hook[Hook in persistence path]
+    Hook --&gt; Episodic
+    Hook --&gt; Semantic
+    Episodic --&gt; MOIM
+    Semantic --&gt; MOIM
+    MOIM --&gt; SystemPrompt[Prepend to System Prompt]
+    SystemPrompt --&gt; LLM[LLM Generation]
+</code></pre>
 
----
+<hr />
 
-### H-RAG Architecture
+<h3 id="h-rag-architecture">H-RAG Architecture</h3>
 
-```mermaid
-flowchart TD
-    Query[Query] --> Parent[Parent-Level Retrieval\nSummary chunks]
-    Parent --> Child[Child-Level Retrieval\nDetail chunks]
-    Child --> Reconstruct[Parent-Level Context Reconstruction]
-    Reconstruct --> Rerank[Cross-Encoder Rerank]
-    Rerank --> Generate[Generation]
+<pre><code class="language-mermaid">flowchart TD
+    Query[Query] --&gt; Parent[Parent-Level Retrieval\nSummary chunks]
+    Parent --&gt; Child[Child-Level Retrieval\nDetail chunks]
+    Child --&gt; Reconstruct[Parent-Level Context Reconstruction]
+    Reconstruct --&gt; Rerank[Cross-Encoder Rerank]
+    Rerank --&gt; Generate[Generation]
     
     classDef hrag fill:#fef3e0,stroke:#f57f17;
     class Parent,Child,Reconstruct,Rerank hrag;
-```
+</code></pre>
 
----
+<hr />
 
-### 5ting Architecture
+<h3 id="5ting-architecture">5ting Architecture</h3>
 
-```mermaid
-flowchart TD
-    Query[Query] --> Rewrite[Query Rewrite\nwith History]
-    Rewrite --> Dense[Dense Retrieval\nFAISS + BGE-M3]
-    Rewrite --> Sparse[Sparse Retrieval\nBM25]
-    Dense --> RRF[RRF Fusion]
-    Sparse --> RRF
-    RRF --> Rerank[LLM Reranking\nListwise]
-    Rerank --> Generate[Evidence-Constrained\nGeneration]
+<pre><code class="language-mermaid">flowchart TD
+    Query[Query] --&gt; Rewrite[Query Rewrite\nwith History]
+    Rewrite --&gt; Dense[Dense Retrieval\nFAISS + BGE-M3]
+    Rewrite --&gt; Sparse[Sparse Retrieval\nBM25]
+    Dense --&gt; RRF[RRF Fusion]
+    Sparse --&gt; RRF
+    RRF --&gt; Rerank[LLM Reranking\nListwise]
+    Rerank --&gt; Generate[Evidence-Constrained\nGeneration]
     
     classDef sting fill:#fef3e0,stroke:#f57f17;
     class Dense,Sparse,RRF,Rerank,Generate sting;
-```
+</code></pre>
 
----
+<hr />
 
-### GUIR Architecture
+<h3 id="guir-architecture">GUIR Architecture</h3>
 
-```mermaid
-flowchart TD
-    Query[Query] --> LT[LT: Last Turn\nRaw input]
-    Query --> RW[RW: Rewritten\nLLM + context]
-    Query --> QS[QS: Query-Specific\nCorpus-adapted]
+<pre><code class="language-mermaid">flowchart TD
+    Query[Query] --&gt; LT[LT: Last Turn\nRaw input]
+    Query --&gt; RW[RW: Rewritten\nLLM + context]
+    Query --&gt; QS[QS: Query-Specific\nCorpus-adapted]
     
-    LT --> Ret1[Retrieval]
-    RW --> Ret2[Retrieval]
-    QS --> Ret3[Retrieval]
+    LT --&gt; Ret1[Retrieval]
+    RW --&gt; Ret2[Retrieval]
+    QS --&gt; Ret3[Retrieval]
     
-    Ret1 --> RRF[RRF Fusion]
-    Ret2 --> RRF
-    QS --> Ret3
-    Ret3 --> RRF
-    RRF --> Rerank[Cross-Encoder Rerank]
-    Rerank --> Generate[Generation]
+    Ret1 --&gt; RRF[RRF Fusion]
+    Ret2 --&gt; RRF
+    QS --&gt; Ret3
+    Ret3 --&gt; RRF
+    RRF --&gt; Rerank[Cross-Encoder Rerank]
+    Rerank --&gt; Generate[Generation]
     
     classDef guir fill:#e0e7ff,stroke:#3730a3;
     class LT,RW,QS,Ret1,Ret2,Ret3,RRF guir;
-```
+</code></pre>
 
----
+<hr />
 
-### DUTIR Architecture
+<h3 id="dutir-architecture">DUTIR Architecture</h3>
 
-```mermaid
-flowchart TD
-    Query[Query] --> Rewrite[LLM Rewrite\nGPT-5.2]
-    Rewrite --> Hybrid[Hybrid Retrieval\nBGE-M3 + BM25 → RRF]
-    Hybrid --> Gate[Confidence Gate\nAnswerability check]
-    Gate -->|Low| Refuse[Refuse: IDK]
-    Gate -->|High| Generate[Faithful Generation]
+<pre><code class="language-mermaid">flowchart TD
+    Query[Query] --&gt; Rewrite[LLM Rewrite\nGPT-5.2]
+    Rewrite --&gt; Hybrid[Hybrid Retrieval\nBGE-M3 + BM25 → RRF]
+    Hybrid --&gt; Gate[Confidence Gate\nAnswerability check]
+    Gate --&gt;|Low| Refuse[Refuse: IDK]
+    Gate --&gt;|High| Generate[Faithful Generation]
     
     classDef dutir fill:#fef3e0,stroke:#f57f17;
     class Rewrite,Hybrid,Gate,Refuse,Generate dutir;
-```
+</code></pre>
 
----
+<hr />
 
-### CoRAG Architecture
+<h3 id="corag-architecture">CoRAG Architecture</h3>
 
-```mermaid
-flowchart TD
-    Query[Query] --> Reasoner[Reasoner: Questioner]
-    Reasoner --> Retrieve[Retrieve]
-    Retrieve --> Refine[Refiner]
-    Refine --> Reasoner2[Reasoner: Answerer]
-    Reasoner2 -->|More needed| Reasoner
-    Reasoner2 -->|Enough| Answer[Final Answer]
+<pre><code class="language-mermaid">flowchart TD
+    Query[Query] --&gt; Reasoner[Reasoner: Questioner]
+    Reasoner --&gt; Retrieve[Retrieve]
+    Retrieve --&gt; Refine[Refiner]
+    Refine --&gt; Reasoner2[Reasoner: Answerer]
+    Reasoner2 --&gt;|More needed| Reasoner
+    Reasoner2 --&gt;|Enough| Answer[Final Answer]
     
     classDef corag fill:#e0e7ff,stroke:#3730a3;
     class Reasoner,Retrieve,Refine,Reasoner2 corag;
-```
+</code></pre>
 
----
+<hr />
 
-### IM-RAG Architecture
+<h3 id="im-rag-architecture">IM-RAG Architecture</h3>
 
-```mermaid
-flowchart TD
+<pre><code class="language-mermaid">flowchart TD
     subgraph IM["IM-RAG"]
         Reasoner[Reasoner\nQuestioner / Answerer]
         Retriever[Retriever]
@@ -413,35 +400,83 @@ flowchart TD
         Progress[Progress Tracker]
     end
     
-    Query[Query] --> Reasoner
-    Reasoner -->|Propose query| Retriever
-    Retriever -->|Documents| Refiner
-    Refiner -->|Refined| Reasoner
-    Reasoner -->|Enough| Answer[Answer]
+    Query[Query] --&gt; Reasoner
+    Reasoner --&gt;|Propose query| Retriever
+    Retriever --&gt;|Documents| Refiner
+    Refiner --&gt;|Refined| Reasoner
+    Reasoner --&gt;|Enough| Answer[Answer]
     
     classDef imrag fill:#e0e7ff,stroke:#3730a3;
     class Reasoner,Retriever,Refiner,Progress imrag;
-```
+</code></pre>
 
----
+<hr />
 
-## Navigation
+<h2 id="navigation">Navigation</h2>
 
-| Architecture | Link |
-|--------------|------|
-| Our Current System | [Above](#our-current-architecture-post-t1-t7-fixes) |
-| SPLIT-RAG | [Above](#split-rag-architecture) |
-| PC-RAG | [Above](#pc-rag-architecture) |
-| RAC | [Above](#rac-architecture) |
-| ICR | [Above](#icr-architecture) |
-| CPP | [Above](#cpp-architecture) |
-| CALMem | [Above](#calmem-architecture) |
-| H-RAG | [Above](#h-rag-architecture) |
-| 5ting | [Above](#5ting-architecture) |
-| GUIR | [Above](#guir-architecture) |
-| DUTIR | [Above](#dutir-architecture) |
-| CoRAG | [Above](#corag-architecture) |
-| IM-RAG | [Above](#im-rag-architecture) |
+<table>
+  <thead>
+    <tr>
+      <th>Architecture</th>
+      <th>Link</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Our Current System</td>
+      <td><a href="#our-current-architecture-post-t1-t7-fixes">Above</a></td>
+    </tr>
+    <tr>
+      <td>SPLIT-RAG</td>
+      <td><a href="#split-rag-architecture">Above</a></td>
+    </tr>
+    <tr>
+      <td>PC-RAG</td>
+      <td><a href="#pc-rag-architecture">Above</a></td>
+    </tr>
+    <tr>
+      <td>RAC</td>
+      <td><a href="#rac-architecture">Above</a></td>
+    </tr>
+    <tr>
+      <td>ICR</td>
+      <td><a href="#icr-architecture">Above</a></td>
+    </tr>
+    <tr>
+      <td>CPP</td>
+      <td><a href="#cpp-architecture">Above</a></td>
+    </tr>
+    <tr>
+      <td>CALMem</td>
+      <td><a href="#calmem-architecture">Above</a></td>
+    </tr>
+    <tr>
+      <td>H-RAG</td>
+      <td><a href="#h-rag-architecture">Above</a></td>
+    </tr>
+    <tr>
+      <td>5ting</td>
+      <td><a href="#5ting-architecture">Above</a></td>
+    </tr>
+    <tr>
+      <td>GUIR</td>
+      <td><a href="#guir-architecture">Above</a></td>
+    </tr>
+    <tr>
+      <td>DUTIR</td>
+      <td><a href="#dutir-architecture">Above</a></td>
+    </tr>
+    <tr>
+      <td>CoRAG</td>
+      <td><a href="#corag-architecture">Above</a></td>
+    </tr>
+    <tr>
+      <td>IM-RAG</td>
+      <td><a href="#im-rag-architecture">Above</a></td>
+    </tr>
+  </tbody>
+</table>
+
   </main>
 
   <footer class="site-footer" role="contentinfo">

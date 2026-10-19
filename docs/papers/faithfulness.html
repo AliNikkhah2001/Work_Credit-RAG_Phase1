@@ -106,211 +106,415 @@
 
   <main id="main-content" class="site-main" role="main">
     <div class="page-header">
-  <h1>Faithfulness & Hallucination Papers</h1>
+  <h1>Faithfulness &amp; Hallucination Papers</h1>
   <p class="lead">DUTIR, Reflective RAG, 5ting, CoRAG, CoopRAG, CalibRAG - Faithfulness guards, self-evaluation, evidence-constrained generation, calibration</p>
 </div>
 
-## Paper Summaries
+<h2 id="paper-summaries">Paper Summaries</h2>
 
-### DUTIR: Hybrid Retrieval + Faithfulness Guard
+<h3 id="dutir-hybrid-retrieval--faithfulness-guard">DUTIR: Hybrid Retrieval + Faithfulness Guard</h3>
 
-| Field | Detail |
-|-------|--------|
-| **Title** | DUTIR at SemEval-2026 Task 8: A Hybrid Retrieval and Faithfulness-Guarded Framework for Multi-Turn RAG |
-| **Venue** | SemEval 2026 (ACL Anthology: 2026.semeval-1.48) |
-| **Key Innovation** | Confidence-based answerability gating + hybrid retrieval (BGE-M3 + BM25 + RRF) |
+<table>
+  <thead>
+    <tr>
+      <th>Field</th>
+      <th>Detail</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Title</strong></td>
+      <td>DUTIR at SemEval-2026 Task 8: A Hybrid Retrieval and Faithfulness-Guarded Framework for Multi-Turn RAG</td>
+    </tr>
+    <tr>
+      <td><strong>Venue</strong></td>
+      <td>SemEval 2026 (ACL Anthology: 2026.semeval-1.48)</td>
+    </tr>
+    <tr>
+      <td><strong>Key Innovation</strong></td>
+      <td>Confidence-based answerability gating + hybrid retrieval (BGE-M3 + BM25 + RRF)</td>
+    </tr>
+  </tbody>
+</table>
 
-**Key Claims**:
-- **Pipeline**: 
-  1. LLM query rewriting (GPT-5.2) → resolve conversational dependencies
-  2. Hybrid retrieval: BGE-M3 + BM25 → RRF
-  3. **Confidence-based answerability gating** → minimizes hallucination
-  4. Faithfulness-guarded generation
-- **Trade-off**: Over-conservative → unwarranted "I Don't Know" for partially answerable queries
+<p><strong>Key Claims</strong>:</p>
+<ul>
+  <li><strong>Pipeline</strong>:
+    <ol>
+      <li>LLM query rewriting (GPT-5.2) → resolve conversational dependencies</li>
+      <li>Hybrid retrieval: BGE-M3 + BM25 → RRF</li>
+      <li><strong>Confidence-based answerability gating</strong> → minimizes hallucination</li>
+      <li>Faithfulness-guarded generation</li>
+    </ol>
+  </li>
+  <li><strong>Trade-off</strong>: Over-conservative → unwarranted “I Don’t Know” for partially answerable queries</li>
+</ul>
 
-**Relevance to Our Fix**:
-- Our `get_evidence_threshold()` = per-subspace confidence gating
-- DUTIR validates: **confidence-based gating reduces hallucination**
-- Our `FAITH_GUARD_MIN_SCORE = 0.5` = similar to confidence gating
+<p><strong>Relevance to Our Fix</strong>:</p>
+<ul>
+  <li>Our <code class="language-plaintext highlighter-rouge">get_evidence_threshold()</code> = per-subspace confidence gating</li>
+  <li>DUTIR validates: <strong>confidence-based gating reduces hallucination</strong></li>
+  <li>Our <code class="language-plaintext highlighter-rouge">FAITH_GUARD_MIN_SCORE = 0.5</code> = similar to confidence gating</li>
+</ul>
 
----
+<hr />
 
-### Reflective RAG: Self-Evaluation Driven Strategy
+<h3 id="reflective-rag-self-evaluation-driven-strategy">Reflective RAG: Self-Evaluation Driven Strategy</h3>
 
-| Field | Detail |
-|-------|--------|
-| **Title** | Reflective RAG: Self-Evaluation Driven Strategy Optimization in Agentic Retrieval-Augmented Generation |
-| **Venue** | ACL 2026 Findings (ACL Anthology: 2026.findings-acl.648) |
-| **Key Innovation** | Self-evaluation tagging → RL strategy optimization |
+<table>
+  <thead>
+    <tr>
+      <th>Field</th>
+      <th>Detail</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Title</strong></td>
+      <td>Reflective RAG: Self-Evaluation Driven Strategy Optimization in Agentic Retrieval-Augmented Generation</td>
+    </tr>
+    <tr>
+      <td><strong>Venue</strong></td>
+      <td>ACL 2026 Findings (ACL Anthology: 2026.findings-acl.648)</td>
+    </tr>
+    <tr>
+      <td><strong>Key Innovation</strong></td>
+      <td>Self-evaluation tagging → RL strategy optimization</td>
+    </tr>
+  </tbody>
+</table>
 
-**Key Claims**:
-- **Problem**: Agentic RAG lacks capacity to evaluate retrieved info utility → brittle reasoning
-- **Solution**: 
-  1. **Reflection tagging**: Model critiques relevance of retrieved content
-  2. **Two-stage training**: SFT (reflection signals) → RL (strategy optimization with dynamic KL)
-- **Results**: Outperforms strong agentic baselines on 5 knowledge-intensive QA benchmarks
+<p><strong>Key Claims</strong>:</p>
+<ul>
+  <li><strong>Problem</strong>: Agentic RAG lacks capacity to evaluate retrieved info utility → brittle reasoning</li>
+  <li><strong>Solution</strong>:
+    <ol>
+      <li><strong>Reflection tagging</strong>: Model critiques relevance of retrieved content</li>
+      <li><strong>Two-stage training</strong>: SFT (reflection signals) → RL (strategy optimization with dynamic KL)</li>
+    </ol>
+  </li>
+  <li><strong>Results</strong>: Outperforms strong agentic baselines on 5 knowledge-intensive QA benchmarks</li>
+</ul>
 
-**Relevance**: Our faith guard = simplified reflection (coverage + score check). Reflective RAG shows **explicit self-evaluation** improves robustness.
+<p><strong>Relevance</strong>: Our faith guard = simplified reflection (coverage + score check). Reflective RAG shows <strong>explicit self-evaluation</strong> improves robustness.</p>
 
----
+<hr />
 
-### 5ting: Evidence-Constrained Generation + IDK-Conditioned Scoring
+<h3 id="5ting-evidence-constrained-generation--idk-conditioned-scoring">5ting: Evidence-Constrained Generation + IDK-Conditioned Scoring</h3>
 
-| Field | Detail |
-|-------|--------|
-| **Title** | 5ting at SemEval-2026 Task 8: Strong End-to-End Multi-Turn RAG via LLM-Based Reranking and Faithfulness Control |
-| **Venue** | SemEval 2026 |
-| **Key Innovation** | Evidence-constrained generation + IDK-conditioned harmonic mean |
+<table>
+  <thead>
+    <tr>
+      <th>Field</th>
+      <th>Detail</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Title</strong></td>
+      <td>5ting at SemEval-2026 Task 8: Strong End-to-End Multi-Turn RAG via LLM-Based Reranking and Faithfulness Control</td>
+    </tr>
+    <tr>
+      <td><strong>Venue</strong></td>
+      <td>SemEval 2026</td>
+    </tr>
+    <tr>
+      <td><strong>Key Innovation</strong></td>
+      <td>Evidence-constrained generation + IDK-conditioned harmonic mean</td>
+    </tr>
+  </tbody>
+</table>
 
-**Key Claims**:
-- **Evidence-constrained generation**: Only generate if evidence supports
-- **IDK-conditioned harmonic mean**: Harmonic mean of quality and faithfulness, conditioned on "I Don't Know" rate
-- **Pipeline**: Dense retrieval → FAISS → LLM reranking → Evidence-constrained generation
+<p><strong>Key Claims</strong>:</p>
+<ul>
+  <li><strong>Evidence-constrained generation</strong>: Only generate if evidence supports</li>
+  <li><strong>IDK-conditioned harmonic mean</strong>: Harmonic mean of quality and faithfulness, conditioned on “I Don’t Know” rate</li>
+  <li><strong>Pipeline</strong>: Dense retrieval → FAISS → LLM reranking → Evidence-constrained generation</li>
+</ul>
 
-**Relevance**: Our `FAITH_GUARD_MIN_SCORE = 0.5` + `FAITH_GUARD_MIN_COVERAGE = 0.20` = simplified evidence constraint.
+<p><strong>Relevance</strong>: Our <code class="language-plaintext highlighter-rouge">FAITH_GUARD_MIN_SCORE = 0.5</code> + <code class="language-plaintext highlighter-rouge">FAITH_GUARD_MIN_COVERAGE = 0.20</code> = simplified evidence constraint.</p>
 
----
+<hr />
 
-### CoRAG: Chain-of-Retrieval Augmented Generation
+<h3 id="corag-chain-of-retrieval-augmented-generation">CoRAG: Chain-of-Retrieval Augmented Generation</h3>
 
-| Field | Detail |
-|-------|--------|
-| **Title** | CoRAG: Chain-of-Retrieval Augmented Generation |
-| **Venue** | NeurIPS 2025 (Poster) |
-| **Key Innovation** | Iterative retrieval + reasoning chains (o1-like RAG) |
+<table>
+  <thead>
+    <tr>
+      <th>Field</th>
+      <th>Detail</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Title</strong></td>
+      <td>CoRAG: Chain-of-Retrieval Augmented Generation</td>
+    </tr>
+    <tr>
+      <td><strong>Venue</strong></td>
+      <td>NeurIPS 2025 (Poster)</td>
+    </tr>
+    <tr>
+      <td><strong>Key Innovation</strong></td>
+      <td>Iterative retrieval + reasoning chains (o1-like RAG)</td>
+    </tr>
+  </tbody>
+</table>
 
-**Key Claims**:
-- **CoRAG**: Teaches LLMs to conduct iterative retrieval + reasoning step-by-step
-- **Mechanism**: Dynamic query reformulation based on evolving state
-- **Training**: Rejection sampling to generate intermediate retrieval chains
-- **Results**: > SOTA on multi-hop QA, KILT benchmark
+<p><strong>Key Claims</strong>:</p>
+<ul>
+  <li><strong>CoRAG</strong>: Teaches LLMs to conduct iterative retrieval + reasoning step-by-step</li>
+  <li><strong>Mechanism</strong>: Dynamic query reformulation based on evolving state</li>
+  <li><strong>Training</strong>: Rejection sampling to generate intermediate retrieval chains</li>
+  <li><strong>Results</strong>: &gt; SOTA on multi-hop QA, KILT benchmark</li>
+</ul>
 
-**Relevance**: Our T1+T2 fallback cascade = simplified multi-step retrieval. CoRAG shows **iterative retrieval+reasoning** for complex queries.
+<p><strong>Relevance</strong>: Our T1+T2 fallback cascade = simplified multi-step retrieval. CoRAG shows <strong>iterative retrieval+reasoning</strong> for complex queries.</p>
 
----
+<hr />
 
-### CoopRAG: Cooperative Retrieval + LLM Encoder
+<h3 id="cooprag-cooperative-retrieval--llm-encoder">CoopRAG: Cooperative Retrieval + LLM Encoder</h3>
 
-| Field | Detail |
-|-------|--------|
-| **Title** | Cooperative Retrieval-Augmented Generation for Question Answering |
-| **Venue** | NeurIPS 2025 |
-| **Key Innovation** | Retriever + LLM fine-tuned encoder → mutual information exchange + contrastive ranking |
+<table>
+  <thead>
+    <tr>
+      <th>Field</th>
+      <th>Detail</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Title</strong></td>
+      <td>Cooperative Retrieval-Augmented Generation for Question Answering</td>
+    </tr>
+    <tr>
+      <td><strong>Venue</strong></td>
+      <td>NeurIPS 2025</td>
+    </tr>
+    <tr>
+      <td><strong>Key Innovation</strong></td>
+      <td>Retriever + LLM fine-tuned encoder → mutual information exchange + contrastive ranking</td>
+    </tr>
+  </tbody>
+</table>
 
-**Key Claims**:
-- **CoopRAG**: Retriever + LLM fine-tuned encoder cooperate
-- **Mechanism**: Unrolling-augmented retrieval (UAR) + token-level embeddings
-- **Results**: +5.3% on multi-hop QA, +35.2% on simple QA vs SOTA
+<p><strong>Key Claims</strong>:</p>
+<ul>
+  <li><strong>CoopRAG</strong>: Retriever + LLM fine-tuned encoder cooperate</li>
+  <li><strong>Mechanism</strong>: Unrolling-augmented retrieval (UAR) + token-level embeddings</li>
+  <li><strong>Results</strong>: +5.3% on multi-hop QA, +35.2% on simple QA vs SOTA</li>
+</ul>
 
-**Relevance**: Our KB retrieval + Gemma generation = separate components. CoopRAG shows **tight coupling** improves performance.
+<p><strong>Relevance</strong>: Our KB retrieval + Gemma generation = separate components. CoopRAG shows <strong>tight coupling</strong> improves performance.</p>
 
----
+<hr />
 
-### CalibRAG: Calibrated Retrieval-Augmented Generation
+<h3 id="calibrag-calibrated-retrieval-augmented-generation">CalibRAG: Calibrated Retrieval-Augmented Generation</h3>
 
-| Field | Detail |
-|-------|--------|
-| **Title** | Reliable Decision-Making via Calibration-Oriented Retrieval-Augmented Generation (CalibRAG) |
-| **Venue** | NeurIPS 2025 |
-| **Key Innovation** | Calibrated confidence scores for retrieved documents |
+<table>
+  <thead>
+    <tr>
+      <th>Field</th>
+      <th>Detail</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Title</strong></td>
+      <td>Reliable Decision-Making via Calibration-Oriented Retrieval-Augmented Generation (CalibRAG)</td>
+    </tr>
+    <tr>
+      <td><strong>Venue</strong></td>
+      <td>NeurIPS 2025</td>
+    </tr>
+    <tr>
+      <td><strong>Key Innovation</strong></td>
+      <td>Calibrated confidence scores for retrieved documents</td>
+    </tr>
+  </tbody>
+</table>
 
-**Key Claims**:
-- **Problem**: RAG decisions uncalibrated → unreliable
-- **Solution**: Calibrated Retrieval → rerank by predicted confidence
-- **Mechanism**: Sort documents by predicted confidence, not similarity score
-- **Results**: Improves calibration + accuracy across datasets
+<p><strong>Key Claims</strong>:</p>
+<ul>
+  <li><strong>Problem</strong>: RAG decisions uncalibrated → unreliable</li>
+  <li><strong>Solution</strong>: Calibrated Retrieval → rerank by predicted confidence</li>
+  <li><strong>Mechanism</strong>: Sort documents by predicted confidence, not similarity score</li>
+  <li><strong>Results</strong>: Improves calibration + accuracy across datasets</li>
+</ul>
 
-**Relevance**: Our `_top_evidence_score()` = simplified confidence. CalibRAG shows **calibrated confidence** improves decision-making.
+<p><strong>Relevance</strong>: Our <code class="language-plaintext highlighter-rouge">_top_evidence_score()</code> = simplified confidence. CalibRAG shows <strong>calibrated confidence</strong> improves decision-making.</p>
 
----
+<hr />
 
-## Faithfulness Approaches Comparison
+<h2 id="faithfulness-approaches-comparison">Faithfulness Approaches Comparison</h2>
 
-| Paper | Mechanism | Guard Type | Training | Our Equivalent |
-|-------|-----------|------------|----------|----------------|
-| **DUTIR** | Confidence gating | Answerability gate | GPT-5.2 rewrite | `get_evidence_threshold()` |
-| **Reflective RAG** | Self-evaluation tags | Reflection + RL | SFT + RL | Faith guard (simplified) |
-| **5ting** | Evidence constraint + IDK | IDK-conditioned harmonic mean | LLM rerank | `FAITH_GUARD_MIN_SCORE` |
-| **CoRAG** | Iterative retrieval-reasoning | Chain-of-retrieval | Rejection sampling | T1+T2 cascade (simplified) |
-| **CoopRAG** | Cooperative retriever+encoder | Mutual info + contrastive | Fine-tuned encoder | Separate retriever/generator |
-| **CalibRAG** | Calibrated confidence | Confidence rerank | Calibration training | `_top_evidence_score()` |
+<table>
+  <thead>
+    <tr>
+      <th>Paper</th>
+      <th>Mechanism</th>
+      <th>Guard Type</th>
+      <th>Training</th>
+      <th>Our Equivalent</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>DUTIR</strong></td>
+      <td>Confidence gating</td>
+      <td>Answerability gate</td>
+      <td>GPT-5.2 rewrite</td>
+      <td><code class="language-plaintext highlighter-rouge">get_evidence_threshold()</code></td>
+    </tr>
+    <tr>
+      <td><strong>Reflective RAG</strong></td>
+      <td>Self-evaluation tags</td>
+      <td>Reflection + RL</td>
+      <td>SFT + RL</td>
+      <td>Faith guard (simplified)</td>
+    </tr>
+    <tr>
+      <td><strong>5ting</strong></td>
+      <td>Evidence constraint + IDK</td>
+      <td>IDK-conditioned harmonic mean</td>
+      <td>LLM rerank</td>
+      <td><code class="language-plaintext highlighter-rouge">FAITH_GUARD_MIN_SCORE</code></td>
+    </tr>
+    <tr>
+      <td><strong>CoRAG</strong></td>
+      <td>Iterative retrieval-reasoning</td>
+      <td>Chain-of-retrieval</td>
+      <td>Rejection sampling</td>
+      <td>T1+T2 cascade (simplified)</td>
+    </tr>
+    <tr>
+      <td><strong>CoopRAG</strong></td>
+      <td>Cooperative retriever+encoder</td>
+      <td>Mutual info + contrastive</td>
+      <td>Fine-tuned encoder</td>
+      <td>Separate retriever/generator</td>
+    </tr>
+    <tr>
+      <td><strong>CalibRAG</strong></td>
+      <td>Calibrated confidence</td>
+      <td>Confidence rerank</td>
+      <td>Calibration training</td>
+      <td><code class="language-plaintext highlighter-rouge">_top_evidence_score()</code></td>
+    </tr>
+  </tbody>
+</table>
 
----
+<hr />
 
-## Our Faith Guard Implementation
+<h2 id="our-faith-guard-implementation">Our Faith Guard Implementation</h2>
 
-```python
-# format_response.py
-FAITH_GUARD_MIN_SCORE = 0.5
-FAITH_GUARD_MIN_COVERAGE = 0.20
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># format_response.py
+</span><span class="n">FAITH_GUARD_MIN_SCORE</span> <span class="o">=</span> <span class="mf">0.5</span>
+<span class="n">FAITH_GUARD_MIN_COVERAGE</span> <span class="o">=</span> <span class="mf">0.20</span>
 
-async def format_response(state):
-    # ... generation ...
-    
-    # F: Faith/Hall guard on weak-evidence answers
-    if (state.get("fallback_used") or state.get("broaden_used")) and ABSTENTION_PHRASE not in content:
-        used_top = _top_evidence_score(chosen_chunks)
-        coverage = _token_coverage(content, chosen_chunks)
+<span class="k">async</span> <span class="k">def</span> <span class="nf">format_response</span><span class="p">(</span><span class="n">state</span><span class="p">):</span>
+    <span class="c1"># ... generation ...
+</span>    
+    <span class="c1"># F: Faith/Hall guard on weak-evidence answers
+</span>    <span class="nf">if </span><span class="p">(</span><span class="n">state</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="sh">"</span><span class="s">fallback_used</span><span class="sh">"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">state</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="sh">"</span><span class="s">broaden_used</span><span class="sh">"</span><span class="p">))</span> <span class="ow">and</span> <span class="n">ABSTENTION_PHRASE</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">content</span><span class="p">:</span>
+        <span class="n">used_top</span> <span class="o">=</span> <span class="nf">_top_evidence_score</span><span class="p">(</span><span class="n">chosen_chunks</span><span class="p">)</span>
+        <span class="n">coverage</span> <span class="o">=</span> <span class="nf">_token_coverage</span><span class="p">(</span><span class="n">content</span><span class="p">,</span> <span class="n">chosen_chunks</span><span class="p">)</span>
         
-        if used_top < FAITH_GUARD_MIN_SCORE and coverage < FAITH_GUARD_MIN_COVERAGE:
-            log.info(f"Faith guard fired: coverage={coverage:.3f} top={used_top:.3f}")
-            content = NO_EVIDENCE_MSG
-            citations = []
-            faith_refused = True
-```
+        <span class="k">if</span> <span class="n">used_top</span> <span class="o">&lt;</span> <span class="n">FAITH_GUARD_MIN_SCORE</span> <span class="ow">and</span> <span class="n">coverage</span> <span class="o">&lt;</span> <span class="n">FAITH_GUARD_MIN_COVERAGE</span><span class="p">:</span>
+            <span class="n">log</span><span class="p">.</span><span class="nf">info</span><span class="p">(</span><span class="sa">f</span><span class="sh">"</span><span class="s">Faith guard fired: coverage=</span><span class="si">{</span><span class="n">coverage</span><span class="si">:</span><span class="p">.</span><span class="mi">3</span><span class="n">f</span><span class="si">}</span><span class="s"> top=</span><span class="si">{</span><span class="n">used_top</span><span class="si">:</span><span class="p">.</span><span class="mi">3</span><span class="n">f</span><span class="si">}</span><span class="sh">"</span><span class="p">)</span>
+            <span class="n">content</span> <span class="o">=</span> <span class="n">NO_EVIDENCE_MSG</span>
+            <span class="n">citations</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">faith_refused</span> <span class="o">=</span> <span class="bp">True</span>
+</code></pre></div></div>
 
-### Coverage Metric
+<h3 id="coverage-metric">Coverage Metric</h3>
 
-```python
-def _token_coverage(answer, chunks):
-    a_tokens = set(answer.split())
-    if not a_tokens: return 1.0
-    corpus = " ".join(c.get("content", "") for c in chunks)
-    c_tokens = set(corpus.split())
-    return len(a_tokens & c_tokens) / len(a_tokens) if c_tokens else 0.0
-```
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">_token_coverage</span><span class="p">(</span><span class="n">answer</span><span class="p">,</span> <span class="n">chunks</span><span class="p">):</span>
+    <span class="n">a_tokens</span> <span class="o">=</span> <span class="nf">set</span><span class="p">(</span><span class="n">answer</span><span class="p">.</span><span class="nf">split</span><span class="p">())</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">a_tokens</span><span class="p">:</span> <span class="k">return</span> <span class="mf">1.0</span>
+    <span class="n">corpus</span> <span class="o">=</span> <span class="sh">"</span><span class="s"> </span><span class="sh">"</span><span class="p">.</span><span class="nf">join</span><span class="p">(</span><span class="n">c</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="sh">"</span><span class="s">content</span><span class="sh">"</span><span class="p">,</span> <span class="sh">""</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">chunks</span><span class="p">)</span>
+    <span class="n">c_tokens</span> <span class="o">=</span> <span class="nf">set</span><span class="p">(</span><span class="n">corpus</span><span class="p">.</span><span class="nf">split</span><span class="p">())</span>
+    <span class="k">return</span> <span class="nf">len</span><span class="p">(</span><span class="n">a_tokens</span> <span class="o">&amp;</span> <span class="n">c_tokens</span><span class="p">)</span> <span class="o">/</span> <span class="nf">len</span><span class="p">(</span><span class="n">a_tokens</span><span class="p">)</span> <span class="k">if</span> <span class="n">c_tokens</span> <span class="k">else</span> <span class="mf">0.0</span>
+</code></pre></div></div>
 
----
+<hr />
 
-## Benchmark Delta
+<h2 id="benchmark-delta">Benchmark Delta</h2>
 
-| Metric | Before | After | Note |
-|--------|--------|-------|------|
-| Hallucination | 0.195 | **0.254** | +0.059 (tradeoff) |
-| Non-hallucination | 0.805 | **0.746** | Tradeoff for recall |
-| G5 refusal | ✅ | ✅ | Maintained |
-| Cheque T3 citations | 0 | **5** | Fixed (lexical guard) |
-| Facilities T3 citations | 0 | **5** | Fixed (lexical guard) |
+<table>
+  <thead>
+    <tr>
+      <th>Metric</th>
+      <th>Before</th>
+      <th>After</th>
+      <th>Note</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Hallucination</td>
+      <td>0.195</td>
+      <td><strong>0.254</strong></td>
+      <td>+0.059 (tradeoff)</td>
+    </tr>
+    <tr>
+      <td>Non-hallucination</td>
+      <td>0.805</td>
+      <td><strong>0.746</strong></td>
+      <td>Tradeoff for recall</td>
+    </tr>
+    <tr>
+      <td>G5 refusal</td>
+      <td>✅</td>
+      <td>✅</td>
+      <td>Maintained</td>
+    </tr>
+    <tr>
+      <td>Cheque T3 citations</td>
+      <td>0</td>
+      <td><strong>5</strong></td>
+      <td>Fixed (lexical guard)</td>
+    </tr>
+    <tr>
+      <td>Facilities T3 citations</td>
+      <td>0</td>
+      <td><strong>5</strong></td>
+      <td>Fixed (lexical guard)</td>
+    </tr>
+  </tbody>
+</table>
 
----
+<hr />
 
-## Architecture: Faith Guard Flow
+<h2 id="architecture-faith-guard-flow">Architecture: Faith Guard Flow</h2>
 
-```mermaid
-flowchart TD
-    A[Retrieved Chunks] --> B{Strong Evidence?}
-    B -->|No| C{fallback_used or broaden_used?}
-    C -->|Yes| D[Compute top_score + coverage]
-    C -->|No| E[Normal Generation]
-    D --> F{top_score < 0.5 AND coverage < 0.20?}
-    F -->|Yes| G[REPLACE with NO_EVIDENCE_MSG<br/>citations=[]]
-    F -->|No| E
-    E --> H[Generate Answer]
-    H --> I[Return]
-    G --> I
+<pre><code class="language-mermaid">flowchart TD
+    A[Retrieved Chunks] --&gt; B{Strong Evidence?}
+    B --&gt;|No| C{fallback_used or broaden_used?}
+    C --&gt;|Yes| D[Compute top_score + coverage]
+    C --&gt;|No| E[Normal Generation]
+    D --&gt; F{top_score &lt; 0.5 AND coverage &lt; 0.20?}
+    F --&gt;|Yes| G[REPLACE with NO_EVIDENCE_MSG&lt;br/&gt;citations=[]]
+    F --&gt;|No| E
+    E --&gt; H[Generate Answer]
+    H --&gt; I[Return]
+    G --&gt; I
     
     style G fill:#fef2f2,stroke:#ef4444
     style C fill:#fef3e0,stroke:#f57f17
-```
+</code></pre>
 
----
+<hr />
 
-## Related Pages
+<h2 id="related-pages">Related Pages</h2>
 
-- [Problem: Hallucination Control](../problems/hallucination.html)
-- [Paper: Retrieval Fusion & RRF](./retrieval-fusion.html)
-- [Paper: Subspace Filtering](./subspace-filtering.html)
-- [Architecture: Faith Guard](../architectures.html#faith-guard)
+<ul>
+  <li><a href="../problems/hallucination.html">Problem: Hallucination Control</a></li>
+  <li><a href="./retrieval-fusion.html">Paper: Retrieval Fusion &amp; RRF</a></li>
+  <li><a href="./subspace-filtering.html">Paper: Subspace Filtering</a></li>
+  <li><a href="../architectures.html#faith-guard">Architecture: Faith Guard</a></li>
+</ul>
+
   </main>
 
   <footer class="site-footer" role="contentinfo">

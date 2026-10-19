@@ -30,7 +30,6 @@ plugins:
   - jekyll-sitemap
   - jekyll-seo-tag
   - jekyll-include-cache
-  - jekyll-paginate
 
 # Defaults
 defaults:
@@ -84,9 +83,6 @@ exclude:
   - .git/
   - .gitignore
 
-# Pagination
-paginate: 10
-paginate_path: "/page:num/"
 
 # Mermaid support
 mermaid:

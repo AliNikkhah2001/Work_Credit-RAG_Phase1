@@ -82,6 +82,7 @@ description: "CALMem, CPP, Context Recycling, Rag.NET, OpenAI Sessions - Dual me
 - **L2 Compacted History** (~1K): Compressed session history
 
 **Results**:
+
 | Turn | Baseline | Context Recycling |
 |------|----------|-------------------|
 | 1 | ~500 | ~850 |

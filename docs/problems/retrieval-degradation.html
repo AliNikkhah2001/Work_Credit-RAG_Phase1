@@ -110,206 +110,358 @@
   <p class="lead">Filtered retrieval = hard filter, no fallback. Fixed with RRF fusion + broadened retry + GPU acceleration.</p>
 </div>
 
-## Problem Summary
+<h2 id="problem-summary">Problem Summary</h2>
 
-| Aspect | Detail |
-|--------|--------|
-| **Severity** | Critical |
-| **Category** | Retrieval / Fallback |
-| **Status** | ✅ Fixed |
-| **Bench Impact** | Hit: 0.537 → 0.780; p50: 8006ms → 4872ms |
-| **Key Papers** | GUIR (SemEval 2026), 5ting (SemEval 2026), H-RAG (SemEval 2026), Sifei (SemEval 2026) |
+<table>
+  <thead>
+    <tr>
+      <th>Aspect</th>
+      <th>Detail</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Severity</strong></td>
+      <td>Critical</td>
+    </tr>
+    <tr>
+      <td><strong>Category</strong></td>
+      <td>Retrieval / Fallback</td>
+    </tr>
+    <tr>
+      <td><strong>Status</strong></td>
+      <td>✅ Fixed</td>
+    </tr>
+    <tr>
+      <td><strong>Bench Impact</strong></td>
+      <td>Hit: 0.537 → 0.780; p50: 8006ms → 4872ms</td>
+    </tr>
+    <tr>
+      <td><strong>Key Papers</strong></td>
+      <td>GUIR (SemEval 2026), 5ting (SemEval 2026), H-RAG (SemEval 2026), Sifei (SemEval 2026)</td>
+    </tr>
+  </tbody>
+</table>
 
----
+<hr />
 
-## Root Cause
+<h2 id="root-cause">Root Cause</h2>
 
-### The Hard Filter Problem
+<h3 id="the-hard-filter-problem">The Hard Filter Problem</h3>
 
-Our retrieval pipeline:
-```python
-# retrieve.py - primary path
-result = await client.retrieve(search_query, top_k, request_id, filter_path=sticky_filter)
+<p>Our retrieval pipeline:</p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># retrieve.py - primary path
+</span><span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="p">.</span><span class="nf">retrieve</span><span class="p">(</span><span class="n">search_query</span><span class="p">,</span> <span class="n">top_k</span><span class="p">,</span> <span class="n">request_id</span><span class="p">,</span> <span class="n">filter_path</span><span class="o">=</span><span class="n">sticky_filter</span><span class="p">)</span>
 
-# If weak (0 chunks or max_score < threshold):
+<span class="c1"># If weak (0 chunks or max_score &lt; threshold):
 # ❌ OLD: Clear chunks → abstention
 # ✅ NEW: Whole-KB fallback → RRF fusion → broadened retry
-```
+</span></code></pre></div></div>
 
-### The Degradation Pattern
+<h3 id="the-degradation-pattern">The Degradation Pattern</h3>
 
-| Turn Type | Filter | Chunks | Score | Outcome |
-|-----------|--------|--------|-------|---------|
-| New chat | None | 10 | 0.032 | Answer ✅ |
-| After sticky | `گزارش اعتباراتنجی چک` | 0 | — | Abstain ❌ |
-| Whole-KB | None | 10 | 0.028 | Answer (but weak) |
+<table>
+  <thead>
+    <tr>
+      <th>Turn Type</th>
+      <th>Filter</th>
+      <th>Chunks</th>
+      <th>Score</th>
+      <th>Outcome</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>New chat</td>
+      <td>None</td>
+      <td>10</td>
+      <td>0.032</td>
+      <td>Answer ✅</td>
+    </tr>
+    <tr>
+      <td>After sticky</td>
+      <td><code class="language-plaintext highlighter-rouge">گزارش اعتباراتنجی چک</code></td>
+      <td>0</td>
+      <td>—</td>
+      <td>Abstain ❌</td>
+    </tr>
+    <tr>
+      <td>Whole-KB</td>
+      <td>None</td>
+      <td>10</td>
+      <td>0.028</td>
+      <td>Answer (but weak)</td>
+    </tr>
+  </tbody>
+</table>
 
-The filter **removed** relevant chunks because KB filter checks exact element membership.
+<p>The filter <strong>removed</strong> relevant chunks because KB filter checks exact element membership.</p>
 
----
+<hr />
 
-## The Fix: Multi-Stage Fallback Cascade
+<h2 id="the-fix-multi-stage-fallback-cascade">The Fix: Multi-Stage Fallback Cascade</h2>
 
-### Stage 1: Primary Filtered Retrieval
-```python
-# retrieve.py - explicit scope
-result = await client.retrieve(
-    search_query, primary_top_k, request_id,
-    filter_path=explicit_filter,
-    keyword_boost=_subspace_keyword_boost(subspace)
-)
-```
+<h3 id="stage-1-primary-filtered-retrieval">Stage 1: Primary Filtered Retrieval</h3>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># retrieve.py - explicit scope
+</span><span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="p">.</span><span class="nf">retrieve</span><span class="p">(</span>
+    <span class="n">search_query</span><span class="p">,</span> <span class="n">primary_top_k</span><span class="p">,</span> <span class="n">request_id</span><span class="p">,</span>
+    <span class="n">filter_path</span><span class="o">=</span><span class="n">explicit_filter</span><span class="p">,</span>
+    <span class="n">keyword_boost</span><span class="o">=</span><span class="nf">_subspace_keyword_boost</span><span class="p">(</span><span class="n">subspace</span><span class="p">)</span>
+<span class="p">)</span>
+</code></pre></div></div>
 
-### Stage 2: RRF Fusion Fallback (T1)
-```python
-# If weak → whole-KB retry → RRF FUSION (not replace)
-async def _t1_try_whole_kb_fallback(state, search_query, request_id, active_filter):
-    fb_result = await fb_client.retrieve(search_query, top_k, request_id, filter_path=None)
-    if fb_result:
-        # RRF FUSION instead of hard replace
-        state["retrieved_chunks"] = _fuse_subspace_rrf(current, fb_result)[:20]
-        state["fallback_used"] = True
-        state["fallback_reason"] = f"low_score top={cur_top:.4f} < thr={thr:.3f} | fused rrf(cur=N,fb=M -> K)"
-```
+<h3 id="stage-2-rrf-fusion-fallback-t1">Stage 2: RRF Fusion Fallback (T1)</h3>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># If weak → whole-KB retry → RRF FUSION (not replace)
+</span><span class="k">async</span> <span class="k">def</span> <span class="nf">_t1_try_whole_kb_fallback</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">search_query</span><span class="p">,</span> <span class="n">request_id</span><span class="p">,</span> <span class="n">active_filter</span><span class="p">):</span>
+    <span class="n">fb_result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">fb_client</span><span class="p">.</span><span class="nf">retrieve</span><span class="p">(</span><span class="n">search_query</span><span class="p">,</span> <span class="n">top_k</span><span class="p">,</span> <span class="n">request_id</span><span class="p">,</span> <span class="n">filter_path</span><span class="o">=</span><span class="bp">None</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">fb_result</span><span class="p">:</span>
+        <span class="c1"># RRF FUSION instead of hard replace
+</span>        <span class="n">state</span><span class="p">[</span><span class="sh">"</span><span class="s">retrieved_chunks</span><span class="sh">"</span><span class="p">]</span> <span class="o">=</span> <span class="nf">_fuse_subspace_rrf</span><span class="p">(</span><span class="n">current</span><span class="p">,</span> <span class="n">fb_result</span><span class="p">)[:</span><span class="mi">20</span><span class="p">]</span>
+        <span class="n">state</span><span class="p">[</span><span class="sh">"</span><span class="s">fallback_used</span><span class="sh">"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="n">state</span><span class="p">[</span><span class="sh">"</span><span class="s">fallback_reason</span><span class="sh">"</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="sh">"</span><span class="s">low_score top=</span><span class="si">{</span><span class="n">cur_top</span><span class="si">:</span><span class="p">.</span><span class="mi">4</span><span class="n">f</span><span class="si">}</span><span class="s"> &lt; thr=</span><span class="si">{</span><span class="n">thr</span><span class="si">:</span><span class="p">.</span><span class="mi">3</span><span class="n">f</span><span class="si">}</span><span class="s"> | fused rrf(cur=N,fb=M -&gt; K)</span><span class="sh">"</span>
+</code></pre></div></div>
 
-### Stage 3: Broadened Retry (T2)
-```python
-# If still weak → broadened params
-async def _t2_try_broadened_retry(state, search_query, request_id, top_k=30, keyword_boost=1.5):
-    # top_k=30, keyword_boost=1.5, beam=5
-    fb_result = await client.retrieve(search_query, 30, request_id, filter_path=None, keyword_boost=1.5)
-    # FUSE with previous
-    state["retrieved_chunks"] = _fuse_subspace_rrf(previous, fb_result)[:20]
-    state["broaden_used"] = True
-```
+<h3 id="stage-3-broadened-retry-t2">Stage 3: Broadened Retry (T2)</h3>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># If still weak → broadened params
+</span><span class="k">async</span> <span class="k">def</span> <span class="nf">_t2_try_broadened_retry</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">search_query</span><span class="p">,</span> <span class="n">request_id</span><span class="p">,</span> <span class="n">top_k</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">keyword_boost</span><span class="o">=</span><span class="mf">1.5</span><span class="p">):</span>
+    <span class="c1"># top_k=30, keyword_boost=1.5, beam=5
+</span>    <span class="n">fb_result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="p">.</span><span class="nf">retrieve</span><span class="p">(</span><span class="n">search_query</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="n">request_id</span><span class="p">,</span> <span class="n">filter_path</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">keyword_boost</span><span class="o">=</span><span class="mf">1.5</span><span class="p">)</span>
+    <span class="c1"># FUSE with previous
+</span>    <span class="n">state</span><span class="p">[</span><span class="sh">"</span><span class="s">retrieved_chunks</span><span class="sh">"</span><span class="p">]</span> <span class="o">=</span> <span class="nf">_fuse_subspace_rrf</span><span class="p">(</span><span class="n">previous</span><span class="p">,</span> <span class="n">fb_result</span><span class="p">)[:</span><span class="mi">20</span><span class="p">]</span>
+    <span class="n">state</span><span class="p">[</span><span class="sh">"</span><span class="s">broaden_used</span><span class="sh">"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
+</code></pre></div></div>
 
-### Stage 4: LLM-Judge Broadening (F5)
-```python
-# If still weak → LLM infers subspace → filtered re-retrieve
-llm_choice = await infer_subspace_llm(query, history, request_id)
-if llm_choice and llm_choice != sticky:
-    # Explicit re-spec → switch subspace
-    new_filter = subspace_map[llm_choice]
-    result = await client.retrieve(search_query, top_k, request_id, filter_path=new_filter)
-```
+<h3 id="stage-4-llm-judge-broadening-f5">Stage 4: LLM-Judge Broadening (F5)</h3>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># If still weak → LLM infers subspace → filtered re-retrieve
+</span><span class="n">llm_choice</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">infer_subspace_llm</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">history</span><span class="p">,</span> <span class="n">request_id</span><span class="p">)</span>
+<span class="k">if</span> <span class="n">llm_choice</span> <span class="ow">and</span> <span class="n">llm_choice</span> <span class="o">!=</span> <span class="n">sticky</span><span class="p">:</span>
+    <span class="c1"># Explicit re-spec → switch subspace
+</span>    <span class="n">new_filter</span> <span class="o">=</span> <span class="n">subspace_map</span><span class="p">[</span><span class="n">llm_choice</span><span class="p">]</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="p">.</span><span class="nf">retrieve</span><span class="p">(</span><span class="n">search_query</span><span class="p">,</span> <span class="n">top_k</span><span class="p">,</span> <span class="n">request_id</span><span class="p">,</span> <span class="n">filter_path</span><span class="o">=</span><span class="n">new_filter</span><span class="p">)</span>
+</code></pre></div></div>
 
----
+<hr />
 
-## RRF Fusion Algorithm
+<h2 id="rrf-fusion-algorithm">RRF Fusion Algorithm</h2>
 
-```python
-def _fuse_subspace_rrf(filtered, whole, filtered_weight=1.3):
-    """
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">_fuse_subspace_rrf</span><span class="p">(</span><span class="n">filtered</span><span class="p">,</span> <span class="n">whole</span><span class="p">,</span> <span class="n">filtered_weight</span><span class="o">=</span><span class="mf">1.3</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">
     Reciprocal Rank Fusion with filtered boost
     score = 1/(60 + rank) * weight
-    """
-    merged = {}
-    # Filtered leg: weight 1.3x
-    for rank, chunk in enumerate(filtered):
-        key = chunk.chunk_id
-        score = filtered_weight / (60 + rank + 1)
-        merged[key] = max(merged.get(key, 0), score)
+    </span><span class="sh">"""</span>
+    <span class="n">merged</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="c1"># Filtered leg: weight 1.3x
+</span>    <span class="k">for</span> <span class="n">rank</span><span class="p">,</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="nf">enumerate</span><span class="p">(</span><span class="n">filtered</span><span class="p">):</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="n">chunk</span><span class="p">.</span><span class="n">chunk_id</span>
+        <span class="n">score</span> <span class="o">=</span> <span class="n">filtered_weight</span> <span class="o">/</span> <span class="p">(</span><span class="mi">60</span> <span class="o">+</span> <span class="n">rank</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">merged</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="nf">max</span><span class="p">(</span><span class="n">merged</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">score</span><span class="p">)</span>
     
-    # Whole-KB leg: weight 1.0
-    for rank, chunk in enumerate(whole):
-        key = chunk.chunk_id
-        score = 1.0 / (60 + rank + 1)
-        merged[key] = max(merged.get(key, 0), score)
+    <span class="c1"># Whole-KB leg: weight 1.0
+</span>    <span class="k">for</span> <span class="n">rank</span><span class="p">,</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="nf">enumerate</span><span class="p">(</span><span class="n">whole</span><span class="p">):</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="n">chunk</span><span class="p">.</span><span class="n">chunk_id</span>
+        <span class="n">score</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="mi">60</span> <span class="o">+</span> <span class="n">rank</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">merged</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="nf">max</span><span class="p">(</span><span class="n">merged</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">score</span><span class="p">)</span>
     
-    # Sort by fused score, take top 20
-    return sorted(merged.values(), key=lambda x: x.fused_score, reverse=True)[:20]
-```
+    <span class="c1"># Sort by fused score, take top 20
+</span>    <span class="k">return</span> <span class="nf">sorted</span><span class="p">(</span><span class="n">merged</span><span class="p">.</span><span class="nf">values</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">.</span><span class="n">fused_score</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="bp">True</span><span class="p">)[:</span><span class="mi">20</span><span class="p">]</span>
+</code></pre></div></div>
 
----
+<hr />
 
-## Benchmark Delta
+<h2 id="benchmark-delta">Benchmark Delta</h2>
 
-| Metric | Before | After | Δ |
-|--------|--------|-------|---|
-| Retrieval hit | 0.537 | **0.780** | +0.243 |
-| Cheque hit | 0.111 | **0.667** | +0.556 |
-| Fallback usage | 0% | 32% | +32% |
-| Broaden usage | 0% | 18% | +18% |
-| p50 latency | 8006ms | **4872ms** | -39% |
+<table>
+  <thead>
+    <tr>
+      <th>Metric</th>
+      <th>Before</th>
+      <th>After</th>
+      <th>Δ</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Retrieval hit</td>
+      <td>0.537</td>
+      <td><strong>0.780</strong></td>
+      <td>+0.243</td>
+    </tr>
+    <tr>
+      <td>Cheque hit</td>
+      <td>0.111</td>
+      <td><strong>0.667</strong></td>
+      <td>+0.556</td>
+    </tr>
+    <tr>
+      <td>Fallback usage</td>
+      <td>0%</td>
+      <td>32%</td>
+      <td>+32%</td>
+    </tr>
+    <tr>
+      <td>Broaden usage</td>
+      <td>0%</td>
+      <td>18%</td>
+      <td>+18%</td>
+    </tr>
+    <tr>
+      <td>p50 latency</td>
+      <td>8006ms</td>
+      <td><strong>4872ms</strong></td>
+      <td>-39%</td>
+    </tr>
+  </tbody>
+</table>
 
----
+<hr />
 
-## Related Papers
+<h2 id="related-papers">Related Papers</h2>
 
-| Paper | Venue | Key Contribution |
-|-------|-------|------------------|
-| **GUIR** | SemEval 2026 | Multi-query fusion (LT + RW + QS) → RRF → +12.3% nDCG@5 |
-| **5ting** | SemEval 2026 | Dual-query merged retrieval + LLM reranking + faithfulness control |
-| **H-RAG** | SemEval 2026 | Hierarchical parent-child retrieval + hybrid retrieval + parent-level context |
-| **Sifei** | SemEval 2026 | Hybrid dense+sparse + query rewrite + cross-encoder → 0.5453 nDCG@5 (Rank 3/38) |
-| **Sifei** | SemEval 2026 | Hybrid dense+sparse + query rewrite + cross-encoder → 0.5453 nDCG@5 (Rank 3/38) |
-| **IITKanBDone** | SemEval 2026 | ELSER + Mistral-7B → end-to-end multi-turn RAG |
-| **AILS-NTUA** | SemEval 2026 | Multi-strategy rewriting (Minimal + Corpus-Specific + CoT) + Nested-RRF |
+<table>
+  <thead>
+    <tr>
+      <th>Paper</th>
+      <th>Venue</th>
+      <th>Key Contribution</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>GUIR</strong></td>
+      <td>SemEval 2026</td>
+      <td>Multi-query fusion (LT + RW + QS) → RRF → +12.3% nDCG@5</td>
+    </tr>
+    <tr>
+      <td><strong>5ting</strong></td>
+      <td>SemEval 2026</td>
+      <td>Dual-query merged retrieval + LLM reranking + faithfulness control</td>
+    </tr>
+    <tr>
+      <td><strong>H-RAG</strong></td>
+      <td>SemEval 2026</td>
+      <td>Hierarchical parent-child retrieval + hybrid retrieval + parent-level context</td>
+    </tr>
+    <tr>
+      <td><strong>Sifei</strong></td>
+      <td>SemEval 2026</td>
+      <td>Hybrid dense+sparse + query rewrite + cross-encoder → 0.5453 nDCG@5 (Rank 3/38)</td>
+    </tr>
+    <tr>
+      <td><strong>Sifei</strong></td>
+      <td>SemEval 2026</td>
+      <td>Hybrid dense+sparse + query rewrite + cross-encoder → 0.5453 nDCG@5 (Rank 3/38)</td>
+    </tr>
+    <tr>
+      <td><strong>IITKanBDone</strong></td>
+      <td>SemEval 2026</td>
+      <td>ELSER + Mistral-7B → end-to-end multi-turn RAG</td>
+    </tr>
+    <tr>
+      <td><strong>AILS-NTUA</strong></td>
+      <td>SemEval 2026</td>
+      <td>Multi-strategy rewriting (Minimal + Corpus-Specific + CoT) + Nested-RRF</td>
+    </tr>
+  </tbody>
+</table>
 
----
+<hr />
 
-## Architecture: Fallback Cascade
+<h2 id="architecture-fallback-cascade">Architecture: Fallback Cascade</h2>
 
-```mermaid
-flowchart TD
-    A[Query + Filter] --> B[Primary Filtered Retrieval]
-    B --> C{Strong Evidence?}
-    C -->|Yes| D[Build Context → Generate]
-    C -->|No| E[T1: Whole-KB Fallback<br/>RRF Fusion (weight 1.3x)]
-    E --> F{Strong Evidence?}
-    F -->|Yes| D
-    F -->|No| G[T2: Broadened Retry<br/>top_k=30, boost=1.5, beam=5]
-    G --> H{Strong Evidence?}
-    H -->|Yes| D
-    H -->|No| I[F5: LLM-Judge Broadening<br/>infer_subspace_llm]
-    I --> J{LLM Chooses Subspace?}
-    J -->|Yes| K[Filtered Re-retrieve]
-    J -->|No| L[Abstain: 'پاسخی یافت نشد']
-    K --> F
+<pre><code class="language-mermaid">flowchart TD
+    A[Query + Filter] --&gt; B[Primary Filtered Retrieval]
+    B --&gt; C{Strong Evidence?}
+    C --&gt;|Yes| D[Build Context → Generate]
+    C --&gt;|No| E[T1: Whole-KB Fallback&lt;br/&gt;RRF Fusion (weight 1.3x)]
+    E --&gt; F{Strong Evidence?}
+    F --&gt;|Yes| D
+    F --&gt;|No| G[T2: Broadened Retry&lt;br/&gt;top_k=30, boost=1.5, beam=5]
+    G --&gt; H{Strong Evidence?}
+    H --&gt;|Yes| D
+    H --&gt;|No| I[F5: LLM-Judge Broadening&lt;br/&gt;infer_subspace_llm]
+    I --&gt; J{LLM Chooses Subspace?}
+    J --&gt;|Yes| K[Filtered Re-retrieve]
+    J --&gt;|No| L[Abstain: 'پاسخی یافت نشد']
+    K --&gt; F
     
     style E fill:#fef3e0,stroke:#f57f17
     style G fill:#fef3e0,stroke:#f57f17
     style I fill:#fef3e0,stroke:#f57f17
-```
+</code></pre>
 
----
+<hr />
 
-## Code Pointers
+<h2 id="code-pointers">Code Pointers</h2>
 
-| File | Function | Line |
-|------|----------|------|
-| `retrieve.py` | `_fuse_subspace_rrf` | 143 |
-| `retrieve.py` | `_t1_try_whole_kb_fallback` | 220 |
-| `retrieve.py` | `_t2_try_broadened_retry` | 220 |
-| `retrieve.py` | F5 LLM-judge | 1640 |
-| `clients/knowledgebase.py` | `retrieve()` with boost | 61 |
-| `config.py` | `subspace_keyword_boost` | 34 |
+<table>
+  <thead>
+    <tr>
+      <th>File</th>
+      <th>Function</th>
+      <th>Line</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">retrieve.py</code></td>
+      <td><code class="language-plaintext highlighter-rouge">_fuse_subspace_rrf</code></td>
+      <td>143</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">retrieve.py</code></td>
+      <td><code class="language-plaintext highlighter-rouge">_t1_try_whole_kb_fallback</code></td>
+      <td>220</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">retrieve.py</code></td>
+      <td><code class="language-plaintext highlighter-rouge">_t2_try_broadened_retry</code></td>
+      <td>220</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">retrieve.py</code></td>
+      <td>F5 LLM-judge</td>
+      <td>1640</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">clients/knowledgebase.py</code></td>
+      <td><code class="language-plaintext highlighter-rouge">retrieve()</code> with boost</td>
+      <td>61</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">config.py</code></td>
+      <td><code class="language-plaintext highlighter-rouge">subspace_keyword_boost</code></td>
+      <td>34</td>
+    </tr>
+  </tbody>
+</table>
 
----
+<hr />
 
-## Validation Commands
+<h2 id="validation-commands">Validation Commands</h2>
 
-```bash
-# Test fallback cascade
-curl -s http://127.0.0.1:8100/v1/chat/completions \
-  -H 'Content-Type: application/json' -H 'X-Request-ID: fallback-test' \
-  -d '{"model":"ics-helper-agent","messages":[{"role":"user","content":"چک برگشتی چیست"}],"filter_path":"گزارش اعتباراتنجی چک"}' \
-  | jq '.audit.fallback_used, .audit.broaden_used, .audit.retry_stage_timing, .audit.retrieved_chunks|length'
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Test fallback cascade</span>
+curl <span class="nt">-s</span> http://127.0.0.1:8100/v1/chat/completions <span class="se">\</span>
+  <span class="nt">-H</span> <span class="s1">'Content-Type: application/json'</span> <span class="nt">-H</span> <span class="s1">'X-Request-ID: fallback-test'</span> <span class="se">\</span>
+  <span class="nt">-d</span> <span class="s1">'{"model":"ics-helper-agent","messages":[{"role":"user","content":"چک برگشتی چیست"}],"filter_path":"گزارش اعتباراتنجی چک"}'</span> <span class="se">\</span>
+  | jq <span class="s1">'.audit.fallback_used, .audit.broaden_used, .audit.retry_stage_timing, .audit.retrieved_chunks|length'</span>
 
-# Test broadened retry
-curl -s http://127.0.0.1:8100/v1/chat/completions \
-  -H 'Content-Type: application/json' -H 'X-Request-ID: broaden-test' \
-  -d '{"model":"ics-helper-agent","messages":[{"role":"user","content":"سوال بسیار مبهم..."}]}' \
-  | jq '.audit.broaden_used, .audit.retry_stage_timing.retrieve_broadened'
-```
+<span class="c"># Test broadened retry</span>
+curl <span class="nt">-s</span> http://127.0.0.1:8100/v1/chat/completions <span class="se">\</span>
+  <span class="nt">-H</span> <span class="s1">'Content-Type: application/json'</span> <span class="nt">-H</span> <span class="s1">'X-Request-ID: broaden-test'</span> <span class="se">\</span>
+  <span class="nt">-d</span> <span class="s1">'{"model":"ics-helper-agent","messages":[{"role":"user","content":"سوال بسیار مبهم..."}]}'</span> <span class="se">\</span>
+  | jq <span class="s1">'.audit.broaden_used, .audit.retry_stage_timing.retrieve_broadened'</span>
+</code></pre></div></div>
 
----
+<hr />
 
-## Related Problems
+<h2 id="related-problems">Related Problems</h2>
 
-- [Subspace Filtering](./subspace-filtering.html) — Map mismatch caused 0 chunks
-- [Sticky Context Decay](./sticky-context.html) — Context loss on generic follow-ups
-- [Hallucination Control](./hallucination.html) — Weak-evidence answers hallucinated
+<ul>
+  <li><a href="./subspace-filtering.html">Subspace Filtering</a> — Map mismatch caused 0 chunks</li>
+  <li><a href="./sticky-context.html">Sticky Context Decay</a> — Context loss on generic follow-ups</li>
+  <li><a href="./hallucination.html">Hallucination Control</a> — Weak-evidence answers hallucinated</li>
+</ul>
+
   </main>
 
   <footer class="site-footer" role="contentinfo">

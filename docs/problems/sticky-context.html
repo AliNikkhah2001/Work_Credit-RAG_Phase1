@@ -110,189 +110,306 @@
   <p class="lead">Context lost after 3-4 generic turns. Fixed with sticky carry + decay after 3 generic turns + semantic segmentation.</p>
 </div>
 
-## Problem Summary
+<h2 id="problem-summary">Problem Summary</h2>
 
-| Aspect | Detail |
-|--------|--------|
-| **Severity** | High |
-| **Category** | Context / Memory |
-| **Status** | ✅ Fixed |
-| **Bench Impact** | Sticky: 0.610 → 0.683 |
-| **Key Papers** | CPP (SIGDIAL 2026), CALMem (2026), Context Recycling (2026) |
+<table>
+  <thead>
+    <tr>
+      <th>Aspect</th>
+      <th>Detail</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Severity</strong></td>
+      <td>High</td>
+    </tr>
+    <tr>
+      <td><strong>Category</strong></td>
+      <td>Context / Memory</td>
+    </tr>
+    <tr>
+      <td><strong>Status</strong></td>
+      <td>✅ Fixed</td>
+    </tr>
+    <tr>
+      <td><strong>Bench Impact</strong></td>
+      <td>Sticky: 0.610 → 0.683</td>
+    </tr>
+    <tr>
+      <td><strong>Key Papers</strong></td>
+      <td>CPP (SIGDIAL 2026), CALMem (2026), Context Recycling (2026)</td>
+    </tr>
+  </tbody>
+</table>
 
----
+<hr />
 
-## Root Cause
+<h2 id="root-cause">Root Cause</h2>
 
-### The Sticky Mechanism
+<h3 id="the-sticky-mechanism">The Sticky Mechanism</h3>
 
-Our system uses `applied_subspace` (from `MemorySaver` checkpoint keyed by `X-Request-ID`) to persist context across turns.
+<p>Our system uses <code class="language-plaintext highlighter-rouge">applied_subspace</code> (from <code class="language-plaintext highlighter-rouge">MemorySaver</code> checkpoint keyed by <code class="language-plaintext highlighter-rouge">X-Request-ID</code>) to persist context across turns.</p>
 
-**Flow**:
-1. Turn 1: `چک` → `applied_subspace=cheque` (via `is_specification`)
-2. Turn 2: `تاثیر چک برگشتی...` → **should** keep `cheque` but **loses** it → `applied_subspace=None`
+<p><strong>Flow</strong>:</p>
+<ol>
+  <li>Turn 1: <code class="language-plaintext highlighter-rouge">چک</code> → <code class="language-plaintext highlighter-rouge">applied_subspace=cheque</code> (via <code class="language-plaintext highlighter-rouge">is_specification</code>)</li>
+  <li>Turn 2: <code class="language-plaintext highlighter-rouge">تاثیر چک برگشتی...</code> → <strong>should</strong> keep <code class="language-plaintext highlighter-rouge">cheque</code> but <strong>loses</strong> it → <code class="language-plaintext highlighter-rouge">applied_subspace=None</code></li>
+</ol>
 
-### Why It Failed
+<h3 id="why-it-failed">Why It Failed</h3>
 
-In `api.py` sticky injection (~line 386):
-```python
-# Sticky from checkpoint
-sticky_applied = prev_checkpoint.get("applied_subspace")
+<p>In <code class="language-plaintext highlighter-rouge">api.py</code> sticky injection (~line 386):</p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Sticky from checkpoint
+</span><span class="n">sticky_applied</span> <span class="o">=</span> <span class="n">prev_checkpoint</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="sh">"</span><span class="s">applied_subspace</span><span class="sh">"</span><span class="p">)</span>
 
-# But generic follow-ups cleared it:
-if "چطور" in query or "آیا" in query or "چیست" in query:
-    # Interrogatives skipped → no sticky carried
-    sticky_applied = None
-```
+<span class="c1"># But generic follow-ups cleared it:
+</span><span class="k">if</span> <span class="sh">"</span><span class="s">چطور</span><span class="sh">"</span> <span class="ow">in</span> <span class="n">query</span> <span class="ow">or</span> <span class="sh">"</span><span class="s">آیا</span><span class="sh">"</span> <span class="ow">in</span> <span class="n">query</span> <span class="ow">or</span> <span class="sh">"</span><span class="s">چیست</span><span class="sh">"</span> <span class="ow">in</span> <span class="n">query</span><span class="p">:</span>
+    <span class="c1"># Interrogatives skipped → no sticky carried
+</span>    <span class="n">sticky_applied</span> <span class="o">=</span> <span class="bp">None</span>
+</code></pre></div></div>
 
-Generic follow-ups like `آیا درآمد...` contain interrogatives → history mining skipped them → no sticky inferred → `filter_path=None` → whole-KB search with low scores.
+<p>Generic follow-ups like <code class="language-plaintext highlighter-rouge">آیا درآمد...</code> contain interrogatives → history mining skipped them → no sticky inferred → <code class="language-plaintext highlighter-rouge">filter_path=None</code> → whole-KB search with low scores.</p>
 
-### The Sticky Decay Problem
+<h3 id="the-sticky-decay-problem">The Sticky Decay Problem</h3>
 
-Even when sticky worked, it **never decayed**. After explicit re-spec `چک` → `cheque`, if user asked 10 generic questions, system still forced `cheque` filter.
+<p>Even when sticky worked, it <strong>never decayed</strong>. After explicit re-spec <code class="language-plaintext highlighter-rouge">چک</code> → <code class="language-plaintext highlighter-rouge">cheque</code>, if user asked 10 generic questions, system still forced <code class="language-plaintext highlighter-rouge">cheque</code> filter.</p>
 
----
+<hr />
 
-## The Fix
+<h2 id="the-fix">The Fix</h2>
 
-### 1. Sticky Carry for Generic Follow-ups (T4)
+<h3 id="1-sticky-carry-for-generic-follow-ups-t4">1. Sticky Carry for Generic Follow-ups (T4)</h3>
 
-In `api.py` sticky injection:
-```python
-# Count consecutive generic turns since last spec
-def count_generic_turns(messages):
-    generic_count = 0
-    for msg in reversed(messages):
-        if msg["role"] != "user": continue
-        text = msg["content"]
-        # Specifying = has subspace keyword AND short
-        is_spec = any(kw in text for kw in SPEC_KEYWORDS) and len(text.split()) <= 8
-        if is_spec: break
-        generic_count += 1
-    return generic_count
+<p>In <code class="language-plaintext highlighter-rouge">api.py</code> sticky injection:</p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Count consecutive generic turns since last spec
+</span><span class="k">def</span> <span class="nf">count_generic_turns</span><span class="p">(</span><span class="n">messages</span><span class="p">):</span>
+    <span class="n">generic_count</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="nf">reversed</span><span class="p">(</span><span class="n">messages</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">msg</span><span class="p">[</span><span class="sh">"</span><span class="s">role</span><span class="sh">"</span><span class="p">]</span> <span class="o">!=</span> <span class="sh">"</span><span class="s">user</span><span class="sh">"</span><span class="p">:</span> <span class="k">continue</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="n">msg</span><span class="p">[</span><span class="sh">"</span><span class="s">content</span><span class="sh">"</span><span class="p">]</span>
+        <span class="c1"># Specifying = has subspace keyword AND short
+</span>        <span class="n">is_spec</span> <span class="o">=</span> <span class="nf">any</span><span class="p">(</span><span class="n">kw</span> <span class="ow">in</span> <span class="n">text</span> <span class="k">for</span> <span class="n">kw</span> <span class="ow">in</span> <span class="n">SPEC_KEYWORDS</span><span class="p">)</span> <span class="ow">and</span> <span class="nf">len</span><span class="p">(</span><span class="n">text</span><span class="p">.</span><span class="nf">split</span><span class="p">())</span> <span class="o">&lt;=</span> <span class="mi">8</span>
+        <span class="k">if</span> <span class="n">is_spec</span><span class="p">:</span> <span class="k">break</span>
+        <span class="n">generic_count</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="n">generic_count</span>
 
-# In initial_state building:
-generic_turns = count_generic_turns(request.messages)
-if generic_turns > settings.sticky_decay_turns:  # default 3
-    sticky_applied = None  # Decay!
-    log.info(f"Sticky decayed after {generic_turns} generic turns")
-```
+<span class="c1"># In initial_state building:
+</span><span class="n">generic_turns</span> <span class="o">=</span> <span class="nf">count_generic_turns</span><span class="p">(</span><span class="n">request</span><span class="p">.</span><span class="n">messages</span><span class="p">)</span>
+<span class="k">if</span> <span class="n">generic_turns</span> <span class="o">&gt;</span> <span class="n">settings</span><span class="p">.</span><span class="n">sticky_decay_turns</span><span class="p">:</span>  <span class="c1"># default 3
+</span>    <span class="n">sticky_applied</span> <span class="o">=</span> <span class="bp">None</span>  <span class="c1"># Decay!
+</span>    <span class="n">log</span><span class="p">.</span><span class="nf">info</span><span class="p">(</span><span class="sa">f</span><span class="sh">"</span><span class="s">Sticky decayed after </span><span class="si">{</span><span class="n">generic_turns</span><span class="si">}</span><span class="s"> generic turns</span><span class="sh">"</span><span class="p">)</span>
+</code></pre></div></div>
 
-### 2. Sticky Carry for Generic Follow-ups
+<h3 id="2-sticky-carry-for-generic-follow-ups">2. Sticky Carry for Generic Follow-ups</h3>
 
-```python
-# If sticky exists and query is generic (not re-spec), INJECT filter_path
-if sticky_applied and not is_explicit_respec(query):
-    filter_path = settings.subspace_map.get(sticky_applied)
-    log.info(f"Sticky carry: {sticky_applied} → filter_path={filter_path}")
-```
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># If sticky exists and query is generic (not re-spec), INJECT filter_path
+</span><span class="k">if</span> <span class="n">sticky_applied</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nf">is_explicit_respec</span><span class="p">(</span><span class="n">query</span><span class="p">):</span>
+    <span class="n">filter_path</span> <span class="o">=</span> <span class="n">settings</span><span class="p">.</span><span class="n">subspace_map</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="n">sticky_applied</span><span class="p">)</span>
+    <span class="n">log</span><span class="p">.</span><span class="nf">info</span><span class="p">(</span><span class="sa">f</span><span class="sh">"</span><span class="s">Sticky carry: </span><span class="si">{</span><span class="n">sticky_applied</span><span class="si">}</span><span class="s"> → filter_path=</span><span class="si">{</span><span class="n">filter_path</span><span class="si">}</span><span class="sh">"</span><span class="p">)</span>
+</code></pre></div></div>
 
-### 3. Sticky Decay Config
+<h3 id="3-sticky-decay-config">3. Sticky Decay Config</h3>
 
-```python
-# config.py
-sticky_decay_turns: int = 3  # env: STICKY_DECAY_TURNS
-```
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># config.py
+</span><span class="n">sticky_decay_turns</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span>  <span class="c1"># env: STICKY_DECAY_TURNS
+</span></code></pre></div></div>
 
----
+<hr />
 
-## Benchmark Delta
+<h2 id="benchmark-delta">Benchmark Delta</h2>
 
-| Conversation | Turn | Before | After |
-|--------------|------|--------|-------|
-| `conv_cheque_02` | T3 `تاثیر چک...` | `None` ❌ | `cheque` ✅ |
-| `conv_facilities_person_01` | T3 `آیا درآمد...` | `None` ❌ | `facilities_person` ✅ |
-| `conv_mixed_01` | T2 re-spec | `facilities_person` ✅ | `facilities_person` ✅ |
+<table>
+  <thead>
+    <tr>
+      <th>Conversation</th>
+      <th>Turn</th>
+      <th>Before</th>
+      <th>After</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">conv_cheque_02</code></td>
+      <td>T3 <code class="language-plaintext highlighter-rouge">تاثیر چک...</code></td>
+      <td><code class="language-plaintext highlighter-rouge">None</code> ❌</td>
+      <td><code class="language-plaintext highlighter-rouge">cheque</code> ✅</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">conv_facilities_person_01</code></td>
+      <td>T3 <code class="language-plaintext highlighter-rouge">آیا درآمد...</code></td>
+      <td><code class="language-plaintext highlighter-rouge">None</code> ❌</td>
+      <td><code class="language-plaintext highlighter-rouge">facilities_person</code> ✅</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">conv_mixed_01</code></td>
+      <td>T2 re-spec</td>
+      <td><code class="language-plaintext highlighter-rouge">facilities_person</code> ✅</td>
+      <td><code class="language-plaintext highlighter-rouge">facilities_person</code> ✅</td>
+    </tr>
+  </tbody>
+</table>
 
-| Metric | Before | After |
-|--------|--------|-------|
-| Sticky persistence | 0.610 | **0.683** |
-| Generic follow-up retention | ~0% | ~70% |
+<table>
+  <thead>
+    <tr>
+      <th>Metric</th>
+      <th>Before</th>
+      <th>After</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Sticky persistence</td>
+      <td>0.610</td>
+      <td><strong>0.683</strong></td>
+    </tr>
+    <tr>
+      <td>Generic follow-up retention</td>
+      <td>~0%</td>
+      <td>~70%</td>
+    </tr>
+  </tbody>
+</table>
 
----
+<hr />
 
-## Related Papers
+<h2 id="related-papers">Related Papers</h2>
 
-| Paper | Venue | Key Contribution |
-|-------|-------|------------------|
-| **CPP: Context Persistence Protocol** | SIGDIAL 2026 | Segments (3-10 turns, cosine δ) → dual-index (lexical+semantic) → bounded budget retrieval |
-| **CALMem** | arXiv:2605.20724 (2026) | Dual memory: Episodic (sliding window) + Semantic (structured facts) + MOIM injector |
-| **Context Recycling** | arXiv:2606.26105 (2026) | Hierarchical layers L0/L1/L2 → bounded active context (~850 tok/turn vs 22K baseline) |
-| **Rag.NET** | GitHub | Two layers: In-session trimming + Persistent cross-session vector recall |
-| **OpenAI Session Memory** | OpenAI Cookbook | TrimmingSession (max N turns) + SummarizingSession (LLM summary) |
+<table>
+  <thead>
+    <tr>
+      <th>Paper</th>
+      <th>Venue</th>
+      <th>Key Contribution</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>CPP: Context Persistence Protocol</strong></td>
+      <td>SIGDIAL 2026</td>
+      <td>Segments (3-10 turns, cosine δ) → dual-index (lexical+semantic) → bounded budget retrieval</td>
+    </tr>
+    <tr>
+      <td><strong>CALMem</strong></td>
+      <td>arXiv:2605.20724 (2026)</td>
+      <td>Dual memory: Episodic (sliding window) + Semantic (structured facts) + MOIM injector</td>
+    </tr>
+    <tr>
+      <td><strong>Context Recycling</strong></td>
+      <td>arXiv:2606.26105 (2026)</td>
+      <td>Hierarchical layers L0/L1/L2 → bounded active context (~850 tok/turn vs 22K baseline)</td>
+    </tr>
+    <tr>
+      <td><strong>Rag.NET</strong></td>
+      <td>GitHub</td>
+      <td>Two layers: In-session trimming + Persistent cross-session vector recall</td>
+    </tr>
+    <tr>
+      <td><strong>OpenAI Session Memory</strong></td>
+      <td>OpenAI Cookbook</td>
+      <td>TrimmingSession (max N turns) + SummarizingSession (LLM summary)</td>
+    </tr>
+  </tbody>
+</table>
 
----
+<hr />
 
-## Architecture: Sticky Flow
+<h2 id="architecture-sticky-flow">Architecture: Sticky Flow</h2>
 
-```mermaid
-flowchart TD
-    A[User Query] --> B[Load Checkpoint]
-    B --> C{Sticky Applied?}
-    C -->|Yes| D[Count Generic Turns]
-    D --> E{> decay_threshold?}
-    E -->|Yes| F[Decay: sticky=None]
-    E -->|No| G[Inject filter_path from sticky]
-    C -->|No| H[Normal Classify/Infer]
-    F --> H
-    G --> I[Retrieve with filter_path]
-    H --> I
-    I --> J[Generate]
-    J --> K[Save Checkpoint]
+<pre><code class="language-mermaid">flowchart TD
+    A[User Query] --&gt; B[Load Checkpoint]
+    B --&gt; C{Sticky Applied?}
+    C --&gt;|Yes| D[Count Generic Turns]
+    D --&gt; E{&gt; decay_threshold?}
+    E --&gt;|Yes| F[Decay: sticky=None]
+    E --&gt;|No| G[Inject filter_path from sticky]
+    C --&gt;|No| H[Normal Classify/Infer]
+    F --&gt; H
+    G --&gt; I[Retrieve with filter_path]
+    H --&gt; I
+    I --&gt; J[Generate]
+    J --&gt; K[Save Checkpoint]
     
     style F fill:#fef2f2,stroke:#ef4444
     style G fill:#dcfce7,stroke:#166534
-```
+</code></pre>
 
----
+<hr />
 
-## Configuration
+<h2 id="configuration">Configuration</h2>
 
-```python
-# config.py
-class Settings(BaseSettings):
-    sticky_decay_turns: int = 3  # env: STICKY_DECAY_TURNS
-    subspace_map: dict = {...}
-    subspace_threshold: float = 0.8
-    subspace_general_exempt: bool = True
-```
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># config.py
+</span><span class="k">class</span> <span class="nc">Settings</span><span class="p">(</span><span class="n">BaseSettings</span><span class="p">):</span>
+    <span class="n">sticky_decay_turns</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span>  <span class="c1"># env: STICKY_DECAY_TURNS
+</span>    <span class="n">subspace_map</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{...}</span>
+    <span class="n">subspace_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.8</span>
+    <span class="n">subspace_general_exempt</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span>
+</code></pre></div></div>
 
----
+<hr />
 
-## Code Pointers
+<h2 id="code-pointers">Code Pointers</h2>
 
-| File | Function | Line |
-|------|----------|------|
-| `api.py` | `initial_state` sticky logic | 386 |
-| `config.py` | `sticky_decay_turns` | ~44 |
-| `retrieve.py` | Sticky re-retrieve | 1125 |
-| `graph.py` | `should_clarify` | 37 |
+<table>
+  <thead>
+    <tr>
+      <th>File</th>
+      <th>Function</th>
+      <th>Line</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">api.py</code></td>
+      <td><code class="language-plaintext highlighter-rouge">initial_state</code> sticky logic</td>
+      <td>386</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">config.py</code></td>
+      <td><code class="language-plaintext highlighter-rouge">sticky_decay_turns</code></td>
+      <td>~44</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">retrieve.py</code></td>
+      <td>Sticky re-retrieve</td>
+      <td>1125</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">graph.py</code></td>
+      <td><code class="language-plaintext highlighter-rouge">should_clarify</code></td>
+      <td>37</td>
+    </tr>
+  </tbody>
+</table>
 
----
+<hr />
 
-## Validation Commands
+<h2 id="validation-commands">Validation Commands</h2>
 
-```bash
-# Test sticky carry
-curl -s http://127.0.0.1:8100/v1/chat/completions \
-  -H 'Content-Type: application/json' -H 'X-Request-ID: sticky-test' \
-  -d '{"model":"ics-helper-agent","messages":[{"role":"user","content":"چک"},{"role":"assistant","content":"حوزه گزارش اعتباراتنجی چک انتخاب شد."},{"role":"user","content":"تاثیر چک برگشتی..."}]}' \
-  | jq '.audit.applied_subspace, .audit.fallback_used'
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Test sticky carry</span>
+curl <span class="nt">-s</span> http://127.0.0.1:8100/v1/chat/completions <span class="se">\</span>
+  <span class="nt">-H</span> <span class="s1">'Content-Type: application/json'</span> <span class="nt">-H</span> <span class="s1">'X-Request-ID: sticky-test'</span> <span class="se">\</span>
+  <span class="nt">-d</span> <span class="s1">'{"model":"ics-helper-agent","messages":[{"role":"user","content":"چک"},{"role":"assistant","content":"حوزه گزارش اعتباراتنجی چک انتخاب شد."},{"role":"user","content":"تاثیر چک برگشتی..."}]}'</span> <span class="se">\</span>
+  | jq <span class="s1">'.audit.applied_subspace, .audit.fallback_used'</span>
 
-# Test decay (4 generic turns)
-curl -s http://127.0.0.1:8100/v1/chat/completions \
-  -H 'Content-Type: application/json' -H 'X-Request-ID: decay-test' \
-  -d '{"model":"ics-helper-agent","messages":[{"role":"user","content":"چک"},{"role":"assistant","content":"..."},{"role":"user","content":"آیا درآمد..."},{"role":"assistant","content":"..."},{"role":"user","content":"چطور..."},{"role":"assistant","content":"..."},{"role":"user","content":"اما..."}]}' \
-  | jq '.audit.applied_subspace'  # Should be None after 4th generic
-```
+<span class="c"># Test decay (4 generic turns)</span>
+curl <span class="nt">-s</span> http://127.0.0.1:8100/v1/chat/completions <span class="se">\</span>
+  <span class="nt">-H</span> <span class="s1">'Content-Type: application/json'</span> <span class="nt">-H</span> <span class="s1">'X-Request-ID: decay-test'</span> <span class="se">\</span>
+  <span class="nt">-d</span> <span class="s1">'{"model":"ics-helper-agent","messages":[{"role":"user","content":"چک"},{"role":"assistant","content":"..."},{"role":"user","content":"آیا درآمد..."},{"role":"assistant","content":"..."},{"role":"user","content":"چطور..."},{"role":"assistant","content":"..."},{"role":"user","content":"اما..."}]}'</span> <span class="se">\</span>
+  | jq <span class="s1">'.audit.applied_subspace'</span>  <span class="c"># Should be None after 4th generic</span>
+</code></pre></div></div>
 
----
+<hr />
 
-## Related Problems
+<h2 id="related-problems">Related Problems</h2>
 
-- [Subspace Filtering](./subspace-filtering.html) — Map mismatch caused 0 chunks
-- [Ambiguity Resolution](./ambiguity-resolution.html) — Clarify gate for scattered queries
-- [Retrieval Degradation](./retrieval-degradation.html) — No fallback when filtered weak
+<ul>
+  <li><a href="./subspace-filtering.html">Subspace Filtering</a> — Map mismatch caused 0 chunks</li>
+  <li><a href="./ambiguity-resolution.html">Ambiguity Resolution</a> — Clarify gate for scattered queries</li>
+  <li><a href="./retrieval-degradation.html">Retrieval Degradation</a> — No fallback when filtered weak</li>
+</ul>
+
   </main>
 
   <footer class="site-footer" role="contentinfo">

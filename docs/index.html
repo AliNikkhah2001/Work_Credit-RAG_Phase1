@@ -107,18 +107,18 @@
   <main id="main-content" class="site-main" role="main">
     <div class="page-header">
   <h1>Multi-Turn RAG Research</h1>
-  <p class="lead">Problems, Solutions & State-of-the-Art (2025-2026)</p>
+  <p class="lead">Problems, Solutions &amp; State-of-the-Art (2025-2026)</p>
 </div>
 
 <div class="alert alert-info">
   <strong>Status:</strong> Active Research — Last updated October 19, 2026 · Based on 40+ papers from ACL 2025, EMNLP 2025, SIGIR 2024/2025, SIGDIAL 2025/2026, SemEval 2026, NeurIPS 2025, ICML 2025, ICML 2024
 </div>
 
-## Executive Summary
+<h2 id="executive-summary">Executive Summary</h2>
 
-This research documents the **five core problems** we encountered in our production multi-turn RAG system (Work Credit RAG Phase 1) and maps each to **2025-2026 state-of-the-art solutions** from top-tier venues (ACL 2025, EMNLP 2025, SIGIR 2024/2025, SIGDIAL 2025/2026, SemEval 2026, NeurIPS 2025, ICML 2025).
+<p>This research documents the <strong>five core problems</strong> we encountered in our production multi-turn RAG system (Work Credit RAG Phase 1) and maps each to <strong>2025-2026 state-of-the-art solutions</strong> from top-tier venues (ACL 2025, EMNLP 2025, SIGIR 2024/2025, SIGDIAL 2025/2026, SemEval 2026, NeurIPS 2025, ICML 2025).</p>
 
-Our production system serves Persian credit-scoring QA across **4 subspaces** (cheque, facilities_person, facilities_legal, general) with **1123 chunks** over **18 documents**. We ran a **41-turn multi-agent benchmark** (12 multi-turn conversations + 12 single-turn baselines) that revealed critical degradation patterns in multi-turn scenarios.
+<p>Our production system serves Persian credit-scoring QA across <strong>4 subspaces</strong> (cheque, facilities_person, facilities_legal, general) with <strong>1123 chunks</strong> over <strong>18 documents</strong>. We ran a <strong>41-turn multi-agent benchmark</strong> (12 multi-turn conversations + 12 single-turn baselines) that revealed critical degradation patterns in multi-turn scenarios.</p>
 
 <div class="card-grid">
   <div class="card">
@@ -162,7 +162,7 @@ Our production system serves Persian credit-scoring QA across **4 subspaces** (c
   </div>
   
   <div class="card">
-    <h3>⚡ Latency & Scale</h3>
+    <h3>⚡ Latency &amp; Scale</h3>
     <p>CPU KB search dominated (2.3s). Fixed: GPU embed + rerank pool 30 = 100× speedup.</p>
     <div class="meta">Dense: 2325ms → 19ms (100×)</div>
     <div class="tags"><span class="tag primary">Fixed</span><span class="tag">GPU KB</span><span class="tag">BGE-m3</span></div>
@@ -170,85 +170,162 @@ Our production system serves Persian credit-scoring QA across **4 subspaces** (c
   </div>
 </div>
 
----
+<hr />
 
-## Quick Navigation
+<h2 id="quick-navigation">Quick Navigation</h2>
 
 <div class="card-grid">
-  <a href="/Work_Credit-RAG_Phase1/problems/index.html" class="card" style="text-decoration: none; color: inherit;">
+  <a href="/Work_Credit-RAG_Phase1/problems/index.html" class="card" style="text-decoration:none;color:inherit">
     <h3>📋 All Problems</h3>
-    <p>Detailed breakdown of each problem with root cause analysis, production impact, and our fixes.</  </div>
-  
-  <a href="/Work_Credit-RAG_Phase1/papers/index.html" class="card" style="text-decoration: none; color: inherit;">
-    <h3>📚 Papers & Solutions</h3>
-    <p>40+ papers from ACL 2025, EMNLP 2025, SIGIR 2024/25, SIGDIAL 2025/26, SemEval 2026, NeurIPS 2025, ICML 2025.
-  </div>
-  
-  <a href="/Work_Credit-RAG_Phase1/architectures.html" class="card" style="text-decoration: none; color: inherit;">
+    <p>Detailed breakdown of each problem with root cause analysis, production impact, and our fixes.</p>
+  </a>
+  <a href="/Work_Credit-RAG_Phase1/papers/index.html" class="card" style="text-decoration:none;color:inherit">
+    <h3>📚 Papers &amp; Solutions</h3>
+    <p>40+ papers from ACL 2025, EMNLP 2025, SIGIR 2024/25, SIGDIAL 2025/26, SemEval 2026, NeurIPS 2025, ICML 2025.</p>
+  </a>
+  <a href="/Work_Credit-RAG_Phase1/architectures.html" class="card" style="text-decoration:none;color:inherit">
     <h3>🏗️ Architectures</h3>
-    <p>Mermaid diagrams of paper architectures: SPLIT-RAG, PC-RAG, RAC, ICR, CPP, CALMem, SPLIT-RAG, H-RAG, 5ting, GUIR, DUTIR.
-  </div>
-  
-  <a href="/Work_Credit-RAG_Phase1/relevance.html" class="card" style="text-decoration: none; color: inherit;">
+    <p>Mermaid diagrams of paper architectures: SPLIT-RAG, PC-RAG, RAC, ICR, CPP, CALMem, H-RAG, 5ting, GUIR, DUTIR.</p>
+  </a>
+  <a href="/Work_Credit-RAG_Phase1/relevance.html" class="card" style="text-decoration:none;color:inherit">
     <h3>🔗 Relevance Mapping</h3>
-    <p>Detailed table mapping each of our fixes to the specific paper, section, and mechanism that validates it.
-  </div>
-  
-  <a href="/Work_Credit-RAG_Phase1/benchmarks.html" class="card" style="text-decoration: none; color: inherit;">
+    <p>Detailed table mapping each of our fixes to the specific paper, section, and mechanism that validates it.</p>
+  </a>
+  <a href="/Work_Credit-RAG_Phase1/benchmarks.html" class="card" style="text-decoration:none;color:inherit">
     <h3>📊 Benchmarks</h3>
-    <p>MTRAG (842 turns), MTRAGEval (SemEval 2026), CORAL, RAD-Bench. Our 41-turn benchmark results with RAGAS.
-  </div>
-  
-  <a href="/Work_Credit-RAG_Phase1/our-impl.html" class="card" style="text-decoration: none; color: inherit;">
+    <p>MTRAG (842 turns), MTRAGEval (SemEval 2026), CORAL, RAD-Bench. Our 41-turn benchmark results with RAGAS.</p>
+  </a>
+  <a href="/Work_Credit-RAG_Phase1/our-impl.html" class="card" style="text-decoration:none;color:inherit">
     <h3>⚙️ Our Implementation</h3>
-    <p>T1-T8 fixes, code pointers, benchmark deltas, deployment notes, and remaining gaps.
-  </div>
+    <p>T1-T8 fixes, code pointers, benchmark deltas, deployment notes, and remaining gaps.</p>
+  </a>
 </div>
 
----
+<hr />
 
-## Key Metrics: Before vs After
+<h2 id="key-metrics-before-vs-after">Key Metrics: Before vs After</h2>
 
-| Metric | Before (2026-10-12) | After (2026-10-14) | Δ |
-|--------|---------------------|--------------------|---|
-| **Finish mismatches** | 6/41 | **0/41** | -6 |
-| **Retrieval hit** | 0.537 | **0.780** | **+0.243** |
-| **Cheque hit** | 0.111 | **0.667** | **+0.556** |
-| **Context recall** | 0.113 | **0.340** | **+0.227** |
-| **Answer relevancy** | 0.212 | **0.568** | **+0.356** |
-| **Ambiguity resolution** | 0.854 (0/6) | **1.000** (6/6) | +0.146 |
-| **Sticky persistence** | 0.610 | **0.683** | +0.073 |
-| **p50 latency** | 8006ms | **4872ms** | **-39%** |
-| **KB dense embed** | 2325ms | **19ms** | **100×** |
+<table>
+  <thead>
+    <tr>
+      <th>Metric</th>
+      <th>Before (2026-10-12)</th>
+      <th>After (2026-10-14)</th>
+      <th>Δ</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Finish mismatches</strong></td>
+      <td>6/41</td>
+      <td><strong>0/41</strong></td>
+      <td>-6</td>
+    </tr>
+    <tr>
+      <td><strong>Retrieval hit</strong></td>
+      <td>0.537</td>
+      <td><strong>0.780</strong></td>
+      <td><strong>+0.243</strong></td>
+    </tr>
+    <tr>
+      <td><strong>Cheque hit</strong></td>
+      <td>0.111</td>
+      <td><strong>0.667</strong></td>
+      <td><strong>+0.556</strong></td>
+    </tr>
+    <tr>
+      <td><strong>Context recall</strong></td>
+      <td>0.113</td>
+      <td><strong>0.340</strong></td>
+      <td><strong>+0.227</strong></td>
+    </tr>
+    <tr>
+      <td><strong>Answer relevancy</strong></td>
+      <td>0.212</td>
+      <td><strong>0.568</strong></td>
+      <td><strong>+0.356</strong></td>
+    </tr>
+    <tr>
+      <td><strong>Ambiguity resolution</strong></td>
+      <td>0.854 (0/6)</td>
+      <td><strong>1.000</strong> (6/6)</td>
+      <td>+0.146</td>
+    </tr>
+    <tr>
+      <td><strong>Sticky persistence</strong></td>
+      <td>0.610</td>
+      <td><strong>0.683</strong></td>
+      <td>+0.073</td>
+    </tr>
+    <tr>
+      <td><strong>p50 latency</strong></td>
+      <td>8006ms</td>
+      <td><strong>4872ms</strong></td>
+      <td><strong>-39%</strong></td>
+    </tr>
+    <tr>
+      <td><strong>KB dense embed</strong></td>
+      <td>2325ms</td>
+      <td><strong>19ms</strong></td>
+      <td><strong>100×</strong></td>
+    </tr>
+  </tbody>
+</table>
 
----
+<hr />
 
-## Repository & Artifacts
+<h2 id="repository--artifacts">Repository &amp; Artifacts</h2>
 
-| Artifact | Location |
-|----------|----------|
-| **Parent Repo** | [Work_Credit-RAG_Phase1](https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1) |
-| **Orchestrator** | [Work_RAG-Orchestrator](https://github.com/AliNikkhah2001/Work_RAG-Orchestrator) |
-| **KB Manager** | [Work_RAG-KB](https://github.com/AliNikkhah2001/Work_RAG-KB) |
-| **Bench Report** | [benchmark-report-2026-10-12.md](../benchmark-report-2026-10-12.md) |
-| **Bench Artifacts** | `evaluation/artifacts/` (bench_results, ragas_results, HTML report) |
-| **Git Commits** | Parent `b1d9148`, Orchestrator `56048fc`, KB `6ad47c6` |
+<table>
+  <thead>
+    <tr>
+      <th>Artifact</th>
+      <th>Location</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Parent Repo</strong></td>
+      <td><a href="https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1">Work_Credit-RAG_Phase1</a></td>
+    </tr>
+    <tr>
+      <td><strong>Orchestrator</strong></td>
+      <td><a href="https://github.com/AliNikkhah2001/Work_RAG-Orchestrator">Work_RAG-Orchestrator</a></td>
+    </tr>
+    <tr>
+      <td><strong>KB Manager</strong></td>
+      <td><a href="https://github.com/AliNikkhah2001/Work_RAG-KB">Work_RAG-KB</a></td>
+    </tr>
+    <tr>
+      <td><strong>Bench Report</strong></td>
+      <td><a href="../benchmark-report-2026-10-12.md">benchmark-report-2026-10-12.md</a></td>
+    </tr>
+    <tr>
+      <td><strong>Bench Artifacts</strong></td>
+      <td><code class="language-plaintext highlighter-rouge">evaluation/artifacts/</code> (bench_results, ragas_results, HTML report)</td>
+    </tr>
+    <tr>
+      <td><strong>Git Commits</strong></td>
+      <td>Parent <code class="language-plaintext highlighter-rouge">b1d9148</code>, Orchestrator <code class="language-plaintext highlighter-rouge">56048fc</code>, KB <code class="language-plaintext highlighter-rouge">6ad47c6</code></td>
+    </tr>
+  </tbody>
+</table>
 
----
+<hr />
 
-## Citation
+<h2 id="citation">Citation</h2>
 
-If you use this research, please cite:
+<p>If you use this research, please cite:</p>
 
-```bibtex
-@misc{work-credit-rag-2026,
-  title = {Multi-Turn RAG Research: Problems, Solutions \& State-of-the-Art (2025-2026)},
-  author = {Work Credit RAG Team},
-  year = {2026},
-  url = {https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1},
-  note = {Based on 40+ papers from ACL 2025, EMNLP 2025, SIGIR 2024/25, SIGDIAL 2025/26, SemEval 2026, NeurIPS 2025, ICML 2025}
-}
-```
+<div class="language-bibtex highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">@misc</span><span class="p">{</span><span class="nl">work-credit-rag-2026</span><span class="p">,</span>
+  <span class="na">title</span> <span class="p">=</span> <span class="s">{Multi-Turn RAG Research: Problems, Solutions \&amp; State-of-the-Art (2025-2026)}</span><span class="p">,</span>
+  <span class="na">author</span> <span class="p">=</span> <span class="s">{Work Credit RAG Team}</span><span class="p">,</span>
+  <span class="na">year</span> <span class="p">=</span> <span class="s">{2026}</span><span class="p">,</span>
+  <span class="na">url</span> <span class="p">=</span> <span class="s">{https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1}</span><span class="p">,</span>
+  <span class="na">note</span> <span class="p">=</span> <span class="s">{Based on 40+ papers from ACL 2025, EMNLP 2025, SIGIR 2024/25, SIGDIAL 2025/26, SemEval 2026, NeurIPS 2025, ICML 2025}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
   </main>
 
   <footer class="site-footer" role="contentinfo">

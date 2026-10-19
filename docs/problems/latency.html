@@ -110,25 +110,47 @@
   <p class="lead">Dense embed 2.3s dominated latency. Fixed with GPU embed + reranker + pool 30 = 100× speedup.</p>
 </div>
 
-## Problem Summary
+<h2 id="problem-summary">Problem Summary</h2>
 
-| Aspect | Detail |
-|--------|--------|
-| **Severity** | High |
-| **Category** | Performance |
-| **Status** | ✅ Fixed |
-| **Bench Impact** | KB search: 2333ms → 70ms (33×); p50: 8006ms → 4872ms |
-| **Key Papers** | SPLIT-RAG (2025), H-RAG (SemEval 2026), Sifei (SemEval 2026) |
+<table>
+  <thead>
+    <tr>
+      <th>Aspect</th>
+      <th>Detail</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Severity</strong></td>
+      <td>High</td>
+    </tr>
+    <tr>
+      <td><strong>Category</strong></td>
+      <td>Performance</td>
+    </tr>
+    <tr>
+      <td><strong>Status</strong></td>
+      <td>✅ Fixed</td>
+    </tr>
+    <tr>
+      <td><strong>Bench Impact</strong></td>
+      <td>KB search: 2333ms → 70ms (33×); p50: 8006ms → 4872ms</td>
+    </tr>
+    <tr>
+      <td><strong>Key Papers</strong></td>
+      <td>SPLIT-RAG (2025), H-RAG (SemEval 2026), Sifei (SemEval 2026)</td>
+    </tr>
+  </tbody>
+</table>
 
----
+<hr />
 
-## Root Cause
+<h2 id="root-cause">Root Cause</h2>
 
-### The CPU Bottleneck
+<h3 id="the-cpu-bottleneck">The CPU Bottleneck</h3>
 
-**Before GPU (2026-10-12)**:
-```
-stage_ms: {
+<p><strong>Before GPU (2026-10-12)</strong>:</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>stage_ms: {
   "bm25": 6.4,
   "dense": 2324.8,     # ← 99.5% of search time!
   "hyde": 0.0,
@@ -137,104 +159,195 @@ stage_ms: {
   "build_context": 0.0,
   "total": 2332.9
 }
-```
+</code></pre></div></div>
 
-**Key Insight**: The reranker was NOT the bottleneck (1.1ms). The **MiniLM query embedding on CPU (2325ms)** was 99.5% of search time.
+<p><strong>Key Insight</strong>: The reranker was NOT the bottleneck (1.1ms). The <strong>MiniLM query embedding on CPU (2325ms)</strong> was 99.5% of search time.</p>
 
-### Why CPU Was Slow
+<h3 id="why-cpu-was-slow">Why CPU Was Slow</h3>
 
-- MiniLM-L12 384-dim encoding on CPU: ~2300ms/query
-- No batching, no GPU acceleration
-- KB_RERANK_POOL=15 (CPU limit)
-- Cross-encoder BGE-m3 568M params too heavy for CPU reranking
+<ul>
+  <li>MiniLM-L12 384-dim encoding on CPU: ~2300ms/query</li>
+  <li>No batching, no GPU acceleration</li>
+  <li>KB_RERANK_POOL=15 (CPU limit)</li>
+  <li>Cross-encoder BGE-m3 568M params too heavy for CPU reranking</li>
+</ul>
 
----
+<hr />
 
-## The Fix: GPU Acceleration
+<h2 id="the-fix-gpu-acceleration">The Fix: GPU Acceleration</h2>
 
-### 1. GPU Embedding + Reranker
+<h3 id="1-gpu-embedding--reranker">1. GPU Embedding + Reranker</h3>
 
-```bash
-# KB restart with GPU
-KB_EMBED_DEVICE=cuda:0 \
-KB_RERANKER_DEVICE=cuda:0 \
-KB_RERANK_POOL=30 \
-nohup /tmp/kb-venv/bin/python -m uvicorn kb_manager.web.app:app --host 0.0.0.0 --port 8000
-```
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># KB restart with GPU</span>
+<span class="nv">KB_EMBED_DEVICE</span><span class="o">=</span>cuda:0 <span class="se">\</span>
+<span class="nv">KB_RERANKER_DEVICE</span><span class="o">=</span>cuda:0 <span class="se">\</span>
+<span class="nv">KB_RERANK_POOL</span><span class="o">=</span>30 <span class="se">\</span>
+<span class="nb">nohup</span> /tmp/kb-venv/bin/python <span class="nt">-m</span> uvicorn kb_manager.web.app:app <span class="nt">--host</span> 0.0.0.0 <span class="nt">--port</span> 8000
+</code></pre></div></div>
 
-### 2. GPU Memory Check
+<h3 id="2-gpu-memory-check">2. GPU Memory Check</h3>
 
-```bash
-nvidia-smi --query-gpu=index,memory.used,memory.total,utilization.gpu --format=csv
-# GPU0: 3327 MiB / 143771 MiB (free ~140GB)
-# GPU1: 133575 MiB / 143771 MiB (used by trtllm-serve)
-```
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>nvidia-smi <span class="nt">--query-gpu</span><span class="o">=</span>index,memory.used,memory.total,utilization.gpu <span class="nt">--format</span><span class="o">=</span>csv
+<span class="c"># GPU0: 3327 MiB / 143771 MiB (free ~140GB)</span>
+<span class="c"># GPU1: 133575 MiB / 143771 MiB (used by trtllm-serve)</span>
+</code></pre></div></div>
 
-GPU0 has ~140GB free → plenty for MiniLM (118MB) + BGE-m3 (2.3GB fp32 / 1.1GB fp16).
+<p>GPU0 has ~140GB free → plenty for MiniLM (118MB) + BGE-m3 (2.3GB fp32 / 1.1GB fp16).</p>
 
----
+<hr />
 
-## Results: Massive Speedup
+<h2 id="results-massive-speedup">Results: Massive Speedup</h2>
 
-| Metric | CPU (Before) | GPU (After) | Speedup |
-|--------|--------------|-------------|---------|
-| **Dense embed** | 2325ms | **19ms** | **~100×** |
-| **Rerank (pool 30)** | 1.1ms* | **52ms** | Real scores! |
-| **Total search** | 2333ms | **70ms** | **33×** |
-| **Rerank top score** | 0.028 | **0.863** | Real cross-encoder! |
+<table>
+  <thead>
+    <tr>
+      <th>Metric</th>
+      <th>CPU (Before)</th>
+      <th>GPU (After)</th>
+      <th>Speedup</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Dense embed</strong></td>
+      <td>2325ms</td>
+      <td><strong>19ms</strong></td>
+      <td><strong>~100×</strong></td>
+    </tr>
+    <tr>
+      <td><strong>Rerank (pool 30)</strong></td>
+      <td>1.1ms*</td>
+      <td><strong>52ms</strong></td>
+      <td>Real scores!</td>
+    </tr>
+    <tr>
+      <td><strong>Total search</strong></td>
+      <td>2333ms</td>
+      <td><strong>70ms</strong></td>
+      <td><strong>33×</strong></td>
+    </tr>
+    <tr>
+      <td><strong>Rerank top score</strong></td>
+      <td>0.028</td>
+      <td><strong>0.863</strong></td>
+      <td>Real cross-encoder!</td>
+    </tr>
+  </tbody>
+</table>
 
-*Previous rerank 1.1ms was likely skipped/cached — now actually runs BGE-m3 on GPU.
+<p>*Previous rerank 1.1ms was likely skipped/cached — now actually runs BGE-m3 on GPU.</p>
 
-### Benchmark Impact
+<h3 id="benchmark-impact">Benchmark Impact</h3>
 
-| Metric | Before | After | Δ |
-|--------|--------|-------|---|
-| KB search p50 | 1681ms | **2640ms** | +960ms (but now includes real rerank) |
-| End-to-end p50 | 8006ms | **4872ms** | **-39%** |
-| KB search p95 | 10682ms | **7339ms** | -31% |
-| Rerank pool | 15 | **30** | Quality ↑ |
+<table>
+  <thead>
+    <tr>
+      <th>Metric</th>
+      <th>Before</th>
+      <th>After</th>
+      <th>Δ</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>KB search p50</td>
+      <td>1681ms</td>
+      <td><strong>2640ms</strong></td>
+      <td>+960ms (but now includes real rerank)</td>
+    </tr>
+    <tr>
+      <td>End-to-end p50</td>
+      <td>8006ms</td>
+      <td><strong>4872ms</strong></td>
+      <td><strong>-39%</strong></td>
+    </tr>
+    <tr>
+      <td>KB search p95</td>
+      <td>10682ms</td>
+      <td><strong>7339ms</strong></td>
+      <td>-31%</td>
+    </tr>
+    <tr>
+      <td>Rerank pool</td>
+      <td>15</td>
+      <td><strong>30</strong></td>
+      <td>Quality ↑</td>
+    </tr>
+  </tbody>
+</table>
 
----
+<hr />
 
-## GPU Memory Analysis
+<h2 id="gpu-memory-analysis">GPU Memory Analysis</h2>
 
-```
-# Before GPU KB
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code># Before GPU KB
 GPU0: 3327 MiB / 143771 MiB (2.3%)
 GPU1: 133575 MiB / 143771 MiB (92.9%)  ← trtllm-serve
 
 # After GPU KB restart
 GPU0: 29593 MiB / 143771 MiB (20.6%)  ← +26GB for MiniLM + BGE-m3
 GPU1: 133575 MiB / 143771 MiB (92.9%)
-```
+</code></pre></div></div>
 
-**Memory footprint**: MiniLM (118MB) + BGE-m3 fp16 (~1.1GB) + CUDA context ≈ 26GB total.
+<p><strong>Memory footprint</strong>: MiniLM (118MB) + BGE-m3 fp16 (~1.1GB) + CUDA context ≈ 26GB total.</p>
 
----
+<hr />
 
-## Related Papers
+<h2 id="related-papers">Related Papers</h2>
 
-| Paper | Venue | Key Contribution |
-|-------|-------|------------------|
-| **SPLIT-RAG** | arXiv:2505.13994 (2025) | Parallel subgraph retrieval on partitioned KG → efficiency |
-| **H-RAG** | SemEval 2026 | Hierarchical parent-child retrieval + GPU-friendly config |
-| **Sifei** | SemEval 2026 | Hybrid dense+sparse + query rewrite + cross-encoder → 0.5453 nDCG@5 |
-| **5ting** | SemEval 2026 | LLM-based reranking + evidence-constrained generation |
-| **CoRAG** | NeurIPS 2025 | Chain-of-Retrieval → iterative retrieval+reasoning |
-| **CoopRAG** | NeurIPS 2025 | Cooperative retriever + LLM encoder → mutual information |
+<table>
+  <thead>
+    <tr>
+      <th>Paper</th>
+      <th>Venue</th>
+      <th>Key Contribution</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>SPLIT-RAG</strong></td>
+      <td>arXiv:2505.13994 (2025)</td>
+      <td>Parallel subgraph retrieval on partitioned KG → efficiency</td>
+    </tr>
+    <tr>
+      <td><strong>H-RAG</strong></td>
+      <td>SemEval 2026</td>
+      <td>Hierarchical parent-child retrieval + GPU-friendly config</td>
+    </tr>
+    <tr>
+      <td><strong>Sifei</strong></td>
+      <td>SemEval 2026</td>
+      <td>Hybrid dense+sparse + query rewrite + cross-encoder → 0.5453 nDCG@5</td>
+    </tr>
+    <tr>
+      <td><strong>5ting</strong></td>
+      <td>SemEval 2026</td>
+      <td>LLM-based reranking + evidence-constrained generation</td>
+    </tr>
+    <tr>
+      <td><strong>CoRAG</strong></td>
+      <td>NeurIPS 2025</td>
+      <td>Chain-of-Retrieval → iterative retrieval+reasoning</td>
+    </tr>
+    <tr>
+      <td><strong>CoopRAG</strong></td>
+      <td>NeurIPS 2025</td>
+      <td>Cooperative retriever + LLM encoder → mutual information</td>
+    </tr>
+  </tbody>
+</table>
 
----
+<hr />
 
-## Architecture: GPU Pipeline
+<h2 id="architecture-gpu-pipeline">Architecture: GPU Pipeline</h2>
 
-```mermaid
-flowchart TD
-    A[Query] --> B[BM25 (tantivy, CPU)]
-    A --> C[MiniLM Embed (GPU cuda:0)]
-    B --> D[RRF Fusion]
-    C --> D
-    D --> E[Cross-Encoder Rerank (GPU cuda:0, pool=30)]
-    E --> F[Top-K Results]
+<pre><code class="language-mermaid">flowchart TD
+    A[Query] --&gt; B[BM25 (tantivy, CPU)]
+    A --&gt; C[MiniLM Embed (GPU cuda:0)]
+    B --&gt; D[RRF Fusion]
+    C --&gt; D
+    D --&gt; E[Cross-Encoder Rerank (GPU cuda:0, pool=30)]
+    E --&gt; F[Top-K Results]
     
     subgraph GPU0
         C
@@ -248,62 +361,92 @@ flowchart TD
     
     style C fill:#dcfce7,stroke:#166534
     style E fill:#dcfce7,stroke:#166534
-```
+</code></pre>
 
----
+<hr />
 
-## Configuration
+<h2 id="configuration">Configuration</h2>
 
-```yaml
-# KB environment
-KB_EMBED_DEVICE: "cuda:0"
-KB_RERANKER_DEVICE: "cuda:0"
-KB_RERANK_POOL: 30
-KB_EMBED_MODEL: "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
-KB_RERANKER_MODEL: "BAAI/bge-reranker-v2-m3"
-```
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># KB environment</span>
+<span class="na">KB_EMBED_DEVICE</span><span class="pi">:</span> <span class="s2">"</span><span class="s">cuda:0"</span>
+<span class="na">KB_RERANKER_DEVICE</span><span class="pi">:</span> <span class="s2">"</span><span class="s">cuda:0"</span>
+<span class="na">KB_RERANK_POOL</span><span class="pi">:</span> <span class="m">30</span>
+<span class="na">KB_EMBED_MODEL</span><span class="pi">:</span> <span class="s2">"</span><span class="s">sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"</span>
+<span class="na">KB_RERANKER_MODEL</span><span class="pi">:</span> <span class="s2">"</span><span class="s">BAAI/bge-reranker-v2-m3"</span>
+</code></pre></div></div>
 
----
+<hr />
 
-## Code Pointers
+<h2 id="code-pointers">Code Pointers</h2>
 
-| File | Setting | Location |
-|------|---------|----------|
-| `kb_manager/config.py` | `reranker_device` | 81 |
-| `kb_manager/config.py` | `embed_device` | 231 |
-| `kb_manager/dense.py` | `_encode()` uses device | 329 |
-| `kb_manager/reranker.py` | CrossEncoder device | ~50 |
-| `deploy/vast/start.sh` | KB launch env | ~28 |
+<table>
+  <thead>
+    <tr>
+      <th>File</th>
+      <th>Setting</th>
+      <th>Location</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">kb_manager/config.py</code></td>
+      <td><code class="language-plaintext highlighter-rouge">reranker_device</code></td>
+      <td>81</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">kb_manager/config.py</code></td>
+      <td><code class="language-plaintext highlighter-rouge">embed_device</code></td>
+      <td>231</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">kb_manager/dense.py</code></td>
+      <td><code class="language-plaintext highlighter-rouge">_encode()</code> uses device</td>
+      <td>329</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">kb_manager/reranker.py</code></td>
+      <td>CrossEncoder device</td>
+      <td>~50</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">deploy/vast/start.sh</code></td>
+      <td>KB launch env</td>
+      <td>~28</td>
+    </tr>
+  </tbody>
+</table>
 
----
+<hr />
 
-## Validation Commands
+<h2 id="validation-commands">Validation Commands</h2>
 
-```bash
-# Check GPU KB health
-curl -s http://127.0.0.1:8000/health | jq '.db_mode, .doc_count, .chunk_count'
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Check GPU KB health</span>
+curl <span class="nt">-s</span> http://127.0.0.1:8000/health | jq <span class="s1">'.db_mode, .doc_count, .chunk_count'</span>
 
-# Time GPU search
-time curl -s http://127.0.0.1:8000/search/api \
-  -H 'Content-Type: application/json' \
-  -d '{"query":"چک برگشتی چیست","top_k":10,"filter_path":"گزارش اعتباراتنجی چک"}' \
-  | jq '.stage_ms'
+<span class="c"># Time GPU search</span>
+<span class="nb">time </span>curl <span class="nt">-s</span> http://127.0.0.1:8000/search/api <span class="se">\</span>
+  <span class="nt">-H</span> <span class="s1">'Content-Type: application/json'</span> <span class="se">\</span>
+  <span class="nt">-d</span> <span class="s1">'{"query":"چک برگشتی چیست","top_k":10,"filter_path":"گزارش اعتباراتنجی چک"}'</span> <span class="se">\</span>
+  | jq <span class="s1">'.stage_ms'</span>
 
-# Check GPU memory
-nvidia-smi --query-gpu=index,memory.used,memory.total,utilization.gpu --format=csv
+<span class="c"># Check GPU memory</span>
+nvidia-smi <span class="nt">--query-gpu</span><span class="o">=</span>index,memory.used,memory.total,utilization.gpu <span class="nt">--format</span><span class="o">=</span>csv
 
-# Warm vs cold
-curl -s http://127.0.0.1:8000/search/api -d '{"query":"test","top_k":10}'  # cold
-curl -s http://127.0.0.1:8000/search/api -d '{"query":"test","top_k":10}'  # warm
-```
+<span class="c"># Warm vs cold</span>
+curl <span class="nt">-s</span> http://127.0.0.1:8000/search/api <span class="nt">-d</span> <span class="s1">'{"query":"test","top_k":10}'</span>  <span class="c"># cold</span>
+curl <span class="nt">-s</span> http://127.0.0.1:8000/search/api <span class="nt">-d</span> <span class="s1">'{"query":"test","top_k":10}'</span>  <span class="c"># warm</span>
+</code></pre></div></div>
 
----
+<hr />
 
-## Related Problems
+<h2 id="related-problems">Related Problems</h2>
 
-- [Retrieval Degradation](./retrieval-degradation.html) — Fallback cascade now fast enough
-- [Subspace Filtering](./subspace-filtering.html) — Filtered retrieval now 70ms
-- [Hallucination Control](./hallucination.html) — Fast rerank enables real scores
+<ul>
+  <li><a href="./retrieval-degradation.html">Retrieval Degradation</a> — Fallback cascade now fast enough</li>
+  <li><a href="./subspace-filtering.html">Subspace Filtering</a> — Filtered retrieval now 70ms</li>
+  <li><a href="./hallucination.html">Hallucination Control</a> — Fast rerank enables real scores</li>
+</ul>
+
   </main>
 
   <footer class="site-footer" role="contentinfo">

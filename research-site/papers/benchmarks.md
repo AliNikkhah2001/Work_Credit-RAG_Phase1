@@ -57,6 +57,7 @@ description: "MTRAG, MTRAGEval, CORAL, RAD-Bench, SemEval 2026 Task 8 - 842-turn
 - **Task C**: Harmonic mean of quality + faithfulness (IDK-conditioned)
 
 **Top Systems**:
+
 | Team | Task A nDCG@5 | Task C Score |
 |------|---------------|--------------|
 | Sifei | **0.5453** (Rank 3) | 0.5312 (Rank 15) |

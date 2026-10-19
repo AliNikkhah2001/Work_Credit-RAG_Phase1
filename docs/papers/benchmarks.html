@@ -106,160 +106,404 @@
 
   <main id="main-content" class="site-main" role="main">
     <div class="page-header">
-  <h1>Benchmarks & Evaluation Papers</h1>
+  <h1>Benchmarks &amp; Evaluation Papers</h1>
   <p class="lead">MTRAG, MTRAGEval, CORAL, RAD-Bench, SemEval 2026 Task 8 - 842-turn multi-turn benchmark, nDCG@5, RAGAS, human evaluation, automated eval</p>
 </div>
 
-## Paper Summaries
+<h2 id="paper-summaries">Paper Summaries</h2>
 
-### MTRAG: The Gold Standard Benchmark
+<h3 id="mtrag-the-gold-standard-benchmark">MTRAG: The Gold Standard Benchmark</h3>
 
-| Field | Detail |
-|-------|--------|
-| **Title** | MTRAG: A Multi-Turn Conversational Benchmark for Evaluating Retrieval-Augmented Generation Systems |
-| **Authors** | Katsis et al. (IBM Research) |
-| **Venue** | ACL 2025 (arXiv:2501.03468) |
-| **Benchmark** | https://github.com/ibm/mt-rag-benchmark |
+<table>
+  <thead>
+    <tr>
+      <th>Field</th>
+      <th>Detail</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Title</strong></td>
+      <td>MTRAG: A Multi-Turn Conversational Benchmark for Evaluating Retrieval-Augmented Generation Systems</td>
+    </tr>
+    <tr>
+      <td><strong>Authors</strong></td>
+      <td>Katsis et al. (IBM Research)</td>
+    </tr>
+    <tr>
+      <td><strong>Venue</strong></td>
+      <td>ACL 2025 (arXiv:2501.03468)</td>
+    </tr>
+    <tr>
+      <td><strong>Benchmark</strong></td>
+      <td>https://github.com/ibm/mt-rag-benchmark</td>
+    </tr>
+  </tbody>
+</table>
 
-**Key Stats**:
-- **110 conversations**, 7.7 turns avg, **842 turns** total
-- **4 domains**: ClapNQ, FiQA, Govt, Cloud
-- **777 answerable turns** (after filtering unanswerable)
-- **16.9 unique relevant passages** per conversation
-- **87% non-standalone turns** (require context)
-- **13% clarification turns**, 74% follow-up
+<p><strong>Key Stats</strong>:</p>
+<ul>
+  <li><strong>110 conversations</strong>, 7.7 turns avg, <strong>842 turns</strong> total</li>
+  <li><strong>4 domains</strong>: ClapNQ, FiQA, Govt, Cloud</li>
+  <li><strong>777 answerable turns</strong> (after filtering unanswerable)</li>
+  <li><strong>16.9 unique relevant passages</strong> per conversation</li>
+  <li><strong>87% non-standalone turns</strong> (require context)</li>
+  <li><strong>13% clarification turns</strong>, 74% follow-up</li>
+</ul>
 
-**Retrieval Evaluation**:
-- **Metrics**: nDCG@1/3/5/10, Recall@1/3/5/10
-- **Models**: Lexical (BM25), Dense (BGE, E5), Sparse (ELSER)
-- **Settings**: Last-turn only vs Query rewrite
+<p><strong>Retrieval Evaluation</strong>:</p>
+<ul>
+  <li><strong>Metrics</strong>: nDCG@1/3/5/10, Recall@1/3/5/10</li>
+  <li><strong>Models</strong>: Lexical (BM25), Dense (BGE, E5), Sparse (ELSER)</li>
+  <li><strong>Settings</strong>: Last-turn only vs Query rewrite</li>
+</ul>
 
-**Generation Evaluation**:
-- **Models**: 9 LLMs evaluated
-- **Settings**: Reference, Reference+RAG, Full RAG
-- **Human eval**: Rigorous annotation
+<p><strong>Generation Evaluation</strong>:</p>
+<ul>
+  <li><strong>Models</strong>: 9 LLMs evaluated</li>
+  <li><strong>Settings</strong>: Reference, Reference+RAG, Full RAG</li>
+  <li><strong>Human eval</strong>: Rigorous annotation</li>
+</ul>
 
-**Key Finding**: ELSER R@5 drops **0.89 → 0.47** (first → later turns) = **51% degradation**
+<p><strong>Key Finding</strong>: ELSER R@5 drops <strong>0.89 → 0.47</strong> (first → later turns) = <strong>51% degradation</strong></p>
 
----
+<hr />
 
-### MTRAGEval: SemEval 2026 Task 8
+<h3 id="mtrageval-semeval-2026-task-8">MTRAGEval: SemEval 2026 Task 8</h3>
 
-| Field | Detail |
-|-------|--------|
-| **Title** | SemEval-2026 Task 8: MTRAGEval - Evaluating Multi-Turn RAG Conversations |
-| **Venue** | SemEval 2026 (ACL Anthology: 2026.semeval-1) |
-| **Subtasks** | A: Retrieval (nDCG@5), B: Generation with gold, C: End-to-end RAG |
+<table>
+  <thead>
+    <tr>
+      <th>Field</th>
+      <th>Detail</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Title</strong></td>
+      <td>SemEval-2026 Task 8: MTRAGEval - Evaluating Multi-Turn RAG Conversations</td>
+    </tr>
+    <tr>
+      <td><strong>Venue</strong></td>
+      <td>SemEval 2026 (ACL Anthology: 2026.semeval-1)</td>
+    </tr>
+    <tr>
+      <td><strong>Subtasks</strong></td>
+      <td>A: Retrieval (nDCG@5), B: Generation with gold, C: End-to-end RAG</td>
+    </tr>
+  </tbody>
+</table>
 
-**Benchmark**: MTRAG-UN (unanswerable, underspecified, non-standalone)
-- **842 multi-turn dialogues** across 4 domains
-- **Domains**: ClapNQ (26.6%), FiQA (23.6%), Govt (25.4%), Cloud (24.4%)
-- **Task A**: nDCG@1/3/5/10, Recall@1/3/5/10
-- **Task C**: Harmonic mean of quality + faithfulness (IDK-conditioned)
+<p><strong>Benchmark</strong>: MTRAG-UN (unanswerable, underspecified, non-standalone)</p>
+<ul>
+  <li><strong>842 multi-turn dialogues</strong> across 4 domains</li>
+  <li><strong>Domains</strong>: ClapNQ (26.6%), FiQA (23.6%), Govt (25.4%), Cloud (24.4%)</li>
+  <li><strong>Task A</strong>: nDCG@1/3/5/10, Recall@1/3/5/10</li>
+  <li><strong>Task C</strong>: Harmonic mean of quality + faithfulness (IDK-conditioned)</li>
+</ul>
 
-**Top Systems**:
-| Team | Task A nDCG@5 | Task C Score |
-|------|---------------|--------------|
-| Sifei | **0.5453** (Rank 3) | 0.5312 (Rank 15) |
-| GUIR | 0.5453 (Rank 3) | - |
-| uva-irlab | - | - |
+<p><strong>Top Systems</strong>:</p>
 
----
+<table>
+  <thead>
+    <tr>
+      <th>Team</th>
+      <th>Task A nDCG@5</th>
+      <th>Task C Score</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Sifei</td>
+      <td><strong>0.5453</strong> (Rank 3)</td>
+      <td>0.5312 (Rank 15)</td>
+    </tr>
+    <tr>
+      <td>GUIR</td>
+      <td>0.5453 (Rank 3)</td>
+      <td>-</td>
+    </tr>
+    <tr>
+      <td>uva-irlab</td>
+      <td>-</td>
+      <td>-</td>
+    </tr>
+  </tbody>
+</table>
 
-### CORAL & RAD-Bench
+<hr />
 
-| Benchmark | Description |
-|-----------|-------------|
-| **CORAL** (Cheng et al., 2025) | Conversational retrieval benchmark showing cross-turn evidence selection challenges |
-| **RAD-Bench** (Kuo et al., 2024) | Retrieval and reasoning across dialogue turns |
+<h3 id="coral--rad-bench">CORAL &amp; RAD-Bench</h3>
 
----
+<table>
+  <thead>
+    <tr>
+      <th>Benchmark</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>CORAL</strong> (Cheng et al., 2025)</td>
+      <td>Conversational retrieval benchmark showing cross-turn evidence selection challenges</td>
+    </tr>
+    <tr>
+      <td><strong>RAD-Bench</strong> (Kuo et al., 2024)</td>
+      <td>Retrieval and reasoning across dialogue turns</td>
+    </tr>
+  </tbody>
+</table>
 
-## Evaluation Metrics
+<hr />
 
-### Retrieval Metrics
+<h2 id="evaluation-metrics">Evaluation Metrics</h2>
 
-| Metric | Formula | Use Case |
-|--------|---------|----------|
-| **nDCG@k** | Normalized Discounted Cumulative Gain | Ranking quality |
-| **Recall@k** | Fraction of relevant in top-k | Coverage |
-| **MRR** | Mean Reciprocal Rank | First relevant position |
-| **Hit@k** | Binary: any relevant in top-k | Binary success |
+<h3 id="retrieval-metrics">Retrieval Metrics</h3>
 
-### Generation Metrics (RAGAS)
+<table>
+  <thead>
+    <tr>
+      <th>Metric</th>
+      <th>Formula</th>
+      <th>Use Case</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>nDCG@k</strong></td>
+      <td>Normalized Discounted Cumulative Gain</td>
+      <td>Ranking quality</td>
+    </tr>
+    <tr>
+      <td><strong>Recall@k</strong></td>
+      <td>Fraction of relevant in top-k</td>
+      <td>Coverage</td>
+    </tr>
+    <tr>
+      <td><strong>MRR</strong></td>
+      <td>Mean Reciprocal Rank</td>
+      <td>First relevant position</td>
+    </tr>
+    <tr>
+      <td><strong>Hit@k</strong></td>
+      <td>Binary: any relevant in top-k</td>
+      <td>Binary success</td>
+    </tr>
+  </tbody>
+</table>
 
-| Metric | Description | Higher Better |
-|--------|-------------|---------------|
-| **Faithfulness** | Answer grounded in contexts | ✅ |
-| **Answer Relevancy** | Answer addresses question | ✅ |
-| **Context Relevancy** | Retrieved chunks relevant to question | ✅ |
-| **Context Recall** | Fraction of answer covered by context | ✅ |
-| **Hallucination** | Facts not in context | ❌ (lower better) |
+<h3 id="generation-metrics-ragas">Generation Metrics (RAGAS)</h3>
 
-### Custom Metrics (Our Bench)
+<table>
+  <thead>
+    <tr>
+      <th>Metric</th>
+      <th>Description</th>
+      <th>Higher Better</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Faithfulness</strong></td>
+      <td>Answer grounded in contexts</td>
+      <td>✅</td>
+    </tr>
+    <tr>
+      <td><strong>Answer Relevancy</strong></td>
+      <td>Answer addresses question</td>
+      <td>✅</td>
+    </tr>
+    <tr>
+      <td><strong>Context Relevancy</strong></td>
+      <td>Retrieved chunks relevant to question</td>
+      <td>✅</td>
+    </tr>
+    <tr>
+      <td><strong>Context Recall</strong></td>
+      <td>Fraction of answer covered by context</td>
+      <td>✅</td>
+    </tr>
+    <tr>
+      <td><strong>Hallucination</strong></td>
+      <td>Facts not in context</td>
+      <td>❌ (lower better)</td>
+    </tr>
+  </tbody>
+</table>
 
-| Metric | Description |
-|--------|-------------|
-| **Ambiguity Resolution** | Clarified when should, didn't spuriously |
-| **Sticky Persistence** | Kept subspace across generic turns |
-| **Retrieval Hit** | Expected subspace in top-K |
+<h3 id="custom-metrics-our-bench">Custom Metrics (Our Bench)</h3>
 
----
+<table>
+  <thead>
+    <tr>
+      <th>Metric</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Ambiguity Resolution</strong></td>
+      <td>Clarified when should, didn’t spuriously</td>
+    </tr>
+    <tr>
+      <td><strong>Sticky Persistence</strong></td>
+      <td>Kept subspace across generic turns</td>
+    </tr>
+    <tr>
+      <td><strong>Retrieval Hit</strong></td>
+      <td>Expected subspace in top-K</td>
+    </tr>
+  </tbody>
+</table>
 
-## Our Benchmark Results
+<hr />
 
-### 41-Turn Multi-Agent Benchmark
+<h2 id="our-benchmark-results">Our Benchmark Results</h2>
 
-| Metric | Before (2026-10-12) | After (2026-10-14) | Δ |
-|--------|---------------------|--------------------|---|
-| **Finish mismatches** | 6/41 | **0/41** | -6 |
-| **Retrieval hit** | 0.537 | **0.780** | +0.243 |
-| **Cheque hit** | 0.111 | **0.667** | +0.556 |
-| **Context recall** | 0.113 | **0.340** | +0.227 |
-| **Answer relevancy** | 0.212 | **0.568** | +0.356 |
-| **Ambiguity resolution** | 0.854 | **1.000** | +0.146 |
-| **Sticky persistence** | 0.610 | **0.683** | +0.073 |
-| **p50 latency** | 8006ms | **4872ms** | -39% |
+<h3 id="41-turn-multi-agent-benchmark">41-Turn Multi-Agent Benchmark</h3>
 
-### Subspace Breakdown (After)
+<table>
+  <thead>
+    <tr>
+      <th>Metric</th>
+      <th>Before (2026-10-12)</th>
+      <th>After (2026-10-14)</th>
+      <th>Δ</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Finish mismatches</strong></td>
+      <td>6/41</td>
+      <td><strong>0/41</strong></td>
+      <td>-6</td>
+    </tr>
+    <tr>
+      <td><strong>Retrieval hit</strong></td>
+      <td>0.537</td>
+      <td><strong>0.780</strong></td>
+      <td>+0.243</td>
+    </tr>
+    <tr>
+      <td><strong>Cheque hit</strong></td>
+      <td>0.111</td>
+      <td><strong>0.667</strong></td>
+      <td>+0.556</td>
+    </tr>
+    <tr>
+      <td><strong>Context recall</strong></td>
+      <td>0.113</td>
+      <td><strong>0.340</strong></td>
+      <td>+0.227</td>
+    </tr>
+    <tr>
+      <td><strong>Answer relevancy</strong></td>
+      <td>0.212</td>
+      <td><strong>0.568</strong></td>
+      <td>+0.356</td>
+    </tr>
+    <tr>
+      <td><strong>Ambiguity resolution</strong></td>
+      <td>0.854</td>
+      <td><strong>1.000</strong></td>
+      <td>+0.146</td>
+    </tr>
+    <tr>
+      <td><strong>Sticky persistence</strong></td>
+      <td>0.610</td>
+      <td><strong>0.683</strong></td>
+      <td>+0.073</td>
+    </tr>
+    <tr>
+      <td><strong>p50 latency</strong></td>
+      <td>8006ms</td>
+      <td><strong>4872ms</strong></td>
+      <td>-39%</td>
+    </tr>
+  </tbody>
+</table>
 
-| Subspace | Count | Hit | Faith | Sticky | p50 |
-|----------|-------|-----|-------|--------|-----|
-| Cheque | 9 | 0.667 | 0.422 | 0.444 | 10301ms |
-| Facilities Person | 6 | 0.500 | 0.967 | 0.667 | 10718ms |
-| Facilities Legal | 3 | 0.667 | 0.917 | 0.333 | 10498ms |
-| General | 10 | 0.800 | 0.655 | 0.600 | 6981ms |
+<h3 id="subspace-breakdown-after">Subspace Breakdown (After)</h3>
 
----
+<table>
+  <thead>
+    <tr>
+      <th>Subspace</th>
+      <th>Count</th>
+      <th>Hit</th>
+      <th>Faith</th>
+      <th>Sticky</th>
+      <th>p50</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Cheque</td>
+      <td>9</td>
+      <td>0.667</td>
+      <td>0.422</td>
+      <td>0.444</td>
+      <td>10301ms</td>
+    </tr>
+    <tr>
+      <td>Facilities Person</td>
+      <td>6</td>
+      <td>0.500</td>
+      <td>0.967</td>
+      <td>0.667</td>
+      <td>10718ms</td>
+    </tr>
+    <tr>
+      <td>Facilities Legal</td>
+      <td>3</td>
+      <td>0.667</td>
+      <td>0.917</td>
+      <td>0.333</td>
+      <td>10498ms</td>
+    </tr>
+    <tr>
+      <td>General</td>
+      <td>10</td>
+      <td>0.800</td>
+      <td>0.655</td>
+      <td>0.600</td>
+      <td>6981ms</td>
+    </tr>
+  </tbody>
+</table>
 
-## Reproduction
+<hr />
 
-```bash
-# Full benchmark (214s)
-cd Work_Credit-RAG_Phase1
-PYTHONPATH=".:components/orchestrator:$PYTHONPATH" python3 -m evaluation.bench_runner
+<h2 id="reproduction">Reproduction</h2>
 
-# RAGAS evaluation
-PYTHONPATH=".:components/orchestrator:$PYTHONPATH" python3 -m evaluation.ragas_eval \
-  --input evaluation/artifacts/bench_results_latest.json \
-  --output evaluation/artifacts/ragas_results_latest.json
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Full benchmark (214s)</span>
+<span class="nb">cd </span>Work_Credit-RAG_Phase1
+<span class="nv">PYTHONPATH</span><span class="o">=</span><span class="s2">".:components/orchestrator:</span><span class="nv">$PYTHONPATH</span><span class="s2">"</span> python3 <span class="nt">-m</span> evaluation.bench_runner
 
-# Report generation
-PYTHONPATH=".:components/orchestrator:$PYTHONPATH" python3 -m evaluation.report \
-  --bench evaluation/artifacts/bench_results_latest.json \
-  --ragas evaluation/artifacts/ragas_results_latest.json \
-  --out evaluation/artifacts/bench_report_latest.html
-```
+<span class="c"># RAGAS evaluation</span>
+<span class="nv">PYTHONPATH</span><span class="o">=</span><span class="s2">".:components/orchestrator:</span><span class="nv">$PYTHONPATH</span><span class="s2">"</span> python3 <span class="nt">-m</span> evaluation.ragas_eval <span class="se">\</span>
+  <span class="nt">--input</span> evaluation/artifacts/bench_results_latest.json <span class="se">\</span>
+  <span class="nt">--output</span> evaluation/artifacts/ragas_results_latest.json
 
----
+<span class="c"># Report generation</span>
+<span class="nv">PYTHONPATH</span><span class="o">=</span><span class="s2">".:components/orchestrator:</span><span class="nv">$PYTHONPATH</span><span class="s2">"</span> python3 <span class="nt">-m</span> evaluation.report <span class="se">\</span>
+  <span class="nt">--bench</span> evaluation/artifacts/bench_results_latest.json <span class="se">\</span>
+  <span class="nt">--ragas</span> evaluation/artifacts/ragas_results_latest.json <span class="se">\</span>
+  <span class="nt">--out</span> evaluation/artifacts/bench_report_latest.html
+</code></pre></div></div>
 
-## Related Pages
+<hr />
 
-- [Paper: Subspace Filtering](./subspace-filtering.html)
-- [Paper: Ambiguity & Clarification](./ambiguity-clarification.html)
-- [Paper: Retrieval Fusion & RRF](./retrieval-fusion.html)
-- [Paper: Faithfulness & Hallucination](./faithfulness.html)
-- [Our Implementation](../our-impl.html)
+<h2 id="related-pages">Related Pages</h2>
+
+<ul>
+  <li><a href="./subspace-filtering.html">Paper: Subspace Filtering</a></li>
+  <li><a href="./ambiguity-clarification.html">Paper: Ambiguity &amp; Clarification</a></li>
+  <li><a href="./retrieval-fusion.html">Paper: Retrieval Fusion &amp; RRF</a></li>
+  <li><a href="./faithfulness.html">Paper: Faithfulness &amp; Hallucination</a></li>
+  <li><a href="../our-impl.html">Our Implementation</a></li>
+</ul>
+
   </main>
 
   <footer class="site-footer" role="contentinfo">

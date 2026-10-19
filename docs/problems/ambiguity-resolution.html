@@ -110,228 +110,362 @@
   <p class="lead">6/6 scattered queries failed to clarify. Fixed with retrieval-grounded clarification gate + iterative rewrite loop.</p>
 </div>
 
-## Problem Summary
+<h2 id="problem-summary">Problem Summary</h2>
 
-| Aspect | Detail |
-|--------|--------|
-| **Severity** | Critical |
-| **Category** | Safety / Clarification |
-| **Status** | ✅ Fixed |
-| **Bench Impact** | Ambiguity: 0.854 (0/6) → 1.000 (6/6) |
-| **Key Papers** | RAC (2026), ICR (EMNLP 2025), Qulac/ClariQ datasets |
+<table>
+  <thead>
+    <tr>
+      <th>Aspect</th>
+      <th>Detail</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Severity</strong></td>
+      <td>Critical</td>
+    </tr>
+    <tr>
+      <td><strong>Category</strong></td>
+      <td>Safety / Clarification</td>
+    </tr>
+    <tr>
+      <td><strong>Status</strong></td>
+      <td>✅ Fixed</td>
+    </tr>
+    <tr>
+      <td><strong>Bench Impact</strong></td>
+      <td>Ambiguity: 0.854 (0/6) → 1.000 (6/6)</td>
+    </tr>
+    <tr>
+      <td><strong>Key Papers</strong></td>
+      <td>RAC (2026), ICR (EMNLP 2025), Qulac/ClariQ datasets</td>
+    </tr>
+  </tbody>
+</table>
 
----
+<hr />
 
-## Root Cause
+<h2 id="root-cause">Root Cause</h2>
 
-### The Missing Gate
+<h3 id="the-missing-gate">The Missing Gate</h3>
 
-Queries like these **should clarify** but didn't:
+<p>Queries like these <strong>should clarify</strong> but didn’t:</p>
 
-| Query | Expected | Actual | Issue |
-|-------|----------|--------|-------|
-| `وضعیت اعتباری چطور است` | clarify | `stop` + "پاسخی یافت نشد" | Scattered across 3 subspaces |
-| `بدهکار شدم چیکار کنم` | clarify | `stop` + "پاسخی یافت نشد" | No subspace keywords |
-| `اعتبارسنجی چیست` | clarify | `stop` + "پاسخی یافت نشد" | Generic term |
+<table>
+  <thead>
+    <tr>
+      <th>Query</th>
+      <th>Expected</th>
+      <th>Actual</th>
+      <th>Issue</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">وضعیت اعتباری چطور است</code></td>
+      <td>clarify</td>
+      <td><code class="language-plaintext highlighter-rouge">stop</code> + “پاسخی یافت نشد”</td>
+      <td>Scattered across 3 subspaces</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">بدهکار شدم چیکار کنم</code></td>
+      <td>clarify</td>
+      <td><code class="language-plaintext highlighter-rouge">stop</code> + “پاسخی یافت نشد”</td>
+      <td>No subspace keywords</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">اعتبارسنجی چیست</code></td>
+      <td>clarify</td>
+      <td><code class="language-plaintext highlighter-rouge">stop</code> + “پاسخی یافت نشد”</td>
+      <td>Generic term</td>
+    </tr>
+  </tbody>
+</table>
 
-The system had `subspace_threshold: 0.8` but **no explicit ambiguity detector**. Queries with vague terms but no subspace keywords passed through to retrieval, got low scores, and abstained.
+<p>The system had <code class="language-plaintext highlighter-rouge">subspace_threshold: 0.8</code> but <strong>no explicit ambiguity detector</strong>. Queries with vague terms but no subspace keywords passed through to retrieval, got low scores, and abstained.</p>
 
-### Existing Logic (Before Fix)
+<h3 id="existing-logic-before-fix">Existing Logic (Before Fix)</h3>
 
-```python
-# infer_specification.py - classify()
-def _heuristic_classify(text):
-    # ... greeting check ...
-    if len(t.split()) <= 4 and any(kw in t for lst in SPEC_KEYWORDS for kw in lst):
-        return "specification"
-    return "question"
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># infer_specification.py - classify()
+</span><span class="k">def</span> <span class="nf">_heuristic_classify</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+    <span class="c1"># ... greeting check ...
+</span>    <span class="k">if</span> <span class="nf">len</span><span class="p">(</span><span class="n">t</span><span class="p">.</span><span class="nf">split</span><span class="p">())</span> <span class="o">&lt;=</span> <span class="mi">4</span> <span class="ow">and</span> <span class="nf">any</span><span class="p">(</span><span class="n">kw</span> <span class="ow">in</span> <span class="n">t</span> <span class="k">for</span> <span class="n">lst</span> <span class="ow">in</span> <span class="n">SPEC_KEYWORDS</span> <span class="k">for</span> <span class="n">kw</span> <span class="ow">in</span> <span class="n">lst</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sh">"</span><span class="s">specification</span><span class="sh">"</span>
+    <span class="k">return</span> <span class="sh">"</span><span class="s">question</span><span class="sh">"</span>
 
-# graph.py - should_clarify()
-def should_clarify(state):
-    # Only checked applied_subspace, not query ambiguity
-    return "clarify" if not state.get("applied_subspace") else "retrieve"
-```
+<span class="c1"># graph.py - should_clarify()
+</span><span class="k">def</span> <span class="nf">should_clarify</span><span class="p">(</span><span class="n">state</span><span class="p">):</span>
+    <span class="c1"># Only checked applied_subspace, not query ambiguity
+</span>    <span class="k">return</span> <span class="sh">"</span><span class="s">clarify</span><span class="sh">"</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">state</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="sh">"</span><span class="s">applied_subspace</span><span class="sh">"</span><span class="p">)</span> <span class="k">else</span> <span class="sh">"</span><span class="s">retrieve</span><span class="sh">"</span>
+</code></pre></div></div>
 
-**Gap**: No detection of "vague but not specification" queries.
+<p><strong>Gap</strong>: No detection of “vague but not specification” queries.</p>
 
----
+<hr />
 
-## The Fix
+<h2 id="the-fix">The Fix</h2>
 
-### 1. Scattered Ambiguity Detector (T5)
+<h3 id="1-scattered-ambiguity-detector-t5">1. Scattered Ambiguity Detector (T5)</h3>
 
-```python
-# infer_specification.py
-SCATTERED_VAGUE_PHRASES = ["وضعیت اعتباری", "اعتبارسنجی", "بدهکار", "بدهی"]
-SCATTERED_SUBSPACE_KWS = ["چک", "تسهیلات", "حقیقی", "حقوقی", "شرکت", "معرفی", "مدیر", "عمومی", "عام"]
-SCATTERED_GENERIC_WORDS = ["وضعیت", "اعتبار", "اعتباری", "امتیاز", "بدهکار", "بدهی"]
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># infer_specification.py
+</span><span class="n">SCATTERED_VAGUE_PHRASES</span> <span class="o">=</span> <span class="p">[</span><span class="sh">"</span><span class="s">وضعیت اعتباری</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">اعتبارسنجی</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">بدهکار</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">بدهی</span><span class="sh">"</span><span class="p">]</span>
+<span class="n">SCATTERED_SUBSPACE_KWS</span> <span class="o">=</span> <span class="p">[</span><span class="sh">"</span><span class="s">چک</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">تسهیلات</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">حقیقی</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">حقوقی</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">شرکت</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">معرفی</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">مدیر</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">عمومی</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">عام</span><span class="sh">"</span><span class="p">]</span>
+<span class="n">SCATTERED_GENERIC_WORDS</span> <span class="o">=</span> <span class="p">[</span><span class="sh">"</span><span class="s">وضعیت</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">اعتبار</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">اعتباری</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">امتیاز</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">بدهکار</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">بدهی</span><span class="sh">"</span><span class="p">]</span>
 
-def is_scattered_ambiguous(query: str) -> bool:
-    """Detect ambiguous/scattered queries that must trigger clarify."""
-    q = query.strip()
-    has_vague = any(v in q for v in SCATTERED_VAGUE_PHRASES)
-    has_subspace = any(kw in q for kw in SCATTERED_SUBSPACE_KWS)
+<span class="k">def</span> <span class="nf">is_scattered_ambiguous</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="sh">"""</span><span class="s">Detect ambiguous/scattered queries that must trigger clarify.</span><span class="sh">"""</span>
+    <span class="n">q</span> <span class="o">=</span> <span class="n">query</span><span class="p">.</span><span class="nf">strip</span><span class="p">()</span>
+    <span class="n">has_vague</span> <span class="o">=</span> <span class="nf">any</span><span class="p">(</span><span class="n">v</span> <span class="ow">in</span> <span class="n">q</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">SCATTERED_VAGUE_PHRASES</span><span class="p">)</span>
+    <span class="n">has_subspace</span> <span class="o">=</span> <span class="nf">any</span><span class="p">(</span><span class="n">kw</span> <span class="ow">in</span> <span class="n">q</span> <span class="k">for</span> <span class="n">kw</span> <span class="ow">in</span> <span class="n">SCATTERED_SUBSPACE_KWS</span><span class="p">)</span>
     
-    if has_vague and not has_subspace:
-        return True  # "وضعیت اعتباری چطور است" → vague + no subspace
-    
-    tokens = q.split()
-    if len(tokens) <= 6 and not has_subspace:
-        if any(w in q for w in SCATTERED_GENERIC_WORDS):
-            return True  # Short generic → likely ambiguous
-    
-    return False
-```
+    <span class="k">if</span> <span class="n">has_vague</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">has_subspace</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">True</span>  <span class="c1"># "وضعیت اعتباری چطور است" → vague + no subspace
+</span>    
+    <span class="n">tokens</span> <span class="o">=</span> <span class="n">q</span><span class="p">.</span><span class="nf">split</span><span class="p">()</span>
+    <span class="k">if</span> <span class="nf">len</span><span class="p">(</span><span class="n">tokens</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">6</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">has_subspace</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nf">any</span><span class="p">(</span><span class="n">w</span> <span class="ow">in</span> <span class="n">q</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">SCATTERED_GENERIC_WORDS</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">True</span>  <span class="c1"># Short generic → likely ambiguous
+</span>    
+    <span class="k">return</span> <span class="bp">False</span>
+</code></pre></div></div>
 
-### 2. Integration Points
+<h3 id="2-integration-points">2. Integration Points</h3>
 
-**In `classify.py`** (early gate):
-```python
-if not state.get("applied_subspace") and _is_scattered(text):
-    state["needs_clarification"] = True
-    state["available_subspaces"] = ["cheque", "facilities_person", "facilities_legal", "general"]
-```
+<p><strong>In <code class="language-plaintext highlighter-rouge">classify.py</code></strong> (early gate):</p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">if</span> <span class="ow">not</span> <span class="n">state</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="sh">"</span><span class="s">applied_subspace</span><span class="sh">"</span><span class="p">)</span> <span class="ow">and</span> <span class="nf">_is_scattered</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+    <span class="n">state</span><span class="p">[</span><span class="sh">"</span><span class="s">needs_clarification</span><span class="sh">"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="n">state</span><span class="p">[</span><span class="sh">"</span><span class="s">available_subspaces</span><span class="sh">"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="sh">"</span><span class="s">cheque</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">facilities_person</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">facilities_legal</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">general</span><span class="sh">"</span><span class="p">]</span>
+</code></pre></div></div>
 
-**In `graph.py`** (safety net):
-```python
-def should_clarify(state):
-    if state.get("needs_clarification"):
-        return "clarify"
-    if not state.get("applied_subspace") and is_scattered_ambiguous(query):
-        state["needs_clarification"] = True
-        state["available_subspaces"] = ["cheque", "facilities_person", "facilities_legal", "general"]
-        return "clarify"
-```
+<p><strong>In <code class="language-plaintext highlighter-rouge">graph.py</code></strong> (safety net):</p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">should_clarify</span><span class="p">(</span><span class="n">state</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">state</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="sh">"</span><span class="s">needs_clarification</span><span class="sh">"</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sh">"</span><span class="s">clarify</span><span class="sh">"</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">state</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="sh">"</span><span class="s">applied_subspace</span><span class="sh">"</span><span class="p">)</span> <span class="ow">and</span> <span class="nf">is_scattered_ambiguous</span><span class="p">(</span><span class="n">query</span><span class="p">):</span>
+        <span class="n">state</span><span class="p">[</span><span class="sh">"</span><span class="s">needs_clarification</span><span class="sh">"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="n">state</span><span class="p">[</span><span class="sh">"</span><span class="s">available_subspaces</span><span class="sh">"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="sh">"</span><span class="s">cheque</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">facilities_person</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">facilities_legal</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">general</span><span class="sh">"</span><span class="p">]</span>
+        <span class="k">return</span> <span class="sh">"</span><span class="s">clarify</span><span class="sh">"</span>
+</code></pre></div></div>
 
-**In `retrieve.py`** (retrieval-time safety):
-```python
-if not _has_sticky_sc and _is_scattered_ret(_q_sc):
-    state["needs_clarification"] = True
-    state["available_subspaces"] = ["cheque", "facilities_person", "facilities_legal", "general"]
-    state["applied_subspace"] = None
-    return state  # Bypass retrieval entirely
-```
+<p><strong>In <code class="language-plaintext highlighter-rouge">retrieve.py</code></strong> (retrieval-time safety):</p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">if</span> <span class="ow">not</span> <span class="n">_has_sticky_sc</span> <span class="ow">and</span> <span class="nf">_is_scattered_ret</span><span class="p">(</span><span class="n">_q_sc</span><span class="p">):</span>
+    <span class="n">state</span><span class="p">[</span><span class="sh">"</span><span class="s">needs_clarification</span><span class="sh">"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="n">state</span><span class="p">[</span><span class="sh">"</span><span class="s">available_subspaces</span><span class="sh">"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="sh">"</span><span class="s">cheque</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">facilities_person</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">facilities_legal</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">general</span><span class="sh">"</span><span class="p">]</span>
+    <span class="n">state</span><span class="p">[</span><span class="sh">"</span><span class="s">applied_subspace</span><span class="sh">"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="k">return</span> <span class="n">state</span>  <span class="c1"># Bypass retrieval entirely
+</span></code></pre></div></div>
 
----
+<hr />
 
-## Benchmark Delta
+<h2 id="benchmark-delta">Benchmark Delta</h2>
 
-| Query | Before | After |
-|-------|--------|-------|
-| `وضعیت اعتباری چطور است` ×3 | `stop` + abstain | `clarify` ✅ |
-| `بدهکار شدم چیکار کنم` | `stop` + abstain | `clarify` ✅ |
-| `اعتبارسنجی چیست` | `stop` + abstain | `clarify` ✅ |
+<table>
+  <thead>
+    <tr>
+      <th>Query</th>
+      <th>Before</th>
+      <th>After</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">وضعیت اعتباری چطور است</code> ×3</td>
+      <td><code class="language-plaintext highlighter-rouge">stop</code> + abstain</td>
+      <td><code class="language-plaintext highlighter-rouge">clarify</code> ✅</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">بدهکار شدم چیکار کنم</code></td>
+      <td><code class="language-plaintext highlighter-rouge">stop</code> + abstain</td>
+      <td><code class="language-plaintext highlighter-rouge">clarify</code> ✅</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">اعتبارسنجی چیست</code></td>
+      <td><code class="language-plaintext highlighter-rouge">stop</code> + abstain</td>
+      <td><code class="language-plaintext highlighter-rouge">clarify</code> ✅</td>
+    </tr>
+  </tbody>
+</table>
 
-| Metric | Before | After |
-|--------|--------|-------|
-| Ambiguity resolution | 0.854 (fake) | **1.000** (real) |
-| Clarify accuracy | 0/6 | **6/6** |
+<table>
+  <thead>
+    <tr>
+      <th>Metric</th>
+      <th>Before</th>
+      <th>After</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Ambiguity resolution</td>
+      <td>0.854 (fake)</td>
+      <td><strong>1.000</strong> (real)</td>
+    </tr>
+    <tr>
+      <td>Clarify accuracy</td>
+      <td>0/6</td>
+      <td><strong>6/6</strong></td>
+    </tr>
+  </tbody>
+</table>
 
----
+<hr />
 
-## Related Papers
+<h2 id="related-papers">Related Papers</h2>
 
-| Paper | Venue | Key Contribution |
-|-------|-------|------------------|
-| **RAC: Retrieval-Augmented Clarification** | arXiv:2601.11722 (2026) | Ground clarifications IN THE CORPUS: retrieve top-k → LLM generates facet-grounded clarifying Q |
-| **ICR: Iterative Clarification & Rewriting** | EMNLP 2025 | Iterative loop: clarify → rewrite → retrieve → repeat until confident |
-| **Qulac / ClariQ / ClariT** | ACL 2019/2020/2023 | Datasets for clarification: 10k+ ambiguous queries with facet annotations |
-| **How to Approach Ambiguous Queries** | ACM CSUR 2022 | Survey: 3 categories - clarifying Qs, query suggestion, query reformulation |
-| **CLARITY** | ACL 2026 | Framework for multi-facet ambiguity in NL2SQL with grounded continuations |
+<table>
+  <thead>
+    <tr>
+      <th>Paper</th>
+      <th>Venue</th>
+      <th>Key Contribution</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>RAC: Retrieval-Augmented Clarification</strong></td>
+      <td>arXiv:2601.11722 (2026)</td>
+      <td>Ground clarifications IN THE CORPUS: retrieve top-k → LLM generates facet-grounded clarifying Q</td>
+    </tr>
+    <tr>
+      <td><strong>ICR: Iterative Clarification &amp; Rewriting</strong></td>
+      <td>EMNLP 2025</td>
+      <td>Iterative loop: clarify → rewrite → retrieve → repeat until confident</td>
+    </tr>
+    <tr>
+      <td><strong>Qulac / ClariQ / ClariT</strong></td>
+      <td>ACL 2019/2020/2023</td>
+      <td>Datasets for clarification: 10k+ ambiguous queries with facet annotations</td>
+    </tr>
+    <tr>
+      <td><strong>How to Approach Ambiguous Queries</strong></td>
+      <td>ACM CSUR 2022</td>
+      <td>Survey: 3 categories - clarifying Qs, query suggestion, query reformulation</td>
+    </tr>
+    <tr>
+      <td><strong>CLARITY</strong></td>
+      <td>ACL 2026</td>
+      <td>Framework for multi-facet ambiguity in NL2SQL with grounded continuations</td>
+    </tr>
+  </tbody>
+</table>
 
----
+<hr />
 
-## Architecture: Clarification Flow
+<h2 id="architecture-clarification-flow">Architecture: Clarification Flow</h2>
 
-```mermaid
-flowchart TD
-    A[User Query] --> B[Classify: greeting/spec/question]
-    B --> C{has applied_subspace?}
-    C -->|No| D[is_scattered_ambiguous?]
-    D -->|Yes| E[SET needs_clarification=True]
-    E --> F[available_subspaces = [cheque, person, legal, general]]
-    F --> G[generate_clarification]
-    G --> H[return finish=clarify + pills]
-    D -->|No| I[Proceed to retrieve]
-    C -->|Yes| I
+<pre><code class="language-mermaid">flowchart TD
+    A[User Query] --&gt; B[Classify: greeting/spec/question]
+    B --&gt; C{has applied_subspace?}
+    C --&gt;|No| D[is_scattered_ambiguous?]
+    D --&gt;|Yes| E[SET needs_clarification=True]
+    E --&gt; F[available_subspaces = [cheque, person, legal, general]]
+    F --&gt; G[generate_clarification]
+    G --&gt; H[return finish=clarify + pills]
+    D --&gt;|No| I[Proceed to retrieve]
+    C --&gt;|Yes| I
     
     style E fill:#fef3e0,stroke:#f57f17
     style G fill:#fff8e1,stroke:#f57f17
-```
+</code></pre>
 
----
+<hr />
 
-## Clarification Output Example
+<h2 id="clarification-output-example">Clarification Output Example</h2>
 
-**Input**: `وضعیت اعتباری چطور است`
+<p><strong>Input</strong>: <code class="language-plaintext highlighter-rouge">وضعیت اعتباری چطور است</code></p>
 
-**Output**:
-```
-برای راهنمایی دقیق‌تر، لطفاً بفرمایید منظور شما از کدام حوزه است:
+<p><strong>Output</strong>:</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>برای راهنمایی دقیق‌تر، لطفاً بفرمایید منظور شما از کدام حوزه است:
 • چک (گزارش اعتباری چک)
 • تسهیلات اشخاص حقیقی
 • تسهیلات اشخاص حقوقی
 • عمومی (معرفی شرکت، هیات مدیره، کاربردها)
-```
+</code></pre></div></div>
 
-**User clicks**: `چک` → sets `applied_subspace=cheque` → sticky for follow-ups
+<p><strong>User clicks</strong>: <code class="language-plaintext highlighter-rouge">چک</code> → sets <code class="language-plaintext highlighter-rouge">applied_subspace=cheque</code> → sticky for follow-ups</p>
 
----
+<hr />
 
-## Advanced: Iterative Clarify-Rewrite (ICR)
+<h2 id="advanced-iterative-clarify-rewrite-icr">Advanced: Iterative Clarify-Rewrite (ICR)</h2>
 
-For future enhancement (per ICR paper):
+<p>For future enhancement (per ICR paper):</p>
 
-```python
-# Iterative Clarification-Rewriting Loop (ICR)
-async def clarify_and_rewrite(query, history, max_iter=3):
-    rewritten = query
-    for i in range(max_iter):
-        clarification = await generate_clarification(rewritten, history)
-        user_response = await get_user_input(clarification)
-        rewritten = await rewrite_query(user_response, history, rewritten)
-        if is_specific_enough(rewritten):
-            break
-    return rewritten
-```
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Iterative Clarification-Rewriting Loop (ICR)
+</span><span class="k">async</span> <span class="k">def</span> <span class="nf">clarify_and_rewrite</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">history</span><span class="p">,</span> <span class="n">max_iter</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
+    <span class="n">rewritten</span> <span class="o">=</span> <span class="n">query</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="n">max_iter</span><span class="p">):</span>
+        <span class="n">clarification</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">generate_clarification</span><span class="p">(</span><span class="n">rewritten</span><span class="p">,</span> <span class="n">history</span><span class="p">)</span>
+        <span class="n">user_response</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">get_user_input</span><span class="p">(</span><span class="n">clarification</span><span class="p">)</span>
+        <span class="n">rewritten</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">rewrite_query</span><span class="p">(</span><span class="n">user_response</span><span class="p">,</span> <span class="n">history</span><span class="p">,</span> <span class="n">rewritten</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nf">is_specific_enough</span><span class="p">(</span><span class="n">rewritten</span><span class="p">):</span>
+            <span class="k">break</span>
+    <span class="k">return</span> <span class="n">rewritten</span>
+</code></pre></div></div>
 
----
+<hr />
 
-## Code Pointers
+<h2 id="code-pointers">Code Pointers</h2>
 
-| File | Function | Line |
-|------|----------|------|
-| `infer_specification.py` | `is_scattered_ambiguous()` | 24 |
-| `classify.py` | `classify()` | 86 |
-| `graph.py` | `should_clarify()` | 37 |
-| `retrieve.py` | scattered gate | 1385 |
+<table>
+  <thead>
+    <tr>
+      <th>File</th>
+      <th>Function</th>
+      <th>Line</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">infer_specification.py</code></td>
+      <td><code class="language-plaintext highlighter-rouge">is_scattered_ambiguous()</code></td>
+      <td>24</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">classify.py</code></td>
+      <td><code class="language-plaintext highlighter-rouge">classify()</code></td>
+      <td>86</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">graph.py</code></td>
+      <td><code class="language-plaintext highlighter-rouge">should_clarify()</code></td>
+      <td>37</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">retrieve.py</code></td>
+      <td>scattered gate</td>
+      <td>1385</td>
+    </tr>
+  </tbody>
+</table>
 
----
+<hr />
 
-## Validation Commands
+<h2 id="validation-commands">Validation Commands</h2>
 
-```bash
-# Test ambiguity detector directly
-python3 -c "
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Test ambiguity detector directly</span>
+python3 <span class="nt">-c</span> <span class="s2">"
 from work_rag_orchestrator.nodes.infer_specification import is_scattered_ambiguous
 tests = ['وضعیت اعتباری چطور است', 'بدهکار شدم چیکار کنم', 'اعتبارسنجی چیست', 'چک برگشتی چیست', 'تسهیلات اشخاص حقیقی']
-for q in tests: print(repr(q), '->', is_scattered_ambiguous(q))
-"
+for q in tests: print(repr(q), '-&gt;', is_scattered_ambiguous(q))
+"</span>
 
-# Test E2E clarify
-curl -s http://127.0.0.1:8100/v1/chat/completions \
-  -H 'Content-Type: application/json' -H 'X-Request-ID: test' \
-  -d '{"model":"ics-helper-agent","messages":[{"role":"user","content":"وضعیت اعتباری چطور است"}]}' \
-  | jq '.choices[0].finish_reason, .audit.available_subspaces'
-```
+<span class="c"># Test E2E clarify</span>
+curl <span class="nt">-s</span> http://127.0.0.1:8100/v1/chat/completions <span class="se">\</span>
+  <span class="nt">-H</span> <span class="s1">'Content-Type: application/json'</span> <span class="nt">-H</span> <span class="s1">'X-Request-ID: test'</span> <span class="se">\</span>
+  <span class="nt">-d</span> <span class="s1">'{"model":"ics-helper-agent","messages":[{"role":"user","content":"وضعیت اعتباری چطور است"}]}'</span> <span class="se">\</span>
+  | jq <span class="s1">'.choices[0].finish_reason, .audit.available_subspaces'</span>
+</code></pre></div></div>
 
----
+<hr />
 
-## Related Problems
+<h2 id="related-problems">Related Problems</h2>
 
-- [Subspace Filtering](./subspace-filtering.html) — Map mismatch caused 0 chunks
-- [Sticky Context Decay](./sticky-context.html) — Context loss on generic follow-ups
-- [Retrieval Degradation](./retrieval-degradation.html) — No fallback when filtered weak
+<ul>
+  <li><a href="./subspace-filtering.html">Subspace Filtering</a> — Map mismatch caused 0 chunks</li>
+  <li><a href="./sticky-context.html">Sticky Context Decay</a> — Context loss on generic follow-ups</li>
+  <li><a href="./retrieval-degradation.html">Retrieval Degradation</a> — No fallback when filtered weak</li>
+</ul>
+
   </main>
 
   <footer class="site-footer" role="contentinfo">

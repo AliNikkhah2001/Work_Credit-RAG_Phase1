@@ -139,7 +139,7 @@
   <a href="/Work_Credit-RAG_Phase1/problems/retrieval-degradation.html" class="card" style="text-decoration: none; color: inherit;">
     <h3>📉 Retrieval Degradation</h3>
     <p class="meta"><strong>Impact:</strong> Filtered retrieval = hard filter, no fallback | <strong>Fix:</strong> RRF fusion + broadened retry + GPU</p>
-    <p>Filtered retrieval was treated as authoritative with NO fallback. When <code>filter_path</code> returned weak scores (<0.15), chunks cleared → abstention. No whole-KB fallback, no broadened params, no GPU.</p>
+    <p>Filtered retrieval was treated as authoritative with NO fallback. When <code>filter_path</code> returned weak scores (&lt;0.15), chunks cleared → abstention. No whole-KB fallback, no broadened params, no GPU.</p>
     <div class="tags"><span class="tag primary">Root Cause</span><span class="tag">No Fallback</span><span class="tag">GUIR</span></div>
   </a>
   
@@ -158,79 +158,203 @@
   </a>
 </div>
 
----
+<hr />
 
-## Problem Taxonomy
+<h2 id="problem-taxonomy">Problem Taxonomy</h2>
 
-| # | Problem | Category | Severity | Status | Key Paper |
-|---|---------|----------|----------|--------|-----------|
-| 1 | Subspace map mismatch | Retrieval | Critical | ✅ Fixed | PC-RAG, SPLIT-RAG |
-| 2 | No filtered fallback | Retrieval | Critical | ✅ Fixed | GUIR, 5ting |
-| 3 | Global evidence threshold | Generation | High | ✅ Fixed | PC-RAG, DUTIR |
-| 4 | Sticky decay | Context | High | ✅ Fixed | CPP, CALMem |
-| 5 | No clarification gate | Safety | Critical | ✅ Fixed | RAC, ICR, Qulac |
-| 6 | No retrieval fallback | Retrieval | Critical | ✅ Fixed | GUIR, 5ting |
-| 7 | No per-subspace boost | Retrieval | Medium | ✅ Fixed | GUIR, SPLIT-RAG |
-| 7 | No faith guard | Safety | Medium | ✅ Fixed | DUTIR, Reflective RAG |
-| 8 | CPU-only embed | Performance | High | ✅ Fixed | SPLIT-RAG, GPU KB |
-| 9 | No decay mechanism | Context | Medium | ✅ Fixed | CPP, CALMem |
+<table>
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>Problem</th>
+      <th>Category</th>
+      <th>Severity</th>
+      <th>Status</th>
+      <th>Key Paper</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1</td>
+      <td>Subspace map mismatch</td>
+      <td>Retrieval</td>
+      <td>Critical</td>
+      <td>✅ Fixed</td>
+      <td>PC-RAG, SPLIT-RAG</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>No filtered fallback</td>
+      <td>Retrieval</td>
+      <td>Critical</td>
+      <td>✅ Fixed</td>
+      <td>GUIR, 5ting</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td>Global evidence threshold</td>
+      <td>Generation</td>
+      <td>High</td>
+      <td>✅ Fixed</td>
+      <td>PC-RAG, DUTIR</td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td>Sticky decay</td>
+      <td>Context</td>
+      <td>High</td>
+      <td>✅ Fixed</td>
+      <td>CPP, CALMem</td>
+    </tr>
+    <tr>
+      <td>5</td>
+      <td>No clarification gate</td>
+      <td>Safety</td>
+      <td>Critical</td>
+      <td>✅ Fixed</td>
+      <td>RAC, ICR, Qulac</td>
+    </tr>
+    <tr>
+      <td>6</td>
+      <td>No retrieval fallback</td>
+      <td>Retrieval</td>
+      <td>Critical</td>
+      <td>✅ Fixed</td>
+      <td>GUIR, 5ting</td>
+    </tr>
+    <tr>
+      <td>7</td>
+      <td>No per-subspace boost</td>
+      <td>Retrieval</td>
+      <td>Medium</td>
+      <td>✅ Fixed</td>
+      <td>GUIR, SPLIT-RAG</td>
+    </tr>
+    <tr>
+      <td>7</td>
+      <td>No faith guard</td>
+      <td>Safety</td>
+      <td>Medium</td>
+      <td>✅ Fixed</td>
+      <td>DUTIR, Reflective RAG</td>
+    </tr>
+    <tr>
+      <td>8</td>
+      <td>CPU-only embed</td>
+      <td>Performance</td>
+      <td>High</td>
+      <td>✅ Fixed</td>
+      <td>SPLIT-RAG, GPU KB</td>
+    </tr>
+    <tr>
+      <td>9</td>
+      <td>No decay mechanism</td>
+      <td>Context</td>
+      <td>Medium</td>
+      <td>✅ Fixed</td>
+      <td>CPP, CALMem</td>
+    </tr>
+  </tbody>
+</table>
 
----
+<hr />
 
-## Root Cause Analysis Diagram
+<h2 id="root-cause-analysis-diagram">Root Cause Analysis Diagram</h2>
 
-```mermaid
-flowchart TD
-    A[User Query] --> B{Subspace Map Match?}
-    B -->|No Match| C[Zero Chunks Retrieved]
-    B -->|Match| D[Filtered Retrieval]
-    C --> E[Abstention: 'پاسخی یافت نشد']
-    D --> F{Scores > Threshold?}
-    F -->|No| G[Chunks Cleared]
-    F -->|Yes| H[Build Context]
-    G --> E
-    H --> I{Generation}
-    I --> J[Answer]
-    I --> K[Hallucination?]
-    K -->|Yes| L[Hallucinated Answer]
-    K -->|No| J
+<pre><code class="language-mermaid">flowchart TD
+    A[User Query] --&gt; B{Subspace Map Match?}
+    B --&gt;|No Match| C[Zero Chunks Retrieved]
+    B --&gt;|Match| D[Filtered Retrieval]
+    C --&gt; E[Abstention: 'پاسخی یافت نشد']
+    D --&gt; F{Scores &gt; Threshold?}
+    F --&gt;|No| G[Chunks Cleared]
+    F --&gt;|Yes| H[Build Context]
+    G --&gt; E
+    H --&gt; I{Generation}
+    I --&gt; J[Answer]
+    I --&gt; K[Hallucination?]
+    K --&gt;|Yes| L[Hallucinated Answer]
+    K --&gt;|No| J
     
     style C fill:#fef2f2,stroke:#ef4444
     style E fill:#fef2f2,stroke:#ef4444
     style G fill:#fef2f2,stroke:#ef4444
     style L fill:#fef2f2,stroke:#ef4444
     
-    M[Fixes] --> N[T1: RRF Fusion]
-    M --> O[T2: Broaden Retry]
-    M --> P[T3: Per-Subspace Threshold]
-    M --> Q[T4: Sticky Carry]
-    M --> R[T5: Clarify Gate]
-    M --> S[T6: Lexical Guard]
-    M --> T[T7: Observability]
-```
+    M[Fixes] --&gt; N[T1: RRF Fusion]
+    M --&gt; O[T2: Broaden Retry]
+    M --&gt; P[T3: Per-Subspace Threshold]
+    M --&gt; Q[T4: Sticky Carry]
+    M --&gt; R[T5: Clarify Gate]
+    M --&gt; S[T6: Lexical Guard]
+    M --&gt; T[T7: Observability]
+</code></pre>
 
----
+<hr />
 
-## Production Impact Quantification
+<h2 id="production-impact-quantification">Production Impact Quantification</h2>
 
-| Metric | Before Fix | After Fix | Business Impact |
-|--------|------------|-----------|-----------------|
-| **Cheque hit rate** | 11.1% | 66.7% | 5x more cheque queries answered |
-| **Clarification accuracy** | 0% (0/6) | 100% (6/6) | Users guided instead of dead ends |
-| **Sticky persistence** | 61% | 68% | Fewer re-specifications needed |
-| **Answer relevancy** | 21% | 57% | 2.7x more relevant answers |
-| **p50 latency** | 8.0s | 4.9s | 39% faster responses |
-| **KB search time** | 2.3s | 70ms | 33× faster retrieval |
+<table>
+  <thead>
+    <tr>
+      <th>Metric</th>
+      <th>Before Fix</th>
+      <th>After Fix</th>
+      <th>Business Impact</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Cheque hit rate</strong></td>
+      <td>11.1%</td>
+      <td>66.7%</td>
+      <td>5x more cheque queries answered</td>
+    </tr>
+    <tr>
+      <td><strong>Clarification accuracy</strong></td>
+      <td>0% (0/6)</td>
+      <td>100% (6/6)</td>
+      <td>Users guided instead of dead ends</td>
+    </tr>
+    <tr>
+      <td><strong>Sticky persistence</strong></td>
+      <td>61%</td>
+      <td>68%</td>
+      <td>Fewer re-specifications needed</td>
+    </tr>
+    <tr>
+      <td><strong>Answer relevancy</strong></td>
+      <td>21%</td>
+      <td>57%</td>
+      <td>2.7x more relevant answers</td>
+    </tr>
+    <tr>
+      <td><strong>p50 latency</strong></td>
+      <td>8.0s</td>
+      <td>4.9s</td>
+      <td>39% faster responses</td>
+    </tr>
+    <tr>
+      <td><strong>KB search time</strong></td>
+      <td>2.3s</td>
+      <td>70ms</td>
+      <td>33× faster retrieval</td>
+    </tr>
+  </tbody>
+</table>
 
----
+<hr />
 
-## Next Steps
+<h2 id="next-steps">Next Steps</h2>
 
-1. **Read individual problem pages** for deep technical details
-2. **Explore Papers & Solutions** for academic backing
-3. **Review Architectures** for implementation patterns
-4. **Check Relevance Mapping** for direct fix-to-paper links
-4. **Run Benchmarks** with `evaluation/bench_runner.py`
+<ol>
+  <li><strong>Read individual problem pages</strong> for deep technical details</li>
+  <li><strong>Explore Papers &amp; Solutions</strong> for academic backing</li>
+  <li><strong>Review Architectures</strong> for implementation patterns</li>
+  <li><strong>Check Relevance Mapping</strong> for direct fix-to-paper links</li>
+  <li><strong>Run Benchmarks</strong> with <code class="language-plaintext highlighter-rouge">evaluation/bench_runner.py</code></li>
+</ol>
+
   </main>
 
   <footer class="site-footer" role="contentinfo">
