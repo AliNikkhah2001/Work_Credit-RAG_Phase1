@@ -12,7 +12,7 @@ Umbrella repository for a self-hosted, Persian-capable conversational RAG platfo
 
 ## 🌐 Research Site (NEW)
 
-**Interactive multi-page research site:** [https://alinikkhah2001.github.io/Work_Credit-RAG_Phase1/research-site/](https://alinikkhah2001.github.io/Work_Credit-RAG_Phase1/research-site/)
+**Interactive multi-page research site:** [https://alinikkhah2001.github.io/Work_Credit-RAG_Phase1/](https://alinikkhah2001.github.io/Work_Credit-RAG_Phase1/)
 
 - **Problems**: Detailed root cause analysis for all 6 problems
 - **Papers & Solutions**: 25+ papers from ACL 2025, EMNLP 2025, SIGIR 2024/25, SIGDIAL 2025/26, SemEval 2026, NeurIPS 2025
