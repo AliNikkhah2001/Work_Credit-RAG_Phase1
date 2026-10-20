@@ -100,6 +100,20 @@ bash deploy/vast/studio.sh  # API :2024
 # run input MUST include request_id: {"request_id":"studio-001","messages":[{"role":"user","content":"سلام"}]}
 ```
 
+Documentation index (README `docs-toc`):
+
+The `## Documentation Index` block in each README (between `<!-- docs-toc:start -->` / `<!-- docs-toc:end -->`) is generated from the repo's tracked `*.md` files. After adding/renaming/removing any note, regenerate it — never hand-edit the block:
+
+```bash
+python scripts/gen_readme_toc.py            # update README in place (idempotent)
+python scripts/gen_readme_toc.py --dry-run  # preview the block
+python scripts/gen_readme_toc.py --check     # CI guard (exit 1 if stale)
+```
+
+- Config: `scripts/docs_manifest.json` (readme target, section title, markers, include/exclude).
+- The script is vendored in the parent **and every submodule**; run it from that repo's root.
+- CI: `.github/workflows/docs-toc.yml` auto-refreshes + commits on `*.md` pushes.
+
 ## 4. Git rules
 
 - Parent pins submodules to exact commits (gitlinks). Check: `git submodule status --recursive`.
