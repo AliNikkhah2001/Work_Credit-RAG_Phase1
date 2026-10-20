@@ -1,6 +1,6 @@
 ---
 layout: default
-title: "Subspace Filtering Failure - Multi-Turn RAG Research"
+title: "Subspace Filtering Failure"
 description: "Root cause: subspace_map mismatch ('چک' vs KB folder 'گزارش اعتباراتنجی چک'). Fixed with map correction + RRF fusion."
 ---
 

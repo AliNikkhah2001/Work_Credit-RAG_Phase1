@@ -1,6 +1,6 @@
 ---
 layout: default
-title: "Hallucination Control - Multi-Turn RAG Research"
+title: "Hallucination Control"
 description: "Weak-evidence answers hallucinated. Fixed with coverage+score guard + lexical evidence bypass + per-subspace thresholds."
 ---
 

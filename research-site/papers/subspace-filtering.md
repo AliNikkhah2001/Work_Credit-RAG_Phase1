@@ -1,6 +1,6 @@
 ---
 layout: default
-title: "Subspace & Domain Partitioning Papers - Multi-Turn RAG Research"
+title: "Subspace & Domain Partitioning Papers"
 description: "PC-RAG, SPLIT-RAG, DSRAG, EvoRAG - Domain-partitioned retrieval, question-driven graph partitioning, hierarchical KGs"
 ---
 

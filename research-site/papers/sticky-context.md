@@ -1,6 +1,6 @@
 ---
 layout: default
-title: "Sticky Context & Memory Papers - Multi-Turn RAG Research"
+title: "Sticky Context & Memory Papers"
 description: "CPP, CALMem, Context Recycling, Rag.NET, OpenAI Sessions - Segmented episodic memory, dual memory layers, bounded hierarchical context"
 ---
 

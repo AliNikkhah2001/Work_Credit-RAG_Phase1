@@ -1,6 +1,6 @@
 ---
 layout: default
-title: "Retrieval Degradation - Multi-Turn RAG Research"
+title: "Retrieval Degradation"
 description: "Filtered retrieval = hard filter, no fallback. Fixed with RRF fusion + broadened retry + GPU acceleration."
 ---
 

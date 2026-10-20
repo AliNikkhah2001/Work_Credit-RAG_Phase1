@@ -1,6 +1,6 @@
 ---
 layout: default
-title: "Ambiguity Resolution Failure - Multi-Turn RAG Research"
+title: "Ambiguity Resolution Failure"
 description: "6/6 scattered queries failed to clarify. Fixed with retrieval-grounded clarification gate + iterative rewrite loop."
 ---
 

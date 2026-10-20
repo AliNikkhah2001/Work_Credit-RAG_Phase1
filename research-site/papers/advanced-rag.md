@@ -1,6 +1,6 @@
 ---
 layout: default
-title: "Advanced RAG Paradigms Papers - Multi-Turn RAG Research"
+title: "Advanced RAG Paradigms Papers"
 description: "CoRAG, IM-RAG, CoopRAG, MMOA-RAG, Reflective RAG, CalibRAG - Chain-of-Retrieval, Inner Monologues, Cooperative RAG, Multi-agent RL, Self-evaluation"
 ---
 

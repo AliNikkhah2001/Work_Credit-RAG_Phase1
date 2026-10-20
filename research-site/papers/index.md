@@ -1,6 +1,6 @@
 ---
 layout: default
-title: "Papers & Solutions - Multi-Turn RAG Research"
+title: "Papers & Solutions"
 description: "40+ papers from ACL 2025, EMNLP 2025, SIGIR 2024/25, SIGDIAL 2025/26, SemEval 2026, NeurIPS 2025, ICML 2025"
 ---
 

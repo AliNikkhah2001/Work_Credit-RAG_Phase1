@@ -1,6 +1,6 @@
 ---
 layout: default
-title: "Ambiguity & Clarification Papers - Multi-Turn RAG Research"
+title: "Ambiguity & Clarification Papers"
 description: "RAC, ICR, Qulac/ClariQ/ClariT, CLARITY - Retrieval-grounded clarification, iterative clarify-rewrite loops, multi-facet ambiguity"
 ---
 

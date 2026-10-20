@@ -1,6 +1,6 @@
 ---
 layout: default
-title: "Multi-Turn RAG Research: Problems, Solutions & State-of-the-Art (2025-2026)"
+title: "Overview"
 description: "Comprehensive research on multi-turn RAG challenges: subspace filtering, ambiguity resolution, sticky context, and their 2025-2026 state-of-the-art solutions from ACL, EMNLP, SIGIR, SIGDIAL, SemEval, NeurIPS, ICML"
 ---
 

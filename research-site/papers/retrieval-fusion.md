@@ -1,6 +1,6 @@
 ---
 layout: default
-title: "Retrieval Fusion & RRF Papers - Multi-Turn RAG Research"
+title: "Retrieval Fusion & RRF Papers"
 description: "GUIR, 5ting, H-RAG, Sifei, IITKanBDone, AILS-NTUA, uva-irlab - Multi-query fusion, dual-query merge, nested-RRF, hybrid dense+sparse, parent-child retrieval"
 ---
 

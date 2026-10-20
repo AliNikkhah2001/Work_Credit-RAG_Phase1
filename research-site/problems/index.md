@@ -1,6 +1,6 @@
 ---
 layout: default
-title: "Problems - Multi-Turn RAG Research"
+title: "Problems"
 description: "Detailed breakdown of each multi-turn RAG problem: root cause, production impact, and our fixes"
 ---
 

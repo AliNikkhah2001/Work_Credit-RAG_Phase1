@@ -1,6 +1,6 @@
 ---
 layout: default
-title: "Sticky Context Decay - Multi-Turn RAG Research"
+title: "Sticky Context Decay"
 description: "Context lost after 3-4 generic turns. Fixed with sticky carry + decay after 3 generic turns + semantic segmentation."
 ---
 

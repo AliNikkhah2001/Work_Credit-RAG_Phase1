@@ -1,6 +1,6 @@
 ---
 layout: default
-title: "Memory Architectures Papers - Multi-Turn RAG Research"
+title: "Memory Architectures Papers"
 description: "CALMem, CPP, Context Recycling, Rag.NET, OpenAI Sessions - Dual memory, segmented episodic memory, bounded hierarchical context"
 ---
 

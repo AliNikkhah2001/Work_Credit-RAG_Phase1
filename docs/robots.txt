@@ -1,1 +1,1 @@
-Sitemap: /Work_Credit-RAG_Phase1/sitemap.xml
+Sitemap: https://alinikkhah2001.github.io/Work_Credit-RAG_Phase1/sitemap.xml

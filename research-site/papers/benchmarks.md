@@ -1,6 +1,6 @@
 ---
 layout: default
-title: "Benchmarks & Evaluation Papers - Multi-Turn RAG Research"
+title: "Benchmarks & Evaluation Papers"
 description: "MTRAG, MTRAGEval, CORAL, RAD-Bench, SemEval 2026 Task 8 - 842-turn multi-turn benchmark, nDCG@5, RAGAS, human evaluation, automated eval"
 ---
 

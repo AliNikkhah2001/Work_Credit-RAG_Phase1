@@ -1,6 +1,6 @@
 ---
 layout: default
-title: "Our Implementation - Multi-Turn RAG Research"
+title: "Our Implementation"
 description: "T1-T8 fixes, code pointers, benchmark deltas, deployment notes, and remaining gaps"
 ---
 

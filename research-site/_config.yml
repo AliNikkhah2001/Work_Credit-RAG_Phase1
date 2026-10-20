@@ -1,10 +1,11 @@
-title: "Multi-Turn RAG Research: Problems, Solutions & State-of-the-Art (2025-2026)"
+title: "Multi-Turn RAG Research"
 description: "Comprehensive research on multi-turn RAG challenges: subspace filtering, ambiguity resolution, sticky context, and their 2025-2026 state-of-the-art solutions from ACL, EMNLP, SIGIR, SIGDIAL, SemEval, NeurIPS, ICML"
 author: "Work Credit RAG Team"
 email: "research@work-credit-rag.org"
 
 # GitHub Pages baseurl for project page
 baseurl: "/Work_Credit-RAG_Phase1"
+url: "https://alinikkhah2001.github.io"
 
 # Build settings
 markdown: kramdown

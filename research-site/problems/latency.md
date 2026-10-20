@@ -1,6 +1,6 @@
 ---
 layout: default
-title: "CPU Latency Bottleneck - Multi-Turn RAG Research"
+title: "CPU Latency Bottleneck"
 description: "Dense embed 2.3s dominated latency. Fixed with GPU embed + reranker + pool 30 = 100× speedup."
 ---
 

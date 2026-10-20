@@ -1,6 +1,6 @@
 ---
 layout: default
-title: "Faithfulness & Hallucination Papers - Multi-Turn RAG Research"
+title: "Faithfulness & Hallucination Papers"
 description: "DUTIR, Reflective RAG, 5ting, CoRAG, CoopRAG, CalibRAG - Faithfulness guards, self-evaluation, evidence-constrained generation, calibration"
 ---
 

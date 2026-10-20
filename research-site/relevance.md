@@ -1,6 +1,6 @@
 ---
 layout: default
-title: "Relevance Mapping - Multi-Turn RAG Research"
+title: "Relevance Mapping"
 description: "Detailed table mapping each of our fixes to the specific paper, section, and mechanism that validates it"
 ---
 

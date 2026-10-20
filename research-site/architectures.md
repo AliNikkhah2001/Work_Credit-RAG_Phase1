@@ -1,6 +1,6 @@
 ---
 layout: default
-title: "Architectures - Multi-Turn RAG Research"
+title: "Architectures"
 description: "Mermaid diagrams of paper architectures: SPLIT-RAG, PC-RAG, RAC, ICR, CPP, CALMem, H-RAG, 5ting, GUIR, DUTIR, CoRAG, IM-RAG"
 ---
 
