@@ -1,0 +1,144 @@
+# LiteLLM Configuration — Self-Hosted OpenRouter
+# 
+# This configuration provides a unified OpenAI-compatible gateway for all LLM consumers.
+# It routes between self-hosted models (via LLM Manager :9000), external providers,
+# and provides automatic fallback, cost routing, and budget controls.
+#
+# Run: docker run -d --name litellm -p 4000:4000 \
+#   -v $(pwd)/litellm.yaml:/app/config.yaml \
+#   -e LITELLM_MASTER_KEY=sk-litellm-master \
+#   ghcr.io/berriai/litellm:main-latest --config /app/config.yaml --detailed_debug
+
+general_settings:
+  master_key: "${LITELLM_MASTER_KEY:-sk-litellm-master-please-change}"
+  drop_params: true
+  set_verbose: true
+  alerts: 
+    - "webhook"
+    - "email"
+  alert_types:
+    - "budget_alerts"
+    - "daily_reports"
+  alerting: true
+  alerting_args:
+    alerting_webhook_urls: ["${ALERT_WEBHOOK_URL}"]
+    alerting_threshold: 0.8
+    budget_duration: "1d"
+
+model_list:
+  # Self-hosted models via LLM Manager gateway
+  - model_name: self-gemma-4-31b
+    litellm_params:
+      model: openai/gemma-4-31b
+      api_base: http://llm-manager:9000/v1
+      api_key: "${LLM_MANAGER_API_KEY:-sk-local-dev}"
+    model_info:
+      max_tokens: 8192
+      input_cost_per_token: 0.0
+      output_cost_per_token: 0.0
+    tpm: 100000
+    rpm: 1000
+
+  - model_name: self-qwen2.5-7b
+    litellm_params:
+      model: openai/qwen2.5-7b
+      api_base: http://llm-manager:9000/v1
+      api_key: "${LLM_MANAGER_API_KEY:-sk-local-dev}"
+    model_info:
+      max_tokens: 8192
+      input_cost_per_token: 0.0
+      output_cost_per_token: 0.0
+    tpm: 100000
+    rpm: 1000
+
+  # External providers (configure API keys in env)
+  - model_name: cheap
+    litellm_params:
+      model: openai/qwen2.5-7b
+      api_base: "${SILICONFLOW_BASE_URL:-https://api.siliconflow.cn/v1}"
+      api_key: "${SILICONFLOW_API_KEY}"
+    model_info:
+      max_tokens: 8192
+      input_cost_per_token: 0.000014
+      output_cost_per_token: 0.000014
+    tpm: 100000
+    rpm: 100
+
+  - model_name: strong
+    litellm_params:
+      model: gpt-4o
+      api_base: https://api.openai.com/v1
+      api_key: "${OPENAI_API_KEY}"
+    model_info:
+      max_tokens: 128000
+      input_cost_per_token: 0.0000025
+      output_cost_per_token: 0.00001
+    tpm: 100000
+    rpm: 100
+
+  - model_name: judge
+    litellm_params:
+      model: gemini/gemini-2.0-flash
+      api_base: https://generativelanguage.googleapis.com/v1
+      api_key: "${GEMINI_API_KEY}"
+    model_info:
+      max_tokens: 8192
+      input_cost_per_token: 0.000000075
+      output_cost_per_token: 0.0000003
+    tpm: 100000
+    rpm: 100
+
+  # Fallback chain for strong model
+  - model_name: strong-with-fallback
+    litellm_params:
+      model: gpt-4o
+      api_base: https://api.openai.com/v1
+      api_key: "${OPENAI_API_KEY}"
+      fallback_models:
+        - strong
+        - strong
+        - self-gemma-4-31b
+    model_info:
+      max_tokens: 128000
+
+router_settings:
+  routing_strategy: "usage-based-routing"
+  fallback_config:
+    - model_name: strong
+      fallbacks: [cheap, self-gemma-4-31b]
+    - model_name: judge
+      fallbacks: [strong, cheap]
+  num_retries: 3
+  timeout: 120
+  allowed_fallbacks:
+    - strong
+    - cheap
+    - self-gemma-4-31b
+    - judge
+
+litellm_settings:
+  callbacks: ["langfuse", "prometheus"]
+  callbacks_args:
+    langfuse:
+      LANGFUSE_HOST: "${LANGFUSE_HOST:-http://langfuse:3000}"
+      LANGFUSE_PUBLIC_KEY: "${LANGFUSE_PUBLIC_KEY:-pk-lf-mvp-local}"
+      LANGFUSE_SECRET_KEY: "${LANGFUSE_SECRET_KEY:-sk-lf-mvp-local}"
+    prometheus:
+      metrics_port: 4001
+  global_max_parallel_requests: 50
+  drop_params: true
+  set_verbose: true
+
+model_aliases:
+  gpt-4o: strong
+  gemma-4-31b: self-gemma-4-31b
+  qwen2.5-7b: self-qwen2.5-7b
+  qwen2.5-7b-cheap: cheap
+  gemini-flash: judge
+
+general_settings:
+  max_parallel_requests: 50
+  request_timeout: 120
+  num_retries: 3
+  drop_params: true
+  set_verbose: true

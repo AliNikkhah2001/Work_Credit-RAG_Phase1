@@ -39,11 +39,22 @@ services:
       KB_DB_PASSWORD: postgres
       KB_WEB_HOST: 0.0.0.0
       KB_WEB_PORT: 8000
-      # Source is baked into image via kb-source submodule; for Vast SQLite fallback is not used here
+      # === KB v13.1 optimizations (2026-10-13) ===
+      KB_EMBED_DEVICE: cuda
+      KB_RERANKER_DEVICE: cuda
+      KB_DENSE_BACKEND: ram
+      KB_USE_TANTIVY: "true"
+      KB_FAST_CACHE: "true"
+      KB_SYNONYM_BEAM: "5"
+      KB_REDIS_URL: redis://redis:6379/0
+      KB_REDIS_TTL: "600"
+      KB_HYDE_ENABLED: "false"
     expose:
       - "8000"
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request, sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health').getcode()==200 else 1)"]
@@ -51,6 +62,22 @@ services:
       timeout: 5s
       retries: 12
       start_period: 60s
+    networks:
+      - rag
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: rag-redis
+    expose:
+      - "6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
     networks:
       - rag
     restart: unless-stopped
@@ -228,6 +255,7 @@ volumes:
   pgdata:
   langfuse_pgdata:
   clickhouse_data:
+  redis_data:
 
 networks:
   rag:
