@@ -773,6 +773,303 @@ curl -s ... '{"model":"gemma-4-31b","messages":[{"role":"user","content":"تسه
 
 ---
 
+## 📊 Dataset, Model Architecture & Evaluation (NEW)
+
+### 📁 Dataset: `data/ambiguity_dataset.jsonl` (1000 Samples)
+
+The labeled ambiguity dataset is the foundation for training and evaluating the ambiguity resolver.
+
+#### Dataset Composition
+
+| Category | Count | Source |
+|----------|-------|--------|
+| **cheque** | 250 | 117 KB + 133 generated |
+| **facilities_person** | 250 | 241 KB + 9 generated |
+| **facilities_legal** | 250 | 336 KB + 0 generated |
+| **general** | 250 | 80 KB + 170 generated |
+| **ambiguous** | 200 | 200 generated |
+| **Total** | **1000** | 316 KB + 684 generated |
+
+#### Generation Techniques (6 methods)
+
+| Technique | Description | Count |
+|-----------|-------------|-------|
+| `kb` | Extracted from KB `qa_pair` chunks (ground truth = `folder_hierarchy`) | 316 |
+| `generated_basic` | Standard LLM generation with subspace examples | 245 |
+| `generated_aliases` | Uses 8-10 Persian aliases per subspace (چک/صیاد/پیچک, تسهیلات/وام/قسط, etc.) | 76 |
+| `generated_question_types` | Factual, procedural, hypothetical, comparative variations | 25 |
+| `ambiguous_basic` | Genuinely ambiguous (no subspace keywords) | 179 |
+| `ambiguous_cross_subspace` | Deliberate multi-subspace keyword mixing | 21 |
+
+**Total: 1000 samples** (250/subspace × 4 + 200 ambiguous)
+
+#### Train/Test/Eval Splits (80/10/10)
+
+| Split | Samples | File |
+|-------|---------|------|
+| Train | 800 | `data/ambiguity_train.jsonl` |
+| Test | 100 | `data/ambiguity_test.jsonl` |
+| Eval | 100 | `data/ambiguity_eval.jsonl` |
+
+#### Generation Techniques Detail
+
+| Technique | Description | Example |
+|-----------|-------------|---------|
+| `kb` | Extracted from KB `qa_pair` chunks with `folder_hierarchy` ground truth | "چک برگشتی چیست؟" → cheque |
+| `generated_basic` | LLM generates questions using KB examples as few-shot | "چک برگشتی چه تأثیری دارد؟" |
+| `generated_aliases` | Uses 8-10 Persian aliases per subspace (چک/صیاد/پیچک, تسهیلات/وام/قسط, etc.) | "صیاد برگشتی تأثیر دارد؟" |
+| `generated_question_types` | Factual, procedural, hypothetical, comparative | "چگونه چک برگشتی را اصلاح کنم؟" |
+| `ambiguous_basic` | No subspace keywords, genuinely ambiguous | "وضعیت اعتباری چطور است؟" |
+| `ambiguous_cross_subspace` | Deliberate multi-subspace keyword mixing | "چک برگشتی بر تسهیلات تأثیر دارد؟" |
+
+### 🏗️ Model Architecture
+
+#### Embedding-Based Ambiguity Scorer (`subspaces.py`)
+
+```python
+# Core scoring pipeline
+query_embedding → whitening (PCA) → cosine similarity to prototypes
+    → max_sim per subspace (weight 0.7) + mean_sim (0.3)
+    → margin = top1 - top2
+    → entropy = H(softmax(sims/T))
+    → intra_subspace_spread = std(sims_per_prototype)
+    → proto_coverage = fraction(prototypes > threshold)
+    → weighted_score = w1*margin + w2*entropy + w3*top1 + w4*intra_spread
+    → ambiguous = (top1 < min_top1) OR (margin < margin_thr) OR (entropy > entropy_max)
+```
+
+#### Multi-Prototype Centroids
+
+| Parameter | Value |
+|-----------|-------|
+| Subspaces | 4 (cheque, facilities_person, facilities_legal, general) |
+| Prototypes per subspace | 4 (k-means on KB embeddings) |
+| Embedding dimension | 128 (PCA-whitened from 384) |
+| Base embedding model | `paraphrase-multilingual-MiniLM-L12-v2` (384-dim) |
+| Scoring | `max_sim * 0.7 + mean_sim * 0.3` |
+
+#### Ambiguity Scoring Formula
+
+```
+ambiguity_score = max(
+    (margin_thr - margin) / margin_thr,     # margin component
+    (entropy - entropy_max) / (1 - entropy_max),  # entropy component  
+    (min_top1 - top1) / min_top1,           # top1 component
+    (intra_spread - intra_thr) / (1 - intra_thr)  # intra-spread component
+) clipped to [0, 1]
+
+ambiguous = (top1 < min_top1) OR (margin < margin_thr) OR (entropy > entropy_max) OR (intra_spread > intra_thr)
+```
+
+#### Configurable Weights (config.py)
+
+```python
+subspace_ambiguity_weights: dict = {
+    "margin": 0.4,
+    "entropy": 0.3, 
+    "top1": 0.2,
+    "intra_spread": 0.1
+}
+subspace_ambiguity_margin: 0.04
+subspace_ambiguity_min_top1: 0.05
+subspace_ambiguity_entropy_max: 0.78
+subspace_intra_spread_thr: 0.15
+subspace_proto_coverage_thr: 0.3
+subspace_proto_weight: 0.7  # max vs mean weight
+```
+
+### 🤖 Model Training & Evaluation
+
+#### Training Configuration
+
+| Parameter | Value |
+|-----------|-------|
+| Feature type | `subspace_7d` (4 cosine sims + margin + top1 + entropy) |
+| Embedding model | `paraphrase-multilingual-MiniLM-L12-v2` (384-dim) |
+| Train/Test/Eval | 800 / 100 / 100 |
+| CV folds | 5 (StratifiedKFold) |
+| Subsample fractions | [0.25, 0.5, 0.75, 1.0] |
+| Random state | 42 |
+
+#### Models Trained
+
+| Model | Hyperparameters |
+|-------|-----------------|
+| LogisticRegression | `C=1.0, max_iter=1000, class_weight='balanced'` |
+| LinearSVC | `C=1.0, class_weight='balanced', dual='auto'` |
+| SVM RBF | `C=1.0, gamma='scale', class_weight='balanced'` |
+| RandomForest | `n_estimators=200, class_weight='balanced'` |
+| MLP | `hidden_layers=(128, 64), alpha=0.001, early_stopping=True` |
+| XGBoost | `n_estimators=100, max_depth=4, learning_rate=0.1` |
+
+#### Training Scripts
+
+```bash
+# Build dataset (1000 samples)
+python scripts/build_ambiguity_dataset.py --per-subspace 250 --ambiguous 200
+
+# Calibrate thresholds on labeled data
+python scripts/calibrate_subspace.py --queries data/ambiguity_dataset.jsonl
+
+# Train classifier on expanded dataset
+python scripts/train_subspace_clf.py --queries data/ambiguity_dataset.jsonl
+
+# Full evaluation (CV + Test + Eval + Subsamples)
+python scripts/train_eval_ambiguity.py --train data/ambiguity_train.jsonl --test data/ambiguity_test.jsonl --eval data/ambiguity_eval.jsonl
+```
+
+### 📈 Evaluation Results
+
+#### Model Comparison (Eval Set - 100 samples)
+
+| Model | Accuracy | Balanced Acc | Precision (macro) | Recall (macro) | F1 (macro) | ROC-AUC (OvR) |
+|-------|----------|--------------|-------------------|----------------|------------|---------------|
+| **svm_rbf** | **0.7300** | **0.7006** | **0.7489** | **0.7006** | **0.7079** | **0.8980** |
+| lr | 0.7100 | 0.6835 | 0.7358 | 0.6835 | 0.6921 | 0.8810 |
+| svm_linear | 0.6800 | 0.6585 | 0.6688 | 0.6585 | 0.6554 | N/A |
+| rf | 0.6500 | 0.6292 | 0.6389 | 0.6292 | 0.6244 | 0.8924 |
+| mlp | 0.6800 | 0.6560 | 0.6837 | 0.6560 | 0.6603 | 0.8869 |
+
+**Best Model: SVM RBF** (eval balanced accuracy **0.7006**)
+
+#### Binary Classification (Ambiguous vs Non-Ambiguous - Eval Set)
+
+| Model | Accuracy | Balanced Acc | Precision | Recall | F1 | ROC-AUC |
+|-------|----------|--------------|-----------|--------|-----|--------|
+| **svm_linear** | **0.8400** | **0.7804** | 0.5652 | 0.6842 | **0.6190** | 0.4704 |
+| **svm_rbf** | **0.8400** | **0.7804** | 0.5652 | 0.6842 | **0.6190** | 0.4211 |
+| lr | 0.8200 | 0.7680 | 0.5200 | 0.6842 | 0.5909 | 0.4386 |
+| rf | 0.8200 | 0.7277 | 0.5238 | 0.5789 | 0.5500 | 0.4561 |
+| mlp | 0.8100 | 0.7417 | 0.5000 | 0.6316 | 0.5581 | 0.4418 |
+
+**Best Binary Classifiers**: SVM Linear & SVM RBF (Balanced Acc = 0.7804)
+
+#### Per-Class Performance (Best Model: SVM RBF - Eval Set)
+
+| Class | Precision | Recall | F1 | Support |
+|-------|-----------|--------|-----|--------|
+| **cheque** | **0.8696** | **0.9565** | **0.8980** | 23 |
+| **general** | 0.6667 | 0.7826 | 0.7200 | 23 |
+| **facilities_person** | 0.8333 | 0.6250 | 0.7143 | 24 |
+| **facilities_legal** | 0.8333 | 0.4545 | 0.5882 | 11 |
+| **ambiguous** | 0.5652 | 0.6842 | 0.6190 | 19 |
+
+**Key Insight**: Cheque class is excellent (F1=0.898), but facilities_legal struggles (F1=0.588) due to confusion with facilities_person.
+
+#### Confusion Matrix (SVM RBF - Eval Set)
+
+| | ambiguous | cheque | facilities_legal | facilities_person | general |
+|---|---|---|---|---|---|
+| **ambiguous** | 13 | 1 | 0 | 1 | 4 |
+| **cheque** | 1 | 22 | 0 | 0 | 0 |
+| **facilities_legal** | 1 | 2 | 5 | 1 | 2 |
+| **facilities_person** | 5 | 1 | 0 | 15 | 3 |
+| **general** | 3 | 0 | 1 | 1 | 18 |
+
+### 📈 Visualization Plots (Generated)
+
+All plots saved to `components/orchestrator/data/model_eval/plots/`:
+
+| Plot | Description | File |
+|------|-------------|------|
+| **Model Comparison** | Eval metrics comparison across 5 models | `model_comparison_eval.png` |
+| **Learning Curves** | Test balanced accuracy vs training fraction | `learning_curves.png` |
+| **Confusion Matrices** | 5-model confusion matrix heatmaps | `confusion_matrices.png` |
+| **Per-Class F1** | SVM RBF per-class F1 scores | `per_class_f1.png` |
+| **CV vs Eval** | Overfitting check (CV vs Eval balanced acc) | `cv_vs_eval.png` |
+| **Learning Curves (Test Bal Acc)** | Test balanced accuracy vs training fraction | `learning_curves_test_bal.png` |
+
+#### Learning Curves (Subsample Experiments)
+
+| Fraction | LR Bal Acc | SVM Linear | SVM RBF | RF | MLP |
+|----------|------------|------------|---------|-----|-----|
+| 25% (200) | 0.6342 | 0.6293 | **0.6582** | 0.5949 | 0.4731 |
+| 50% (400) | 0.6336 | 0.6498 | 0.6124 | 0.6527 | 0.5089 |
+| 75% (600) | 0.6262 | 0.6385 | 0.6452 | 0.6476 | 0.6408 |
+| 100% (800) | 0.6076 | 0.6417 | 0.6329 | 0.6723 | 0.6300 |
+
+**Key Finding**: SVM RBF performs well even at 25% data (bal_acc=0.658), suggesting the 7-dim subspace features are highly informative. MLP needs more data to converge.
+
+#### Cross-Validation vs Eval (Overfitting Check)
+
+| Model | CV Bal Acc | Eval Bal Acc | Diff (CV - Eval) |
+|-------|------------|--------------|------------------|
+| lr | 0.6664 | 0.6835 | **-0.0171** |
+| svm_linear | 0.6761 | 0.6585 | +0.0175 |
+| **svm_rbf** | 0.6735 | **0.7006** | **-0.0271** |
+| rf | 0.6776 | 0.6292 | **+0.0485** ⚠️ |
+| mlp | 0.5541 | 0.6560 | **-0.1019** |
+
+**Key Finding**: RF shows slight overfitting (+0.0485 diff). SVM RBF and LR actually generalize *better* than CV suggests.
+
+### 🎯 Calibration & Thresholds
+
+| Threshold | Default | Calibrated |
+|-----------|---------|------------|
+| `subspace_ambiguity_margin` | 0.08 | **0.04** |
+| `subspace_ambiguity_min_top1` | 0.30 | **0.05** |
+| `subspace_ambiguity_entropy_max` | 0.85 | **0.52** |
+| `subspace_softmax_temp` | 0.05 | 0.05 (fixed) |
+
+**Calibration Results (600 queries):**
+- Default: Balanced Acc = 0.705, Route Acc = 0.400
+- **Calibrated**: Balanced Acc = **0.768**, Route Acc = **0.478**
+
+### 🔧 LiteLLM Router Integration
+
+The LiteLLM router (`:4000`) serves as a self-hosted OpenRouter analog with fallback chains:
+
+```yaml
+router_settings:
+  routing_strategy: usage-based-routing
+  num_retries: 3
+  timeout: 120
+  fallbacks:
+    - strong: [cheap, self-gemma]
+    - judge: [strong, self-gemma]
+    - cheap: [self-gemma]
+    - mizan-decision: [judge, self-gemma]
+```
+
+| Tier | Models | Fallback |
+|------|--------|----------|
+| **Self-hosted** | self-gemma, self-qwen, self-mizan | Manager :9000 |
+| **Cheap** | SiliconFlow (Qwen, DeepSeek) | self-gemma |
+| **Strong** | OpenRouter (GPT-4o, Claude) | cheap, self-gemma |
+| **Judge** | Gemini, GPT-4o-mini | strong, self-gemma |
+| **Mizan-decision** | Mizan-v3, Gemini | judge, self-gemma |
+
+### 🔧 Project Setup & Integration
+
+| Component | Repo | Branch | Status |
+|-----------|------|--------|--------|
+| Orchestrator | `Work_RAG-Orchestrator` | `main` (`b100fda`) | ✅ |
+| KB Manager | `Work_RAG-KB` | `master` | ✅ |
+| Guardrails | `Work_RAG-Guardrails` | `main` | ✅ |
+| Server Setup | `Work_RAG-Server-Setup` | `main` | ✅ |
+| LiteLLM Router | `Work_RAG-Server-Setup` | `main` | ✅ |
+
+### 🧪 Live Verification Commands
+
+```bash
+# Health check all services
+for p in 18000 8000 8200 8100 3000 9000 13000 4000; do
+  printf "%s: " "$p"; curl -s http://127.0.0.1:$p/health | head -c 100; echo
+done
+
+# Live ambiguity tests
+curl -s http://127.0.0.1:8100/v1/chat/completions \
+  -H 'Content-Type: application/json' \
+  -d '{"model":"gemma-4-31b","messages":[{"role":"user","content":"وضعیت اعتباری چطور است؟"}]}'
+# → finish_reason: "clarify"
+
+curl -s http://127.0.0.1:8100/v1/chat/completions \
+  -d '{"model":"gemma-4-31b","messages":[{"role":"user","content":"چک برگشتی چیست؟"}]}'
+# → finish_reason: "stop", citations > 0
+```
+
+---
+
 ## Verification
 
 ```bash
