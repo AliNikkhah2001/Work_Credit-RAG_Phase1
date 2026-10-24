@@ -218,10 +218,9 @@ flowchart TB
     subgraph Orchestration["Orchestration — :8100"]
         Orch["🎯 Orchestrator\nLangGraph (MemorySaver)\nOpenAI-compatible /v1/chat/completions\nX-Request-ID sticky thread"]
         Classify["classify\n(greeting/spec/question)"]
-        InferSpec["infer_specification\n+ LLM subspace judge"]
+        HybridClf["🔀 hybrid_classify\nSVM-RBF → Gemma TRT escalation\n(confidence threshold 0.60)"]
         Ambiguity["🧠 Ambiguity Scorer\n4×4×128 multi-prototype\nmargin/entropy/intra-spread"]
         Clarify["generate_clarification"]
-        SVM["🤖 SVM-RBF Classifier\n7-dim features\nbalanced_acc=0.7006"]
     end
 
     subgraph Retrieval["Retrieval — :8000"]
@@ -253,12 +252,12 @@ flowchart TB
     Browser --> WebUI
     WebUI -- "OPENAI_API_BASE_URL=8100/v1\n+ X-Request-ID" --> Orch
     Orch --> Classify
-    Classify --> InferSpec
-    InferSpec --> Ambiguity
-    Ambiguity --> SVM
-    SVM -- "should_clarify?" --> Clarify
+    Classify -- "question" --> HybridClf
+    Classify -- "greeting/spec" --> Clarify
+    HybridClf -- "subspace + ambiguity" --> Ambiguity
+    Ambiguity -- "should_clarify?" --> Clarify
     Clarify -- "clarify finish" --> WebUI
-    SVM -- "allowed" --> KB
+    Ambiguity -- "allowed" --> KB
     KB --> Filter
     KB --> Suppl
     KB --> Proto
@@ -1838,6 +1837,84 @@ Avg Latency = Classifier_Latency + (Escalation_Rate × Gemma_Latency)
 | Best accuracy, moderate latency | Hybrid (thr=0.60) | 53.9ms, 78% acc |
 | Maximum accuracy, latency tolerant | Gemma alone | 127.9ms, 72% acc (but classifier+hybrid beats it) |
 | Best calibration | Mizan-v3-3B | ECE 0.061 (when model is available) |
+
+---
+
+## 🏗️ Orchestrator Integration — Thresholded Hybrid Classifier
+
+The hybrid classifier is now wired into the LangGraph orchestrator as a dedicated node that runs between `classify` and `mizan_subspace_continuity`.
+
+### Updated LangGraph Flow
+
+```mermaid
+flowchart LR
+    subgraph Input["Input"]
+        Q[User Query]
+    end
+
+    subgraph Classify["Stage 1 — classify (:8100)"]
+        C1[LLM: greeting/spec/question]
+    end
+
+    subgraph Hybrid["Stage 2 — hybrid_classify (:8100)"]
+        H1[SVM-RBF classifier\n(local, ~0.17ms)]
+        H2{confidence ≥ 0.60?}
+        H3[Gemma TRT-LLM\n(via Guardrails, ~128ms)]
+    end
+
+    subgraph Continue["Stage 3+ — continue pipeline"]
+        C[mizan_subspace_continuity]
+        R[retrieve → KB :8000]
+    end
+
+    Q --> C1
+    C1 -- "greeting/spec" --> C[format_response]
+    C1 -- "question" --> H1
+    H1 -- "high confidence" --> H2
+    H2 -- "Yes" --> C
+    H2 -- "No (escalate)" --> H3
+    H3 --> C
+    C --> R
+```
+
+### Configuration (`config.py`)
+
+| Env Var | Default | Description |
+|---------|---------|-------------|
+| `HYBRID_CLASSIFIER_ENABLED` | `true` | Enable/disable hybrid classifier node |
+| `HYBRID_CLASSIFIER_CONFIDENCE_THRESHOLD` | `0.60` | Escalate to Gemma when classifier confidence < this |
+| `HYBRID_CLASSIFIER_GEMMA_MODEL` | `gemma-4-31b-triton-trt` | Gemma model for escalation (TRT-LLM optimized) |
+| `HYBRID_CLASSIFIER_GEMMA_MAX_TOKENS` | `16` | Max tokens for Gemma classification response |
+| `HYBRID_CLASSIFIER_GEMMA_TEMPERATURE` | `0.0` | Temperature for Gemma classification |
+
+### State Fields Set by `hybrid_classify_node`
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `applied_subspace` | `str \| None` | Final subspace label (cheque/facilities_person/facilities_legal/general/ambiguous) |
+| `hybrid_classifier_source` | `str` | `"classifier"` \| `"gemma"` \| `"fallback"` |
+| `hybrid_classifier_confidence` | `float` | Classifier confidence in [0,1] |
+| `hybrid_classifier_escalated` | `bool` | Whether Gemma escalation was triggered |
+| `ambiguity_score` / `ambiguity_margin` / `ambiguity_entropy` / `ambiguity_top1` | `float` | Subspace ambiguity signals for audit |
+| `ambiguity_source` | `str` | `"classifier"` |
+
+### Graph Wiring (`graph.py`)
+
+```
+validate_input → classify → hybrid_classify → mizan_subspace_continuity → retrieve
+                                    ↓ (greeting/spec)
+                                    format_response
+```
+
+The `hybrid_classify_node` only runs for `question`-type queries (greeting/specification bypass it and go directly to `format_response`).
+
+### Measured Performance
+
+| Path | Accuracy | Latency | When Used |
+|------|----------|---------|-----------|
+| Classifier only (high conf) | 73% | ~0.17ms | 58% of queries (at thr=0.60) |
+| Gemma escalation (low conf) | ~82% on escalated | ~128ms | 42% of queries (at thr=0.60) |
+| **Hybrid combined** | **78%** | **53.9ms mean** | All question queries |
 
 ---
 
