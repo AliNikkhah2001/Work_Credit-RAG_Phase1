@@ -672,6 +672,107 @@ Full method: `archive/migration-history/WAVE2_GPU_RUNBOOK.md`. Historical per-ve
 
 ---
 
+## 🎉 Features Achieved (2026-10-24)
+
+### 🧠 Ambiguity Resolution & Clarification Engine
+- **Embedding-based ambiguity scoring** — cosine similarity to 4 subspace centroids + 4×4 multi-prototype centroids (128-dim whitened)
+- **Multi-prototype centroids** — 4 prototypes per subspace (k-means on KB embeddings), weighted max/mean similarity (0.7/0.3)
+- **Advanced ambiguity signals** — margin (top1−top2), normalized entropy, top1 score, intra-subspace spread (std), prototype coverage
+- **Weighted ambiguity scoring** — configurable weights (margin:0.4, entropy:0.3, top1:0.2, intra_spread:0.1)
+- **LLM judge fallback** — when embeddings unavailable or low confidence
+- **Config-gated routing** — `subspace_ambiguity_route` flag (default **off**, instrument-only mode)
+- **Clarification engine** — `generate_clarification` node with LLM-generated Persian disambiguation questions
+
+### 📊 1000-Sample Labeled Ambiguity Dataset
+- **1000 samples total**: 250 per subspace (cheque, facilities_person, facilities_legal, general) + 200 ambiguous
+- **6 generation techniques**: KB extraction, basic generation, alias-based, question-type variation, cross-subspace ambiguity, negation patterns
+- **Train/Test/Eval splits** (800/100/100) with JSONL exports for ML workflows
+- **Negation patterns**: "not cheque, but facilities_person" style questions
+- **Class aliases**: 8-10 Persian aliases per subspace (چک/صیاد/پیچک, تسهیلات/وام/قسط, حقوقی/شرکت/سهامدار, عمومی/معرفی/هیات مدیره)
+- **Question type variation**: factual, procedural, hypothetical, comparative
+- **Cross-subspace ambiguity**: deliberate multi-subspace keyword mixing
+- **Negation with correction**: "منظورم چک نبود، تسهیلات بود" patterns
+
+### 🤖 Multi-Model Ambiguity Classification
+- **Best model**: SVM RBF (eval balanced accuracy 0.7006, binary ambiguous F1=0.619)
+- **Models trained**: LogisticRegression, LinearSVC, SVM RBF, RandomForest, MLP
+- **Train/Test/Eval splits**: 800/100/100 with 5-fold CV on train
+- **Learning curves**: 25%/50%/75%/100% subsample experiments
+- **Binary ambiguous classification**: SVM RBF balanced_acc=0.7804, F1=0.619
+- **Multi-class subspace**: SVM RBF balanced_acc=0.7006, per-class F1: cheque=0.898, general=0.720, facilities_person=0.714, facilities_legal=0.588
+- **Learning curves**: SVM RBF strong at 25% data (bal_acc=0.658)
+- **Best model persisted**: `data/model_eval/best_ambiguity_model.joblib` (SVM RBF)
+
+### 🔧 Multi-Prototype Embedding Scorer
+- **4×4×128 prototypes**: 4 subspaces × 4 prototypes × 128-dim (PCA-whitened)
+- **Scoring**: max over prototypes (weight 0.7) + mean (0.3) cosine similarity
+- **Intra-subspace spread**: std of prototype similarities as ambiguity signal
+- **Prototype coverage**: fraction of prototypes above threshold
+- **Configurable weights**: margin 0.4, entropy 0.3, top1 0.2, intra_spread 0.1
+- **Backward compatible**: falls back to single centroid if prototypes unavailable
+
+### 🔧 Orchestrator Integration (components/orchestrator)
+- **State fields**: `ambiguity_score`, `ambiguity_margin`, `ambiguity_entropy`, `ambiguity_ambiguous`, `ambiguity_source`, `subspace_sims`, `ambiguity_intra_spread`, `ambiguity_proto_coverage`
+- **Audit trail**: all ambiguity signals emitted in `AuditTrail` for observability
+- **Graph gating**: `should_clarify` respects `subspace_ambiguity_route` flag
+- **Late fusion routing**: when `route=true`, ambiguous → clarify, confident subspace → auto-route via F5
+- **Config flags**: `subspace_ambiguity_enabled`, `subspace_ambiguity_route`, `subspace_proto_k`, `subspace_proto_weight`, `subspace_intra_spread_thr`, `subspace_proto_coverage_thr`, `subspace_ambiguity_weights`
+
+### 🎨 OpenWebUI Integration
+- **Open WebUI v0.12.3** at `:13000` (healthy)
+- **ICS Helper** model selection (Arena OFF)
+- **rag_trace_capture** filter: injects `filter_path` + `X-Request-ID` for sticky subspace
+- **4 actions**: rate/report/view/truth buttons on responses
+- **RAG trace capture**: automatic pipeline observability injection
+
+### 📊 Dataset & Artifacts
+- **1000 samples**: 250/subspace × 4 + 200 ambiguous = 1000 total
+- **Train/Test/Eval**: 800/100/100 JSONL splits
+- **Calibration**: `data/subspace_calibration.json` (optimized thresholds)
+- **Prototypes**: `data/subspace_protos.npz` (4×4×128 whitened)
+- **Classifier**: `data/model_eval/best_ambiguity_model.joblib` (SVM RBF)
+- **Calibration**: `data/subspace_calibration.json` (margin=0.04, min_top1=0.05, entropy=0.52)
+
+### 🏗️ Project Setup Integration
+- **Orchestrator** (`components/orchestrator`): all changes committed to `Work_RAG-Orchestrator@main` (`b100fda`)
+- **KB Manager** (`components/knowledgebase`): KB v13 ready with pgvector HNSW
+- **Guardrails** (`components/guardrails`): Persian rails + HurtLex, guarded Gemma at `:8200`
+- **Server Setup** (`components/server-setup`): LLM Manager `:9000` with 2×H200, embed trio `:8001-8003`
+- **LLM Manager** (`:9000`): 11-model registry, round-robin, `trust_env=False`
+- **LiteLLM Router ready**: config template for self-hosted OpenRouter analog
+
+### 🧪 Live Verification (All Services Running)
+```
+Orchestrator :8100     ✅ ready (deps: KB, Guardrails)
+Knowledgebase :8000    ✅ ready (sqlite, 1123 chunks)
+Guardrails   :8200     ✅ ready (upstream reachable)
+LLM Manager  :9000     ✅ 2 models loaded (2×H200)
+Open WebUI   :13000    ✅ healthy (ICS Helper, 4 actions)
+```
+
+### 🧪 Live Ambiguity Tests (Verified)
+```bash
+# Ambiguous → clarify
+curl -s http://127.0.0.1:8100/v1/chat/completions \
+  -H 'Content-Type: application/json' \
+  -d '{"model":"gemma-4-31b","messages":[{"role":"user","content":"وضعیت اعتباری چطور است؟"}]}'
+# → finish_reason: "clarify"
+
+# Cheque subspace → answered with citations
+curl -s ... '{"model":"gemma-4-31b","messages":[{"role":"user","content":"چک برگشتی چیست؟"}]}'
+# → finish_reason: "stop", citations > 0
+
+# General subspace → answered
+curl -s ... '{"model":"gemma-4-31b","messages":[{"role":"user","content":"معرفی شرکت"}]}'
+# → finish_reason: "stop"
+
+# Facilities subspace → answered
+curl -s ... '{"model":"gemma-4-31b","messages":[{"role":"user","content":"تسهیلات اشخاص حقیقی چیست؟"}]}'
+# → finish_reason: "stop"
+```
+
+---
+
 ## Verification
 
 ```bash
