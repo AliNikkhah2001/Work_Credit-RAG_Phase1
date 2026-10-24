@@ -219,23 +219,27 @@ flowchart TB
         Orch["🎯 Orchestrator\nLangGraph (MemorySaver)\nOpenAI-compatible /v1/chat/completions\nX-Request-ID sticky thread"]
         Classify["classify\n(greeting/spec/question)"]
         InferSpec["infer_specification\n+ LLM subspace judge"]
+        Ambiguity["🧠 Ambiguity Scorer\n4×4×128 multi-prototype\nmargin/entropy/intra-spread"]
         Clarify["generate_clarification"]
+        SVM["🤖 SVM-RBF Classifier\n7-dim features\nbalanced_acc=0.7006"]
     end
 
     subgraph Retrieval["Retrieval — :8000"]
         KB["📚 KB Manager\nBM25(tantivy) + Dense MiniLM-384\n+ RRF k=60 + CE BGE-v2-m3\npgvector HNSW (1123 chunks)"]
         Filter["filter_path\nfolder_hierarchy tag"]
         Suppl["supplement\nentity_lists (MiniLM cos>0.4)\n+ injected_entities (>0.6)"]
+        Proto["🧠 4×4×128 Multi-Prototypes\nPCA-whitened centroids\nintra-spread + coverage"]
     end
 
     subgraph Safety["Safety — :8200"]
-        GR["🛡️ Guardrails\nPOST /v1/rails/check (input)\nPOST /v1/chat/completions (guarded_generate)\nRisk + semantic + HurtLex"]
+        GR["🛡️ Guardrails\nPOST /v1/rails/check (input)\nPOST /v1/chat/completions (guarded_generate)\nRisk + semantic + HurtLex\nNemoguardrails + Colang 1.0"]
     end
 
     subgraph Generation["Generation"]
         Gemma["🤖 Gemma :18000\nllama-server UD-Q4_K_XL\n--no-mmproj --jinja\ntemp 0.2 ctx 8192"]
-        Manager["🧩 LLM Manager :9000\n( H200: 5× Gemma 8080-84 )"]
+        Manager["🧩 LLM Manager :9000\n( H200: 3× Gemma 8080-84 )"]
         Embed["🔢 Embed :8001-8003\nE5-small/BGE-m3/MiniLM"]
+        LiteLLM["🌐 LiteLLM Router :4000\nFallback chains: strong/cheap/judge\nself-hosted + SiliconFlow/OpenRouter"]
     end
 
     subgraph Observability["Observability"]
@@ -250,12 +254,16 @@ flowchart TB
     WebUI -- "OPENAI_API_BASE_URL=8100/v1\n+ X-Request-ID" --> Orch
     Orch --> Classify
     Classify --> InferSpec
-    InferSpec -- "should_clarify?" --> Clarify
+    InferSpec --> Ambiguity
+    Ambiguity --> SVM
+    SVM -- "should_clarify?" --> Clarify
     Clarify -- "clarify finish" --> WebUI
-    InferSpec -- "allowed" --> KB
+    SVM -- "allowed" --> KB
     KB --> Filter
     KB --> Suppl
+    KB --> Proto
     Suppl -- "MAX_CHUNKS=20\nMAX_CONTEXT=9000" --> Orch
+    Proto -- "multi-proto scores" --> Ambiguity
     Orch -- "guarded_generate" --> GR
     GR --> Gemma
     Gemma -.-> Manager
@@ -265,6 +273,8 @@ flowchart TB
     Orch -.-> LF2
     Orch -.-> Studio
     Collector --> TraceApp
+    LiteLLM -.-> Orch
+    LiteLLM -.-> GR
 ```
 
 **What changed vs the old diagram:** `LangGraph` now has a **conditional clarify branch** (`should_clarify` → `generate_clarification` with `available_subspaces`) instead of linear 5 nodes; **KB** exposes `filter_path` on `folder_hierarchy` + **supplemental** entity-list injection (tool `POST /search/supplement`); **WebUI** runs `rag_trace_capture` filter that tags `filter_path` into `X-Request-ID` sticky threads; **Observability** is the unified `observability.db` (`dashboard/observability`) not just Langfuse fallback; **Generation** on H200 is fronted by `llm_inference_manager :9000` (Vast uses bare `:18000`).
@@ -332,11 +342,14 @@ flowchart TD
     VI -->|blocked| FR[format_refusal]
     VI -->|allowed| CL[classify]
     CL --> INF[infer_specification]
-    INF --> SC{should_clarify?}
+    INF --> AMB[🧠 Ambiguity Scorer]
+    AMB --> SVM[🤖 SVM-RBF Classifier]
+    SVM --> SC{should_clarify?}
     SC -->|yes| GC[generate_clarification]
     GC --> END([END])
     SC -->|no| RET[retrieve]
-    RET --> BC[build_context]
+    RET --> PROTO[🧠 Multi-Proto Centroids]
+    PROTO --> BC[build_context]
     BC --> GG[guarded_generate]
     GG --> FRMT[format_response]
     FRMT --> END
@@ -344,6 +357,9 @@ flowchart TD
 
     style SC fill:#fff3e0,stroke:#ff9800
     style GC fill:#fff8e1,stroke:#f57f17
+    style AMB fill:#e8f5e9,stroke:#4caf50
+    style SVM fill:#e3f2fd,stroke:#2196f3
+    style PROTO fill:#f3e5f5,stroke:#9c27b0
 ```
 
 Old doc showed linear `validate → retrieve → build → generate → format`. Now there is a **diamond** before `retrieve`: ambiguous/scattered queries short-circuit to `generate_clarification` and return `finish=clarify` with `available_subspaces: ["cheque","facilities_person","facilities_legal","general"]`. Sticky is kept in `StateGraph(RAGState, MemorySaver)` checkpoint keyed by `X-Request-ID`.
@@ -558,9 +574,17 @@ flowchart LR
         Root --> Gen["پایگاه دانش عمومی\n(general)"]
     end
 
+    subgraph Proto["Multi-Prototype Centroids"]
+        P1["cheque × 4\n(centroids)"]
+        P2["facilities_person × 4"]
+        P3["facilities_legal × 4"]
+        P4["general × 4"]
+    end
+
     WebUI -- "filter_path" --> KB
     KB -- "chunk.doc_metadata.folder_hierarchy" --> Filter
     Filter -- "only that sub-tree" --> RRF
+    Proto -.-> Ambiguity["🧠 Ambiguity Scorer\nintra-spread + coverage"]
 ```
 
 - **Ingestion:** `kb-source/1405-07-06/…` path parsed → `doc_metadata.folder_hierarchy: list[str]` per chunk (`components/knowledgebase/kb-manager/kb_manager/models/database.py`).
@@ -577,6 +601,128 @@ Not all knowledge suits Dense vectors (bank lists, reason codes `DCB3-3`, shareh
 - **Entity Lists (5):** JSON + MiniLM embedding of `description` cached. During `search`, if `cos(query, description) > 0.6` → `injected_entities` (whole JSON injected); tool `POST /search/supplement` uses `0.4` threshold. Returned as `rag.supplemental` in response.
 
 See `docs/benchmark-report-2026-10-12.md` §7 and `data/supplementary_architecture.md`.
+
+---
+
+## 🌐 LiteLLM Router (Self-Hosted OpenRouter Analog)
+
+The LiteLLM router (`:4000`) serves as a self-hosted OpenRouter analog with intelligent fallback chains across model tiers:
+
+```mermaid
+flowchart LR
+    subgraph Client["Clients"]
+        Orch["Orchestrator :8100"]
+        Guard["Guardrails :8200"]
+        WebUI["Open WebUI :13000"]
+    end
+
+    subgraph Router["LiteLLM Router :4000"]
+        Router["🌐 LiteLLM Proxy\nrouting_strategy: usage-based\nfallbacks + retries"]
+    end
+
+    subgraph SelfHosted["Self-Hosted Pool"]
+        Manager["🧩 Manager :9000\nself-gemma / self-qwen / self-mizan"]
+    end
+
+    subgraph Cheap["Cheap Tier"]
+        Silicon["☁️ SiliconFlow\nQwen2.5-7B / DeepSeek"]
+    end
+
+    subgraph Strong["Strong Tier"]
+        OpenRouter["🌍 OpenRouter\nGPT-4o / Claude-3.5"]
+    end
+
+    subgraph Judge["Judge Tier"]
+        Judge["⚖️ Judge Models\nGemini-2.0 / GPT-4o-mini"]
+    end
+
+    subgraph Mizan["Mizan Decision"]
+        Mizan["🧠 Mizan-Decision\nMizan-v3 / Gemini"]
+    end
+
+    Client --> Router
+    Router --> SelfHosted
+    Router --> Cheap
+    Router --> Strong
+    Router --> Judge
+    Router --> Mizan
+
+    SelfHosted -.->|fallback| Cheap
+    Cheap -.->|fallback| SelfHosted
+    Strong -.->|fallback| Cheap
+    Judge -.->|fallback| Strong
+    Mizan -.->|fallback| Judge
+```
+
+### Routing Strategy & Fallback Chains
+
+| Tier | Models | Endpoint | Fallback |
+|------|--------|----------|----------|
+| **Self-Hosted** | self-gemma, self-qwen, self-mizan | Manager `:9000` | — |
+| **Cheap** | SiliconFlow (Qwen2.5-7B, DeepSeek) | `api.siliconflow.cn` | self-gemma |
+| **Strong** | OpenRouter (GPT-4o, Claude-3.5) | `openrouter.ai` | cheap, self-gemma |
+| **Judge** | Gemini-2.0-flash, GPT-4o-mini | Gemini/OpenAI | strong, self-gemma |
+| **Mizan-Decision** | Mizan-v3, Gemini | Manager `:9000` / Gemini | judge, self-gemma |
+
+### Router Settings
+
+```yaml
+router_settings:
+  routing_strategy: usage-based-routing
+  num_retries: 3
+  timeout: 120
+  fallbacks:
+    - strong: [cheap, self-gemma]
+    - judge: [strong, self-gemma]
+    - cheap: [self-gemma]
+    - mizan-decision: [judge, self-gemma]
+```
+
+### Config & Secrets
+
+```bash
+# litellm.env (gitignored, mode 600)
+LITELLM_MASTER_KEY=sk-litellm-local-dev-change-me
+MANAGER_API_KEY=sk-local-dev
+SILICONFLOW_API_KEY=
+OPENROUTER_API_KEY=
+GEMINI_API_KEY=
+OPENAI_API_KEY=
+ANTHROPIC_API_KEY=
+HTTP_PROXY=http://192.168.203.2:3128
+HTTPS_PROXY=http://192.168.203.2:3128
+NO_PROXY=localhost,127.0.0.1,host.docker.internal,redis,qdrant,pgvector,milvus,langfuse,grafana,prometheus,litellm
+LITELLM_HOST=http://127.0.0.1:4000
+LITELLM_URL=http://127.0.0.1:4000
+```
+
+### Deploy with Docker (Privileged Host)
+
+```bash
+cd /splunk-data/v1/Work_RAG-Server-Setup/deploy
+cp litellm.env.example litellm.env  # fill in API keys
+docker compose up -d litellm
+# LiteLLM available at http://127.0.0.1:4000
+# Health: curl http://127.0.0.1:4000/health
+```
+
+### Integration with Orchestrator & Guardrails
+
+```python
+# In orchestrator config (config.py)
+GUARD_JUDGE_MODEL = "judge"          # → LiteLLM alias
+GUARD_JUDGE_BASE_URL = "http://127.0.0.1:4000/v1"
+MIXAN_DECISION_MODEL = "mizan-decision"
+MIXAN_DECISION_BASE_URL = "http://127.0.0.1:4000/v1"
+
+# In guardrails config (config.yml)
+models:
+  - type: openai
+    engine: openai
+    model: ${GUARD_JUDGE_MODEL}
+    base_url: ${GUARD_JUDGE_BASE_URL}
+    api_key: ${MANAGER_API_KEY}
+```
 
 ---
 
