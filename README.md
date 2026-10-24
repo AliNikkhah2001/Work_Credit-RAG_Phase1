@@ -836,6 +836,10 @@ flowchart LR
     Output --> Block
 ```
 
+### Architecture Comparison
+
+![Architecture Comparison](components/orchestrator/data/mizan_classifier_comparison/architecture_comparison.png)
+
 ### Escalation Triggers (Configurable via Env)
 
 | Trigger | Threshold | Env Var | Default |
@@ -884,6 +888,14 @@ export HYBRID_ENABLE_GEMMA=true
 | VRAM (steady) | 22 GB | **2 GB** | **2 GB** | −91% | same |
 
 > **Note:** Mizan values are community-reported (Tasmim-Bench v1.0.4, 96 synthetic cases + 3,000 human-labeled Persian records) and not independently verified on this platform. Gemma/Hybrid values are projected. Live Mizan benchmarks require the GGUF download to complete (see "Mizan Model Status" below).
+
+### Performance Visualization (Projected)
+
+| Performance Comparison | Latency Comparison |
+|-----------------------|-------------------|
+| ![Performance Comparison](components/orchestrator/data/mizan_classifier_comparison/performance_comparison.png) | ![Latency Comparison](components/orchestrator/data/mizan_classifier_comparison/latency_comparison.png) |
+
+![Calibration Comparison](components/orchestrator/data/mizan_classifier_comparison/calibration_comparison.png)
 
 ---
 
@@ -1417,7 +1429,15 @@ Both models were evaluated on the same 100-sample ambiguity eval set (`data/ambi
 
 **Key finding:** The trained classifier is **750× faster** than Gemma (0.17ms vs 127.9ms) with **comparable accuracy** (73% vs 72%). Gemma's latency is dominated by GPU inference + network round-trip.
 
+### Performance Visualization
+
+| Accuracy Comparison | Latency Comparison |
+|---------------------|-------------------|
+| ![Accuracy Comparison](components/orchestrator/data/mizan_classifier_comparison/accuracy_classifier_gemma_hybrid.png) | ![Latency Comparison](components/orchestrator/data/mizan_classifier_comparison/latency_classifier_gemma_hybrid.png) |
+
 ### Per-Subspace F1 (Trained Classifier, Eval Set n=100)
+
+![Per-Subspace F1](components/orchestrator/data/mizan_classifier_comparison/classifier_per_subspace_f1.png)
 
 | Subspace | Precision | Recall | F1 | Support |
 |----------|-----------|--------|-----|---------|
@@ -1488,6 +1508,10 @@ flowchart LR
 | 0.90 | 0.7200 | 100% | 128.1 ms | 0 | 72 |
 
 **Best hybrid: threshold 0.60** — **78% accuracy** (vs 73% classifier alone, 72% Gemma alone) with 42% escalation rate and 53.9ms average latency.
+
+### Hybrid Threshold Sweep
+
+![Hybrid Threshold Sweep](components/orchestrator/data/mizan_classifier_comparison/hybrid_threshold_sweep.png)
 
 ### Hybrid Latency Formula
 
