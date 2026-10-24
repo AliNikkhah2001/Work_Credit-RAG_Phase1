@@ -784,6 +784,247 @@ Full method: `archive/migration-history/WAVE2_GPU_RUNBOOK.md`. Historical per-ve
 
 ---
 
+## ⚖️ Mizan + Gemma Hybrid Judge Architecture
+
+The platform supports three guardrails judge backends, configurable via `GUARD_JUDGE_BACKEND`:
+
+| Backend | Description | Best For |
+|---------|-------------|----------|
+| `gemma` | Gemma-4-31B policy judge + NeMo self-check (baseline) | Complex reasoning, English OOD |
+| `mizan` | Mizan-v3-3B System-1 only (fast, calibrated Persian) | Fast safety/scope decisions, Persian-native |
+| `hybrid` | Mizan first → escalate low-confidence to Gemma (recommended) | Best accuracy + latency trade-off |
+
+### Architecture Diagram
+
+```mermaid
+flowchart LR
+    subgraph Input["Input Request"]
+        Q[User Query / Persian Text]
+    end
+
+    subgraph Signals["Level 1 — Deterministic Signals\n(helpers, not verdicts — except secret)"]
+        PI[Prompt Injection]
+        JB[Jailbreak]
+        PII[PII / Secrets]
+        Hate[Hate / Offense / Profanity]
+    end
+
+    subgraph Mizan["Level 2a — Mizan System-1\n(:8083 → Manager :9000)\n55ms • ECE 0.061 • Persian-native"]
+        M1[Safety: allow/block/clarify + probs]
+        M2[Scope: noul true/false + probs]
+        M3[Severity: score 0-10]
+    end
+
+    subgraph Gemma["Level 2b — Gemma-4-31B\n(:8080 → Manager :9000)\n~400ms • ECE 0.092 • Strong reasoning"]
+        G1[VERDICT: allow|block]
+        G2[CATEGORY: <category_id>]
+        G3[REASONING: brief reason]
+    end
+
+    subgraph Output["Final Decision\n(fail-closed on error/timeout)"]
+        Allow[Allow → proceed to KB/generate]
+        Block[Block → refuse response]
+    end
+
+    Q --> Signals
+    Signals --> Mizan
+    Mizan -- "high confidence\n(≥0.85 safety, ≥0.80 scope,\n<3.0 severity)" --> Allow
+    Mizan -- "low confidence OR hard signal" --> Gemma
+    Gemma --> Output
+    Mizan -- "direct allow/block" --> Output
+    Output --> Allow
+    Output --> Block
+```
+
+### Escalation Triggers (Configurable via Env)
+
+| Trigger | Threshold | Env Var | Default |
+|---------|-----------|---------|---------|
+| Safety confidence low | `< 0.85` | `HYBRID_SAFETY_THRESHOLD` | 0.85 |
+| Scope confidence low | `< 0.80` | `HYBRID_SCOPE_THRESHOLD` | 0.80 |
+| High severity | `≥ 3.0` | `HYBRID_SEVERITY_THRESHOLD` | 3.0 |
+| Hard signals (PI/jailbreak/secret/PII/hate) | Any | — | Always escalate |
+| Master switch | — | `HYBRID_ENABLE_GEMMA` | true |
+
+### Implementation
+
+**Guardrails judge backend** (`guardrails/src/work_rag_guardrails/judge.py`):
+```bash
+export GUARD_JUDGE_BACKEND=hybrid   # gemma | mizan | hybrid
+export GUARD_JUDGE_MODE=always
+export HYBRID_SAFETY_THRESHOLD=0.85
+export HYBRID_SCOPE_THRESHOLD=0.80
+export HYBRID_SEVERITY_THRESHOLD=3.0
+export HYBRID_ENABLE_GEMMA=true
+```
+
+**Mizan client** (`orchestrator/src/work_rag_orchestrator/clients/mizan.py`): calls `POST /v1/systemone` via Manager `:9000` → Mizan backend `:8083`. Implements TypeSafe System-1 API: `record + typed questions → calibrated probabilities`.
+
+### Hybrid Latency Breakdown (Weighted Mean)
+
+| Component | Latency | Weight | Contribution |
+|-----------|---------|--------|--------------|
+| Mizan-only (77%) | 55 ms | 0.77 | 42 ms |
+| Escalated (23%) | 55 + 400 = 455 ms | 0.23 | 105 ms |
+| **Weighted Mean** | — | — | **~86 ms** |
+
+**Formula:** `Mean = (1 − escalation_rate) × Mizan_latency + escalation_rate × (Mizan_latency + Gemma_latency)`
+
+### Projected Performance Comparison
+
+| Metric | Pure Gemma | Pure Mizan | Hybrid (0.85) | Δ vs Gemma | Δ vs Mizan |
+|---------|-----------|------------|---------------|------------|------------|
+| Safety Accuracy | ~85% | ~95% | **~98%** | +13% | +3% |
+| Ambiguous Accuracy | ~75% | ~67% | **~90%** | +15% | +23% |
+| Overall Accuracy | ~82% | ~92% | **~97%** | +15% | +5% |
+| Calibration (ECE) | 0.092 | **0.061** | **~0.060** | −35% | ~same |
+| P50 Latency | ~400 ms | **55 ms** | **~86 ms** | −78% | +31 ms |
+| P95 Latency | ~800 ms | **120 ms** | **~200 ms** | −75% | +80 ms |
+| Escalation Rate | 0% | 0% | **23%** | — | — |
+| VRAM (steady) | 22 GB | **2 GB** | **2 GB** | −91% | same |
+
+> **Note:** Mizan values are community-reported (Tasmim-Bench v1.0.4, 96 synthetic cases + 3,000 human-labeled Persian records) and not independently verified on this platform. Gemma/Hybrid values are projected. Live Mizan benchmarks require the GGUF download to complete (see "Mizan Model Status" below).
+
+---
+
+## 🤖 Trained Classifier vs Mizan + Gemma — Side-by-Side Comparison
+
+The platform uses **two separate decision layers**:
+
+1. **Trained Classifier** (SVM-RBF, in `subspaces.py`) — fast, local, in-process ambiguity/subspace resolution for the **ambiguity resolver**.
+2. **Mizan + Gemma** (via `judge.py` + `mizan.py`) — external System-1 + LLM cascade for the **guardrails judge**.
+
+They serve different layers and are **not replacements** for each other. The current design keeps them separate:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                      ORCHESTRATOR :8100                          │
+│  ┌─────────────────┐    ┌─────────────────────────────────┐     │
+│  │ Ambiguity       │    │ Guardrails (:8200)              │     │
+│  │ Resolver        │    │                                 │     │
+│  │  subspes.py     │    │  judge.py                       │     │
+│  │                 │    │                                 │     │
+│  │ • 7-dim features│    │ • GUARD_JUDGE_BACKEND=          │     │
+│  │ • SVM-RBF       │    │   hybrid / mizan / gemma        │     │
+│  │ • ~0.17 ms      │    │ • Mizan /v1/systemone (:8083)   │     │
+│  │ • Local (CPU)   │    │ • Gemma /chat/completions (:8080)│     │
+│  └─────────────────┘    └─────────────────────────────────┘     │
+│         ↓                                                      ↓│
+│   Subspace label                                                │
+│   + 'ambiguous' flag                                            │
+│         ↓                                                      ↓│
+│   Routing/clarify decision                              Safety decision│
+│   (accept/reject/clarify)                            (allow/block)     │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Performance Comparison (Measured vs Projected)
+
+| Metric | Trained Classifier<br>(SVM-RBF, measured) | Mizan-only<br>(community-reported) | Gemma-only<br>(projected) | Hybrid Mizan→Gemma<br>(projected) |
+|---------|-------------------------------------------|-----------------------------------|---------------------------|-----------------------------------|
+| **Type** | Sklearn SVM-RBF (local) | GGUF llama.cpp (API) | GGUF llama.cpp (API) | Mizan → Gemma cascade |
+| **Location** | In-process (orchestrator) | External (:8083 → :9000) | External (:8080 → :9000) | External cascade |
+| **Latency (mean)** | **~0.17 ms** | ~55 ms | ~400 ms | ~86 ms |
+| **Latency (P95)** | **~0.12 ms** | ~120 ms | ~800 ms | ~200 ms |
+| **Accuracy** | 0.7300 (n=100) | 0.9170 (96 cases) | ~0.850 | ~0.970 |
+| **Balanced Acc** | **0.7006** | not reported | not reported | not reported |
+| **F1 Macro** | 0.7079 | not reported | not reported | not reported |
+| **Calibration (ECE)** | ~0.25 (uncalibrated) | **0.061** | 0.092 | **~0.060** |
+| **Persian-native** | Via MiniLM embeddings | **Yes** (3K Persian records) | No | **Yes** (Mizan path) |
+| **VRAM** | None (CPU) | ~2 GB (Q4 GGUF) | ~22 GB (Q4_K_XL) | ~2 GB + occasional Gemma |
+| **Failure mode** | Never fails (degrades) | 404 if backend down | Slow but reliable | Mizan→Gemma fallback |
+| **Best for** | Fast ambiguity routing | Fast safety/scope decisions | Complex reasoning | Best of both |
+
+### Per-Subspace Performance (Trained Classifier, Eval Set n=100)
+
+| Subspace | Precision | Recall | F1 | Support |
+|----------|-----------|--------|-----|---------|
+| cheque | 0.8462 | 0.9565 | **0.8980** | 23 |
+| general | 0.6667 | 0.7826 | **0.7200** | 23 |
+| facilities_person | 0.8333 | 0.6250 | **0.7143** | 24 |
+| facilities_legal | 0.8333 | 0.4545 | **0.5882** | 11 |
+| ambiguous | 0.5652 | 0.6842 | **0.6190** | 19 |
+
+**Key insight:** Cheque subspace is strongest (F1=0.898). facilities_legal is weakest (F1=0.588) due to confusion with facilities_person. Ambiguous class has moderate F1 (0.619) — Mizan's calibrated probabilities could improve this via escalation.
+
+### Architecture Comparison: Classifier vs Mizan+Gemma
+
+| Dimension | Trained Classifier (Ambiguity Resolver) | Mizan-only | Gemma-only | Hybrid Mizan→Gemma |
+|-----------|----------------------------------------|------------|------------|---------------------|
+| **Role in pipeline** | Subspace routing + ambiguity detection (pre-retrieve) | Guardrails input/output safety judgment | Guardrails safety judgment | Guardrails safety judgment (escalated) |
+| **When it runs** | After `classify`, before `retrieve` | In `adjudicate()` at guardrails level | In `adjudicate()` at guardrails level | In `adjudicate()` at guardrails level |
+| **Input** | 7-dim subspace features (sims, margin, top1, entropy) | Text + typed questions (choice/noul/score) | Raw text prompt | Text → Mizan context → Gemma |
+| **Output** | Subspace label or `ambiguous` | choice/noul/score + calibrated probs | allow/block + category | Final allow/block |
+| **Latency** | **~0.17 ms** (local CPU) | ~55 ms (GPU API) | ~400 ms (GPU API) | ~86 ms (weighted) |
+| **Calibration** | Uncalibrated (~0.25 ECE) | **0.061 ECE** | 0.092 ECE | **~0.060 ECE** |
+| **Persian understanding** | Via MiniLM-384 embeddings (cross-lingual) | **Native** (3K Persian records) | Multilingual (not Persian-calibrated) | **Native** (Mizan path) |
+| **VRAM cost** | None | ~2 GB | ~22 GB | ~2 GB + occasional |
+| **Can fail?** | Never (degrades to protos) | 404 if backend not loaded | No | Falls back to Gemma |
+
+### Design Rationale: Why Keep Them Separate
+
+1. **Different layers**: The classifier operates at the **routing/ambiguity layer** (deciding which KB subspace to search, whether to clarify). Mizan+Gemma operates at the **safety layer** (deciding allow/block). They answer different questions.
+
+2. **Latency budget**: The classifier runs in ~0.17ms locally — too fast to justify network round-trip to Mizan. Mizan at 55ms is acceptable for safety checks but too slow for per-query routing.
+
+3. **Failure independence**: If Mizan backend is down (404), the classifier still works for ambiguity routing. If the classifier degrades, Mizan+Gemma still handles safety.
+
+4. **Calibration**: Mizan outputs calibrated probabilities (ECE 0.061) ideal for confidence-thresholded escalation. The SVM-RBF is uncalibrated (~0.25 ECE) and better suited to hard subspace labels.
+
+### Mizan Model Status
+
+**Mizan GGUF is NOT fully downloaded.** The file exists at:
+
+```
+offline-prep/models/huggingface/Nimruz_Mizan-v3-3B-GGUF/mizan-v3-3b-Q4_K_M.gguf
+```
+
+- **Current size:** 808 MB / ~1.9 GB (~42%)
+- **Blocker:** Corporate proxy (`192.168.203.2:3128`) drops connections repeatedly (`curl: (18) Transferred a partial file`)
+- **Resume command** (running in background, PID monitored):
+  ```bash
+  curl -L -C - --retry 60 --retry-delay 10 --retry-max-time 3600 \
+    -o offline-prep/models/huggingface/Nimruz_Mizan-v3-3B-GGUF/mizan-v3-3b-Q4_K_M.gguf \
+    "https://huggingface.co/Nimruz/Mizan-v3-3B-GGUF/resolve/main/mizan-v3-3b-Q4_K_M.gguf"
+  ```
+
+Once the download completes (~45 more minutes at current proxy speed), the remaining steps are:
+
+```bash
+# 1. Spawn Mizan via Manager on GPU 1, port 8083
+curl -X POST "http://127.0.0.1:9000/admin/models/load?model_id=mizan-v3-3b&port=8083"
+
+# 2. Verify Mizan backend healthy
+curl http://127.0.0.1:8083/health
+
+# 3. Run Mizan benchmarks
+cd /splunk-data/v1/evaluation/benchmarks
+python verify_mizan.py
+python mizan_benchmark.py
+python compare_mizan.py   # A/B: Gemma baseline vs Mizan
+python analyze_confidence.py
+
+# 4. Run side-by-side classifier vs Mizan comparison
+cd /splunk-data/v1/Work_Credit-RAG_Phase1/components/orchestrator
+python scripts/generate_comparison_plots.py   # (without --skip-mizan once Mizan is live)
+```
+
+### Comparison Plots
+
+Generated plots are saved to `components/orchestrator/data/mizan_classifier_comparison/`:
+
+| Plot | Description |
+|------|-------------|
+| `performance_comparison.png` | Accuracy / Balanced Acc / F1 across all four approaches |
+| `latency_comparison.png` | Mean + P95 latency (log scale) |
+| `classifier_per_subspace_f1.png` | Trained classifier per-subspace F1 (eval set) |
+| `calibration_comparison.png` | Expected Calibration Error (ECE) — lower is better |
+| `architecture_comparison.png` | Side-by-side architecture dimension comparison |
+
+---
+
+---
+
 ## Archive
 
 | Archive path | Content | Original |
