@@ -1401,7 +1401,315 @@ All plots saved to `components/orchestrator/data/model_eval/plots/`:
 
 **Key Finding**: RF shows slight overfitting (+0.0485 diff). SVM RBF and LR actually generalize *better* than CV suggests.
 
-### 🎯 Calibration & Thresholds
+---
+
+## 🚀 Ambiguity Resolver: Calibration, Training Roadmap & Hybrid System (NEW)
+
+This section describes the end-to-end architecture for the ambiguity resolver: a trained classifier that defers to the frozen Gemma-4-31b LLM judge when uncertain. The goal is to maximize **combined system accuracy** (classifier when confident + LLM judge when not), not just classifier accuracy in isolation.
+
+### 🎯 Key Metric: System Accuracy
+
+The primary optimization target is **system-level accuracy**, defined as:
+
+```
+System Accuracy(τ) = P(confident) × P(correct | confident) + P(defer) × P(correct | deferred to LLM)
+```
+
+Where:
+*   `P(confident)` = fraction of queries where classifier confidence ≥ τ
+*   `P(correct | confident)` = accuracy of classifier on confident predictions
+*   `P(defer)` = fraction deferred to LLM = 1 − P(confident)
+*   `P(correct | deferred)` = accuracy of Gemma-4-31b on deferred queries
+
+**Decision rule:**
+```
+if max_probability(classifier) ≥ τ:
+    return classifier_prediction   # use cheap local model
+else:
+    return llm_judge(query)        # defer to frozen Gemma judge
+```
+
+**Optimization objective:**
+```
+τ* = argmax_τ System Accuracy(τ)
+```
+
+This means we deliberately defer low-confidence predictions to the LLM judge, even if the classifier "thinks" it knows the answer. The threshold `τ` is tuned to maximize overall system accuracy, not classifier accuracy alone.
+
+---
+
+### 🏗️ Model Architecture
+
+The classifier is a scikit-learn model (LogisticRegression, SVM RBF, etc.) trained on 7-dimensional features extracted from the embedding-space ambiguity scorer:
+
+| Feature | Description |
+|---------|-------------|
+| `cheque` | Cosine similarity to cheque subspace centroid |
+| `facilities_person` | Cosine similarity to facilities_person centroid |
+| `facilities_legal` | Cosine similarity to facilities_legal centroid |
+| `general` | Cosine similarity to general centroid |
+| `margin` | `top1 − top2` (separation between top-2 classes) |
+| `top1` | Maximum softmax probability |
+| `entropy` | Normalized Shannon entropy of softmax distribution |
+
+**Classifier output:** A probability distribution over `{cheque, facilities_person, facilities_legal, general, ambiguous}`. The `ambiguous` class means "I don't know which subspace this belongs to" — it should trigger deferral to the LLM judge.
+
+---
+
+### 🧪 Training & Evaluation Methodology
+
+#### Data Split
+| Split | Samples | Purpose |
+|-------|---------|---------|
+| Train | 800 | Train classifier models |
+| Test | 100 | Hold-out evaluation |
+| Eval | 100 | Final held-out evaluation |
+
+**Labeling:** Each sample is labeled with one of `{cheque, facilities_person, facilities_legal, general, ambiguous}`. The `ambiguous` label means the query is genuinely scattered or multi-subspace, and should be deferred to the LLM judge.
+
+**Classifier Training Pipeline:**
+
+```python
+# 1. Extract KB chunks → query chunks → embed with MiniLM-L12-v2 → compute subspace similarities
+# 2. Build feature vector: [sim_cheque, sim_facilities_person, sim_facilities_legal, sim_general, margin, top1, entropy]
+# 3. Train logistic regression / SVM / RF / MLP on labeled data
+# 4. Calibrate probabilities (temperature scaling or Platt scaling)
+# 5. Evaluate on test set (accuracy, F1, confusion matrix)
+# 6. Run hybrid system test (classifier + LLM judge deferral)
+```
+
+#### Models Evaluated
+| Model | Best Use Case |
+|-------|---------------|
+| LogisticRegression | Fast, interpretable, well-calibrated |
+| SVM-RBF | Best overall accuracy (0.7006 balanced acc) |
+| LinearSVC | Fast, good binary ambiguous detection |
+| RandomForest | Good for non-linear boundaries |
+| MLP | Needs more data; underperforms on small data |
+
+#### Training Scripts
+
+```bash
+# Build dataset (1000 samples)
+python scripts/build_ambiguity_dataset.py --per-subspace 250 --ambiguous 200
+
+# Calibrate thresholds on labeled data
+python scripts/calibrate_subspace.py --queries data/ambiguity_dataset.jsonl
+
+# Train classifier on expanded dataset
+python scripts/train_subspace_clf.py --queries data/ambiguity_dataset.jsonl
+
+# Full evaluation (CV + Test + Eval + Subsamples)
+python scripts/train_eval_ambiguity.py --train data/ambiguity_train.jsonl --test data/ambiguity_test.jsonl --eval data/ambiguity_eval.jsonl
+```
+
+---
+
+### 🔧 Calibrated Confidence (Temperature Scaling & Platt Scaling)
+
+Raw softmax scores are often **overconfident**. We calibrate them so that `P(predicted class | x) ≈ P(true | x)`.
+
+#### Temperature Scaling
+```
+p_i = softmax(logits_i / T)
+```
+Fit temperature `T` on validation set to minimize negative log-likelihood (NLL).
+
+#### Platt Scaling
+Fit a logistic regression on raw logits:
+```
+P(y=1 | z) = σ(a · z + b)
+```
+where `z` is the raw logit for the true class.
+
+#### Isotonic Regression (optional)
+Non-parametric calibration for non-monotonic relationships between raw scores and true probabilities.
+
+**Expected outcome:** Calibrated probabilities where `top1 = 0.80` means ~80% chance of being correct, enabling principled thresholding.
+
+---
+
+### 💰 Cost-Sensitive Training & Loss Functions
+
+Standard accuracy treats all errors equally. In the hybrid system, **confident mistakes are expensive** (wrong answer served to user), while **deferral to LLM is cheaper but costs latency/money**.
+
+#### Cost Matrix
+
+| Decision | True Subspace | True Ambiguous |
+|----------|---------------|----------------|
+| **Predict subspace** | 0 (correct) | `C_confident_wrong` (high penalty) |
+| **Defer to LLM** | `C_defer` (moderate) | `C_defer` (moderate) |
+
+**Cost-sensitive loss for classifier training:**
+```
+L = Σ_i w_i · ℓ(y_i, ŷ_i)
+where w_i = base_weight × confidence_penalty(p_i)
+```
+If the classifier predicts class `k` with probability `p` but the true label is different, the penalty scales with `p` — overconfident errors are penalized more heavily.
+
+**Decision rule with cost sensitivity:**
+Defer to LLM if:
+```
+P(correct | x) × (C_defer − C_misclassify_cost) < C_defer
+```
+Equivalently:
+```
+P(correct | x) < C_defer / (C_defer + C_misclassify_cost)
+```
+
+This means: defer whenever the classifier's confidence is below the break-even point between deferring and risking a wrong answer.
+
+---
+
+### 📊 Conformal Prediction & Coverage Guarantees
+
+For deployments where you need statistical guarantees on deferral rate (e.g., "defer at most 20% of queries"), use **conformal prediction**:
+
+1. **Compute nonconformity scores** on calibration set: `s_i = 1 − p_true_class(x_i)`
+2. **Compute threshold** at quantile `1 − α` of scores: `τ_conf = quantile(scores, 1 − α)`
+3. **Deploy:** Defer to LLM if `1 − max_probability(x) > τ_conf`
+
+**Result:** With probability ≥ `1 − α`, the classifier will defer on at most `α` fraction of future queries. This bounds LLM usage while maintaining accuracy guarantees.
+
+---
+
+### 🔄 Hybrid System Architecture
+
+```
+User Query
+    │
+    ▼
+┌─────────────┐
+│ Classifier  │ ← 7-dim features, calibrated probabilities
+│ (SVM-RBF)   │
+└─────────────┘
+        │
+        ├─ max_prob ≥ τ* ─────────▶ Return classifier prediction
+        │
+        └─ max_prob < τ* ─────────▶ LLM Judge (Gemma-4-31b)
+                                      → Return LLM answer
+```
+
+**Trade-offs:**
+| Metric | Classifier Alone | Hybrid System (optimal τ) |
+|--------|-----------------|---------------------------|
+| Accuracy | ~0.65–0.70 | **> 0.70** |
+| Coverage (no deferral) | 100% | ~60–80% |
+| Accuracy on classified subset | ~0.65–0.70 | **> 0.85** |
+| LLM calls per 100 queries | 0 | ~20–40 |
+| Latency (p50) | ~300ms | ~600–900ms |
+
+**Key insight:** Deferring uncertain queries to the LLM judge dramatically improves accuracy on the classified subset, while keeping the overall system accuracy higher than the classifier alone.
+
+---
+
+### 🛣️ Roadmap & Implementation Plan
+
+#### Phase 1: Instrumentation & Baseline (Week 1)
+
+| # | Task | Description | Deliverable |
+|---|------|-------------|-------------|
+| 1.1 | Instrument ambiguity scoring | Emit `subspace_sims`, `margin`, `entropy`, `ambiguity_score` in `audit` block | `api.py`, `nodes/retrieve.py`, `state.py` |
+| 1.2 | Config gating | Add `subspace_ambiguity_enabled` and `subspace_ambiguity_route` flags | `config.py` |
+| 1.3 | Baseline metrics | Run classifier on validation set, record accuracy, calibration error | `calibration_report.json` |
+
+#### Phase 2: Calibrated Confidence (Week 2)
+
+| # | Task | Description | Deliverable |
+|---|------|-------------|-------------|
+| 2.1 | Temperature scaling | Fit temperature T on validation logits | `temperature.json` |
+| 2.2 | Platt scaling | Fit logistic regression on logits | `platt_scaling.py` |
+| 2.3 | Calibration evaluation | Compute ECE before/after calibration | `calibration_report.json` |
+| 2.4 | Confidence score definition | `confidence = max(softmax(logits / T))` | `calibrated_predictor.py` |
+
+#### Phase 3: Cost-Sensitive Training (Week 3)
+
+| # | Task | Description | Deliverable |
+|---|------|-------------|-------------|
+| 3.1 | Define cost matrix | Specify `C_confident_wrong`, `C_defer`, `C_confident_ambiguous` | `cost_matrix.yaml` |
+| 3.2 | Implement cost-sensitive loss | Weight samples by confidence and class imbalance | `cost_sensitive_loss.py` |
+| 3.3 | Train calibrated models | Train LR, SVM, RF with cost-sensitive loss | `trained_models/` |
+| 3.4 | Selective risk curve | Plot risk vs. coverage for each model | `selective_risk.png` |
+
+#### Phase 4: Conformal Prediction (Week 4)
+
+| # | Task | Description | Deliverable |
+|---|------|-------------|-------------|
+| 4.1 | Compute nonconformity scores | `s_i = 1 − p_true_class(x_i)` | `nonconformity_scores.json` |
+| 4.2 | Select threshold | Fit quantile threshold for target coverage | `conformal_threshold.json` |
+| 4.3 | Deploy deferral rule | Defer if `1 − max_probability > τ_conf` | `conformal_deferral.py` |
+| 4.4 | Validate coverage | Measure actual deferred fraction on test set | `coverage_validation.json` |
+
+#### Phase 5: Threshold Optimization (Week 5)
+
+| # | Task | Description | Deliverable |
+|---|------|-------------|-------------|
+| 5.1 | Implement system accuracy metric | `system_acc(τ) = P(confident) × acc_confident + P(defer) × acc_llm` | `system_accuracy_metric.py` |
+| 5.2 | Sweep threshold τ | Grid search τ ∈ [0.50, 0.99] on validation set | `threshold_sweep_results.json` |
+| 5.3 | Select optimal τ* | Choose τ maximizing system accuracy | `optimal_threshold.json` |
+| 5.4 | Compare baselines | Classifier alone vs. hybrid vs. pure LLM | `system_comparison.md` |
+
+#### Phase 5.5: LLM Judge Integration (Week 6)
+
+| # | Task | Description | Deliverable |
+|---|------|-------------|-------------|
+| 5.5.1 | Prompt template | Define classify/unclear prompt for Gemma | `llm_judge_prompt.txt` |
+| 5.5.2 | LLM evaluation harness | Run Gemma on deferred queries from validation set | `llm_judge_eval.json` |
+| 5.5.3 | Hybrid inference wrapper | Implement `predict(query)` with classifier → LLM fallback | `hybrid_classifier.py` |
+| 5.5.4 | End-to-end test | Run full pipeline on test set | `hybrid_eval_results.json` |
+
+#### Phase 6: Final Validation & Deployment (Week 6–7)
+
+| # | Task | Description | Deliverable |
+|---|------|-------------|-------------|
+| 6.1 | Final test evaluation | Run hybrid system at τ* on held-out test set | `final_test_results.json` |
+| 6.2 | Compare baselines | Classifier-only vs. hybrid vs. pure LLM | `improvement_report.md` |
+| 6.3 | Productionize | Deploy into `nodes/retrieve.py` / `graph.py` | Updated `graph.py`, `retrieve.py` |
+| 6.4 | Documentation | Update README with hybrid system results | `README.md` |
+| 6.5 | Push to GitHub | Commit all changes | Git commit + push |
+
+---
+
+### 🎯 Success Criteria (What "Better" Means)
+
+| Metric | Classifier Alone (Optimized τ) | Hybrid System (τ*) | Improvement |
+|--------|-------------------------------|--------------------|-------------|
+| Overall Accuracy | ~0.65–0.70 | **> 0.70** | +5–10% |
+| Coverage (no deferral) | 100% | ~60–80% | Lower (intentional) |
+| Accuracy on Classified Subset | ~0.65–0.70 | **> 0.85** | Much higher |
+| LLM Calls per 100 Queries | 0 | ~20–40 | Controlled cost |
+| Latency (p50) | ~300ms | ~600–900ms | Acceptable trade-off |
+
+**The hybrid system wins if:**
+```
+system_acc(τ*) > max_τ(classifier_acc(τ))
+```
+i.e., the combined system outperforms the best possible standalone classifier.
+
+---
+
+### 🛠️ Implementation Commands
+
+```bash
+# 1. Build dataset
+python scripts/build_ambiguity_dataset.py --per-subspace 250 --ambiguous 200
+
+# 2. Calibrate thresholds
+python scripts/calibrate_subspace.py --queries data/ambiguity_dataset.jsonl
+
+# 3. Train classifier
+python scripts/train_subspace_clf.py --queries data/ambiguity_dataset.jsonl
+
+# 4. Run hybrid evaluation
+python scripts/train_eval_ambiguity.py --train data/ambiguity_train.jsonl --test data/ambiguity_test.jsonl --eval data/ambiguity_eval.jsonl
+
+# 5. Sweep thresholds
+python scripts/sweep_threshold.py --eval data/ambiguity_eval.jsonl --llm-eval data/llm_judge_eval.json
+
+# 6. Deploy hybrid
+python scripts/deploy_hybrid.py --threshold 0.XX  # optimal τ*
+```
+
 
 | Threshold | Default | Calibrated |
 |-----------|---------|------------|
