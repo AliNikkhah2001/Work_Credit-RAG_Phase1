@@ -1402,6 +1402,113 @@ All plots saved to `components/orchestrator/data/model_eval/plots/`:
 - Default: Balanced Acc = 0.705, Route Acc = 0.400
 - **Calibrated**: Balanced Acc = **0.768**, Route Acc = **0.478**
 
+---
+
+## ⚖️ Trained Classifier vs Gemma — Performance & Latency Comparison
+
+Both models were evaluated on the same 100-sample ambiguity eval set (`data/ambiguity_eval.jsonl`), 5-class classification (cheque, facilities_person, facilities_legal, general, ambiguous).
+
+### Measured Results
+
+| Model | Accuracy | Balanced Acc | F1 Macro | Latency Mean | Latency P95 | Location |
+|-------|----------|--------------|----------|--------------|-------------|----------|
+| **Trained Classifier (SVM-RBF)** | **0.7300** | **0.7006** | **0.7079** | **~0.17 ms** | **~0.12 ms** | In-process (CPU) |
+| **Gemma-4-31B** | 0.7200 | not measured | not measured | 127.9 ms | 149.5 ms | External API (:9000) |
+
+**Key finding:** The trained classifier is **750× faster** than Gemma (0.17ms vs 127.9ms) with **comparable accuracy** (73% vs 72%). Gemma's latency is dominated by GPU inference + network round-trip.
+
+### Per-Subspace F1 (Trained Classifier, Eval Set n=100)
+
+| Subspace | Precision | Recall | F1 | Support |
+|----------|-----------|--------|-----|---------|
+| cheque | 0.8462 | 0.9565 | **0.8980** | 23 |
+| general | 0.6667 | 0.7826 | **0.7200** | 23 |
+| facilities_person | 0.8333 | 0.6250 | **0.7143** | 24 |
+| facilities_legal | 0.8333 | 0.4545 | **0.5882** | 11 |
+| ambiguous | 0.5652 | 0.6842 | **0.6190** | 19 |
+
+### Calibration (ECE)
+
+| Model | ECE | Notes |
+|-------|-----|-------|
+| Trained Classifier | ~0.25 | Uncalibrated (no Platt scaling) |
+| Gemma-4-31B | 0.092 | Community-reported |
+| Mizan-v3-3B | **0.061** | Community-reported (best calibrated) |
+
+---
+
+## 🔀 Hybrid Classifier + Gemma — Escalation by Model Confidence
+
+A hybrid approach uses the fast trained classifier as the first pass, and escalates to Gemma only when classifier confidence is below a threshold. This combines classifier speed with Gemma's reasoning for uncertain cases.
+
+### Hybrid Architecture Diagram
+
+```mermaid
+flowchart LR
+    subgraph Input["Input Query"]
+        Q[Persian Query]
+    end
+
+    subgraph Classifier["Trained Classifier (SVM-RBF)\n~0.17ms • In-process"]
+        C1[Extract 7-dim subspace features]
+        C2[Predict class + confidence]
+    end
+
+    subgraph Escalation["Confidence Gate\nEscalate if confidence < threshold"]
+        Gate{confidence < threshold?}
+    end
+
+    subgraph Gemma["Gemma-4-31B\n~128ms • External API"]
+        G1[LLM classification]
+        G2[Final decision]
+    end
+
+    subgraph Output["Final Decision"]
+        Allow[Return class label]
+    end
+
+    Q --> C1
+    C1 --> C2
+    C2 --> Gate
+    Gate -- "No (high conf)" --> Allow
+    Gate -- "Yes (low conf)" --> Gemma
+    Gemma --> G2
+    G2 --> Allow
+```
+
+### Hybrid Results by Escalation Threshold
+
+| Threshold | Hybrid Accuracy | Escalation Rate | Avg Latency | Classifier Correct | Gemma Correct |
+|-----------|-----------------|-----------------|-------------|-------------------|---------------|
+| 0.50 | 0.7500 | 19% | 24.5 ms | 63 | 12 |
+| **0.60** | **0.7800** | **42%** | **53.9 ms** | **48** | **30** |
+| 0.70 | 0.7500 | 60% | 76.9 ms | 35 | 40 |
+| 0.80 | 0.7300 | 85% | 108.9 ms | 12 | 61 |
+| 0.85 | 0.7400 | 94% | 120.4 ms | 5 | 69 |
+| 0.90 | 0.7200 | 100% | 128.1 ms | 0 | 72 |
+
+**Best hybrid: threshold 0.60** — **78% accuracy** (vs 73% classifier alone, 72% Gemma alone) with 42% escalation rate and 53.9ms average latency.
+
+### Hybrid Latency Formula
+
+```
+Avg Latency = Classifier_Latency + (Escalation_Rate × Gemma_Latency)
+            = 0.17ms + (0.42 × 127.9ms)
+            = 0.17ms + 53.7ms
+            ≈ 53.9ms
+```
+
+### When to Use Each Approach
+
+| Scenario | Recommended | Reason |
+|----------|-------------|--------|
+| Maximum speed, acceptable accuracy | Trained Classifier alone | 0.17ms, 73% acc |
+| Best accuracy, moderate latency | Hybrid (thr=0.60) | 53.9ms, 78% acc |
+| Maximum accuracy, latency tolerant | Gemma alone | 127.9ms, 72% acc (but classifier+hybrid beats it) |
+| Best calibration | Mizan-v3-3B | ECE 0.061 (when model is available) |
+
+---
+
 ### 🔧 LiteLLM Router Integration
 
 The LiteLLM router (`:4000`) serves as a self-hosted OpenRouter analog with fallback chains:
