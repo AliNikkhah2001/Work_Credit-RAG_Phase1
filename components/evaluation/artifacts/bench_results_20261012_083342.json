@@ -1,0 +1,591 @@
+{
+  "meta": {
+    "timestamp": "2026-10-12T08:33:32.099639+00:00",
+    "elapsed_ms": 10803,
+    "endpoints": {
+      "orch": "http://127.0.0.1:8100/v1/chat/completions",
+      "kb": "http://127.0.0.1:8000/search/api",
+      "obs_template": "http://127.0.0.1:3000/api/observability/pipeline/{request_id}"
+    },
+    "model": "ics-helper-agent",
+    "http_timeout_s": 120.0,
+    "dry_run": true,
+    "only_ids": null,
+    "total_turns_expected": 41,
+    "total_turns_multi_expected": 29,
+    "total_turns_single_expected": 12
+  },
+  "summary": {
+    "total_conversations": 1,
+    "total_single_baselines": 1,
+    "total_turns": 2,
+    "total_turns_multi": 1,
+    "finish_mismatches": 0,
+    "finish_checked": 2,
+    "subspace_mismatches": 1,
+    "subspace_checked": 1,
+    "errors": 0,
+    "latency_ms": {
+      "p50": 9004,
+      "p95": 9004,
+      "avg": 5181,
+      "min": 1359,
+      "max": 9004
+    },
+    "kb_probes": 1
+  },
+  "conversations": [
+    {
+      "id": "conv_cheque_01",
+      "subspace": "cheque",
+      "description": "greeting -> cheque granular -> cheque sticky follow-up",
+      "request_id": "bench-conv_cheque_01-dce681a4ffa0",
+      "turns": [
+        {
+          "user": "سلام",
+          "expected_finish": "greeting",
+          "expected_subspace": null,
+          "should_keep_sticky": false,
+          "is_respec": false,
+          "notes": "greeting/no-retrieve shortcut",
+          "request_id": "bench-conv_cheque_01-dce681a4ffa0",
+          "http_status": 200,
+          "error": null,
+          "finish_reason": "stop",
+          "applied_subspace": null,
+          "latency_ms": 1359,
+          "latency_ms_wall": 1359,
+          "stage_timing_ms": {
+            "validate_input": 62.5,
+            "format_response": 0.1
+          },
+          "retrieval_method": "",
+          "retrieved_chunks": [],
+          "retrieved_chunks_count": 0,
+          "reranker_scores": [],
+          "citations": [],
+          "citations_count": 0,
+          "supplemental": null,
+          "supplemental_count": 0,
+          "follow_ups": null,
+          "content": "سلام! من دستیار هوشمند شرکت اعتبارسنجی ایران هستم. سوالتان را درباره گزارش اعتباری، امتیاز و رتبه، یا سوابق و چک‌ها بفرمایید.",
+          "content_preview": "سلام! من دستیار هوشمند شرکت اعتبارسنجی ایران هستم. سوالتان را درباره گزارش اعتباری، امتیاز و رتبه، یا سوابق و چک‌ها بفرمایید.",
+          "messages_sent_count": 1,
+          "raw_audit": {
+            "query": "سلام",
+            "rewritten_query": "",
+            "available_subspaces": null
+          },
+          "turn_index": 1,
+          "finish_match": true,
+          "subspace_match": null,
+          "observability": {
+            "ok": false,
+            "data_preview": "{'request_id': 'bench-conv_cheque_01-dce681a4ffa0', 'timeline': {'request_id': 'bench-conv_cheque_01-dce681a4ffa0', 'name': 'rag', 'timestamp': '2026-10-12T08:33:32.114125Z', 'input': 'سلام', 'output': None, 'metadata': {'model': 'ics-helper-agent', 'request_id': 'bench-conv_cheque_01-dce681a4ffa0'}, 'spans': [{'span': 'validate_input', 'start': '2026-10-12T08:33:32.187074Z', 'input': 'سلام', 'out"
+          }
+        }
+      ],
+      "elapsed_ms": 1666,
+      "turns_count": 1
+    }
+  ],
+  "single_baselines": [
+    {
+      "user": "چک برگشتی چیست و چگونه رفع اثر می‌شود؟",
+      "expected_finish": "stop",
+      "expected_subspace": "cheque",
+      "should_keep_sticky": false,
+      "is_respec": false,
+      "notes": "granular cheque — direct retrieval with filter_path",
+      "request_id": "bench-single_cheque_granular-2b47c3416d25",
+      "http_status": 200,
+      "error": null,
+      "finish_reason": "stop",
+      "applied_subspace": null,
+      "latency_ms": 9004,
+      "latency_ms_wall": 9004,
+      "stage_timing_ms": {
+        "validate_input": 40.8,
+        "retrieve": 815.1,
+        "build_context": 0.1,
+        "guarded_generate": 6833.6,
+        "format_response": 1.6
+      },
+      "retrieval_method": "",
+      "retrieved_chunks": [],
+      "retrieved_chunks_count": 0,
+      "reranker_scores": [],
+      "citations": [],
+      "citations_count": 0,
+      "supplemental": null,
+      "supplemental_count": 0,
+      "follow_ups": null,
+      "content": "بر اساس اطلاعات موجود در پایگاه دانش، پاسخی برای این سوال یافت نشد.",
+      "content_preview": "بر اساس اطلاعات موجود در پایگاه دانش، پاسخی برای این سوال یافت نشد.",
+      "messages_sent_count": 1,
+      "raw_audit": {
+        "query": "چک برگشتی چیست و چگونه رفع اثر می‌شود؟",
+        "rewritten_query": "چک برگشتی چیست و چگونه رفع اثر می‌شود؟",
+        "available_subspaces": null
+      },
+      "id": "single_cheque_granular",
+      "subspace": "cheque",
+      "query": "چک برگشتی چیست و چگونه رفع اثر می‌شود؟",
+      "filter_path": "گزارش اعتباری چک",
+      "finish_match": true,
+      "subspace_match": false
+    }
+  ],
+  "kb_probes": [
+    {
+      "id": "single_cheque_granular",
+      "query": "چک برگشتی چیست و چگونه رفع اثر می‌شود؟",
+      "filter_path": "گزارش اعتباری چک",
+      "no_filter": {
+        "http_status": 200,
+        "error": null,
+        "latency_ms": 46,
+        "final_count": 1,
+        "merged_count": 20,
+        "top1_preview": "کد دلیل: DCH3-6\nمتن دلیل: فرد در یک ماه گذشته سابقه رفع سوء اثر چک داشته است.\nتوضیح کوتاه: سابقه چک برگشتی مهمترین عامل بر امتیاز چک شخص است. هر چه برگشت چک در تاریخ نزدیکتری اتفاق",
+        "top1_score": 0.027629,
+        "top1_doc": "توضیحات تشریحی دلایل کاهش امتیاز چک و روش بهبود آن",
+        "top_scores": [
+          0.027629
+        ],
+        "has_results": true
+      },
+      "with_filter": {
+        "http_status": 200,
+        "error": null,
+        "latency_ms": 32,
+        "final_count": 0,
+        "merged_count": 0,
+        "top1_preview": "",
+        "top1_score": null,
+        "top1_doc": null,
+        "top_scores": [],
+        "has_results": false
+      },
+      "filter_improves": null
+    }
+  ],
+  "definitions": {
+    "conversations": [
+      {
+        "id": "conv_cheque_01",
+        "subspace": "cheque",
+        "description": "greeting -> cheque granular -> cheque sticky follow-up",
+        "turns": [
+          {
+            "user": "سلام",
+            "expected_finish": "greeting",
+            "expected_subspace": null,
+            "should_keep_sticky": false,
+            "is_respec": false,
+            "notes": "greeting/no-retrieve shortcut"
+          },
+          {
+            "user": "چک برگشتی چیست و چگونه رفع سوء اثر می‌شود؟",
+            "expected_finish": "stop",
+            "expected_subspace": "cheque",
+            "should_keep_sticky": false,
+            "is_respec": false,
+            "notes": "first granular cheque query, sets sticky to cheque"
+          },
+          {
+            "user": "اگر چکم بدون موجودی باشد چه کار کنم؟",
+            "expected_finish": "stop",
+            "expected_subspace": "cheque",
+            "should_keep_sticky": true,
+            "is_respec": false,
+            "notes": "anaphoric follow-up — should stay cheque via sticky"
+          }
+        ]
+      },
+      {
+        "id": "conv_cheque_02",
+        "subspace": "cheque",
+        "description": "scattered clarify -> cheque spec -> cheque sticky granular",
+        "turns": [
+          {
+            "user": "وضعیت اعتباری چطور است",
+            "expected_finish": "clarify",
+            "expected_subspace": null,
+            "should_keep_sticky": false,
+            "is_respec": false,
+            "notes": "scattered/ambiguous — expect clarify with options"
+          },
+          {
+            "user": "چک",
+            "expected_finish": "stop",
+            "expected_subspace": "cheque",
+            "should_keep_sticky": false,
+            "is_respec": true,
+            "notes": "short re-spec to cheque"
+          },
+          {
+            "user": "تاثیر چک برگشتی بر امتیاز اعتباری چقدر است؟",
+            "expected_finish": "stop",
+            "expected_subspace": "cheque",
+            "should_keep_sticky": true,
+            "is_respec": false,
+            "notes": "granular cheque — should keep sticky cheque"
+          }
+        ]
+      },
+      {
+        "id": "conv_facilities_person_01",
+        "subspace": "facilities_person",
+        "description": "clarify -> facilities_person -> sticky -> cheque re-spec",
+        "turns": [
+          {
+            "user": "وضعیت اعتباری چطور است",
+            "expected_finish": "clarify",
+            "expected_subspace": null,
+            "should_keep_sticky": false,
+            "is_respec": false,
+            "notes": "same scattered probe as cheque_02 T1"
+          },
+          {
+            "user": "تسهیلات اشخاص حقیقی",
+            "expected_finish": "stop",
+            "expected_subspace": "facilities_person",
+            "should_keep_sticky": false,
+            "is_respec": true,
+            "notes": "re-spec to facilities_person"
+          },
+          {
+            "user": "آیا میزان درآمد یا گردش حساب من هم در بهبود رتبه اعتباری تاثیر دارد؟",
+            "expected_finish": "stop",
+            "expected_subspace": "facilities_person",
+            "should_keep_sticky": true,
+            "is_respec": false,
+            "notes": "follow-up should stay facilities_person via sticky"
+          },
+          {
+            "user": "چک",
+            "expected_finish": "stop",
+            "expected_subspace": "cheque",
+            "should_keep_sticky": false,
+            "is_respec": true,
+            "notes": "explicit re-spec to cheque — sticky should switch"
+          }
+        ]
+      },
+      {
+        "id": "conv_facilities_person_02",
+        "subspace": "facilities_person",
+        "description": "greeting -> scattered -> facilities_person granular",
+        "turns": [
+          {
+            "user": "سلام خوبی؟",
+            "expected_finish": "greeting",
+            "expected_subspace": null,
+            "should_keep_sticky": false,
+            "is_respec": false,
+            "notes": "informal greeting"
+          },
+          {
+            "user": "بدهکار شدم چیکار کنم",
+            "expected_finish": "clarify",
+            "expected_subspace": null,
+            "should_keep_sticky": false,
+            "is_respec": false,
+            "notes": "scattered informal — expect clarify"
+          },
+          {
+            "user": "اعتبارسنجی تسهیلات برای اشخاص حقیقی",
+            "expected_finish": "stop",
+            "expected_subspace": "facilities_person",
+            "should_keep_sticky": false,
+            "is_respec": true,
+            "notes": "explicit facilities_person granular"
+          }
+        ]
+      },
+      {
+        "id": "conv_facilities_legal_01",
+        "subspace": "facilities_legal",
+        "description": "facilities_legal granular -> board-role re-spec to general",
+        "turns": [
+          {
+            "user": "محدودیت‌های تسهیلات برای اشخاص حقوقی چیست؟",
+            "expected_finish": "stop",
+            "expected_subspace": "facilities_legal",
+            "should_keep_sticky": false,
+            "is_respec": false,
+            "notes": "direct facilities_legal granular"
+          },
+          {
+            "user": "هیات مدیره چه نقشی دارد؟",
+            "expected_finish": "stop",
+            "expected_subspace": "general",
+            "should_keep_sticky": false,
+            "is_respec": true,
+            "notes": "board-member query — general subspace, tests re-spec away from facilities_legal"
+          }
+        ]
+      },
+      {
+        "id": "conv_facilities_legal_02",
+        "subspace": "facilities_legal",
+        "description": "greeting -> facilities_legal short spec",
+        "turns": [
+          {
+            "user": "سلام",
+            "expected_finish": "greeting",
+            "expected_subspace": null,
+            "should_keep_sticky": false,
+            "is_respec": false,
+            "notes": "greeting"
+          },
+          {
+            "user": "تسهیلات اشخاص حقوقی",
+            "expected_finish": "stop",
+            "expected_subspace": "facilities_legal",
+            "should_keep_sticky": false,
+            "is_respec": true,
+            "notes": "short facilities_legal spec"
+          }
+        ]
+      },
+      {
+        "id": "conv_general_01",
+        "subspace": "general",
+        "description": "general entity -> general intro -> cheque re-spec",
+        "turns": [
+          {
+            "user": "قاسم بور کیه",
+            "expected_finish": "stop",
+            "expected_subspace": "general",
+            "should_keep_sticky": false,
+            "is_respec": false,
+            "notes": "named entity in general subspace — no clarify expected"
+          },
+          {
+            "user": "معرفی شرکت اعتبارسنجی ایران",
+            "expected_finish": "stop",
+            "expected_subspace": "general",
+            "should_keep_sticky": true,
+            "is_respec": false,
+            "notes": "general intro — should keep general sticky"
+          },
+          {
+            "user": "چک برگشتی چیست",
+            "expected_finish": "stop",
+            "expected_subspace": "cheque",
+            "should_keep_sticky": false,
+            "is_respec": true,
+            "notes": "explicit re-spec to cheque"
+          }
+        ]
+      },
+      {
+        "id": "conv_general_02",
+        "subspace": "general",
+        "description": "clarify -> general rejection with manager query",
+        "turns": [
+          {
+            "user": "وضعیت اعتباری چطور است",
+            "expected_finish": "clarify",
+            "expected_subspace": null,
+            "should_keep_sticky": false,
+            "is_respec": false,
+            "notes": "scattered clarify"
+          },
+          {
+            "user": "هیچکدوم موارد بالا نیست، مدیر عامل شرکت کیه؟",
+            "expected_finish": "stop",
+            "expected_subspace": "general",
+            "should_keep_sticky": false,
+            "is_respec": true,
+            "notes": "reject clarify options, ask general board/manager"
+          }
+        ]
+      },
+      {
+        "id": "conv_mixed_01",
+        "subspace": "mixed",
+        "description": "cheque -> facilities_person re-spec",
+        "turns": [
+          {
+            "user": "چک",
+            "expected_finish": "stop",
+            "expected_subspace": "cheque",
+            "should_keep_sticky": false,
+            "is_respec": false,
+            "notes": "single-token cheque spec"
+          },
+          {
+            "user": "حالا درباره تسهیلات اشخاص حقیقی بگو",
+            "expected_finish": "stop",
+            "expected_subspace": "facilities_person",
+            "should_keep_sticky": false,
+            "is_respec": true,
+            "notes": "explicit re-spec to facilities_person"
+          }
+        ]
+      },
+      {
+        "id": "conv_greeting_01",
+        "subspace": "greeting",
+        "description": "greeting x2 -> scattered clarify",
+        "turns": [
+          {
+            "user": "سلام",
+            "expected_finish": "greeting",
+            "expected_subspace": null,
+            "should_keep_sticky": false,
+            "is_respec": false,
+            "notes": "greeting 1"
+          },
+          {
+            "user": "سلام علیکم",
+            "expected_finish": "greeting",
+            "expected_subspace": null,
+            "should_keep_sticky": false,
+            "is_respec": false,
+            "notes": "greeting 2 — still no retrieval"
+          },
+          {
+            "user": "اعتبارسنجی چیست",
+            "expected_finish": "clarify",
+            "expected_subspace": null,
+            "should_keep_sticky": false,
+            "is_respec": false,
+            "notes": "overly broad — expect clarify not direct answer"
+          }
+        ]
+      },
+      {
+        "id": "conv_hallucination_01",
+        "subspace": "general",
+        "description": "hallucination guard: fake G5 grade must not be hallucinated",
+        "turns": [
+          {
+            "user": "نمره اعتباری من G5 است چه امتیازی میگیرم",
+            "expected_finish": "stop",
+            "expected_subspace": null,
+            "should_keep_sticky": false,
+            "is_respec": false,
+            "notes": "non-existent grade G5 — expect no hallucinated grade, top_score low or refusal/no-evidence message, no invented tier"
+          }
+        ]
+      },
+      {
+        "id": "conv_supplement_01",
+        "subspace": "general",
+        "description": "supplemental entity list: shareholders",
+        "turns": [
+          {
+            "user": "سهامداران شرکت اعتبارسنجی ایران چه کسانی هستند",
+            "expected_finish": "stop",
+            "expected_subspace": "general",
+            "should_keep_sticky": false,
+            "is_respec": false,
+            "notes": "should return supplemental entity list (shareholders), not just chunks"
+          }
+        ]
+      }
+    ],
+    "single_baselines": [
+      {
+        "id": "single_cheque_granular",
+        "subspace": "cheque",
+        "query": "چک برگشتی چیست و چگونه رفع اثر می‌شود؟",
+        "expected_finish": "stop",
+        "filter_path": "گزارش اعتباری چک",
+        "notes": "granular cheque — direct retrieval with filter_path"
+      },
+      {
+        "id": "single_facilities_person_granular",
+        "subspace": "facilities_person",
+        "query": "امتیاز اعتباری اشخاص حقیقی چگونه محاسبه می‌شود؟",
+        "expected_finish": "stop",
+        "filter_path": "اشخاص حقیقی/اعتبارسنجی تسهیلات",
+        "notes": "granular facilities_person"
+      },
+      {
+        "id": "single_facilities_legal_granular",
+        "subspace": "facilities_legal",
+        "query": "الزامات وثایق برای اشخاص حقوقی چیست؟",
+        "expected_finish": "stop",
+        "filter_path": "اشخاص حقوقی/اعتبارسنجی تسهیلات",
+        "notes": "granular facilities_legal"
+      },
+      {
+        "id": "single_general_granular",
+        "subspace": "general",
+        "query": "تاریخچه شرکت اعتبارسنجی ایران را بگو",
+        "expected_finish": "stop",
+        "filter_path": "پایگاه دانش عمومی",
+        "notes": "granular general"
+      },
+      {
+        "id": "single_cheque_bounce_effect",
+        "subspace": "cheque",
+        "query": "تاثیر چک برگشتی بر امتیاز اعتباری چقدر است؟",
+        "expected_finish": "stop",
+        "filter_path": "گزارش اعتباری چک",
+        "notes": "cheque score impact"
+      },
+      {
+        "id": "single_facilities_person_income",
+        "subspace": "facilities_person",
+        "query": "آیا میزان درآمد یا گردش حساب در رتبه اعتباری تاثیر دارد؟",
+        "expected_finish": "stop",
+        "filter_path": "اشخاص حقیقی/اعتبارسنجی تسهیلات",
+        "notes": "income/turnover effect on credit rank"
+      },
+      {
+        "id": "single_facilities_legal_board",
+        "subspace": "general",
+        "query": "هیات مدیره شرکت اعتبارسنجی ایران چه کسانی هستند؟",
+        "expected_finish": "stop",
+        "filter_path": "پایگاه دانش عمومی",
+        "notes": "board members — general not facilities_legal"
+      },
+      {
+        "id": "single_general_shareholders",
+        "subspace": "general",
+        "query": "سهامداران شرکت اعتبارسنجی ایران چه کسانی هستند؟",
+        "expected_finish": "stop",
+        "filter_path": "پایگاه دانش عمومی",
+        "notes": "shareholders — supplement path"
+      },
+      {
+        "id": "single_greeting",
+        "subspace": "greeting",
+        "query": "سلام",
+        "expected_finish": "greeting",
+        "filter_path": null,
+        "notes": "bare greeting baseline"
+      },
+      {
+        "id": "single_scattered",
+        "subspace": "cheque",
+        "query": "وضعیت اعتباری چطور است",
+        "expected_finish": "clarify",
+        "filter_path": null,
+        "notes": "scattered ambiguous — expect clarify"
+      },
+      {
+        "id": "single_hallucination_probe",
+        "subspace": "general",
+        "query": "نمره اعتباری من G5 است چه امتیازی میگیرم",
+        "expected_finish": "stop",
+        "filter_path": null,
+        "notes": "hallucination guard probe — same as conv_hallucination_01 T1"
+      },
+      {
+        "id": "single_qasem_bour",
+        "subspace": "general",
+        "query": "قاسم بور کیه",
+        "expected_finish": "stop",
+        "filter_path": "پایگاه دانش عمومی",
+        "notes": "entity Qasem Bour — general"
+      }
+    ]
+  }
+}

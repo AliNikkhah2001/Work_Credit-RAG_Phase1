@@ -1,0 +1,1549 @@
+{
+  "meta": {
+    "timestamp": "2026-10-13T10:31:18.889089+00:00",
+    "elapsed_ms": 111041,
+    "endpoints": {
+      "orch": "http://127.0.0.1:8100/v1/chat/completions",
+      "kb": "http://127.0.0.1:8000/search/api",
+      "obs_template": "http://127.0.0.1:3000/api/observability/pipeline/{request_id}"
+    },
+    "model": "ics-helper-agent",
+    "http_timeout_s": 120.0,
+    "dry_run": false,
+    "only_ids": [
+      "conv_cheque_02",
+      "conv_facilities_person_01"
+    ],
+    "total_turns_expected": 41,
+    "total_turns_multi_expected": 29,
+    "total_turns_single_expected": 12
+  },
+  "summary": {
+    "total_conversations": 2,
+    "total_single_baselines": 0,
+    "total_turns": 7,
+    "total_turns_multi": 7,
+    "finish_mismatches": 0,
+    "finish_checked": 7,
+    "subspace_mismatches": 0,
+    "subspace_checked": 5,
+    "errors": 0,
+    "latency_ms": {
+      "p50": 4242,
+      "p95": 15970,
+      "avg": 6634,
+      "min": 1954,
+      "max": 15970
+    },
+    "kb_probes": 12
+  },
+  "conversations": [
+    {
+      "id": "conv_cheque_02",
+      "subspace": "cheque",
+      "description": "scattered clarify -> cheque spec -> cheque sticky granular",
+      "request_id": "bench-conv_cheque_02-513f266b97d2",
+      "turns": [
+        {
+          "user": "وضعیت اعتباری چطور است",
+          "expected_finish": "clarify",
+          "expected_subspace": null,
+          "should_keep_sticky": false,
+          "is_respec": false,
+          "notes": "scattered/ambiguous — expect clarify with options",
+          "request_id": "bench-conv_cheque_02-513f266b97d2",
+          "http_status": 200,
+          "error": null,
+          "finish_reason": "clarify",
+          "applied_subspace": null,
+          "latency_ms": 4329,
+          "latency_ms_wall": 4329,
+          "stage_timing_ms": {
+            "validate_input": 53.4,
+            "retrieve": 834.6
+          },
+          "retrieval_method": "rrf+ce",
+          "retrieved_chunks": [
+            {
+              "chunk_id": "f90ce210-a192-4475-a070-49ee290d8078",
+              "title": "بانک سوالات افراد در زمینه گزارش اعتبارسنجی تسهیلات",
+              "heading": "Sheet: سوالات حقوقی",
+              "content": "سوال: آیا سابقه اعتباری فقط مختص افراد حقیقی است یا اشخاص حقوقی (شرکت‌ها) هم اعتبارسنجی می‌شوند؟\nپاسخ کوتاه: شرکت‌ها نیز دارای گزارش اعتبارسنجی، امتیاز اعتبارسنجی و رتبه اعتبارسنجی هستند.\nپاسخ کامل: اشخاص حقوقی (شرکت‌ها) نیز دارای گزارش اعتباری، امتیاز  اعتباری و رتبه اعتباری هستند و فرآیند اعتبارسن",
+              "score": 0.0,
+              "source": "both",
+              "rank_rrf": 1,
+              "rank_ce": 1,
+              "hybrid_score": 0.019918,
+              "rerank_score": 0.0
+            },
+            {
+              "chunk_id": "7d12e824-eb3e-4101-84fb-1731bdda8378",
+              "title": "بانک سوالات افراد در زمینه گزارش اعتبارسنجی تسهیلات",
+              "heading": "Sheet: سوالات حقوقی",
+              "content": "سوال: اگه بدهی مالیاتیم تو گزارشم باشه و پرداختش کنم، بازم سوابق منفی‌اش رو رتبه‌ام اثر می‌ذاره؟\nپاسخ کوتاه: خیر موثر نیست.\nپاسخ کامل: خیر، در وضعیت فعلی، درصورت پرداخت بدهی مالیاتی، سابقه آن در رتبه و امتیاز اعتباری شما تاثیر نخواهد داشت.\nدسته‌بندی: سوابق منفی و بدهی‌ها",
+              "score": 0.016393,
+              "source": "rrf",
+              "rank_rrf": 2,
+              "rank_ce": null,
+              "hybrid_score": 0.016393,
+              "rerank_score": 0.0
+            },
+            {
+              "chunk_id": "1050f7a6-5595-44a3-9adf-d16e685b45ce",
+              "title": "سوالات عمومی",
+              "heading": "Sheet: Sheet1",
+              "content": "سوال: بخش امکانات کسب و کارها در اعتباریتو چیه؟",
+              "score": 0.016393,
+              "source": "rrf",
+              "rank_rrf": 3,
+              "rank_ce": null,
+              "hybrid_score": 0.016393,
+              "rerank_score": 0.0
+            },
+            {
+              "chunk_id": "ff18b307-3988-441e-8b6f-f16af4610bca",
+              "title": "توضیحات تشریحی دلایل کاهش امتیاز اعتباری مدل اصلی و روش بهبود آن",
+              "heading": "Sheet: Sheet2",
+              "content": "کد دلیل: OTN3\nمتن دلیل: فرد در ماه‌هایی که وضعیت منفی داشته همزمان دارای مانده وام نسبتا زیادی نیز بوده است.\nتوضیح کوتاه: در ماه‌هايی که وضعیت بازپرداخت شما منفی بوده، همزمان مانده وام نسبتاً زیادی نیز داشته‌اید. این موضوع باعث کاهش امتیاز اعتباری شما شده است.\nتوضیح کامل: سوابق شما نشان می‌دهد که در",
+              "score": 0.016129,
+              "source": "rrf",
+              "rank_rrf": 4,
+              "rank_ce": null,
+              "hybrid_score": 0.016129,
+              "rerank_score": 0.0
+            },
+            {
+              "chunk_id": "4b217211-c2df-41ed-b5fe-cd756c959247",
+              "title": "بانک سوالات افراد در زمینه گزارش اعتبارسنجی تسهیلات-اصلی",
+              "heading": "Sheet: Sheet1",
+              "content": "سوال: اگر کارت بازرگانی داشته باشم، امتیازم در مدل مثل یک فرد عادی محاسبه می شود؟\nپاسخ کوتاه: در حال حاضر اطلاعات کارت بازرگانی در گزارش اعتباری ثبت نمی‌شود و تأثیری بر رتبه اعتباری و امتیاز اعتباری ندارد.\nپاسخ کامل: خیر، در حال حاضر، اطلاعات کارت بازرگانی در گزارش اعتبارسنجی منعکس نشده و تاثیری در ",
+              "score": 0.016129,
+              "source": "rrf",
+              "rank_rrf": 5,
+              "rank_ce": null,
+              "hybrid_score": 0.016129,
+              "rerank_score": 0.0
+            }
+          ],
+          "retrieved_chunks_count": 10,
+          "reranker_scores": [
+            0.0,
+            0.016393,
+            0.016393,
+            0.016129,
+            0.016129
+          ],
+          "citations": [],
+          "citations_count": 0,
+          "supplemental": null,
+          "supplemental_count": 0,
+          "follow_ups": null,
+          "content": "برای راهنمایی دقیق‌تر، ممکن است بفرمایید منظورتان بررسی وضعیت اعتباری برای اشخاص حقیقی است، حقوقی یا گزارش‌های مربوط به چک؟",
+          "content_preview": "برای راهنمایی دقیق‌تر، ممکن است بفرمایید منظورتان بررسی وضعیت اعتباری برای اشخاص حقیقی است، حقوقی یا گزارش‌های مربوط به چک؟",
+          "messages_sent_count": 1,
+          "raw_audit": {
+            "query": "وضعیت اعتباری چطور است",
+            "rewritten_query": "وضعیت اعتباری چطور است",
+            "available_subspaces": [
+              "cheque",
+              "facilities_person",
+              "facilities_legal",
+              "general"
+            ]
+          },
+          "turn_index": 1,
+          "finish_match": true,
+          "subspace_match": null,
+          "observability": {
+            "ok": false,
+            "data_preview": "{'request_id': 'bench-conv_cheque_02-513f266b97d2', 'timeline': {'request_id': 'bench-conv_cheque_02-513f266b97d2', 'name': 'rag', 'timestamp': '2026-10-13T10:31:18.920040Z', 'input': 'وضعیت اعتباری چطور است', 'output': None, 'metadata': {'model': 'ics-helper-agent', 'request_id': 'bench-conv_cheque_02-513f266b97d2'}, 'spans': [{'span': 'validate_input', 'start': '2026-10-13T10:31:18.987623Z', 'in"
+          }
+        },
+        {
+          "user": "چک",
+          "expected_finish": "stop",
+          "expected_subspace": "cheque",
+          "should_keep_sticky": false,
+          "is_respec": true,
+          "notes": "short re-spec to cheque",
+          "request_id": "bench-conv_cheque_02-513f266b97d2",
+          "http_status": 200,
+          "error": null,
+          "finish_reason": "stop",
+          "applied_subspace": "cheque",
+          "latency_ms": 1954,
+          "latency_ms_wall": 1954,
+          "stage_timing_ms": {
+            "validate_input": 57.0,
+            "format_response": 0.1
+          },
+          "retrieval_method": "",
+          "retrieved_chunks": [],
+          "retrieved_chunks_count": 0,
+          "reranker_scores": [],
+          "citations": [],
+          "citations_count": 0,
+          "supplemental": null,
+          "supplemental_count": 0,
+          "follow_ups": null,
+          "content": "حوزه «گزارش اعتباری چک» انتخاب شد. حالا سوالتان را در همین حوزه بفرمایید.",
+          "content_preview": "حوزه «گزارش اعتباری چک» انتخاب شد. حالا سوالتان را در همین حوزه بفرمایید.",
+          "messages_sent_count": 3,
+          "raw_audit": {
+            "query": "چک",
+            "rewritten_query": "",
+            "available_subspaces": null
+          },
+          "turn_index": 2,
+          "finish_match": true,
+          "subspace_match": true,
+          "observability": {
+            "ok": false,
+            "data_preview": "{'id': 'bench-conv_cheque_02-513f266b97d2', 'request_id': 'bench-conv_cheque_02-513f266b97d2', 'chat_id': None, 'user_id': None, 'model': 'ics-helper-agent', 'user_query': 'وضعیت اعتباری چطور است', 'rewritten_query': 'وضعیت اعتباری چطور است', 'response': 'برای راهنمایی دقیق\\u200cتر، ممکن است بفرمایید منظورتان بررسی وضعیت اعتباری برای اشخاص حقیقی است، حقوقی یا گزارش\\u200cهای مربوط به چک؟', 'stage_t"
+          }
+        },
+        {
+          "user": "تاثیر چک برگشتی بر امتیاز اعتباری چقدر است؟",
+          "expected_finish": "stop",
+          "expected_subspace": "cheque",
+          "should_keep_sticky": true,
+          "is_respec": false,
+          "notes": "granular cheque — should keep sticky cheque",
+          "request_id": "bench-conv_cheque_02-513f266b97d2",
+          "http_status": 200,
+          "error": null,
+          "finish_reason": "stop",
+          "applied_subspace": "cheque",
+          "latency_ms": 15970,
+          "latency_ms_wall": 15970,
+          "stage_timing_ms": {
+            "validate_input": 54.4,
+            "retrieve_retry": 43.6,
+            "retrieve_broadened": 127.2,
+            "retrieve": 2178.1,
+            "build_context": 0.3,
+            "guarded_generate": 9068.9,
+            "format_response": 2592.1
+          },
+          "retrieval_method": "rrf+ce",
+          "retrieved_chunks": [
+            {
+              "chunk_id": "fcb820e4-3bf2-479e-aacd-4b4f7f0ff2a7",
+              "title": "بانک سوالات افراد در زمینه گزارش اعتبارسنجی تسهیلات-اصلی",
+              "heading": "Sheet: Sheet1",
+              "content": "سوال: آیا چک‌هایی که در سامانه صیاد ثبت نشده‌اند، در اعتبارسنجی لحاظ می‌شوند؟\nپاسخ کوتاه: بله لحاظ میشوند.\nپاسخ کامل: بله، علاوه بر اطلاعات صیاد، داده های موجود در سامانه چک های برگشتی بانک مرکزی موجب کاهش امتیاز اعتباری می‌شوند.\nدسته‌بندی: چک",
+              "score": 0.0,
+              "source": "both",
+              "rank_rrf": 1,
+              "rank_ce": 1,
+              "hybrid_score": 0.026235,
+              "rerank_score": 0.0
+            },
+            {
+              "chunk_id": "9a37854d-f30f-45d0-91f3-85250fcf1867",
+              "title": "بانک سوالات افراد در زمینه گزارش اعتبارسنجی تسهیلات-اصلی",
+              "heading": "Sheet: Sheet1",
+              "content": "سوال: من درآمدم بالا هستش (n تومنه) چرا رتبه‌م B2 (یا هر رتبه‌ای) ه؟\nپاسخ کوتاه: میزان درآمد در نسخه فعلی مدل امتیاز اعتبارسنجی تسهیلات، در امتیاز و رتبه اعتباری تاثیری ندارد.\nپاسخ کامل: در نسخه فعلی امتیاز اعتباری افراد، درآمد بر روی امتیاز و رتبه اعتباری اثری ندارد، اما در نسخه آینده، ممکن است به ",
+              "score": 0.025625,
+              "source": "rrf",
+              "rank_rrf": 2,
+              "rank_ce": null,
+              "hybrid_score": 0.025625,
+              "rerank_score": 0.0
+            },
+            {
+              "chunk_id": "8a1a96ee-cb5e-4f28-9668-13a4a0cb4111",
+              "title": "بانک سوالات افراد در زمینه گزارش اعتبارسنجی تسهیلات-اصلی",
+              "heading": "Sheet: Sheet1",
+              "content": "سوال: آیا درآمد بالا به تنهایی رتبه اعتباری من را بالا می‌برد؟\nپاسخ کوتاه: درآمد در نسخه فعلی مدل امتیاز اعتبارسنجی تسهیلات، در امتیاز و رتبه اعتباری تاثیری ندارد.\nپاسخ کامل: در نسخه فعلی امتیاز اعتباری اشخاص حقیقی و حقوقی، درآمد بر روی امتیاز و رتبه اعتباری اثری ندارد، اما در نسخه آینده، ممکن است ب",
+              "score": 0.024826,
+              "source": "rrf",
+              "rank_rrf": 3,
+              "rank_ce": null,
+              "hybrid_score": 0.024826,
+              "rerank_score": 0.0
+            },
+            {
+              "chunk_id": "e82bcf61-5c07-40e2-8ffb-ec45e36003a8",
+              "title": "بانک سوالات افراد در زمینه گزارش اعتبارسنجی تسهیلات",
+              "heading": "Sheet: سوالات حقوقی",
+              "content": "سوال: در صورت ابطال چک قبل از سررسید، آیا این موضوع در گزارش اعتباری ثبت می‌شود؟\nپاسخ کوتاه: بله ثبت می‌شود.\nپاسخ کامل: بله، چک‌های نقدشده، ابطال شده، برگشتی، سررسید آتی، تضمینی به تفکیک در گزارش اعتباری اشخاص حقیقی و حقوقی قابل مشاهده و ارزیابی است.\nدسته‌بندی: چک",
+              "score": 0.024152,
+              "source": "rrf",
+              "rank_rrf": 4,
+              "rank_ce": null,
+              "hybrid_score": 0.024152,
+              "rerank_score": 0.0
+            },
+            {
+              "chunk_id": "9c89ff8e-bebf-471a-ab6f-d852a938aabd",
+              "title": "بانک سوالات افراد در زمینه گزارش اعتبارسنجی تسهیلات-اصلی",
+              "heading": "Sheet: Sheet1",
+              "content": "سوال: اگر چک تضمین‌شده (ضمانت) داشته باشم و برگشت بخورد، آیا بر رتبه اعتباری من تأثیر می‌گذارد؟\nپاسخ کوتاه: سابقه برگشت خوردن هر نوعی از چک، رتبه و امتیاز اعتباری شما را کاهش خواهد داد.\nپاسخ کامل: سوابق چک برگشتی رفع سو اثر شده یکی از شاخص‌های کلیدی است که به طور مستقیم بر رتبه اعتباری و امتیاز اعتب",
+              "score": 0.02414,
+              "source": "rrf",
+              "rank_rrf": 5,
+              "rank_ce": null,
+              "hybrid_score": 0.02414,
+              "rerank_score": 0.0
+            }
+          ],
+          "retrieved_chunks_count": 10,
+          "reranker_scores": [
+            0.0,
+            0.025625,
+            0.024826,
+            0.024152,
+            0.02414
+          ],
+          "citations": [
+            {
+              "chunk_id": "fcb820e4-3bf2-479e-aacd-4b4f7f0ff2a7",
+              "document_id": "361aaae5-09f9-478c-a68b-bbd85f074873",
+              "title": "بانک سوالات افراد در زمینه گزارش اعتبارسنجی تسهیلات-اصلی",
+              "heading": "Sheet: Sheet1"
+            },
+            {
+              "chunk_id": "9a37854d-f30f-45d0-91f3-85250fcf1867",
+              "document_id": "361aaae5-09f9-478c-a68b-bbd85f074873",
+              "title": "بانک سوالات افراد در زمینه گزارش اعتبارسنجی تسهیلات-اصلی",
+              "heading": "Sheet: Sheet1"
+            },
+            {
+              "chunk_id": "8a1a96ee-cb5e-4f28-9668-13a4a0cb4111",
+              "document_id": "361aaae5-09f9-478c-a68b-bbd85f074873",
+              "title": "بانک سوالات افراد در زمینه گزارش اعتبارسنجی تسهیلات-اصلی",
+              "heading": "Sheet: Sheet1"
+            },
+            {
+              "chunk_id": "e82bcf61-5c07-40e2-8ffb-ec45e36003a8",
+              "document_id": "e95ca167-9db3-4209-9a36-050a75450b9e",
+              "title": "بانک سوالات افراد در زمینه گزارش اعتبارسنجی تسهیلات",
+              "heading": "Sheet: سوالات حقوقی"
+            },
+            {
+              "chunk_id": "9c89ff8e-bebf-471a-ab6f-d852a938aabd",
+              "document_id": "361aaae5-09f9-478c-a68b-bbd85f074873",
+              "title": "بانک سوالات افراد در زمینه گزارش اعتبارسنجی تسهیلات-اصلی",
+              "heading": "Sheet: Sheet1"
+            }
+          ],
+          "citations_count": 5,
+          "supplemental": null,
+          "supplemental_count": 0,
+          "follow_ups": [
+            "آیا چک‌های ابطال شده هم بر امتیاز اعتباری اثر می‌گذارند؟",
+            "کدام سامانه برای بررسی چک‌های برگشتی مورد استفاده قرار می‌گیرد؟",
+            "چه وضعیت‌هایی از چک‌ها در گزارش‌های اعتباری ثبت می‌شوند؟"
+          ],
+          "content": "سابقه برگشت خوردن هر نوع چکی یکی از عوامل کلیدی در ارزیابی‌های اعتباری است و به طور مستقیم موجب کاهش امتیاز و رتبه اعتباری شما می‌شود. این موضوع به گونه‌ای است که حتی اگر چک‌ها در سامانه صیاد ثبت نشده باشند، داده‌های موجود در سامانه چک‌های برگشتی بانک مرکزی مورد بررسی قرار گرفته و اثر منفی بر امتیاز شما می‌گذارند.\n\nدر گزارش‌های اعتباری، تمامی وضعیت‌های مربوط به چک‌ها به تفکیک ثبت و ارزیابی می‌شوند. این موارد شامل چک‌های نقد شده، ابطال شده، برگشتی، تضمینی و همچنین چک‌هایی است که سررسید آتی دارند یا سررسیدشان گذشته اما هنوز برگشت نخورده‌اند.\n\nعلاوه بر خودِ برگشت خوردن چک، مدت زمان تأخیر در رفع سو اثر چک‌های برگشتی در بازه زمانی پنج سال اخیر نیز بر میزان امتیاز شما تأثیرگذار است. بنابراین هرچه سریع‌تر اقدامات لازم برای رفع سو اثرات انجام شود، اثرات منفی بر رتبه اعتباری تعدیل خواهد شد.",
+          "content_preview": "سابقه برگشت خوردن هر نوع چکی یکی از عوامل کلیدی در ارزیابی‌های اعتباری است و به طور مستقیم موجب کاهش امتیاز و رتبه اعتباری شما می‌شود. این موضوع به گونه‌ای است که حتی اگر چک‌ها در سامانه صیاد ثبت نشده باشند، داده‌های موجود در سامانه چک‌های برگشتی بانک مرکزی مورد بررسی قرار گرفته و اثر منفی بر امتیاز شما می‌گذارند.\n\nدر گزارش‌های اعتباری، تمامی وضعیت‌های مربوط به چک‌ها به تفکیک ثبت و ارزیابی می‌شوند",
+          "messages_sent_count": 5,
+          "raw_audit": {
+            "query": "تاثیر چک برگشتی بر امتیاز اعتباری چقدر است؟",
+            "rewritten_query": "تاثیر چک برگشتی بر امتیاز اعتباری اشخاص در گزارش اعتباری چک چقدر است؟",
+            "available_subspaces": null
+          },
+          "turn_index": 3,
+          "finish_match": true,
+          "subspace_match": true,
+          "observability": {
+            "ok": false,
+            "data_preview": "{'id': 'bench-conv_cheque_02-513f266b97d2', 'request_id': 'bench-conv_cheque_02-513f266b97d2', 'chat_id': None, 'user_id': None, 'model': 'ics-helper-agent', 'user_query': 'چک', 'rewritten_query': '', 'response': 'حوزه «گزارش اعتباری چک» انتخاب شد. حالا سوالتان را در همین حوزه بفرمایید.', 'stage_timing': {'validate_input': 57.0, 'format_response': 0.1}, 'guardrail_input': {'allowed': True, 'action"
+          }
+        }
+      ],
+      "elapsed_ms": 23244,
+      "turns_count": 3
+    },
+    {
+      "id": "conv_facilities_person_01",
+      "subspace": "facilities_person",
+      "description": "clarify -> facilities_person -> sticky -> cheque re-spec",
+      "request_id": "bench-conv_facilities_person_01-81c40cb0851a",
+      "turns": [
+        {
+          "user": "وضعیت اعتباری چطور است",
+          "expected_finish": "clarify",
+          "expected_subspace": null,
+          "should_keep_sticky": false,
+          "is_respec": false,
+          "notes": "same scattered probe as cheque_02 T1",
+          "request_id": "bench-conv_facilities_person_01-81c40cb0851a",
+          "http_status": 200,
+          "error": null,
+          "finish_reason": "clarify",
+          "applied_subspace": null,
+          "latency_ms": 4242,
+          "latency_ms_wall": 4242,
+          "stage_timing_ms": {
+            "validate_input": 58.7,
+            "retrieve": 901.5
+          },
+          "retrieval_method": "rrf+ce",
+          "retrieved_chunks": [
+            {
+              "chunk_id": "f90ce210-a192-4475-a070-49ee290d8078",
+              "title": "بانک سوالات افراد در زمینه گزارش اعتبارسنجی تسهیلات",
+              "heading": "Sheet: سوالات حقوقی",
+              "content": "سوال: آیا سابقه اعتباری فقط مختص افراد حقیقی است یا اشخاص حقوقی (شرکت‌ها) هم اعتبارسنجی می‌شوند؟\nپاسخ کوتاه: شرکت‌ها نیز دارای گزارش اعتبارسنجی، امتیاز اعتبارسنجی و رتبه اعتبارسنجی هستند.\nپاسخ کامل: اشخاص حقوقی (شرکت‌ها) نیز دارای گزارش اعتباری، امتیاز  اعتباری و رتبه اعتباری هستند و فرآیند اعتبارسن",
+              "score": 0.0,
+              "source": "both",
+              "rank_rrf": 1,
+              "rank_ce": 1,
+              "hybrid_score": 0.019918,
+              "rerank_score": 0.0
+            },
+            {
+              "chunk_id": "7d12e824-eb3e-4101-84fb-1731bdda8378",
+              "title": "بانک سوالات افراد در زمینه گزارش اعتبارسنجی تسهیلات",
+              "heading": "Sheet: سوالات حقوقی",
+              "content": "سوال: اگه بدهی مالیاتیم تو گزارشم باشه و پرداختش کنم، بازم سوابق منفی‌اش رو رتبه‌ام اثر می‌ذاره؟\nپاسخ کوتاه: خیر موثر نیست.\nپاسخ کامل: خیر، در وضعیت فعلی، درصورت پرداخت بدهی مالیاتی، سابقه آن در رتبه و امتیاز اعتباری شما تاثیر نخواهد داشت.\nدسته‌بندی: سوابق منفی و بدهی‌ها",
+              "score": 0.016393,
+              "source": "rrf",
+              "rank_rrf": 2,
+              "rank_ce": null,
+              "hybrid_score": 0.016393,
+              "rerank_score": 0.0
+            },
+            {
+              "chunk_id": "1050f7a6-5595-44a3-9adf-d16e685b45ce",
+              "title": "سوالات عمومی",
+              "heading": "Sheet: Sheet1",
+              "content": "سوال: بخش امکانات کسب و کارها در اعتباریتو چیه؟",
+              "score": 0.016393,
+              "source": "rrf",
+              "rank_rrf": 3,
+              "rank_ce": null,
+              "hybrid_score": 0.016393,
+              "rerank_score": 0.0
+            },
+            {
+              "chunk_id": "ff18b307-3988-441e-8b6f-f16af4610bca",
+              "title": "توضیحات تشریحی دلایل کاهش امتیاز اعتباری مدل اصلی و روش بهبود آن",
+              "heading": "Sheet: Sheet2",
+              "content": "کد دلیل: OTN3\nمتن دلیل: فرد در ماه‌هایی که وضعیت منفی داشته همزمان دارای مانده وام نسبتا زیادی نیز بوده است.\nتوضیح کوتاه: در ماه‌هايی که وضعیت بازپرداخت شما منفی بوده، همزمان مانده وام نسبتاً زیادی نیز داشته‌اید. این موضوع باعث کاهش امتیاز اعتباری شما شده است.\nتوضیح کامل: سوابق شما نشان می‌دهد که در",
+              "score": 0.016129,
+              "source": "rrf",
+              "rank_rrf": 4,
+              "rank_ce": null,
+              "hybrid_score": 0.016129,
+              "rerank_score": 0.0
+            },
+            {
+              "chunk_id": "4b217211-c2df-41ed-b5fe-cd756c959247",
+              "title": "بانک سوالات افراد در زمینه گزارش اعتبارسنجی تسهیلات-اصلی",
+              "heading": "Sheet: Sheet1",
+              "content": "سوال: اگر کارت بازرگانی داشته باشم، امتیازم در مدل مثل یک فرد عادی محاسبه می شود؟\nپاسخ کوتاه: در حال حاضر اطلاعات کارت بازرگانی در گزارش اعتباری ثبت نمی‌شود و تأثیری بر رتبه اعتباری و امتیاز اعتباری ندارد.\nپاسخ کامل: خیر، در حال حاضر، اطلاعات کارت بازرگانی در گزارش اعتبارسنجی منعکس نشده و تاثیری در ",
+              "score": 0.016129,
+              "source": "rrf",
+              "rank_rrf": 5,
+              "rank_ce": null,
+              "hybrid_score": 0.016129,
+              "rerank_score": 0.0
+            }
+          ],
+          "retrieved_chunks_count": 10,
+          "reranker_scores": [
+            0.0,
+            0.016393,
+            0.016393,
+            0.016129,
+            0.016129
+          ],
+          "citations": [],
+          "citations_count": 0,
+          "supplemental": null,
+          "supplemental_count": 0,
+          "follow_ups": null,
+          "content": "برای راهنمایی دقیق‌تر، ممکن است بفرمایید وضعیت اعتباری برای شخص حقیقی، شخص حقوقی یا گزارش چک مد نظرتان است؟",
+          "content_preview": "برای راهنمایی دقیق‌تر، ممکن است بفرمایید وضعیت اعتباری برای شخص حقیقی، شخص حقوقی یا گزارش چک مد نظرتان است؟",
+          "messages_sent_count": 1,
+          "raw_audit": {
+            "query": "وضعیت اعتباری چطور است",
+            "rewritten_query": "وضعیت اعتباری چطور است",
+            "available_subspaces": [
+              "cheque",
+              "facilities_person",
+              "facilities_legal",
+              "general"
+            ]
+          },
+          "turn_index": 1,
+          "finish_match": true,
+          "subspace_match": null,
+          "observability": {
+            "ok": false,
+            "data_preview": "{'request_id': 'bench-conv_facilities_person_01-81c40cb0851a', 'timeline': {'request_id': 'bench-conv_facilities_person_01-81c40cb0851a', 'name': 'rag', 'timestamp': '2026-10-13T10:31:42.164693Z', 'input': 'وضعیت اعتباری چطور است', 'output': None, 'metadata': {'model': 'ics-helper-agent', 'request_id': 'bench-conv_facilities_person_01-81c40cb0851a'}, 'spans': [{'span': 'validate_input', 'start': '"
+          }
+        },
+        {
+          "user": "تسهیلات اشخاص حقیقی",
+          "expected_finish": "stop",
+          "expected_subspace": "facilities_person",
+          "should_keep_sticky": false,
+          "is_respec": true,
+          "notes": "re-spec to facilities_person",
+          "request_id": "bench-conv_facilities_person_01-81c40cb0851a",
+          "http_status": 200,
+          "error": null,
+          "finish_reason": "stop",
+          "applied_subspace": "facilities_person",
+          "latency_ms": 2128,
+          "latency_ms_wall": 2128,
+          "stage_timing_ms": {
+            "validate_input": 60.3,
+            "format_response": 0.1
+          },
+          "retrieval_method": "",
+          "retrieved_chunks": [],
+          "retrieved_chunks_count": 0,
+          "reranker_scores": [],
+          "citations": [],
+          "citations_count": 0,
+          "supplemental": null,
+          "supplemental_count": 0,
+          "follow_ups": null,
+          "content": "حوزه «تسهیلات اشخاص حقیقی» انتخاب شد. حالا سوالتان را در همین حوزه بفرمایید.",
+          "content_preview": "حوزه «تسهیلات اشخاص حقیقی» انتخاب شد. حالا سوالتان را در همین حوزه بفرمایید.",
+          "messages_sent_count": 3,
+          "raw_audit": {
+            "query": "تسهیلات اشخاص حقیقی",
+            "rewritten_query": "",
+            "available_subspaces": null
+          },
+          "turn_index": 2,
+          "finish_match": true,
+          "subspace_match": true,
+          "observability": {
+            "ok": false,
+            "data_preview": "{'id': 'bench-conv_facilities_person_01-81c40cb0851a', 'request_id': 'bench-conv_facilities_person_01-81c40cb0851a', 'chat_id': None, 'user_id': None, 'model': 'ics-helper-agent', 'user_query': 'وضعیت اعتباری چطور است', 'rewritten_query': 'وضعیت اعتباری چطور است', 'response': 'برای راهنمایی دقیق\\u200cتر، ممکن است بفرمایید وضعیت اعتباری برای شخص حقیقی، شخص حقوقی یا گزارش چک مد نظرتان است؟', 'stage_"
+          }
+        },
+        {
+          "user": "آیا میزان درآمد یا گردش حساب من هم در بهبود رتبه اعتباری تاثیر دارد؟",
+          "expected_finish": "stop",
+          "expected_subspace": "facilities_person",
+          "should_keep_sticky": true,
+          "is_respec": false,
+          "notes": "follow-up should stay facilities_person via sticky",
+          "request_id": "bench-conv_facilities_person_01-81c40cb0851a",
+          "http_status": 200,
+          "error": null,
+          "finish_reason": "stop",
+          "applied_subspace": "facilities_person",
+          "latency_ms": 15852,
+          "latency_ms_wall": 15852,
+          "stage_timing_ms": {
+            "validate_input": 60.5,
+            "retrieve_retry": 36.8,
+            "retrieve_broadened": 131.2,
+            "retrieve": 2296.7,
+            "build_context": 0.3,
+            "guarded_generate": 9454.7,
+            "format_response": 1948.1
+          },
+          "retrieval_method": "rrf+ce",
+          "retrieved_chunks": [
+            {
+              "chunk_id": "9a37854d-f30f-45d0-91f3-85250fcf1867",
+              "title": "بانک سوالات افراد در زمینه گزارش اعتبارسنجی تسهیلات-اصلی",
+              "heading": "Sheet: Sheet1",
+              "content": "سوال: من درآمدم بالا هستش (n تومنه) چرا رتبه‌م B2 (یا هر رتبه‌ای) ه؟\nپاسخ کوتاه: میزان درآمد در نسخه فعلی مدل امتیاز اعتبارسنجی تسهیلات، در امتیاز و رتبه اعتباری تاثیری ندارد.\nپاسخ کامل: در نسخه فعلی امتیاز اعتباری افراد، درآمد بر روی امتیاز و رتبه اعتباری اثری ندارد، اما در نسخه آینده، ممکن است به ",
+              "score": 0.0,
+              "source": "both",
+              "rank_rrf": 1,
+              "rank_ce": 1,
+              "hybrid_score": 0.032266,
+              "rerank_score": 0.0
+            },
+            {
+              "chunk_id": "53ecd6a0-dbb0-457a-b1ba-dc6d8d635d95",
+              "title": "بانک سوالات افراد در زمینه گزارش اعتبارسنجی تسهیلات-اصلی",
+              "heading": "Sheet: Sheet1",
+              "content": "سوال: اگر نسبت گردش حساب به درآمد من بالا باشد، امتیاز منفی اعمال می شود؟\nپاسخ کوتاه: گردش حساب و  میزان درآمد در نسخه فعلی مدل امتیاز اعتبارسنجی تسهیلات، در امتیاز و رتبه اعتباری تاثیری ندارد.\nپاسخ کامل: در نسخه فعلی امتیاز اعتباری اشخاص حقیقی و حقوقی، میزان درآمد بر روی امتیاز و رتبه اعتباری اثری ",
+              "score": 0.030537,
+              "source": "rrf",
+              "rank_rrf": 2,
+              "rank_ce": null,
+              "hybrid_score": 0.030537,
+              "rerank_score": 0.0
+            },
+            {
+              "chunk_id": "8a1a96ee-cb5e-4f28-9668-13a4a0cb4111",
+              "title": "بانک سوالات افراد در زمینه گزارش اعتبارسنجی تسهیلات-اصلی",
+              "heading": "Sheet: Sheet1",
+              "content": "سوال: آیا درآمد بالا به تنهایی رتبه اعتباری من را بالا می‌برد؟\nپاسخ کوتاه: درآمد در نسخه فعلی مدل امتیاز اعتبارسنجی تسهیلات، در امتیاز و رتبه اعتباری تاثیری ندارد.\nپاسخ کامل: در نسخه فعلی امتیاز اعتباری اشخاص حقیقی و حقوقی، درآمد بر روی امتیاز و رتبه اعتباری اثری ندارد، اما در نسخه آینده، ممکن است ب",
+              "score": 0.030415,
+              "source": "rrf",
+              "rank_rrf": 3,
+              "rank_ce": null,
+              "hybrid_score": 0.030415,
+              "rerank_score": 0.0
+            },
+            {
+              "chunk_id": "87904976-1c04-45be-b419-d734351a3574",
+              "title": "بانک سوالات افراد در زمینه گزارش اعتبارسنجی تسهیلات-اصلی",
+              "heading": "Sheet: Sheet1",
+              "content": "سوال: فردی هیچ سابقه بانکی ندارد ولی ثبت شرکت با گردش مالی بالا دارد. آیا از داده های ثبت شرکت برای اعتبارسنجی شخصی استفاده می کنید؟\nپاسخ کوتاه: در حال حاضر خیر.\nپاسخ کامل: در حال حاضر، اطلاعات ثبت شرکت و گردش مالی آن، به‌طور مستقیم در گزارش اعتبارسنجی شخص حقیقی منعکس نشده و بر امتیاز و رتبه اعتباری",
+              "score": 0.029958,
+              "source": "rrf",
+              "rank_rrf": 4,
+              "rank_ce": null,
+              "hybrid_score": 0.029958,
+              "rerank_score": 0.0
+            },
+            {
+              "chunk_id": "3d591ffc-edcc-4dea-b449-29591bd0c5cb",
+              "title": "بانک سوالات افراد در زمینه گزارش اعتبارسنجی تسهیلات-اصلی",
+              "heading": "Sheet: Sheet1",
+              "content": "سوال: من درآمد پایینی دارم. چرا نتونم رتبه اعتباری بالایی داشته باشم؟\nپاسخ کوتاه: میزان درآمد در نسخه فعلی مدل امتیاز اعتبارسنجی تسهیلات، در امتیاز و رتبه اعتباری تاثیری ندارد.\nپاسخ کامل: در نسخه فعلی امتیاز اعتباری افراد، درآمد بر روی امتیاز و رتبه اعتباری اثری ندارد. مهم ترین عامل تاثیرگذار در امت",
+              "score": 0.028791,
+              "source": "rrf",
+              "rank_rrf": 5,
+              "rank_ce": null,
+              "hybrid_score": 0.028791,
+              "rerank_score": 0.0
+            }
+          ],
+          "retrieved_chunks_count": 10,
+          "reranker_scores": [
+            0.0,
+            0.030537,
+            0.030415,
+            0.029958,
+            0.028791
+          ],
+          "citations": [
+            {
+              "chunk_id": "9a37854d-f30f-45d0-91f3-85250fcf1867",
+              "document_id": "361aaae5-09f9-478c-a68b-bbd85f074873",
+              "title": "بانک سوالات افراد در زمینه گزارش اعتبارسنجی تسهیلات-اصلی",
+              "heading": "Sheet: Sheet1"
+            },
+            {
+              "chunk_id": "53ecd6a0-dbb0-457a-b1ba-dc6d8d635d95",
+              "document_id": "361aaae5-09f9-478c-a68b-bbd85f074873",
+              "title": "بانک سوالات افراد در زمینه گزارش اعتبارسنجی تسهیلات-اصلی",
+              "heading": "Sheet: Sheet1"
+            },
+            {
+              "chunk_id": "8a1a96ee-cb5e-4f28-9668-13a4a0cb4111",
+              "document_id": "361aaae5-09f9-478c-a68b-bbd85f074873",
+              "title": "بانک سوالات افراد در زمینه گزارش اعتبارسنجی تسهیلات-اصلی",
+              "heading": "Sheet: Sheet1"
+            },
+            {
+              "chunk_id": "87904976-1c04-45be-b419-d734351a3574",
+              "document_id": "361aaae5-09f9-478c-a68b-bbd85f074873",
+              "title": "بانک سوالات افراد در زمینه گزارش اعتبارسنجی تسهیلات-اصلی",
+              "heading": "Sheet: Sheet1"
+            },
+            {
+              "chunk_id": "3d591ffc-edcc-4dea-b449-29591bd0c5cb",
+              "document_id": "361aaae5-09f9-478c-a68b-bbd85f074873",
+              "title": "بانک سوالات افراد در زمینه گزارش اعتبارسنجی تسهیلات-اصلی",
+              "heading": "Sheet: Sheet1"
+            }
+          ],
+          "citations_count": 5,
+          "supplemental": null,
+          "supplemental_count": 0,
+          "follow_ups": [
+            "چه مواردی باعث بهبود رتبه اعتباری می‌شود؟",
+            "آیا تفاوت رتبه اعتباری بین اشخاص حقیقی و حقوقی وجود دارد؟"
+          ],
+          "content": "در نسخه فعلی مدل امتیاز اعتبارسنجی تسهیلات، میزان درآمد یا گردش حساب شما هیچ تاثیری بر روی امتیاز و رتبه اعتباری ندارد. بنابراین، داشتن درآمد بالا یا گردش حساب زیاد به تنهایی باعث ارتقای رتبه اعتباری نمی‌شود.\n\nاین موضوع برای تمامی افراد، اعم از حقوق‌بگیران، فریلنسرها و شاغلین آزاد که ممکن است درآمد نامنظم داشته باشند، یکسان است. حتی نسبت گردش حساب به درآمد نیز در مدل فعلی برای اشخاص حقیقی و حقوقی اثرگذاری ندارد.\n\nهمچنین لازم است بدانید که اطلاعات مربوط به ثبت شرکت و گردش مالی آن نیز به طور مستقیم در گزارش اعتبارسنجی شخص حقیقی منعکس نمی‌شود. در واقع داده‌های مربوط به شرکت‌ها برای اعتبارسنجی شخصی مورد استفاده قرار نمی‌گیرند.\n\nمهم‌ترین عاملی که بر رتبه و امتیاز اعتباری شما تاثیر مستقیم دارد، پرداخت منظم اقساط است. بهبود رفتار مالی از طریق پرداخت‌های مناسب و مستمر، به مرور زمان در گزارش شما منعکس شده و منجر به ارتقای رتبه اعتباری می‌گردد.",
+          "content_preview": "در نسخه فعلی مدل امتیاز اعتبارسنجی تسهیلات، میزان درآمد یا گردش حساب شما هیچ تاثیری بر روی امتیاز و رتبه اعتباری ندارد. بنابراین، داشتن درآمد بالا یا گردش حساب زیاد به تنهایی باعث ارتقای رتبه اعتباری نمی‌شود.\n\nاین موضوع برای تمامی افراد، اعم از حقوق‌بگیران، فریلنسرها و شاغلین آزاد که ممکن است درآمد نامنظم داشته باشند، یکسان است. حتی نسبت گردش حساب به درآمد نیز در مدل فعلی برای اشخاص حقیقی و حقوقی ",
+          "messages_sent_count": 5,
+          "raw_audit": {
+            "query": "آیا میزان درآمد یا گردش حساب من هم در بهبود رتبه اعتباری تاثیر دارد؟",
+            "rewritten_query": "آیا میزان درآمد یا گردش حساب اشخاص حقیقی در بهبود رتبه اعتباری برای دریافت تسهیلات تاثیر دارد؟",
+            "available_subspaces": null
+          },
+          "turn_index": 3,
+          "finish_match": true,
+          "subspace_match": true,
+          "observability": {
+            "ok": false,
+            "data_preview": "{'id': 'bench-conv_facilities_person_01-81c40cb0851a', 'request_id': 'bench-conv_facilities_person_01-81c40cb0851a', 'chat_id': None, 'user_id': None, 'model': 'ics-helper-agent', 'user_query': 'تسهیلات اشخاص حقیقی', 'rewritten_query': '', 'response': 'حوزه «تسهیلات اشخاص حقیقی» انتخاب شد. حالا سوالتان را در همین حوزه بفرمایید.', 'stage_timing': {'validate_input': 60.3, 'format_response': 0.1}, 'g"
+          }
+        },
+        {
+          "user": "چک",
+          "expected_finish": "stop",
+          "expected_subspace": "cheque",
+          "should_keep_sticky": false,
+          "is_respec": true,
+          "notes": "explicit re-spec to cheque — sticky should switch",
+          "request_id": "bench-conv_facilities_person_01-81c40cb0851a",
+          "http_status": 200,
+          "error": null,
+          "finish_reason": "stop",
+          "applied_subspace": "cheque",
+          "latency_ms": 1968,
+          "latency_ms_wall": 1968,
+          "stage_timing_ms": {
+            "validate_input": 63.7,
+            "format_response": 0.1
+          },
+          "retrieval_method": "",
+          "retrieved_chunks": [],
+          "retrieved_chunks_count": 0,
+          "reranker_scores": [],
+          "citations": [],
+          "citations_count": 0,
+          "supplemental": null,
+          "supplemental_count": 0,
+          "follow_ups": null,
+          "content": "حوزه «گزارش اعتباری چک» انتخاب شد. حالا سوالتان را در همین حوزه بفرمایید.",
+          "content_preview": "حوزه «گزارش اعتباری چک» انتخاب شد. حالا سوالتان را در همین حوزه بفرمایید.",
+          "messages_sent_count": 7,
+          "raw_audit": {
+            "query": "چک",
+            "rewritten_query": "",
+            "available_subspaces": null
+          },
+          "turn_index": 4,
+          "finish_match": true,
+          "subspace_match": true,
+          "observability": {
+            "ok": false,
+            "data_preview": "{'id': 'bench-conv_facilities_person_01-81c40cb0851a', 'request_id': 'bench-conv_facilities_person_01-81c40cb0851a', 'chat_id': None, 'user_id': None, 'model': 'ics-helper-agent', 'user_query': 'آیا میزان درآمد یا گردش حساب من هم در بهبود رتبه اعتباری تاثیر دارد؟', 'rewritten_query': 'آیا میزان درآمد یا گردش حساب اشخاص حقیقی در بهبود رتبه اعتباری برای دریافت تسهیلات تاثیر دارد؟', 'response': 'در ن"
+          }
+        }
+      ],
+      "elapsed_ms": 25544,
+      "turns_count": 4
+    }
+  ],
+  "single_baselines": [],
+  "kb_probes": [
+    {
+      "id": "single_cheque_granular",
+      "query": "چک برگشتی چیست و چگونه رفع اثر می‌شود؟",
+      "filter_path": "گزارش اعتباری چک",
+      "no_filter": {
+        "http_status": 200,
+        "error": null,
+        "latency_ms": 3929,
+        "final_count": 1,
+        "merged_count": 20,
+        "top1_preview": "کد دلیل: DCH3-6\nمتن دلیل: فرد در یک ماه گذشته سابقه رفع سوء اثر چک داشته است.\nتوضیح کوتاه: سابقه چک برگشتی مهمترین عامل بر امتیاز چک شخص است. هر چه برگشت چک در تاریخ نزدیکتری اتفاق",
+        "top1_score": 0.027629,
+        "top1_doc": "توضیحات تشریحی دلایل کاهش امتیاز چک و روش بهبود آن",
+        "top_scores": [
+          0.027629
+        ],
+        "has_results": true
+      },
+      "with_filter": {
+        "http_status": 200,
+        "error": null,
+        "latency_ms": 3997,
+        "final_count": 0,
+        "merged_count": 0,
+        "top1_preview": "",
+        "top1_score": null,
+        "top1_doc": null,
+        "top_scores": [],
+        "has_results": false
+      },
+      "filter_improves": null
+    },
+    {
+      "id": "single_facilities_person_granular",
+      "query": "امتیاز اعتباری اشخاص حقیقی چگونه محاسبه می‌شود؟",
+      "filter_path": "اشخاص حقیقی/اعتبارسنجی تسهیلات",
+      "no_filter": {
+        "http_status": 200,
+        "error": null,
+        "latency_ms": 3884,
+        "final_count": 1,
+        "merged_count": 20,
+        "top1_preview": "سوال: محدوده امتیاز اعتباری چقدر است و معنای آن چیست؟\nپاسخ کوتاه: در نسخه فعلی امتیاز اعتبارسنجی تسهیلات اشخاص حقیقی، محدوده امتیاز به صورت مقابل است: 640-900 ، ممتاز  639 - 580 ، ",
+        "top1_score": 0.031545,
+        "top1_doc": "بانک سوالات افراد در زمینه گزارش اعتبارسنجی تسهیلات-اصلی",
+        "top_scores": [
+          0.031545
+        ],
+        "has_results": true
+      },
+      "with_filter": {
+        "http_status": 200,
+        "error": null,
+        "latency_ms": 3897,
+        "final_count": 1,
+        "merged_count": 20,
+        "top1_preview": "سوال: محدوده امتیاز اعتباری چقدر است و معنای آن چیست؟\nپاسخ کوتاه: در نسخه فعلی امتیاز اعتبارسنجی تسهیلات اشخاص حقیقی، محدوده امتیاز به صورت مقابل است: 640-900 ، ممتاز  639 - 580 ، ",
+        "top1_score": 0.032522,
+        "top1_doc": "بانک سوالات افراد در زمینه گزارش اعتبارسنجی تسهیلات-اصلی",
+        "top_scores": [
+          0.032522
+        ],
+        "has_results": true
+      },
+      "filter_improves": true
+    },
+    {
+      "id": "single_facilities_legal_granular",
+      "query": "الزامات وثایق برای اشخاص حقوقی چیست؟",
+      "filter_path": "اشخاص حقوقی/اعتبارسنجی تسهیلات",
+      "no_filter": {
+        "http_status": 200,
+        "error": null,
+        "latency_ms": 3930,
+        "final_count": 1,
+        "merged_count": 20,
+        "top1_preview": "سوال: گزارش اعتبارسنجی تسهیلات شامل چه اطلاعاتی است؟\nپاسخ کوتاه: در حال حاضر گزارش اعتبارسنجی تسهیلات اشخاص حقیقی و حقوقی شامل اطلاعات هویتی، امتیاز اعتباری، دلایل کاهش امتیاز اعتب",
+        "top1_score": 0.022821,
+        "top1_doc": "بانک سوالات افراد در زمینه گزارش اعتبارسنجی تسهیلات",
+        "top_scores": [
+          0.022821
+        ],
+        "has_results": true
+      },
+      "with_filter": {
+        "http_status": 200,
+        "error": null,
+        "latency_ms": 3897,
+        "final_count": 1,
+        "merged_count": 20,
+        "top1_preview": "سوال: برای دریافت وام‌های خرد و کوچک، آیا باز هم اعتبارسنجی ضروری است؟\nپاسخ کوتاه: مطابق با قانون، بانک ها ملزم به دریافت گزارش اعتباری اشخاص حقیقی و حقوقی هستند، اما نحوه استفاده ",
+        "top1_score": 0.028624,
+        "top1_doc": "بانک سوالات افراد در زمینه گزارش اعتبارسنجی تسهیلات",
+        "top_scores": [
+          0.028624
+        ],
+        "has_results": true
+      },
+      "filter_improves": true
+    },
+    {
+      "id": "single_general_granular",
+      "query": "تاریخچه شرکت اعتبارسنجی ایران را بگو",
+      "filter_path": "پایگاه دانش عمومی",
+      "no_filter": {
+        "http_status": 200,
+        "error": null,
+        "latency_ms": 3970,
+        "final_count": 1,
+        "merged_count": 20,
+        "top1_preview": "Key: سایت شرکت اعتبارسنجی ایران | Value: https://ics24.ir | آشنایی با شرکت اعتبارسنجی ایران و محصولات این شرکت",
+        "top1_score": 0.032786,
+        "top1_doc": "لینک‌ها",
+        "top_scores": [
+          0.032786
+        ],
+        "has_results": true
+      },
+      "with_filter": {
+        "http_status": 200,
+        "error": null,
+        "latency_ms": 3882,
+        "final_count": 1,
+        "merged_count": 20,
+        "top1_preview": "Key: سایت شرکت اعتبارسنجی ایران | Value: https://ics24.ir | آشنایی با شرکت اعتبارسنجی ایران و محصولات این شرکت",
+        "top1_score": 0.032786,
+        "top1_doc": "لینک‌ها",
+        "top_scores": [
+          0.032786
+        ],
+        "has_results": true
+      },
+      "filter_improves": true
+    },
+    {
+      "id": "single_cheque_bounce_effect",
+      "query": "تاثیر چک برگشتی بر امتیاز اعتباری چقدر است؟",
+      "filter_path": "گزارش اعتباری چک",
+      "no_filter": {
+        "http_status": 200,
+        "error": null,
+        "latency_ms": 328,
+        "final_count": 1,
+        "merged_count": 20,
+        "top1_preview": "سوال: اگر چک تضمین‌شده (ضمانت) داشته باشم و برگشت بخورد، آیا بر رتبه اعتباری من تأثیر می‌گذارد؟\nپاسخ کوتاه: سابقه برگشت خوردن هر نوعی از چک، رتبه و امتیاز اعتباری شما را کاهش خواهد",
+        "top1_score": 0.032002,
+        "top1_doc": "بانک سوالات افراد در زمینه گزارش اعتبارسنجی تسهیلات-اصلی",
+        "top_scores": [
+          0.032002
+        ],
+        "has_results": true
+      },
+      "with_filter": {
+        "http_status": 200,
+        "error": null,
+        "latency_ms": 232,
+        "final_count": 0,
+        "merged_count": 0,
+        "top1_preview": "",
+        "top1_score": null,
+        "top1_doc": null,
+        "top_scores": [],
+        "has_results": false
+      },
+      "filter_improves": null
+    },
+    {
+      "id": "single_facilities_person_income",
+      "query": "آیا میزان درآمد یا گردش حساب در رتبه اعتباری تاثیر دارد؟",
+      "filter_path": "اشخاص حقیقی/اعتبارسنجی تسهیلات",
+      "no_filter": {
+        "http_status": 200,
+        "error": null,
+        "latency_ms": 4089,
+        "final_count": 1,
+        "merged_count": 20,
+        "top1_preview": "سوال: آیا گردش حساب بانکی من تأثیر مثبتی بر رتبه اعتباری‌ام دارد؟\nپاسخ کوتاه: در حال حاضر خیر.\nپاسخ کامل: خیر، درحال حاضر اطلاعات گردش حساب شما هیچ تأثیری در امتیاز و رتبه اعتباری ",
+        "top1_score": 0.030835,
+        "top1_doc": "بانک سوالات افراد در زمینه گزارش اعتبارسنجی تسهیلات",
+        "top_scores": [
+          0.030835
+        ],
+        "has_results": true
+      },
+      "with_filter": {
+        "http_status": 200,
+        "error": null,
+        "latency_ms": 4142,
+        "final_count": 1,
+        "merged_count": 20,
+        "top1_preview": "سوال: اگر نسبت گردش حساب به درآمد من بالا باشد، امتیاز منفی اعمال می شود؟\nپاسخ کوتاه: گردش حساب و  میزان درآمد در نسخه فعلی مدل امتیاز اعتبارسنجی تسهیلات، در امتیاز و رتبه اعتباری ",
+        "top1_score": 0.031281,
+        "top1_doc": "بانک سوالات افراد در زمینه گزارش اعتبارسنجی تسهیلات-اصلی",
+        "top_scores": [
+          0.031281
+        ],
+        "has_results": true
+      },
+      "filter_improves": true
+    },
+    {
+      "id": "single_facilities_legal_board",
+      "query": "هیات مدیره شرکت اعتبارسنجی ایران چه کسانی هستند؟",
+      "filter_path": "پایگاه دانش عمومی",
+      "no_filter": {
+        "http_status": 200,
+        "error": null,
+        "latency_ms": 3032,
+        "final_count": 1,
+        "merged_count": 20,
+        "top1_preview": "Key: سایت شرکت اعتبارسنجی ایران | Value: https://ics24.ir | آشنایی با شرکت اعتبارسنجی ایران و محصولات این شرکت",
+        "top1_score": 0.032786,
+        "top1_doc": "لینک‌ها",
+        "top_scores": [
+          0.032786
+        ],
+        "has_results": true
+      },
+      "with_filter": {
+        "http_status": 200,
+        "error": null,
+        "latency_ms": 4030,
+        "final_count": 1,
+        "merged_count": 20,
+        "top1_preview": "Key: سایت شرکت اعتبارسنجی ایران | Value: https://ics24.ir | آشنایی با شرکت اعتبارسنجی ایران و محصولات این شرکت",
+        "top1_score": 0.032786,
+        "top1_doc": "لینک‌ها",
+        "top_scores": [
+          0.032786
+        ],
+        "has_results": true
+      },
+      "filter_improves": true
+    },
+    {
+      "id": "single_general_shareholders",
+      "query": "سهامداران شرکت اعتبارسنجی ایران چه کسانی هستند؟",
+      "filter_path": "پایگاه دانش عمومی",
+      "no_filter": {
+        "http_status": 200,
+        "error": null,
+        "latency_ms": 3781,
+        "final_count": 1,
+        "merged_count": 20,
+        "top1_preview": "Key: سایت شرکت اعتبارسنجی ایران | Value: https://ics24.ir | آشنایی با شرکت اعتبارسنجی ایران و محصولات این شرکت",
+        "top1_score": 0.032786,
+        "top1_doc": "لینک‌ها",
+        "top_scores": [
+          0.032786
+        ],
+        "has_results": true
+      },
+      "with_filter": {
+        "http_status": 200,
+        "error": null,
+        "latency_ms": 4068,
+        "final_count": 1,
+        "merged_count": 20,
+        "top1_preview": "Key: سایت شرکت اعتبارسنجی ایران | Value: https://ics24.ir | آشنایی با شرکت اعتبارسنجی ایران و محصولات این شرکت",
+        "top1_score": 0.032786,
+        "top1_doc": "لینک‌ها",
+        "top_scores": [
+          0.032786
+        ],
+        "has_results": true
+      },
+      "filter_improves": true
+    },
+    {
+      "id": "single_greeting",
+      "query": "سلام",
+      "filter_path": null,
+      "no_filter": {
+        "http_status": 200,
+        "error": null,
+        "latency_ms": 2412,
+        "final_count": 10,
+        "merged_count": 20,
+        "top1_preview": "سوال: سلام رتبهD2چیست",
+        "top1_score": 0.5,
+        "top1_doc": "بانک سوالات افراد در زمینه گزارش اعتبارسنجی تسهیلات-اصلی",
+        "top_scores": [
+          0.5,
+          0.45,
+          0.4
+        ],
+        "has_results": true
+      },
+      "with_filter": {
+        "http_status": 200,
+        "error": null,
+        "latency_ms": 17,
+        "final_count": 10,
+        "merged_count": 20,
+        "top1_preview": "سوال: سلام رتبهD2چیست",
+        "top1_score": 0.5,
+        "top1_doc": "بانک سوالات افراد در زمینه گزارش اعتبارسنجی تسهیلات-اصلی",
+        "top_scores": [
+          0.5,
+          0.45,
+          0.4
+        ],
+        "has_results": true
+      },
+      "filter_improves": true
+    },
+    {
+      "id": "single_scattered",
+      "query": "وضعیت اعتباری چطور است",
+      "filter_path": null,
+      "no_filter": {
+        "http_status": 200,
+        "error": null,
+        "latency_ms": 18,
+        "final_count": 1,
+        "merged_count": 20,
+        "top1_preview": "سوال: آیا سابقه اعتباری فقط مختص افراد حقیقی است یا اشخاص حقوقی (شرکت‌ها) هم اعتبارسنجی می‌شوند؟\nپاسخ کوتاه: شرکت‌ها نیز دارای گزارش اعتبارسنجی، امتیاز اعتبارسنجی و رتبه اعتبارسنجی",
+        "top1_score": 0.019918,
+        "top1_doc": "بانک سوالات افراد در زمینه گزارش اعتبارسنجی تسهیلات",
+        "top_scores": [
+          0.019918
+        ],
+        "has_results": true
+      },
+      "with_filter": {
+        "http_status": 200,
+        "error": null,
+        "latency_ms": 17,
+        "final_count": 1,
+        "merged_count": 20,
+        "top1_preview": "سوال: آیا سابقه اعتباری فقط مختص افراد حقیقی است یا اشخاص حقوقی (شرکت‌ها) هم اعتبارسنجی می‌شوند؟\nپاسخ کوتاه: شرکت‌ها نیز دارای گزارش اعتبارسنجی، امتیاز اعتبارسنجی و رتبه اعتبارسنجی",
+        "top1_score": 0.019918,
+        "top1_doc": "بانک سوالات افراد در زمینه گزارش اعتبارسنجی تسهیلات",
+        "top_scores": [
+          0.019918
+        ],
+        "has_results": true
+      },
+      "filter_improves": true
+    },
+    {
+      "id": "single_hallucination_probe",
+      "query": "نمره اعتباری من G5 است چه امتیازی میگیرم",
+      "filter_path": null,
+      "no_filter": {
+        "http_status": 200,
+        "error": null,
+        "latency_ms": 825,
+        "final_count": 1,
+        "merged_count": 20,
+        "top1_preview": "سوال: امتیازم چنده؟\nپاسخ کوتاه: به وبسایت اعتباریتو مراجعه کنید.\nپاسخ کامل: برای دریافت گزارش اعتباری و مشاهده امتیاز اعتباری خود، به وبسایت اعتباریتو مراجعه کنید: https://etebarit",
+        "top1_score": 0.02724,
+        "top1_doc": "بانک سوالات افراد در زمینه گزارش اعتبارسنجی تسهیلات",
+        "top_scores": [
+          0.02724
+        ],
+        "has_results": true
+      },
+      "with_filter": {
+        "http_status": 200,
+        "error": null,
+        "latency_ms": 23,
+        "final_count": 1,
+        "merged_count": 20,
+        "top1_preview": "سوال: امتیازم چنده؟\nپاسخ کوتاه: به وبسایت اعتباریتو مراجعه کنید.\nپاسخ کامل: برای دریافت گزارش اعتباری و مشاهده امتیاز اعتباری خود، به وبسایت اعتباریتو مراجعه کنید: https://etebarit",
+        "top1_score": 0.02724,
+        "top1_doc": "بانک سوالات افراد در زمینه گزارش اعتبارسنجی تسهیلات",
+        "top_scores": [
+          0.02724
+        ],
+        "has_results": true
+      },
+      "filter_improves": true
+    },
+    {
+      "id": "single_qasem_bour",
+      "query": "قاسم بور کیه",
+      "filter_path": "پایگاه دانش عمومی",
+      "no_filter": {
+        "http_status": 200,
+        "error": null,
+        "latency_ms": 769,
+        "final_count": 1,
+        "merged_count": 20,
+        "top1_preview": "Key: رضا قاسم‌پور | Value: مدیرعامل و عضو هیئت مدیره | رضا قاسم‌پور، دانش‌آموخته دکتری ریاضی کاربردی و کارشناسی ارشد اقتصاد از دانشگاه تهران، پیش از ورود به حوزه اعتبارسنجی، به‌عنو",
+        "top1_score": 0.031545,
+        "top1_doc": "هیات مدیره",
+        "top_scores": [
+          0.031545
+        ],
+        "has_results": true
+      },
+      "with_filter": {
+        "http_status": 200,
+        "error": null,
+        "latency_ms": 2458,
+        "final_count": 1,
+        "merged_count": 20,
+        "top1_preview": "Key: رضا قاسم‌پور | Value: مدیرعامل و عضو هیئت مدیره | رضا قاسم‌پور، دانش‌آموخته دکتری ریاضی کاربردی و کارشناسی ارشد اقتصاد از دانشگاه تهران، پیش از ورود به حوزه اعتبارسنجی، به‌عنو",
+        "top1_score": 0.032266,
+        "top1_doc": "هیات مدیره",
+        "top_scores": [
+          0.032266
+        ],
+        "has_results": true
+      },
+      "filter_improves": true
+    }
+  ],
+  "definitions": {
+    "conversations": [
+      {
+        "id": "conv_cheque_01",
+        "subspace": "cheque",
+        "description": "greeting -> cheque granular -> cheque sticky follow-up",
+        "turns": [
+          {
+            "user": "سلام",
+            "expected_finish": "greeting",
+            "expected_subspace": null,
+            "should_keep_sticky": false,
+            "is_respec": false,
+            "notes": "greeting/no-retrieve shortcut"
+          },
+          {
+            "user": "چک برگشتی چیست و چگونه رفع سوء اثر می‌شود؟",
+            "expected_finish": "stop",
+            "expected_subspace": "cheque",
+            "should_keep_sticky": false,
+            "is_respec": false,
+            "notes": "first granular cheque query, sets sticky to cheque"
+          },
+          {
+            "user": "اگر چکم بدون موجودی باشد چه کار کنم؟",
+            "expected_finish": "stop",
+            "expected_subspace": "cheque",
+            "should_keep_sticky": true,
+            "is_respec": false,
+            "notes": "anaphoric follow-up — should stay cheque via sticky"
+          }
+        ]
+      },
+      {
+        "id": "conv_cheque_02",
+        "subspace": "cheque",
+        "description": "scattered clarify -> cheque spec -> cheque sticky granular",
+        "turns": [
+          {
+            "user": "وضعیت اعتباری چطور است",
+            "expected_finish": "clarify",
+            "expected_subspace": null,
+            "should_keep_sticky": false,
+            "is_respec": false,
+            "notes": "scattered/ambiguous — expect clarify with options"
+          },
+          {
+            "user": "چک",
+            "expected_finish": "stop",
+            "expected_subspace": "cheque",
+            "should_keep_sticky": false,
+            "is_respec": true,
+            "notes": "short re-spec to cheque"
+          },
+          {
+            "user": "تاثیر چک برگشتی بر امتیاز اعتباری چقدر است؟",
+            "expected_finish": "stop",
+            "expected_subspace": "cheque",
+            "should_keep_sticky": true,
+            "is_respec": false,
+            "notes": "granular cheque — should keep sticky cheque"
+          }
+        ]
+      },
+      {
+        "id": "conv_facilities_person_01",
+        "subspace": "facilities_person",
+        "description": "clarify -> facilities_person -> sticky -> cheque re-spec",
+        "turns": [
+          {
+            "user": "وضعیت اعتباری چطور است",
+            "expected_finish": "clarify",
+            "expected_subspace": null,
+            "should_keep_sticky": false,
+            "is_respec": false,
+            "notes": "same scattered probe as cheque_02 T1"
+          },
+          {
+            "user": "تسهیلات اشخاص حقیقی",
+            "expected_finish": "stop",
+            "expected_subspace": "facilities_person",
+            "should_keep_sticky": false,
+            "is_respec": true,
+            "notes": "re-spec to facilities_person"
+          },
+          {
+            "user": "آیا میزان درآمد یا گردش حساب من هم در بهبود رتبه اعتباری تاثیر دارد؟",
+            "expected_finish": "stop",
+            "expected_subspace": "facilities_person",
+            "should_keep_sticky": true,
+            "is_respec": false,
+            "notes": "follow-up should stay facilities_person via sticky"
+          },
+          {
+            "user": "چک",
+            "expected_finish": "stop",
+            "expected_subspace": "cheque",
+            "should_keep_sticky": false,
+            "is_respec": true,
+            "notes": "explicit re-spec to cheque — sticky should switch"
+          }
+        ]
+      },
+      {
+        "id": "conv_facilities_person_02",
+        "subspace": "facilities_person",
+        "description": "greeting -> scattered -> facilities_person granular",
+        "turns": [
+          {
+            "user": "سلام خوبی؟",
+            "expected_finish": "greeting",
+            "expected_subspace": null,
+            "should_keep_sticky": false,
+            "is_respec": false,
+            "notes": "informal greeting"
+          },
+          {
+            "user": "بدهکار شدم چیکار کنم",
+            "expected_finish": "clarify",
+            "expected_subspace": null,
+            "should_keep_sticky": false,
+            "is_respec": false,
+            "notes": "scattered informal — expect clarify"
+          },
+          {
+            "user": "اعتبارسنجی تسهیلات برای اشخاص حقیقی",
+            "expected_finish": "stop",
+            "expected_subspace": "facilities_person",
+            "should_keep_sticky": false,
+            "is_respec": true,
+            "notes": "explicit facilities_person granular"
+          }
+        ]
+      },
+      {
+        "id": "conv_facilities_legal_01",
+        "subspace": "facilities_legal",
+        "description": "facilities_legal granular -> board-role re-spec to general",
+        "turns": [
+          {
+            "user": "محدودیت‌های تسهیلات برای اشخاص حقوقی چیست؟",
+            "expected_finish": "stop",
+            "expected_subspace": "facilities_legal",
+            "should_keep_sticky": false,
+            "is_respec": false,
+            "notes": "direct facilities_legal granular"
+          },
+          {
+            "user": "هیات مدیره چه نقشی دارد؟",
+            "expected_finish": "stop",
+            "expected_subspace": "general",
+            "should_keep_sticky": false,
+            "is_respec": true,
+            "notes": "board-member query — general subspace, tests re-spec away from facilities_legal"
+          }
+        ]
+      },
+      {
+        "id": "conv_facilities_legal_02",
+        "subspace": "facilities_legal",
+        "description": "greeting -> facilities_legal short spec",
+        "turns": [
+          {
+            "user": "سلام",
+            "expected_finish": "greeting",
+            "expected_subspace": null,
+            "should_keep_sticky": false,
+            "is_respec": false,
+            "notes": "greeting"
+          },
+          {
+            "user": "تسهیلات اشخاص حقوقی",
+            "expected_finish": "stop",
+            "expected_subspace": "facilities_legal",
+            "should_keep_sticky": false,
+            "is_respec": true,
+            "notes": "short facilities_legal spec"
+          }
+        ]
+      },
+      {
+        "id": "conv_general_01",
+        "subspace": "general",
+        "description": "general entity -> general intro -> cheque re-spec",
+        "turns": [
+          {
+            "user": "قاسم بور کیه",
+            "expected_finish": "stop",
+            "expected_subspace": "general",
+            "should_keep_sticky": false,
+            "is_respec": false,
+            "notes": "named entity in general subspace — no clarify expected"
+          },
+          {
+            "user": "معرفی شرکت اعتبارسنجی ایران",
+            "expected_finish": "stop",
+            "expected_subspace": "general",
+            "should_keep_sticky": true,
+            "is_respec": false,
+            "notes": "general intro — should keep general sticky"
+          },
+          {
+            "user": "چک برگشتی چیست",
+            "expected_finish": "stop",
+            "expected_subspace": "cheque",
+            "should_keep_sticky": false,
+            "is_respec": true,
+            "notes": "explicit re-spec to cheque"
+          }
+        ]
+      },
+      {
+        "id": "conv_general_02",
+        "subspace": "general",
+        "description": "clarify -> general rejection with manager query",
+        "turns": [
+          {
+            "user": "وضعیت اعتباری چطور است",
+            "expected_finish": "clarify",
+            "expected_subspace": null,
+            "should_keep_sticky": false,
+            "is_respec": false,
+            "notes": "scattered clarify"
+          },
+          {
+            "user": "هیچکدوم موارد بالا نیست، مدیر عامل شرکت کیه؟",
+            "expected_finish": "stop",
+            "expected_subspace": "general",
+            "should_keep_sticky": false,
+            "is_respec": true,
+            "notes": "reject clarify options, ask general board/manager"
+          }
+        ]
+      },
+      {
+        "id": "conv_mixed_01",
+        "subspace": "mixed",
+        "description": "cheque -> facilities_person re-spec",
+        "turns": [
+          {
+            "user": "چک",
+            "expected_finish": "stop",
+            "expected_subspace": "cheque",
+            "should_keep_sticky": false,
+            "is_respec": false,
+            "notes": "single-token cheque spec"
+          },
+          {
+            "user": "حالا درباره تسهیلات اشخاص حقیقی بگو",
+            "expected_finish": "stop",
+            "expected_subspace": "facilities_person",
+            "should_keep_sticky": false,
+            "is_respec": true,
+            "notes": "explicit re-spec to facilities_person"
+          }
+        ]
+      },
+      {
+        "id": "conv_greeting_01",
+        "subspace": "greeting",
+        "description": "greeting x2 -> scattered clarify",
+        "turns": [
+          {
+            "user": "سلام",
+            "expected_finish": "greeting",
+            "expected_subspace": null,
+            "should_keep_sticky": false,
+            "is_respec": false,
+            "notes": "greeting 1"
+          },
+          {
+            "user": "سلام علیکم",
+            "expected_finish": "greeting",
+            "expected_subspace": null,
+            "should_keep_sticky": false,
+            "is_respec": false,
+            "notes": "greeting 2 — still no retrieval"
+          },
+          {
+            "user": "اعتبارسنجی چیست",
+            "expected_finish": "clarify",
+            "expected_subspace": null,
+            "should_keep_sticky": false,
+            "is_respec": false,
+            "notes": "overly broad — expect clarify not direct answer"
+          }
+        ]
+      },
+      {
+        "id": "conv_hallucination_01",
+        "subspace": "general",
+        "description": "hallucination guard: fake G5 grade must not be hallucinated",
+        "turns": [
+          {
+            "user": "نمره اعتباری من G5 است چه امتیازی میگیرم",
+            "expected_finish": "stop",
+            "expected_subspace": null,
+            "should_keep_sticky": false,
+            "is_respec": false,
+            "notes": "non-existent grade G5 — expect no hallucinated grade, top_score low or refusal/no-evidence message, no invented tier"
+          }
+        ]
+      },
+      {
+        "id": "conv_supplement_01",
+        "subspace": "general",
+        "description": "supplemental entity list: shareholders",
+        "turns": [
+          {
+            "user": "سهامداران شرکت اعتبارسنجی ایران چه کسانی هستند",
+            "expected_finish": "stop",
+            "expected_subspace": "general",
+            "should_keep_sticky": false,
+            "is_respec": false,
+            "notes": "should return supplemental entity list (shareholders), not just chunks"
+          }
+        ]
+      }
+    ],
+    "single_baselines": [
+      {
+        "id": "single_cheque_granular",
+        "subspace": "cheque",
+        "query": "چک برگشتی چیست و چگونه رفع اثر می‌شود؟",
+        "expected_finish": "stop",
+        "filter_path": "گزارش اعتباری چک",
+        "notes": "granular cheque — direct retrieval with filter_path"
+      },
+      {
+        "id": "single_facilities_person_granular",
+        "subspace": "facilities_person",
+        "query": "امتیاز اعتباری اشخاص حقیقی چگونه محاسبه می‌شود؟",
+        "expected_finish": "stop",
+        "filter_path": "اشخاص حقیقی/اعتبارسنجی تسهیلات",
+        "notes": "granular facilities_person"
+      },
+      {
+        "id": "single_facilities_legal_granular",
+        "subspace": "facilities_legal",
+        "query": "الزامات وثایق برای اشخاص حقوقی چیست؟",
+        "expected_finish": "stop",
+        "filter_path": "اشخاص حقوقی/اعتبارسنجی تسهیلات",
+        "notes": "granular facilities_legal"
+      },
+      {
+        "id": "single_general_granular",
+        "subspace": "general",
+        "query": "تاریخچه شرکت اعتبارسنجی ایران را بگو",
+        "expected_finish": "stop",
+        "filter_path": "پایگاه دانش عمومی",
+        "notes": "granular general"
+      },
+      {
+        "id": "single_cheque_bounce_effect",
+        "subspace": "cheque",
+        "query": "تاثیر چک برگشتی بر امتیاز اعتباری چقدر است؟",
+        "expected_finish": "stop",
+        "filter_path": "گزارش اعتباری چک",
+        "notes": "cheque score impact"
+      },
+      {
+        "id": "single_facilities_person_income",
+        "subspace": "facilities_person",
+        "query": "آیا میزان درآمد یا گردش حساب در رتبه اعتباری تاثیر دارد؟",
+        "expected_finish": "stop",
+        "filter_path": "اشخاص حقیقی/اعتبارسنجی تسهیلات",
+        "notes": "income/turnover effect on credit rank"
+      },
+      {
+        "id": "single_facilities_legal_board",
+        "subspace": "general",
+        "query": "هیات مدیره شرکت اعتبارسنجی ایران چه کسانی هستند؟",
+        "expected_finish": "stop",
+        "filter_path": "پایگاه دانش عمومی",
+        "notes": "board members — general not facilities_legal"
+      },
+      {
+        "id": "single_general_shareholders",
+        "subspace": "general",
+        "query": "سهامداران شرکت اعتبارسنجی ایران چه کسانی هستند؟",
+        "expected_finish": "stop",
+        "filter_path": "پایگاه دانش عمومی",
+        "notes": "shareholders — supplement path"
+      },
+      {
+        "id": "single_greeting",
+        "subspace": "greeting",
+        "query": "سلام",
+        "expected_finish": "greeting",
+        "filter_path": null,
+        "notes": "bare greeting baseline"
+      },
+      {
+        "id": "single_scattered",
+        "subspace": "cheque",
+        "query": "وضعیت اعتباری چطور است",
+        "expected_finish": "clarify",
+        "filter_path": null,
+        "notes": "scattered ambiguous — expect clarify"
+      },
+      {
+        "id": "single_hallucination_probe",
+        "subspace": "general",
+        "query": "نمره اعتباری من G5 است چه امتیازی میگیرم",
+        "expected_finish": "stop",
+        "filter_path": null,
+        "notes": "hallucination guard probe — same as conv_hallucination_01 T1"
+      },
+      {
+        "id": "single_qasem_bour",
+        "subspace": "general",
+        "query": "قاسم بور کیه",
+        "expected_finish": "stop",
+        "filter_path": "پایگاه دانش عمومی",
+        "notes": "entity Qasem Bour — general"
+      }
+    ]
+  }
+}

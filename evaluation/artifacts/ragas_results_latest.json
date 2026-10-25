@@ -1,13 +1,13 @@
 {
   "meta": {
     "input": "evaluation/artifacts/bench_results_latest.json",
-    "timestamp": "2026-10-13T11:06:46Z",
+    "timestamp": "2026-10-14T09:57:19Z",
     "model_judge": "gemma-4-31b",
     "endpoint_judge": "http://127.0.0.1:9000/v1/chat/completions",
     "total_turns": 41,
     "bench_meta": {
-      "timestamp": "2026-10-13T11:00:40.674846+00:00",
-      "elapsed_ms": 292030,
+      "timestamp": "2026-10-14T09:52:18.539841+00:00",
+      "elapsed_ms": 214166,
       "endpoints": {
         "orch": "http://127.0.0.1:8100/v1/chat/completions",
         "kb": "http://127.0.0.1:8000/search/api",
@@ -32,31 +32,31 @@
       "subspace_checked": 28,
       "errors": 0,
       "latency_ms": {
-        "p50": 6282,
-        "p95": 14107,
-        "avg": 6439,
-        "min": 1295,
-        "max": 20312
+        "p50": 4872,
+        "p95": 10718,
+        "avg": 4938,
+        "min": 725,
+        "max": 13288
       },
       "kb_probes": 12
     }
   },
   "overall": {
-    "faithfulness": 0.522,
-    "answer_relevancy": 0.5585,
-    "context_relevancy": 0.1268,
-    "context_recall": 0.3195,
-    "hallucination": 0.2439,
-    "non_hallucination": 0.7561,
+    "faithfulness": 0.461,
+    "answer_relevancy": 0.5683,
+    "context_relevancy": 0.2829,
+    "context_recall": 0.3402,
+    "hallucination": 0.2537,
+    "non_hallucination": 0.7463,
     "ambiguity_resolution": 1.0,
     "sticky_persistence": 0.6829,
-    "retrieval_hit": 0.7317,
+    "retrieval_hit": 0.7805,
     "latency_ms": {
-      "p50": 6282.0,
-      "p95": 14107.0,
-      "avg": 6439.32,
-      "min": 1295.0,
-      "max": 20312.0,
+      "p50": 4872.0,
+      "p95": 10718.0,
+      "avg": 4938.15,
+      "min": 725.0,
+      "max": 13288.0,
       "count": 41
     },
     "error_rate": 0.0,
@@ -64,43 +64,43 @@
     "total_turns": 41,
     "stage_timing_ms": {
       "validate_input": {
-        "p50": 57.2,
-        "p95": 66.2,
-        "avg": 110.55,
-        "min": 25.3,
-        "max": 2470.1,
+        "p50": 57.6,
+        "p95": 66.3,
+        "avg": 115.49,
+        "min": 28.1,
+        "max": 2608.8,
         "count": 41
       },
       "retrieve": {
-        "p50": 1722.9,
-        "p95": 8006.7,
-        "avg": 2651.93,
-        "min": 360.7,
-        "max": 8736.6,
-        "count": 26
+        "p50": 909.9,
+        "p95": 1208.6,
+        "avg": 777.98,
+        "min": 45.3,
+        "max": 1274.0,
+        "count": 27
       },
       "build_context": {
         "p50": 0.3,
-        "p95": 0.5,
-        "avg": 0.29,
-        "min": 0.1,
-        "max": 0.7,
+        "p95": 0.4,
+        "avg": 0.31,
+        "min": 0.2,
+        "max": 0.8,
         "count": 21
       },
       "guarded_generate": {
-        "p50": 5435.4,
-        "p95": 7163.0,
-        "avg": 5171.82,
-        "min": 2160.5,
-        "max": 7243.8,
+        "p50": 5782.4,
+        "p95": 8296.6,
+        "avg": 5437.29,
+        "min": 1781.9,
+        "max": 10302.4,
         "count": 21
       },
       "format_response": {
-        "p50": 4.1,
-        "p95": 1546.7,
-        "avg": 591.17,
+        "p50": 0.8,
+        "p95": 1386.6,
+        "avg": 550.94,
         "min": 0.1,
-        "max": 1648.5,
+        "max": 1576.1,
         "count": 35
       }
     }
@@ -108,29 +108,29 @@
   "by_subspace": {
     "cheque": {
       "count": 9,
-      "faithfulness": 0.4333,
-      "answer_relevancy": 0.5556,
-      "context_relevancy": 0.2222,
-      "context_recall": 0.3056,
+      "faithfulness": 0.4222,
+      "answer_relevancy": 0.4,
+      "context_relevancy": 0.2667,
+      "context_recall": 0.3444,
       "hallucination": 0.3333,
       "non_hallucination": 0.6667,
       "ambiguity_resolution": 1.0,
-      "sticky_persistence": 0.5556,
-      "retrieval_hit": 0.5556,
+      "sticky_persistence": 0.4444,
+      "retrieval_hit": 0.6667,
       "latency_ms": {
-        "p50": 10638.0,
-        "p95": 14107.0,
-        "avg": 7964.67,
-        "min": 1362.0,
-        "max": 14107.0,
+        "p50": 5420.0,
+        "p95": 13288.0,
+        "avg": 6185.22,
+        "min": 813.0,
+        "max": 13288.0,
         "count": 9
       },
       "error_rate": 0.0
     },
     "facilities_legal": {
       "count": 3,
-      "faithfulness": 0.8667,
-      "answer_relevancy": 0.2,
+      "faithfulness": 0.9167,
+      "answer_relevancy": 0.1,
       "context_relevancy": 0.0667,
       "context_recall": 0.3167,
       "hallucination": 0.3333,
@@ -139,20 +139,20 @@
       "sticky_persistence": 0.3333,
       "retrieval_hit": 0.6667,
       "latency_ms": {
-        "p50": 9225.0,
-        "p95": 20312.0,
-        "avg": 10312.33,
-        "min": 1400.0,
-        "max": 20312.0,
+        "p50": 7402.0,
+        "p95": 10196.0,
+        "avg": 6228.33,
+        "min": 1087.0,
+        "max": 10196.0,
         "count": 3
       },
       "error_rate": 0.0
     },
     "facilities_person": {
       "count": 6,
-      "faithfulness": 0.8667,
+      "faithfulness": 0.9667,
       "answer_relevancy": 0.5,
-      "context_relevancy": 0.3333,
+      "context_relevancy": 0.3667,
       "context_recall": 0.3,
       "hallucination": 0.5,
       "non_hallucination": 0.5,
@@ -160,32 +160,32 @@
       "sticky_persistence": 0.6667,
       "retrieval_hit": 0.5,
       "latency_ms": {
-        "p50": 9364.0,
-        "p95": 9710.0,
-        "avg": 5447.0,
-        "min": 1368.0,
-        "max": 9710.0,
+        "p50": 9376.0,
+        "p95": 10718.0,
+        "avg": 5430.17,
+        "min": 847.0,
+        "max": 10718.0,
         "count": 6
       },
       "error_rate": 0.0
     },
     "general": {
       "count": 10,
-      "faithfulness": 0.82,
-      "answer_relevancy": 0.49,
-      "context_relevancy": 0.08,
-      "context_recall": 0.49,
-      "hallucination": 0.2,
-      "non_hallucination": 0.8,
+      "faithfulness": 0.655,
+      "answer_relevancy": 0.67,
+      "context_relevancy": 0.16,
+      "context_recall": 0.515,
+      "hallucination": 0.1,
+      "non_hallucination": 0.9,
       "ambiguity_resolution": 1.0,
-      "sticky_persistence": 0.5,
-      "retrieval_hit": 0.7,
+      "sticky_persistence": 0.6,
+      "retrieval_hit": 0.8,
       "latency_ms": {
-        "p50": 10106.0,
-        "p95": 14533.0,
-        "avg": 9123.3,
-        "min": 1416.0,
-        "max": 14533.0,
+        "p50": 6981.0,
+        "p95": 10063.0,
+        "avg": 6716.8,
+        "min": 1127.0,
+        "max": 10063.0,
         "count": 10
       },
       "error_rate": 0.0
@@ -200,7 +200,7 @@
       "expected_subspace": null,
       "finish_reason": "stop",
       "applied_subspace": null,
-      "latency_ms": 1373,
+      "latency_ms": 1104,
       "http_status": 200,
       "error": null,
       "retrieved_chunks_count": 0,
@@ -272,15 +272,15 @@
       "expected_subspace": "cheque",
       "finish_reason": "stop",
       "applied_subspace": null,
-      "latency_ms": 12564,
+      "latency_ms": 5420,
       "http_status": 200,
       "error": null,
       "retrieved_chunks_count": 10,
       "citations_count": 5,
       "scores": {
-        "faithfulness": 0.8,
-        "answer_relevancy": 1.0,
-        "context_relevancy": 0.4,
+        "faithfulness": 0.0,
+        "answer_relevancy": 0.0,
+        "context_relevancy": 0.0,
         "context_recall": 0.6,
         "hallucination": 0.0,
         "ambiguity_resolution": 1.0,
@@ -290,28 +290,28 @@
       },
       "metrics": {
         "faithfulness": {
-          "score": 0.8,
-          "reason": "The answer is mostly grounded in the contexts. Claims about the impact of timing on score, the 24-hour update window, the 5-year retention period, and the lack of time limit for un-cleared checks are all supported. However, the definition of what a 'returned check' is (insufficient funds/legal reasons) and the specific process of 'providing funds and following settlement steps' are not explicitly mentioned in the provided contexts.",
+          "score": 0.0,
+          "reason": "The answer states that no information was found, but the contexts provide detailed information about the impact of bounced checks (چک برگشتی) and the process/effect of clearing their negative impact (رفع سوء اثر).",
           "source": "llm"
         },
         "answer_relevancy": {
-          "score": 1.0,
-          "reason": "The answer directly and comprehensively addresses both parts of the question: defining what a returned check is and explaining the process and impact of clearing its negative effect.",
+          "score": 0.0,
+          "reason": "The answer states that no information was found and does not address the question.",
           "source": "llm"
         },
         "context_relevancy": {
-          "score": 0.4,
-          "reason": "The chunks explain the effects of bounced checks on credit scores and the timeline for clearing their impact, but they do not provide a definition of what a bounced check is or the legal/procedural steps on how to resolve it (رفع سوء اثر).",
+          "score": 0.0,
+          "reason": "The chunks discuss the impact of bounced checks on credit scores and the duration of their effect, but none of them define what a bounced check is or explain the legal/procedural steps on how to resolve it (رفع سوء اثر).",
           "source": "llm"
         },
         "context_recall": {
           "score": 0.6,
-          "reason": "heuristic max_overlap 0.12 blended 0.27",
+          "reason": "heuristic max_overlap 0.10 blended 0.24",
           "source": "heuristic"
         },
         "hallucination": {
           "score": 0.0,
-          "reason": "coverage 0.51 -> not hallucinated",
+          "reason": "abstention phrase -> not hallucinated (correct abstention)",
           "source": "heuristic"
         },
         "ambiguity_resolution": {
@@ -331,7 +331,7 @@
         },
         "non_hallucination": {
           "score": 1.0,
-          "reason": "1 - hallucination (coverage 0.51 -> not hallucinated)",
+          "reason": "1 - hallucination (abstention phrase -> not hallucinated (correct abstention))",
           "source": "heuristic"
         }
       }
@@ -344,14 +344,14 @@
       "expected_subspace": "cheque",
       "finish_reason": "stop",
       "applied_subspace": null,
-      "latency_ms": 12089,
+      "latency_ms": 7964,
       "http_status": 200,
       "error": null,
       "retrieved_chunks_count": 10,
       "citations_count": 5,
       "scores": {
-        "faithfulness": 0.2,
-        "answer_relevancy": 1.0,
+        "faithfulness": 0.6,
+        "answer_relevancy": 0.6,
         "context_relevancy": 0.0,
         "context_recall": 0.35,
         "hallucination": 0.0,
@@ -362,28 +362,28 @@
       },
       "metrics": {
         "faithfulness": {
-          "score": 0.2,
-          "reason": "The answer provides general financial advice and specific timelines (24 hours, 5 years) that are not present in the contexts. The only grounded claim is that both Sayyad and non-Sayyad returned checks affect credit scores, which is mentioned in Contexts 1, 2, and 4.",
+          "score": 0.6,
+          "reason": "The first two paragraphs are supported by Context 1, which mentions that lack of funds affects the credit score and that timely removal of the negative effect (رفع سوءاثر) prevents further negative impact. However, the final paragraph regarding 'average bank balance over the past year' is not mentioned in any of the provided contexts.",
           "source": "llm"
         },
         "answer_relevancy": {
-          "score": 1.0,
-          "reason": "The answer directly addresses the question by providing clear steps on what to do when a check has insufficient funds, including funding the account, clearing the record (رفع سوء اثر), and explaining the consequences and credit score impact.",
+          "score": 0.6,
+          "reason": "The answer explains the consequences of a bounced check on credit scores and suggests resolving the issue to prevent further damage, but it does not provide a comprehensive step-by-step guide on the legal or practical actions to take when a check lacks funds.",
           "source": "llm"
         },
         "context_relevancy": {
           "score": 0.0,
-          "reason": "The question asks for guidance on what to do if a check has insufficient funds, but the retrieved chunks only discuss how bounced checks affect credit scoring and the Sayyad system.",
+          "reason": "The question asks for guidance on what to do if a check has insufficient funds, but all retrieved chunks only discuss how insufficient funds affect credit scores.",
           "source": "llm"
         },
         "context_recall": {
           "score": 0.35,
-          "reason": "heuristic max_overlap 0.00 blended 0.12",
+          "reason": "heuristic max_overlap 0.03 blended 0.17",
           "source": "heuristic"
         },
         "hallucination": {
           "score": 0.0,
-          "reason": "coverage 0.30 -> not hallucinated",
+          "reason": "coverage 0.39 -> not hallucinated",
           "source": "heuristic"
         },
         "ambiguity_resolution": {
@@ -403,7 +403,7 @@
         },
         "non_hallucination": {
           "score": 1.0,
-          "reason": "1 - hallucination (coverage 0.30 -> not hallucinated)",
+          "reason": "1 - hallucination (coverage 0.39 -> not hallucinated)",
           "source": "heuristic"
         }
       }
@@ -416,7 +416,7 @@
       "expected_subspace": null,
       "finish_reason": "clarify",
       "applied_subspace": null,
-      "latency_ms": 5188,
+      "latency_ms": 3056,
       "http_status": 200,
       "error": null,
       "retrieved_chunks_count": 10,
@@ -424,18 +424,18 @@
       "scores": {
         "faithfulness": 0.0,
         "answer_relevancy": 0.5,
-        "context_relevancy": 0.0,
+        "context_relevancy": 0.6,
         "context_recall": 0.35,
-        "hallucination": 0.0,
+        "hallucination": 0.8,
         "ambiguity_resolution": 1.0,
         "sticky_persistence": 1.0,
         "retrieval_hit": 1.0,
-        "non_hallucination": 1.0
+        "non_hallucination": 0.2
       },
       "metrics": {
         "faithfulness": {
           "score": 0.0,
-          "reason": "The answer does not provide any information grounded in the contexts; it only asks clarifying questions to the user.",
+          "reason": "The answer does not provide any information based on the provided contexts; instead, it asks clarifying questions that are not grounded in the source text.",
           "source": "llm"
         },
         "answer_relevancy": {
@@ -444,18 +444,18 @@
           "source": "llm"
         },
         "context_relevancy": {
-          "score": 0.0,
-          "reason": "The question asks for a specific credit status ('How is the credit status?'), but the chunks provide general FAQs about credit scoring rules, legal entities, and tax debts rather than a specific user's status or a definition of current status.",
+          "score": 0.6,
+          "reason": "Chunks 1, 2, and 3 directly explain the reasons for the user's credit status (negative repayment and high loan balance), while Chunks 4 and 5 are general FAQs not specific to the user's current status.",
           "source": "llm"
         },
         "context_recall": {
           "score": 0.35,
-          "reason": "heuristic max_overlap 0.07 blended 0.20",
+          "reason": "heuristic max_overlap 0.05 blended 0.13",
           "source": "heuristic"
         },
         "hallucination": {
-          "score": 0.0,
-          "reason": "coverage 0.38 -> not hallucinated",
+          "score": 0.8,
+          "reason": "low lexical coverage 0.24 -> likely hallucinated",
           "source": "heuristic"
         },
         "ambiguity_resolution": {
@@ -474,8 +474,8 @@
           "source": "heuristic"
         },
         "non_hallucination": {
-          "score": 1.0,
-          "reason": "1 - hallucination (coverage 0.38 -> not hallucinated)",
+          "score": 0.2,
+          "reason": "1 - hallucination (low lexical coverage 0.24 -> likely hallucinated)",
           "source": "heuristic"
         }
       }
@@ -488,7 +488,7 @@
       "expected_subspace": "cheque",
       "finish_reason": "stop",
       "applied_subspace": "cheque",
-      "latency_ms": 1378,
+      "latency_ms": 1125,
       "http_status": 200,
       "error": null,
       "retrieved_chunks_count": 0,
@@ -560,15 +560,15 @@
       "expected_subspace": "cheque",
       "finish_reason": "stop",
       "applied_subspace": "cheque",
-      "latency_ms": 14107,
+      "latency_ms": 13288,
       "http_status": 200,
       "error": null,
       "retrieved_chunks_count": 10,
       "citations_count": 5,
       "scores": {
-        "faithfulness": 0.7,
+        "faithfulness": 0.8,
         "answer_relevancy": 1.0,
-        "context_relevancy": 0.6,
+        "context_relevancy": 1.0,
         "context_recall": 0.6,
         "hallucination": 0.0,
         "ambiguity_resolution": 1.0,
@@ -578,28 +578,28 @@
       },
       "metrics": {
         "faithfulness": {
-          "score": 0.7,
-          "reason": "The first two paragraphs are fully supported by Contexts 1, 4, and 5. However, the final paragraph regarding the 'five-year time frame' and the 'duration of delay in resolving the negative effect' is not mentioned in any of the provided contexts.",
+          "score": 0.8,
+          "reason": "Most claims are well-supported by the contexts, including the importance of returned checks, the impact of amount/frequency/recency, the 5-year window for settled checks, and the impact of guarantee checks. However, the specific mention of 'Rank E3 and score 1' and the reference to 'Sayyad and Central Bank systems' are not present in the provided contexts.",
           "source": "llm"
         },
         "answer_relevancy": {
           "score": 1.0,
-          "reason": "The answer directly addresses the question by explaining that bounced checks lead to a decrease in credit scores, mentioning the role of the Central Bank's system, and highlighting that the duration of the unresolved status also impacts the score.",
+          "reason": "The answer directly and comprehensively addresses the question by explaining how the number, amount, timing, and status of returned checks affect the credit score.",
           "source": "llm"
         },
         "context_relevancy": {
-          "score": 0.6,
-          "reason": "Chunks 1, 4, and 5 directly address the impact of returned checks on credit scores, while Chunks 2 and 3 discuss income and are irrelevant.",
+          "score": 1.0,
+          "reason": "All chunks are relevant. Chunk 1 discusses the impact of guarantee checks, Chunk 2 explains the time frame of impact, and Chunks 3, 4, and 5 explicitly state that returned checks are the most important factor in reducing the credit score based on amount and frequency.",
           "source": "llm"
         },
         "context_recall": {
           "score": 0.6,
-          "reason": "heuristic max_overlap 0.12 blended 0.28",
+          "reason": "heuristic max_overlap 0.10 blended 0.24",
           "source": "heuristic"
         },
         "hallucination": {
           "score": 0.0,
-          "reason": "coverage 0.52 -> not hallucinated",
+          "reason": "coverage 0.46 -> not hallucinated",
           "source": "heuristic"
         },
         "ambiguity_resolution": {
@@ -614,12 +614,12 @@
         },
         "retrieval_hit": {
           "score": 1.0,
-          "reason": "hit: 3/5 chunks contain cheque keywords",
+          "reason": "hit: 5/5 chunks contain cheque keywords",
           "source": "heuristic"
         },
         "non_hallucination": {
           "score": 1.0,
-          "reason": "1 - hallucination (coverage 0.52 -> not hallucinated)",
+          "reason": "1 - hallucination (coverage 0.46 -> not hallucinated)",
           "source": "heuristic"
         }
       }
@@ -632,7 +632,7 @@
       "expected_subspace": null,
       "finish_reason": "clarify",
       "applied_subspace": null,
-      "latency_ms": 2627,
+      "latency_ms": 2307,
       "http_status": 200,
       "error": null,
       "retrieved_chunks_count": 10,
@@ -640,18 +640,18 @@
       "scores": {
         "faithfulness": 0.0,
         "answer_relevancy": 0.5,
-        "context_relevancy": 0.0,
+        "context_relevancy": 0.6,
         "context_recall": 0.35,
-        "hallucination": 0.0,
+        "hallucination": 0.8,
         "ambiguity_resolution": 1.0,
         "sticky_persistence": 1.0,
         "retrieval_hit": 1.0,
-        "non_hallucination": 1.0
+        "non_hallucination": 0.2
       },
       "metrics": {
         "faithfulness": {
           "score": 0.0,
-          "reason": "The answer asks clarifying questions and does not make any claims based on the provided contexts.",
+          "reason": "The answer does not provide any information based on the provided contexts; instead, it asks clarifying questions that are not grounded in the source text.",
           "source": "llm"
         },
         "answer_relevancy": {
@@ -660,18 +660,18 @@
           "source": "llm"
         },
         "context_relevancy": {
-          "score": 0.0,
-          "reason": "The question asks for a specific credit status ('How is the credit status?'), but the chunks provide general FAQs about credit scoring rules, legal entities, and tax debts rather than a specific user's status or a definition of current status.",
+          "score": 0.6,
+          "reason": "Chunks 1, 2, and 3 directly explain the reasons for the user's current credit status (negative repayment and high loan balance), while Chunks 4 and 5 are general FAQs not specific to the user's current status.",
           "source": "llm"
         },
         "context_recall": {
           "score": 0.35,
-          "reason": "heuristic max_overlap 0.07 blended 0.18",
+          "reason": "heuristic max_overlap 0.05 blended 0.13",
           "source": "heuristic"
         },
         "hallucination": {
-          "score": 0.0,
-          "reason": "coverage 0.35 -> not hallucinated",
+          "score": 0.8,
+          "reason": "low lexical coverage 0.24 -> likely hallucinated",
           "source": "heuristic"
         },
         "ambiguity_resolution": {
@@ -690,8 +690,8 @@
           "source": "heuristic"
         },
         "non_hallucination": {
-          "score": 1.0,
-          "reason": "1 - hallucination (coverage 0.35 -> not hallucinated)",
+          "score": 0.2,
+          "reason": "1 - hallucination (low lexical coverage 0.24 -> likely hallucinated)",
           "source": "heuristic"
         }
       }
@@ -704,7 +704,7 @@
       "expected_subspace": "facilities_person",
       "finish_reason": "stop",
       "applied_subspace": "facilities_person",
-      "latency_ms": 1368,
+      "latency_ms": 1127,
       "http_status": 200,
       "error": null,
       "retrieved_chunks_count": 0,
@@ -776,15 +776,15 @@
       "expected_subspace": "facilities_person",
       "finish_reason": "stop",
       "applied_subspace": "facilities_person",
-      "latency_ms": 9392,
+      "latency_ms": 9376,
       "http_status": 200,
       "error": null,
       "retrieved_chunks_count": 10,
       "citations_count": 5,
       "scores": {
-        "faithfulness": 0.7,
+        "faithfulness": 1.0,
         "answer_relevancy": 1.0,
-        "context_relevancy": 1.0,
+        "context_relevancy": 0.8,
         "context_recall": 0.6,
         "hallucination": 0.0,
         "ambiguity_resolution": 1.0,
@@ -794,28 +794,28 @@
       },
       "metrics": {
         "faithfulness": {
-          "score": 0.7,
-          "reason": "The answer correctly states that income and account turnover do not affect the credit score based on Contexts 1, 2, 3, and 5, and correctly mentions company registration data from Context 4. However, it introduces external information not present in the contexts regarding 'regular installment payments' and 'financial behaviors' as the most important factors.",
+          "score": 1.0,
+          "reason": "All claims in the answer are directly supported by the provided contexts. The lack of impact of income and account turnover (Context 1, 2, 3), the applicability to high/low/irregular income earners (Context 1, 2, 5), the primary importance of timely repayment (Context 1, 2, 3, 5), the possibility of income being added in future versions (Context 1, 3), and the gradual reflection of positive financial behavior (Context 4) are all explicitly mentioned.",
           "source": "llm"
         },
         "answer_relevancy": {
           "score": 1.0,
-          "reason": "The answer directly and comprehensively addresses the question, explicitly stating that income and account turnover do not affect the credit score in the current model.",
+          "reason": "The answer directly and explicitly addresses the question, stating that income and account turnover currently have no impact on the credit score and explaining what the actual key factor is.",
           "source": "llm"
         },
         "context_relevancy": {
-          "score": 1.0,
-          "reason": "All chunks directly address whether income (درآمد) or account turnover (گردش حساب) affects the credit score/rank, confirming that in the current version, they do not.",
+          "score": 0.8,
+          "reason": "Chunks 1, 2, 3, and 5 directly answer that income and account turnover do not affect the credit score in the current version. Chunk 4 is irrelevant as it discusses the timeframe for financial behavior improvement.",
           "source": "llm"
         },
         "context_recall": {
           "score": 0.6,
-          "reason": "heuristic max_overlap 0.20 blended 0.31",
+          "reason": "heuristic max_overlap 0.15 blended 0.32",
           "source": "heuristic"
         },
         "hallucination": {
           "score": 0.0,
-          "reason": "coverage 0.48 -> not hallucinated",
+          "reason": "coverage 0.58 -> not hallucinated",
           "source": "heuristic"
         },
         "ambiguity_resolution": {
@@ -835,7 +835,7 @@
         },
         "non_hallucination": {
           "score": 1.0,
-          "reason": "1 - hallucination (coverage 0.48 -> not hallucinated)",
+          "reason": "1 - hallucination (coverage 0.58 -> not hallucinated)",
           "source": "heuristic"
         }
       }
@@ -848,7 +848,7 @@
       "expected_subspace": "cheque",
       "finish_reason": "stop",
       "applied_subspace": "cheque",
-      "latency_ms": 1378,
+      "latency_ms": 821,
       "http_status": 200,
       "error": null,
       "retrieved_chunks_count": 0,
@@ -920,7 +920,7 @@
       "expected_subspace": null,
       "finish_reason": "stop",
       "applied_subspace": null,
-      "latency_ms": 1422,
+      "latency_ms": 1067,
       "http_status": 200,
       "error": null,
       "retrieved_chunks_count": 0,
@@ -992,7 +992,7 @@
       "expected_subspace": null,
       "finish_reason": "clarify",
       "applied_subspace": null,
-      "latency_ms": 3912,
+      "latency_ms": 2862,
       "http_status": 200,
       "error": null,
       "retrieved_chunks_count": 10,
@@ -1000,8 +1000,8 @@
       "scores": {
         "faithfulness": 0.0,
         "answer_relevancy": 0.5,
-        "context_relevancy": 0.0,
-        "context_recall": 0.35,
+        "context_relevancy": 1.0,
+        "context_recall": 0.6,
         "hallucination": 0.0,
         "ambiguity_resolution": 1.0,
         "sticky_persistence": 1.0,
@@ -1011,7 +1011,7 @@
       "metrics": {
         "faithfulness": {
           "score": 0.0,
-          "reason": "The answer asks clarifying questions and does not provide any information derived from the provided contexts.",
+          "reason": "The answer asks clarifying questions to the user instead of providing information grounded in the provided contexts. None of the claims in the answer are derived from the contexts.",
           "source": "llm"
         },
         "answer_relevancy": {
@@ -1020,18 +1020,18 @@
           "source": "llm"
         },
         "context_relevancy": {
-          "score": 0.0,
-          "reason": "The question asks for advice on what to do about being in debt, while the chunks discuss the definition of the credit scoring company, foreign credit history, and the process after a debt has already been paid.",
+          "score": 1.0,
+          "reason": "All chunks provide guidance on what to do when in debt or having overdue payments, covering bank loans, tax debts, and credit score recovery.",
           "source": "llm"
         },
         "context_recall": {
-          "score": 0.35,
-          "reason": "heuristic max_overlap 0.00 blended 0.16",
+          "score": 0.6,
+          "reason": "heuristic max_overlap 0.03 blended 0.25",
           "source": "heuristic"
         },
         "hallucination": {
           "score": 0.0,
-          "reason": "coverage 0.39 -> not hallucinated",
+          "reason": "coverage 0.57 -> not hallucinated",
           "source": "heuristic"
         },
         "ambiguity_resolution": {
@@ -1051,7 +1051,7 @@
         },
         "non_hallucination": {
           "score": 1.0,
-          "reason": "1 - hallucination (coverage 0.39 -> not hallucinated)",
+          "reason": "1 - hallucination (coverage 0.57 -> not hallucinated)",
           "source": "heuristic"
         }
       }
@@ -1064,7 +1064,7 @@
       "expected_subspace": "facilities_person",
       "finish_reason": "stop",
       "applied_subspace": "facilities_person",
-      "latency_ms": 1421,
+      "latency_ms": 847,
       "http_status": 200,
       "error": null,
       "retrieved_chunks_count": 0,
@@ -1136,16 +1136,16 @@
       "expected_subspace": "facilities_legal",
       "finish_reason": "stop",
       "applied_subspace": null,
-      "latency_ms": 9225,
+      "latency_ms": 7402,
       "http_status": 200,
       "error": null,
       "retrieved_chunks_count": 10,
       "citations_count": 0,
       "scores": {
-        "faithfulness": 0.6,
-        "answer_relevancy": 0.4,
+        "faithfulness": 0.75,
+        "answer_relevancy": 0.3,
         "context_relevancy": 0.2,
-        "context_recall": 0.35,
+        "context_recall": 0.6,
         "hallucination": 0.0,
         "ambiguity_resolution": 1.0,
         "sticky_persistence": 0.0,
@@ -1154,28 +1154,28 @@
       },
       "metrics": {
         "faithfulness": {
-          "score": 0.6,
-          "reason": "The claims regarding the 5-year record retention for legal entities and the impact of low credit scores on loan approval are supported by Context 1 and 4. However, the claims about bank guarantees for legal entities and the specific role of the credit rating company are not mentioned in the provided contexts.",
+          "score": 0.75,
+          "reason": "The first three paragraphs are fully supported by Context 1 and Context 3. However, the final paragraph regarding bank guarantees and the specific impact of fulfilling obligations on a legal entity's credit rating is not mentioned anywhere in the provided contexts.",
           "source": "llm"
         },
         "answer_relevancy": {
-          "score": 0.4,
-          "reason": "The answer does not list specific facility limits (amounts or terms) but explains how credit scores and history affect the likelihood and conditions of obtaining facilities.",
+          "score": 0.3,
+          "reason": "The answer discusses credit scoring and history for legal entities but does not specify the actual 'limitations' (restrictions/caps) of facilities, which is what the question asks.",
           "source": "llm"
         },
         "context_relevancy": {
           "score": 0.2,
-          "reason": "Only Chunk 1 mentions companies (legal entities) and their credit history; other chunks focus on individual guarantors or general credit scores.",
+          "reason": "Only Chunk 1 and Chunk 3 mention legal entities (companies), but they discuss credit history and the existence of credit scores rather than specific facility limitations. Chunk 2, 4, and 5 refer to natural persons or general guarantee issues.",
           "source": "llm"
         },
         "context_recall": {
-          "score": 0.35,
-          "reason": "heuristic max_overlap 0.02 blended 0.17",
+          "score": 0.6,
+          "reason": "heuristic max_overlap 0.07 blended 0.25",
           "source": "heuristic"
         },
         "hallucination": {
           "score": 0.0,
-          "reason": "coverage 0.40 -> not hallucinated",
+          "reason": "coverage 0.53 -> not hallucinated",
           "source": "heuristic"
         },
         "ambiguity_resolution": {
@@ -1195,7 +1195,7 @@
         },
         "non_hallucination": {
           "score": 1.0,
-          "reason": "1 - hallucination (coverage 0.40 -> not hallucinated)",
+          "reason": "1 - hallucination (coverage 0.53 -> not hallucinated)",
           "source": "heuristic"
         }
       }
@@ -1208,16 +1208,16 @@
       "expected_subspace": "general",
       "finish_reason": "stop",
       "applied_subspace": "general",
-      "latency_ms": 14533,
+      "latency_ms": 9767,
       "http_status": 200,
       "error": null,
       "retrieved_chunks_count": 10,
       "citations_count": 5,
       "scores": {
-        "faithfulness": 0.6,
-        "answer_relevancy": 0.2,
+        "faithfulness": 0.7,
+        "answer_relevancy": 0.7,
         "context_relevancy": 0.0,
-        "context_recall": 0.35,
+        "context_recall": 0.6,
         "hallucination": 0.0,
         "ambiguity_resolution": 1.0,
         "sticky_persistence": 1.0,
@@ -1226,28 +1226,28 @@
       },
       "metrics": {
         "faithfulness": {
-          "score": 0.6,
-          "reason": "The answer correctly identifies the use of credit scoring for managers to prevent shell companies (tax, banking, judicial, money laundering checks) and for business license eligibility as mentioned in Context 5. However, it adds unsupported claims regarding 'economic and managerial eligibility' and 'government services/appointments to sensitive positions' which are not present in the provided contexts.",
+          "score": 0.7,
+          "reason": "Most claims regarding the roles and backgrounds of Komil Shaeri, Reza Ghasempour, and Mohsen Sadeghi are supported. However, the mention of 'Mehdi Ahmadi' as a board member is not present in the contexts, and the general description of the board's 'strategic guidance' and 'supervision of infrastructure' is an inference not explicitly stated in the text.",
           "source": "llm"
         },
         "answer_relevancy": {
-          "score": 0.2,
-          "reason": "The question asks about the role/responsibilities of the board of directors, but the answer focuses exclusively on the process of vetting and validating the eligibility of board members during company registration.",
+          "score": 0.7,
+          "reason": "The answer describes the specific roles and members of a particular company's board rather than explaining the general role of a board of directors, but it does provide concrete examples of strategic guidance and oversight.",
           "source": "llm"
         },
         "context_relevancy": {
           "score": 0.0,
-          "reason": "None of the chunks explain the role of the board of directors; they focus on credit reporting, laws, and verification for business licenses.",
+          "reason": "The chunks provide biographical information about specific board members (names and backgrounds) but do not describe the role, duties, or functions of the board of directors.",
           "source": "llm"
         },
         "context_recall": {
-          "score": 0.35,
-          "reason": "heuristic max_overlap 0.00 blended 0.14",
+          "score": 0.6,
+          "reason": "heuristic max_overlap 0.02 blended 0.26",
           "source": "heuristic"
         },
         "hallucination": {
           "score": 0.0,
-          "reason": "coverage 0.36 -> not hallucinated",
+          "reason": "coverage 0.63 -> not hallucinated",
           "source": "heuristic"
         },
         "ambiguity_resolution": {
@@ -1262,12 +1262,12 @@
         },
         "retrieval_hit": {
           "score": 1.0,
-          "reason": "hit: 4/5 chunks contain general keywords",
+          "reason": "hit: 3/5 chunks contain general keywords",
           "source": "heuristic"
         },
         "non_hallucination": {
           "score": 1.0,
-          "reason": "1 - hallucination (coverage 0.36 -> not hallucinated)",
+          "reason": "1 - hallucination (coverage 0.63 -> not hallucinated)",
           "source": "heuristic"
         }
       }
@@ -1280,7 +1280,7 @@
       "expected_subspace": null,
       "finish_reason": "stop",
       "applied_subspace": null,
-      "latency_ms": 1308,
+      "latency_ms": 824,
       "http_status": 200,
       "error": null,
       "retrieved_chunks_count": 0,
@@ -1352,7 +1352,7 @@
       "expected_subspace": "facilities_legal",
       "finish_reason": "stop",
       "applied_subspace": "facilities_legal",
-      "latency_ms": 1400,
+      "latency_ms": 1087,
       "http_status": 200,
       "error": null,
       "retrieved_chunks_count": 0,
@@ -1371,7 +1371,7 @@
       "metrics": {
         "faithfulness": {
           "score": 1.0,
-          "reason": "The answer does not make any factual claims about the topic; it simply acknowledges the selection of the category and asks for a question, which requires no external grounding.",
+          "reason": "The answer is a conversational acknowledgment of the selected topic and does not make any factual claims that require grounding in the contexts.",
           "source": "llm"
         },
         "answer_relevancy": {
@@ -1424,13 +1424,13 @@
       "expected_subspace": "general",
       "finish_reason": "stop",
       "applied_subspace": "general",
-      "latency_ms": 9770,
+      "latency_ms": 8328,
       "http_status": 200,
       "error": null,
       "retrieved_chunks_count": 10,
       "citations_count": 5,
       "scores": {
-        "faithfulness": 1.0,
+        "faithfulness": 0.75,
         "answer_relevancy": 1.0,
         "context_relevancy": 0.2,
         "context_recall": 0.6,
@@ -1442,28 +1442,28 @@
       },
       "metrics": {
         "faithfulness": {
-          "score": 1.0,
-          "reason": "All claims regarding Reza Ghasempour's role, tenure, education, and previous work experience are directly supported by Context 1.",
+          "score": 0.75,
+          "reason": "The first three paragraphs are fully supported by Context 1. However, the final paragraph regarding his media appearances, emphasis on a national credit score, and goals for economic transparency is not mentioned in the provided contexts.",
           "source": "llm"
         },
         "answer_relevancy": {
           "score": 1.0,
-          "reason": "The answer directly identifies who Reza Ghasempour is, providing his current role, tenure, educational background, and professional history.",
+          "reason": "The answer directly identifies who Ghasempour is, providing his full name, current role as CEO of Iran Credit Scoring Company, educational background, and professional achievements.",
           "source": "llm"
         },
         "context_relevancy": {
           "score": 0.2,
-          "reason": "Only Chunk 1 is relevant as it provides information about Reza Ghasempour; the other chunks are unrelated.",
+          "reason": "Only Chunk 1 is relevant as it provides biographical information about Reza Ghasempour; the other chunks are unrelated FAQs or general information.",
           "source": "llm"
         },
         "context_recall": {
           "score": 0.6,
-          "reason": "heuristic max_overlap 0.02 blended 0.21",
+          "reason": "heuristic max_overlap 0.01 blended 0.23",
           "source": "heuristic"
         },
         "hallucination": {
           "score": 0.0,
-          "reason": "coverage 0.49 -> not hallucinated",
+          "reason": "coverage 0.55 -> not hallucinated",
           "source": "heuristic"
         },
         "ambiguity_resolution": {
@@ -1478,12 +1478,12 @@
         },
         "retrieval_hit": {
           "score": 1.0,
-          "reason": "hit: 3/5 chunks contain general keywords",
+          "reason": "hit: 4/5 chunks contain general keywords",
           "source": "heuristic"
         },
         "non_hallucination": {
           "score": 1.0,
-          "reason": "1 - hallucination (coverage 0.49 -> not hallucinated)",
+          "reason": "1 - hallucination (coverage 0.55 -> not hallucinated)",
           "source": "heuristic"
         }
       }
@@ -1496,7 +1496,7 @@
       "expected_subspace": "general",
       "finish_reason": "stop",
       "applied_subspace": "general",
-      "latency_ms": 1416,
+      "latency_ms": 1127,
       "http_status": 200,
       "error": null,
       "retrieved_chunks_count": 0,
@@ -1520,7 +1520,7 @@
         },
         "answer_relevancy": {
           "score": 0.0,
-          "reason": "The answer is a system prompt asking the user to select a knowledge base domain and does not provide any information about the requested company.",
+          "reason": "The answer is a system prompt asking the user to specify a question within a chosen domain, rather than providing information about the requested company.",
           "source": "llm"
         },
         "context_relevancy": {
@@ -1567,27 +1567,27 @@
       "expected_finish": "stop",
       "expected_subspace": "cheque",
       "finish_reason": "stop",
-      "applied_subspace": "cheque",
-      "latency_ms": 7255,
+      "applied_subspace": "general",
+      "latency_ms": 4956,
       "http_status": 200,
       "error": null,
-      "retrieved_chunks_count": 0,
-      "citations_count": 0,
+      "retrieved_chunks_count": 10,
+      "citations_count": 5,
       "scores": {
         "faithfulness": 1.0,
         "answer_relevancy": 0.0,
         "context_relevancy": 0.0,
-        "context_recall": 0.0,
+        "context_recall": 0.35,
         "hallucination": 0.0,
         "ambiguity_resolution": 1.0,
-        "sticky_persistence": 1.0,
-        "retrieval_hit": 0.0,
+        "sticky_persistence": 0.0,
+        "retrieval_hit": 1.0,
         "non_hallucination": 1.0
       },
       "metrics": {
         "faithfulness": {
           "score": 1.0,
-          "reason": "The answer correctly states that no information was found in the knowledge base, which is faithful to the fact that no contexts were provided.",
+          "reason": "The answer correctly states that no information was found in the provided contexts to answer the question.",
           "source": "llm"
         },
         "answer_relevancy": {
@@ -1597,12 +1597,12 @@
         },
         "context_relevancy": {
           "score": 0.0,
-          "reason": "No chunks were provided to evaluate against the question.",
+          "reason": "None of the retrieved chunks define or explain what a 'returned check' (چک برگشتی) is; they focus on payment refunds, complaints, security, and support links.",
           "source": "llm"
         },
         "context_recall": {
-          "score": 0.0,
-          "reason": "no contexts -> no recall",
+          "score": 0.35,
+          "reason": "heuristic max_overlap 0.03 blended 0.17",
           "source": "heuristic"
         },
         "hallucination": {
@@ -1616,13 +1616,13 @@
           "source": "heuristic"
         },
         "sticky_persistence": {
-          "score": 1.0,
-          "reason": "bench subspace_match true",
+          "score": 0.0,
+          "reason": "subspace_match false (exp cheque, got general)",
           "source": "heuristic"
         },
         "retrieval_hit": {
-          "score": 0.0,
-          "reason": "no contexts -> miss for cheque",
+          "score": 1.0,
+          "reason": "hit: 1/5 chunks contain cheque keywords",
           "source": "heuristic"
         },
         "non_hallucination": {
@@ -1640,7 +1640,7 @@
       "expected_subspace": null,
       "finish_reason": "clarify",
       "applied_subspace": null,
-      "latency_ms": 2975,
+      "latency_ms": 2366,
       "http_status": 200,
       "error": null,
       "retrieved_chunks_count": 10,
@@ -1648,7 +1648,7 @@
       "scores": {
         "faithfulness": 0.0,
         "answer_relevancy": 0.5,
-        "context_relevancy": 0.0,
+        "context_relevancy": 0.6,
         "context_recall": 0.35,
         "hallucination": 0.0,
         "ambiguity_resolution": 1.0,
@@ -1659,27 +1659,27 @@
       "metrics": {
         "faithfulness": {
           "score": 0.0,
-          "reason": "The answer is a clarifying question and does not make any claims based on the provided contexts.",
+          "reason": "The answer does not provide any information based on the provided contexts; instead, it asks clarifying questions that are not grounded in the source text.",
           "source": "llm"
         },
         "answer_relevancy": {
           "score": 0.5,
-          "reason": "The answer does not provide the status but asks for clarification to provide a specific answer, making it partially relevant as a conversational step.",
+          "reason": "The answer does not provide the status but asks for clarification to provide a relevant response, acting as a conversational bridge.",
           "source": "llm"
         },
         "context_relevancy": {
-          "score": 0.0,
-          "reason": "The question asks for a specific credit status ('How is the credit status?'), but the chunks provide general FAQs about credit scoring rules, legal entities, and tax debts rather than a specific user's status or a definition of current status.",
+          "score": 0.6,
+          "reason": "Chunks 1, 2, and 3 directly explain the reasons for the user's current credit status (negative repayment and high loan balance), while Chunks 4 and 5 are general FAQs not specific to the user's current status.",
           "source": "llm"
         },
         "context_recall": {
           "score": 0.35,
-          "reason": "heuristic max_overlap 0.07 blended 0.20",
+          "reason": "heuristic max_overlap 0.05 blended 0.14",
           "source": "heuristic"
         },
         "hallucination": {
           "score": 0.0,
-          "reason": "coverage 0.38 -> not hallucinated",
+          "reason": "coverage 0.27 -> not hallucinated",
           "source": "heuristic"
         },
         "ambiguity_resolution": {
@@ -1699,7 +1699,7 @@
         },
         "non_hallucination": {
           "score": 1.0,
-          "reason": "1 - hallucination (coverage 0.38 -> not hallucinated)",
+          "reason": "1 - hallucination (coverage 0.27 -> not hallucinated)",
           "source": "heuristic"
         }
       }
@@ -1712,7 +1712,7 @@
       "expected_subspace": "general",
       "finish_reason": "stop",
       "applied_subspace": null,
-      "latency_ms": 6282,
+      "latency_ms": 5480,
       "http_status": 200,
       "error": null,
       "retrieved_chunks_count": 10,
@@ -1736,22 +1736,22 @@
         },
         "answer_relevancy": {
           "score": 1.0,
-          "reason": "The answer directly and accurately identifies the CEO of the company as requested in the question.",
+          "reason": "The answer directly and comprehensively identifies the CEO of the company as requested in the question.",
           "source": "llm"
         },
         "context_relevancy": {
           "score": 0.2,
-          "reason": "Only Chunk 1 provides the name of the CEO; the other chunks discuss the impact of credit ratings on CEOs and are irrelevant to the identity of the CEO.",
+          "reason": "Only Chunk 1 provides the name of the CEO; the other chunks discuss the impact of the CEO's credit history or changes in management on the company's rating.",
           "source": "llm"
         },
         "context_recall": {
           "score": 0.6,
-          "reason": "heuristic max_overlap 0.07 blended 0.31",
+          "reason": "heuristic max_overlap 0.06 blended 0.30",
           "source": "heuristic"
         },
         "hallucination": {
           "score": 0.0,
-          "reason": "coverage 0.66 -> not hallucinated",
+          "reason": "coverage 0.67 -> not hallucinated",
           "source": "heuristic"
         },
         "ambiguity_resolution": {
@@ -1771,7 +1771,7 @@
         },
         "non_hallucination": {
           "score": 1.0,
-          "reason": "1 - hallucination (coverage 0.66 -> not hallucinated)",
+          "reason": "1 - hallucination (coverage 0.67 -> not hallucinated)",
           "source": "heuristic"
         }
       }
@@ -1784,7 +1784,7 @@
       "expected_subspace": "cheque",
       "finish_reason": "stop",
       "applied_subspace": "cheque",
-      "latency_ms": 1362,
+      "latency_ms": 813,
       "http_status": 200,
       "error": null,
       "retrieved_chunks_count": 0,
@@ -1856,7 +1856,7 @@
       "expected_subspace": "facilities_person",
       "finish_reason": "stop",
       "applied_subspace": "facilities_person",
-      "latency_ms": 1427,
+      "latency_ms": 1092,
       "http_status": 200,
       "error": null,
       "retrieved_chunks_count": 0,
@@ -1928,7 +1928,7 @@
       "expected_subspace": null,
       "finish_reason": "stop",
       "applied_subspace": null,
-      "latency_ms": 1401,
+      "latency_ms": 817,
       "http_status": 200,
       "error": null,
       "retrieved_chunks_count": 0,
@@ -2000,7 +2000,7 @@
       "expected_subspace": null,
       "finish_reason": "stop",
       "applied_subspace": null,
-      "latency_ms": 1390,
+      "latency_ms": 1116,
       "http_status": 200,
       "error": null,
       "retrieved_chunks_count": 0,
@@ -2008,7 +2008,7 @@
       "scores": {
         "faithfulness": 0.0,
         "answer_relevancy": 1.0,
-        "context_relevancy": 0.0,
+        "context_relevancy": 1.0,
         "context_recall": 0.0,
         "hallucination": 0.0,
         "ambiguity_resolution": 1.0,
@@ -2028,8 +2028,8 @@
           "source": "llm"
         },
         "context_relevancy": {
-          "score": 0.0,
-          "reason": "No chunks were provided to evaluate against the greeting.",
+          "score": 1.0,
+          "reason": "The question is a greeting and does not require factual information from retrieved chunks.",
           "source": "llm"
         },
         "context_recall": {
@@ -2072,7 +2072,7 @@
       "expected_subspace": null,
       "finish_reason": "clarify",
       "applied_subspace": null,
-      "latency_ms": 2689,
+      "latency_ms": 2575,
       "http_status": 200,
       "error": null,
       "retrieved_chunks_count": 10,
@@ -2080,7 +2080,7 @@
       "scores": {
         "faithfulness": 0.0,
         "answer_relevancy": 0.2,
-        "context_relevancy": 0.2,
+        "context_relevancy": 0.8,
         "context_recall": 0.6,
         "hallucination": 0.0,
         "ambiguity_resolution": 1.0,
@@ -2091,27 +2091,27 @@
       "metrics": {
         "faithfulness": {
           "score": 0.0,
-          "reason": "The answer does not provide a definition or explanation of credit scoring (اعتبارسنجی) based on the contexts; instead, it asks a clarifying question that is not grounded in the provided text.",
+          "reason": "The answer does not provide any information or claims based on the contexts; it only asks clarifying questions to the user.",
           "source": "llm"
         },
         "answer_relevancy": {
           "score": 0.2,
-          "reason": "The answer does not define validation/credit checking but instead asks for clarification on which type of validation the user is interested in.",
+          "reason": "The answer does not define validation/credit checking; it only asks for clarification on which type of validation the user is interested in.",
           "source": "llm"
         },
         "context_relevancy": {
-          "score": 0.2,
-          "reason": "Only Chunk 5 provides a definition of the credit scoring entity, but none of the chunks explicitly define the general concept of 'credit scoring' (اعتبارسنجی) as requested by the question.",
+          "score": 0.8,
+          "reason": "Chunks 1, 2, 3, and 4 provide direct definitions, goals, and scope of credit scoring (اعتبارسنجی), while Chunk 5 is a warning about scams and is not relevant to the definition.",
           "source": "llm"
         },
         "context_recall": {
           "score": 0.6,
-          "reason": "heuristic max_overlap 0.03 blended 0.25",
+          "reason": "heuristic max_overlap 0.02 blended 0.27",
           "source": "heuristic"
         },
         "hallucination": {
           "score": 0.0,
-          "reason": "coverage 0.58 -> not hallucinated",
+          "reason": "coverage 0.64 -> not hallucinated",
           "source": "heuristic"
         },
         "ambiguity_resolution": {
@@ -2131,7 +2131,7 @@
         },
         "non_hallucination": {
           "score": 1.0,
-          "reason": "1 - hallucination (coverage 0.58 -> not hallucinated)",
+          "reason": "1 - hallucination (coverage 0.64 -> not hallucinated)",
           "source": "heuristic"
         }
       }
@@ -2144,46 +2144,46 @@
       "expected_subspace": null,
       "finish_reason": "stop",
       "applied_subspace": null,
-      "latency_ms": 8872,
+      "latency_ms": 7403,
       "http_status": 200,
       "error": null,
       "retrieved_chunks_count": 10,
       "citations_count": 5,
       "scores": {
-        "faithfulness": 1.0,
-        "answer_relevancy": 0.7,
+        "faithfulness": 0.0,
+        "answer_relevancy": 1.0,
         "context_relevancy": 0.0,
         "context_recall": 0.35,
-        "hallucination": 1.0,
+        "hallucination": 0.0,
         "ambiguity_resolution": 1.0,
         "sticky_persistence": 1.0,
         "retrieval_hit": 1.0,
-        "non_hallucination": 0.0
+        "non_hallucination": 1.0
       },
       "metrics": {
         "faithfulness": {
-          "score": 1.0,
-          "reason": "The answer correctly states that G5 is not mentioned in the contexts, accurately summarizes the A-rank ranges (640-900) and sub-categories (A1, A2, A3) based on Contexts 1, 2, and 4, and correctly refers the user to the website as per Context 5.",
+          "score": 0.0,
+          "reason": "The answer provides information about credit ratings (A to E) and denies the existence of a G5 rating, but none of this information is present in the provided contexts.",
           "source": "llm"
         },
         "answer_relevancy": {
-          "score": 0.7,
-          "reason": "The answer directly addresses the question by explaining that 'G5' is not a recognized rank in the system and provides examples of how the ranking system actually works, although it cannot give a specific score for a non-existent rank.",
+          "score": 1.0,
+          "reason": "The answer directly addresses the question by explaining that 'G5' is not a valid grade in the system and directs the user to the official source for their actual score.",
           "source": "llm"
         },
         "context_relevancy": {
           "score": 0.0,
-          "reason": "None of the chunks provide information about the credit score range for grade G5; they only cover grades A1, A2, A3, and general inquiries.",
+          "reason": "None of the chunks provide information about the 'G5' credit grade or the specific score associated with it.",
           "source": "llm"
         },
         "context_recall": {
           "score": 0.35,
-          "reason": "heuristic max_overlap 0.07 blended 0.17",
+          "reason": "heuristic max_overlap 0.07 blended 0.19",
           "source": "heuristic"
         },
         "hallucination": {
-          "score": 1.0,
-          "reason": "G5 hallucination: fake grade G5 invented not in contexts",
+          "score": 0.0,
+          "reason": "abstention phrase -> not hallucinated (correct abstention)",
           "source": "heuristic"
         },
         "ambiguity_resolution": {
@@ -2202,8 +2202,8 @@
           "source": "heuristic"
         },
         "non_hallucination": {
-          "score": 0.0,
-          "reason": "1 - hallucination (G5 hallucination: fake grade G5 invented not in contexts)",
+          "score": 1.0,
+          "reason": "1 - hallucination (abstention phrase -> not hallucinated (correct abstention))",
           "source": "heuristic"
         }
       }
@@ -2216,583 +2216,7 @@
       "expected_subspace": "general",
       "finish_reason": "stop",
       "applied_subspace": "facilities_legal",
-      "latency_ms": 6832,
-      "http_status": 200,
-      "error": null,
-      "retrieved_chunks_count": 10,
-      "citations_count": 5,
-      "scores": {
-        "faithfulness": 1.0,
-        "answer_relevancy": 0.0,
-        "context_relevancy": 0.0,
-        "context_recall": 0.6,
-        "hallucination": 0.0,
-        "ambiguity_resolution": 1.0,
-        "sticky_persistence": 0.0,
-        "retrieval_hit": 0.0,
-        "non_hallucination": 1.0
-      },
-      "metrics": {
-        "faithfulness": {
-          "score": 1.0,
-          "reason": "The answer correctly states that no information was found in the provided contexts to answer the question about the company's shareholders.",
-          "source": "llm"
-        },
-        "answer_relevancy": {
-          "score": 0.0,
-          "reason": "The answer explicitly states that no information was found in the knowledge base to answer the question.",
-          "source": "llm"
-        },
-        "context_relevancy": {
-          "score": 0.0,
-          "reason": "None of the retrieved chunks contain information about the shareholders of the Iran Credit Scoring Company; they only discuss credit scoring rules and policies.",
-          "source": "llm"
-        },
-        "context_recall": {
-          "score": 0.6,
-          "reason": "heuristic max_overlap 0.07 blended 0.22",
-          "source": "heuristic"
-        },
-        "hallucination": {
-          "score": 0.0,
-          "reason": "abstention phrase -> not hallucinated (correct abstention)",
-          "source": "heuristic"
-        },
-        "ambiguity_resolution": {
-          "score": 1.0,
-          "reason": "expected stop, got stop -> correct (no spurious clarify)",
-          "source": "heuristic"
-        },
-        "sticky_persistence": {
-          "score": 0.0,
-          "reason": "subspace_match false (exp general, got facilities_legal)",
-          "source": "heuristic"
-        },
-        "retrieval_hit": {
-          "score": 0.0,
-          "reason": "miss: no chunk contains general keywords (['پایگاه دانش عمومی', 'عمومی'])",
-          "source": "heuristic"
-        },
-        "non_hallucination": {
-          "score": 1.0,
-          "reason": "1 - hallucination (abstention phrase -> not hallucinated (correct abstention))",
-          "source": "heuristic"
-        }
-      }
-    },
-    {
-      "conv_id": "single_cheque_granular",
-      "turn_index": 1,
-      "user": "چک برگشتی چیست و چگونه رفع اثر می‌شود؟",
-      "expected_finish": "stop",
-      "expected_subspace": "cheque",
-      "finish_reason": "stop",
-      "applied_subspace": null,
-      "latency_ms": 10911,
-      "http_status": 200,
-      "error": null,
-      "retrieved_chunks_count": 10,
-      "citations_count": 5,
-      "scores": {
-        "faithfulness": 0.6,
-        "answer_relevancy": 1.0,
-        "context_relevancy": 0.0,
-        "context_recall": 0.6,
-        "hallucination": 0.0,
-        "ambiguity_resolution": 1.0,
-        "sticky_persistence": 0.0,
-        "retrieval_hit": 1.0,
-        "non_hallucination": 1.0
-      },
-      "metrics": {
-        "faithfulness": {
-          "score": 0.6,
-          "reason": "The answer correctly identifies that returned checks lower credit scores, apply to both Sadad and non-Sadad checks, and that the score is recalculable within 24 hours of resolution. However, it introduces external information not present in the contexts, specifically the '5-year' retention period and the claim that higher amounts/quantities lead to sharper decreases.",
-          "source": "llm"
-        },
-        "answer_relevancy": {
-          "score": 1.0,
-          "reason": "The answer directly defines what a returned check is and explains the process and timeline for removing its negative effect.",
-          "source": "llm"
-        },
-        "context_relevancy": {
-          "score": 0.0,
-          "reason": "The chunks discuss the impact of bounced checks on credit scores and the timing of updates after clearing them, but none of them define what a bounced check is or explain the legal/procedural steps on how to clear its effect.",
-          "source": "llm"
-        },
-        "context_recall": {
-          "score": 0.6,
-          "reason": "heuristic max_overlap 0.10 blended 0.25",
-          "source": "heuristic"
-        },
-        "hallucination": {
-          "score": 0.0,
-          "reason": "coverage 0.46 -> not hallucinated",
-          "source": "heuristic"
-        },
-        "ambiguity_resolution": {
-          "score": 1.0,
-          "reason": "expected stop, got stop -> correct (no spurious clarify)",
-          "source": "heuristic"
-        },
-        "sticky_persistence": {
-          "score": 0.0,
-          "reason": "subspace_match false (exp cheque, got None)",
-          "source": "heuristic"
-        },
-        "retrieval_hit": {
-          "score": 1.0,
-          "reason": "hit: 5/5 chunks contain cheque keywords",
-          "source": "heuristic"
-        },
-        "non_hallucination": {
-          "score": 1.0,
-          "reason": "1 - hallucination (coverage 0.46 -> not hallucinated)",
-          "source": "heuristic"
-        }
-      }
-    },
-    {
-      "conv_id": "single_facilities_person_granular",
-      "turn_index": 1,
-      "user": "امتیاز اعتباری اشخاص حقیقی چگونه محاسبه می‌شود؟",
-      "expected_finish": "stop",
-      "expected_subspace": "facilities_person",
-      "finish_reason": "stop",
-      "applied_subspace": null,
-      "latency_ms": 9364,
-      "http_status": 200,
-      "error": null,
-      "retrieved_chunks_count": 10,
-      "citations_count": 5,
-      "scores": {
-        "faithfulness": 0.6,
-        "answer_relevancy": 1.0,
-        "context_relevancy": 0.0,
-        "context_recall": 0.6,
-        "hallucination": 0.0,
-        "ambiguity_resolution": 1.0,
-        "sticky_persistence": 0.0,
-        "retrieval_hit": 1.0,
-        "non_hallucination": 1.0
-      },
-      "metrics": {
-        "faithfulness": {
-          "score": 0.6,
-          "reason": "The answer correctly identifies the score range (250-900), the categories (Excellent to Critical), and that income and company turnover do not affect the score. However, it introduces claims not present in the contexts, specifically the 12% weight of checks and the impact of regular installment payments.",
-          "source": "llm"
-        },
-        "answer_relevancy": {
-          "score": 1.0,
-          "reason": "The answer directly addresses how the credit score for individuals is calculated by mentioning the scoring range, the categories, the factors that are excluded (income, job title), and the specific factors that are included (check history and loan repayment regularity).",
-          "source": "llm"
-        },
-        "context_relevancy": {
-          "score": 0.0,
-          "reason": "The chunks discuss the credit score range, the applicability to legal entities, and the lack of impact of income/company turnover on the score, but none of them explain HOW the credit score for natural persons is actually calculated.",
-          "source": "llm"
-        },
-        "context_recall": {
-          "score": 0.6,
-          "reason": "heuristic max_overlap 0.15 blended 0.22",
-          "source": "heuristic"
-        },
-        "hallucination": {
-          "score": 0.0,
-          "reason": "coverage 0.34 -> not hallucinated",
-          "source": "heuristic"
-        },
-        "ambiguity_resolution": {
-          "score": 1.0,
-          "reason": "expected stop, got stop -> correct (no spurious clarify)",
-          "source": "heuristic"
-        },
-        "sticky_persistence": {
-          "score": 0.0,
-          "reason": "subspace_match false (exp facilities_person, got None)",
-          "source": "heuristic"
-        },
-        "retrieval_hit": {
-          "score": 1.0,
-          "reason": "hit: 5/5 chunks contain facilities_person keywords",
-          "source": "heuristic"
-        },
-        "non_hallucination": {
-          "score": 1.0,
-          "reason": "1 - hallucination (coverage 0.34 -> not hallucinated)",
-          "source": "heuristic"
-        }
-      }
-    },
-    {
-      "conv_id": "single_facilities_legal_granular",
-      "turn_index": 1,
-      "user": "الزامات وثایق برای اشخاص حقوقی چیست؟",
-      "expected_finish": "stop",
-      "expected_subspace": "facilities_legal",
-      "finish_reason": "stop",
-      "applied_subspace": null,
-      "latency_ms": 20312,
-      "http_status": 200,
-      "error": null,
-      "retrieved_chunks_count": 10,
-      "citations_count": 5,
-      "scores": {
-        "faithfulness": 1.0,
-        "answer_relevancy": 0.2,
-        "context_relevancy": 0.0,
-        "context_recall": 0.6,
-        "hallucination": 0.0,
-        "ambiguity_resolution": 1.0,
-        "sticky_persistence": 0.0,
-        "retrieval_hit": 1.0,
-        "non_hallucination": 1.0
-      },
-      "metrics": {
-        "faithfulness": {
-          "score": 1.0,
-          "reason": "The answer correctly states that the provided contexts do not contain specific details about collateral requirements (وثایق) and accurately summarizes the available information regarding credit reports for legal entities from the contexts.",
-          "source": "llm"
-        },
-        "answer_relevancy": {
-          "score": 0.2,
-          "reason": "The answer explicitly states that it does not have the specific information regarding collateral requirements for legal entities, although it provides general information about credit reports.",
-          "source": "llm"
-        },
-        "context_relevancy": {
-          "score": 0.0,
-          "reason": "The chunks discuss credit scoring and credit reports for legal entities, but none of them provide information regarding the specific requirements for collateral/securities (وثایق) for legal entities.",
-          "source": "llm"
-        },
-        "context_recall": {
-          "score": 0.6,
-          "reason": "heuristic max_overlap 0.07 blended 0.25",
-          "source": "heuristic"
-        },
-        "hallucination": {
-          "score": 0.0,
-          "reason": "coverage 0.51 -> not hallucinated",
-          "source": "heuristic"
-        },
-        "ambiguity_resolution": {
-          "score": 1.0,
-          "reason": "expected stop, got stop -> correct (no spurious clarify)",
-          "source": "heuristic"
-        },
-        "sticky_persistence": {
-          "score": 0.0,
-          "reason": "subspace_match false (exp facilities_legal, got None)",
-          "source": "heuristic"
-        },
-        "retrieval_hit": {
-          "score": 1.0,
-          "reason": "hit: 4/5 chunks contain facilities_legal keywords",
-          "source": "heuristic"
-        },
-        "non_hallucination": {
-          "score": 1.0,
-          "reason": "1 - hallucination (coverage 0.51 -> not hallucinated)",
-          "source": "heuristic"
-        }
-      }
-    },
-    {
-      "conv_id": "single_general_granular",
-      "turn_index": 1,
-      "user": "تاریخچه شرکت اعتبارسنجی ایران را بگو",
-      "expected_finish": "stop",
-      "expected_subspace": "general",
-      "finish_reason": "stop",
-      "applied_subspace": null,
-      "latency_ms": 10254,
-      "http_status": 200,
-      "error": null,
-      "retrieved_chunks_count": 10,
-      "citations_count": 0,
-      "scores": {
-        "faithfulness": 0.6,
-        "answer_relevancy": 1.0,
-        "context_relevancy": 0.2,
-        "context_recall": 0.6,
-        "hallucination": 0.0,
-        "ambiguity_resolution": 1.0,
-        "sticky_persistence": 0.0,
-        "retrieval_hit": 1.0,
-        "non_hallucination": 1.0
-      },
-      "metrics": {
-        "faithfulness": {
-          "score": 0.6,
-          "reason": "The answer contains several grounded claims (establishment date, legal basis, CreditInfo collaboration, 2019 localization, and 2024 report version). However, it introduces hallucinations not present in the contexts, specifically the 2025 (1404) check credit services and the list of future development plans.",
-          "source": "llm"
-        },
-        "answer_relevancy": {
-          "score": 1.0,
-          "reason": "The answer provides a detailed chronological history of the company, including its founding date, legal basis, key milestones in 1395, 1398, 1403, and 1404, and its future goals.",
-          "source": "llm"
-        },
-        "context_relevancy": {
-          "score": 0.2,
-          "reason": "Only Chunk 1 provides historical information regarding the company's establishment and milestones. Other chunks provide links, definitions, or contact info.",
-          "source": "llm"
-        },
-        "context_recall": {
-          "score": 0.6,
-          "reason": "heuristic max_overlap 0.21 blended 0.32",
-          "source": "heuristic"
-        },
-        "hallucination": {
-          "score": 0.0,
-          "reason": "coverage 0.47 -> not hallucinated",
-          "source": "heuristic"
-        },
-        "ambiguity_resolution": {
-          "score": 1.0,
-          "reason": "expected stop, got stop -> correct (no spurious clarify)",
-          "source": "heuristic"
-        },
-        "sticky_persistence": {
-          "score": 0.0,
-          "reason": "subspace_match false (exp general, got None)",
-          "source": "heuristic"
-        },
-        "retrieval_hit": {
-          "score": 1.0,
-          "reason": "hit: 5/5 chunks contain general keywords",
-          "source": "heuristic"
-        },
-        "non_hallucination": {
-          "score": 1.0,
-          "reason": "1 - hallucination (coverage 0.47 -> not hallucinated)",
-          "source": "heuristic"
-        }
-      }
-    },
-    {
-      "conv_id": "single_cheque_bounce_effect",
-      "turn_index": 1,
-      "user": "تاثیر چک برگشتی بر امتیاز اعتباری چقدر است؟",
-      "expected_finish": "stop",
-      "expected_subspace": "cheque",
-      "finish_reason": "stop",
-      "applied_subspace": null,
-      "latency_ms": 10638,
-      "http_status": 200,
-      "error": null,
-      "retrieved_chunks_count": 10,
-      "citations_count": 5,
-      "scores": {
-        "faithfulness": 0.6,
-        "answer_relevancy": 1.0,
-        "context_relevancy": 1.0,
-        "context_recall": 0.6,
-        "hallucination": 0.0,
-        "ambiguity_resolution": 1.0,
-        "sticky_persistence": 0.0,
-        "retrieval_hit": 1.0,
-        "non_hallucination": 1.0
-      },
-      "metrics": {
-        "faithfulness": {
-          "score": 0.6,
-          "reason": "The answer correctly states that bounced checks reduce credit scores and that records from the last 5 years are considered (Context 1, 3, 5), and that timely passing of checks does not increase the score (Context 2). However, claims regarding the specific impact of the 'amount' of checks, 'Sayyad system' vs 'Central Bank data', and 'CEO/Company responsibility' are not mentioned in the provided contexts.",
-          "source": "llm"
-        },
-        "answer_relevancy": {
-          "score": 1.0,
-          "reason": "The answer directly addresses the question by explaining that bounced checks are a key negative factor, noting that both the number and amount of checks affect the score, and mentioning the impact of the Central Bank's records.",
-          "source": "llm"
-        },
-        "context_relevancy": {
-          "score": 1.0,
-          "reason": "All chunks directly address the impact of bounced checks on credit scores, covering general impact, specific types of checks, and the time frame of influence.",
-          "source": "llm"
-        },
-        "context_recall": {
-          "score": 0.6,
-          "reason": "heuristic max_overlap 0.12 blended 0.24",
-          "source": "heuristic"
-        },
-        "hallucination": {
-          "score": 0.0,
-          "reason": "coverage 0.42 -> not hallucinated",
-          "source": "heuristic"
-        },
-        "ambiguity_resolution": {
-          "score": 1.0,
-          "reason": "expected stop, got stop -> correct (no spurious clarify)",
-          "source": "heuristic"
-        },
-        "sticky_persistence": {
-          "score": 0.0,
-          "reason": "subspace_match false (exp cheque, got None)",
-          "source": "heuristic"
-        },
-        "retrieval_hit": {
-          "score": 1.0,
-          "reason": "hit: 5/5 chunks contain cheque keywords",
-          "source": "heuristic"
-        },
-        "non_hallucination": {
-          "score": 1.0,
-          "reason": "1 - hallucination (coverage 0.42 -> not hallucinated)",
-          "source": "heuristic"
-        }
-      }
-    },
-    {
-      "conv_id": "single_facilities_person_income",
-      "turn_index": 1,
-      "user": "آیا میزان درآمد یا گردش حساب در رتبه اعتباری تاثیر دارد؟",
-      "expected_finish": "stop",
-      "expected_subspace": "facilities_person",
-      "finish_reason": "stop",
-      "applied_subspace": null,
-      "latency_ms": 9710,
-      "http_status": 200,
-      "error": null,
-      "retrieved_chunks_count": 10,
-      "citations_count": 5,
-      "scores": {
-        "faithfulness": 0.9,
-        "answer_relevancy": 1.0,
-        "context_relevancy": 1.0,
-        "context_recall": 0.6,
-        "hallucination": 0.0,
-        "ambiguity_resolution": 1.0,
-        "sticky_persistence": 0.0,
-        "retrieval_hit": 1.0,
-        "non_hallucination": 1.0
-      },
-      "metrics": {
-        "faithfulness": {
-          "score": 0.9,
-          "reason": "All claims regarding income and account turnover not affecting the current credit score for individuals and legal entities are supported by the contexts. The only unsupported claim is the final sentence stating that 'the most important factor is the regularity of installment payments', as this information is not present in the provided contexts.",
-          "source": "llm"
-        },
-        "answer_relevancy": {
-          "score": 1.0,
-          "reason": "The answer directly and explicitly addresses whether income or account turnover affects the credit rating, providing a clear 'no' for the current model and explaining the reasoning for both individuals and legal entities.",
-          "source": "llm"
-        },
-        "context_relevancy": {
-          "score": 1.0,
-          "reason": "All retrieved chunks directly address whether income or account turnover affects the credit score/rating, consistently stating that they currently do not.",
-          "source": "llm"
-        },
-        "context_recall": {
-          "score": 0.6,
-          "reason": "heuristic max_overlap 0.18 blended 0.29",
-          "source": "heuristic"
-        },
-        "hallucination": {
-          "score": 0.0,
-          "reason": "coverage 0.47 -> not hallucinated",
-          "source": "heuristic"
-        },
-        "ambiguity_resolution": {
-          "score": 1.0,
-          "reason": "expected stop, got stop -> correct (no spurious clarify)",
-          "source": "heuristic"
-        },
-        "sticky_persistence": {
-          "score": 0.0,
-          "reason": "subspace_match false (exp facilities_person, got None)",
-          "source": "heuristic"
-        },
-        "retrieval_hit": {
-          "score": 1.0,
-          "reason": "hit: 5/5 chunks contain facilities_person keywords",
-          "source": "heuristic"
-        },
-        "non_hallucination": {
-          "score": 1.0,
-          "reason": "1 - hallucination (coverage 0.47 -> not hallucinated)",
-          "source": "heuristic"
-        }
-      }
-    },
-    {
-      "conv_id": "single_facilities_legal_board",
-      "turn_index": 1,
-      "user": "هیات مدیره شرکت اعتبارسنجی ایران چه کسانی هستند؟",
-      "expected_finish": "stop",
-      "expected_subspace": "general",
-      "finish_reason": "stop",
-      "applied_subspace": "general",
-      "latency_ms": 13396,
-      "http_status": 200,
-      "error": null,
-      "retrieved_chunks_count": 10,
-      "citations_count": 5,
-      "scores": {
-        "faithfulness": 1.0,
-        "answer_relevancy": 0.0,
-        "context_relevancy": 0.0,
-        "context_recall": 0.6,
-        "hallucination": 0.0,
-        "ambiguity_resolution": 1.0,
-        "sticky_persistence": 1.0,
-        "retrieval_hit": 1.0,
-        "non_hallucination": 1.0
-      },
-      "metrics": {
-        "faithfulness": {
-          "score": 1.0,
-          "reason": "The answer correctly states that no information was found in the provided contexts to answer the question about the board of directors.",
-          "source": "llm"
-        },
-        "answer_relevancy": {
-          "score": 0.0,
-          "reason": "The answer explicitly states that no information was found in the knowledge base to answer the question.",
-          "source": "llm"
-        },
-        "context_relevancy": {
-          "score": 0.0,
-          "reason": "None of the retrieved chunks contain information about the members of the board of directors; they only provide general company information, links, and definitions.",
-          "source": "llm"
-        },
-        "context_recall": {
-          "score": 0.6,
-          "reason": "heuristic max_overlap 0.19 blended 0.21",
-          "source": "heuristic"
-        },
-        "hallucination": {
-          "score": 0.0,
-          "reason": "abstention phrase -> not hallucinated (correct abstention)",
-          "source": "heuristic"
-        },
-        "ambiguity_resolution": {
-          "score": 1.0,
-          "reason": "expected stop, got stop -> correct (no spurious clarify)",
-          "source": "heuristic"
-        },
-        "sticky_persistence": {
-          "score": 1.0,
-          "reason": "bench subspace_match true",
-          "source": "heuristic"
-        },
-        "retrieval_hit": {
-          "score": 1.0,
-          "reason": "hit: 4/5 chunks contain general keywords",
-          "source": "heuristic"
-        },
-        "non_hallucination": {
-          "score": 1.0,
-          "reason": "1 - hallucination (abstention phrase -> not hallucinated (correct abstention))",
-          "source": "heuristic"
-        }
-      }
-    },
-    {
-      "conv_id": "single_general_shareholders",
-      "turn_index": 1,
-      "user": "سهامداران شرکت اعتبارسنجی ایران چه کسانی هستند؟",
-      "expected_finish": "stop",
-      "expected_subspace": "general",
-      "finish_reason": "stop",
-      "applied_subspace": "facilities_legal",
-      "latency_ms": 10106,
+      "latency_ms": 5558,
       "http_status": 200,
       "error": null,
       "retrieved_chunks_count": 10,
@@ -2821,12 +2245,12 @@
         },
         "context_relevancy": {
           "score": 0.0,
-          "reason": "None of the retrieved chunks contain information about the shareholders of the Iran Credit Scoring Company; they only discuss credit history, reporting, and data sources.",
+          "reason": "None of the retrieved chunks contain information about the shareholders of the Iran Credit Scoring Company; they only discuss credit reports, data sources, and international credit history.",
           "source": "llm"
         },
         "context_recall": {
           "score": 0.6,
-          "reason": "heuristic max_overlap 0.11 blended 0.29",
+          "reason": "heuristic max_overlap 0.08 blended 0.26",
           "source": "heuristic"
         },
         "hallucination": {
@@ -2846,7 +2270,583 @@
         },
         "retrieval_hit": {
           "score": 1.0,
-          "reason": "hit: 2/5 chunks contain general keywords",
+          "reason": "hit: 3/5 chunks contain general keywords",
+          "source": "heuristic"
+        },
+        "non_hallucination": {
+          "score": 1.0,
+          "reason": "1 - hallucination (abstention phrase -> not hallucinated (correct abstention))",
+          "source": "heuristic"
+        }
+      }
+    },
+    {
+      "conv_id": "single_cheque_granular",
+      "turn_index": 1,
+      "user": "چک برگشتی چیست و چگونه رفع اثر می‌شود؟",
+      "expected_finish": "stop",
+      "expected_subspace": "cheque",
+      "finish_reason": "stop",
+      "applied_subspace": null,
+      "latency_ms": 10301,
+      "http_status": 200,
+      "error": null,
+      "retrieved_chunks_count": 10,
+      "citations_count": 5,
+      "scores": {
+        "faithfulness": 0.8,
+        "answer_relevancy": 1.0,
+        "context_relevancy": 0.4,
+        "context_recall": 0.6,
+        "hallucination": 0.0,
+        "ambiguity_resolution": 1.0,
+        "sticky_persistence": 0.0,
+        "retrieval_hit": 1.0,
+        "non_hallucination": 1.0
+      },
+      "metrics": {
+        "faithfulness": {
+          "score": 0.8,
+          "reason": "Most claims are grounded in the contexts: the impact on score/rank (E3, 250, 1), the 24-hour update period, and the 5-year full removal period are all supported. However, the definition of a bounced check (insufficient funds) and the advice on creating positive records (regular loan repayments) are not mentioned in the provided contexts.",
+          "source": "llm"
+        },
+        "answer_relevancy": {
+          "score": 1.0,
+          "reason": "The answer directly defines what a returned check is and explains the process and consequences of removing its negative effect (رفع سوءاثر) in detail.",
+          "source": "llm"
+        },
+        "context_relevancy": {
+          "score": 0.4,
+          "reason": "The chunks explain the effects of returned checks on credit scores and the timeline for removing those effects (رفع اثر), but none of them provide a definition of what a returned check (چک برگشتی) actually is.",
+          "source": "llm"
+        },
+        "context_recall": {
+          "score": 0.6,
+          "reason": "heuristic max_overlap 0.09 blended 0.23",
+          "source": "heuristic"
+        },
+        "hallucination": {
+          "score": 0.0,
+          "reason": "coverage 0.45 -> not hallucinated",
+          "source": "heuristic"
+        },
+        "ambiguity_resolution": {
+          "score": 1.0,
+          "reason": "expected stop, got stop -> correct (no spurious clarify)",
+          "source": "heuristic"
+        },
+        "sticky_persistence": {
+          "score": 0.0,
+          "reason": "subspace_match false (exp cheque, got None)",
+          "source": "heuristic"
+        },
+        "retrieval_hit": {
+          "score": 1.0,
+          "reason": "hit: 5/5 chunks contain cheque keywords",
+          "source": "heuristic"
+        },
+        "non_hallucination": {
+          "score": 1.0,
+          "reason": "1 - hallucination (coverage 0.45 -> not hallucinated)",
+          "source": "heuristic"
+        }
+      }
+    },
+    {
+      "conv_id": "single_facilities_person_granular",
+      "turn_index": 1,
+      "user": "امتیاز اعتباری اشخاص حقیقی چگونه محاسبه می‌شود؟",
+      "expected_finish": "stop",
+      "expected_subspace": "facilities_person",
+      "finish_reason": "stop",
+      "applied_subspace": null,
+      "latency_ms": 10718,
+      "http_status": 200,
+      "error": null,
+      "retrieved_chunks_count": 10,
+      "citations_count": 5,
+      "scores": {
+        "faithfulness": 0.8,
+        "answer_relevancy": 1.0,
+        "context_relevancy": 0.4,
+        "context_recall": 0.6,
+        "hallucination": 0.0,
+        "ambiguity_resolution": 1.0,
+        "sticky_persistence": 0.0,
+        "retrieval_hit": 1.0,
+        "non_hallucination": 1.0
+      },
+      "metrics": {
+        "faithfulness": {
+          "score": 0.8,
+          "reason": "Most claims are well-supported by the contexts, including the factors affecting the score (repayment, checks, taxes, convictions), the exclusion of income and company turnover, the score range (250-900), and the categories. However, the claim regarding a 'base score' (امتیاز مبنا) assigned to everyone including those without banking history is not mentioned in the provided contexts.",
+          "source": "llm"
+        },
+        "answer_relevancy": {
+          "score": 1.0,
+          "reason": "The answer directly and comprehensively explains how credit scores for individuals are calculated, including the base score, factors that increase or decrease the score, factors that are ignored, and the scoring range.",
+          "source": "llm"
+        },
+        "context_relevancy": {
+          "score": 0.4,
+          "reason": "Only Chunk 2 provides the actual factors used to calculate the credit score (repayment info, bounced checks, taxes, and judgments). Other chunks discuss the score range, the lack of impact of income/company turnover, or general data sources, but not the calculation method itself.",
+          "source": "llm"
+        },
+        "context_recall": {
+          "score": 0.6,
+          "reason": "heuristic max_overlap 0.10 blended 0.26",
+          "source": "heuristic"
+        },
+        "hallucination": {
+          "score": 0.0,
+          "reason": "coverage 0.50 -> not hallucinated",
+          "source": "heuristic"
+        },
+        "ambiguity_resolution": {
+          "score": 1.0,
+          "reason": "expected stop, got stop -> correct (no spurious clarify)",
+          "source": "heuristic"
+        },
+        "sticky_persistence": {
+          "score": 0.0,
+          "reason": "subspace_match false (exp facilities_person, got None)",
+          "source": "heuristic"
+        },
+        "retrieval_hit": {
+          "score": 1.0,
+          "reason": "hit: 5/5 chunks contain facilities_person keywords",
+          "source": "heuristic"
+        },
+        "non_hallucination": {
+          "score": 1.0,
+          "reason": "1 - hallucination (coverage 0.50 -> not hallucinated)",
+          "source": "heuristic"
+        }
+      }
+    },
+    {
+      "conv_id": "single_facilities_legal_granular",
+      "turn_index": 1,
+      "user": "الزامات وثایق برای اشخاص حقوقی چیست؟",
+      "expected_finish": "stop",
+      "expected_subspace": "facilities_legal",
+      "finish_reason": "stop",
+      "applied_subspace": null,
+      "latency_ms": 10196,
+      "http_status": 200,
+      "error": null,
+      "retrieved_chunks_count": 10,
+      "citations_count": 5,
+      "scores": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.0,
+        "context_relevancy": 0.0,
+        "context_recall": 0.35,
+        "hallucination": 0.0,
+        "ambiguity_resolution": 1.0,
+        "sticky_persistence": 0.0,
+        "retrieval_hit": 1.0,
+        "non_hallucination": 1.0
+      },
+      "metrics": {
+        "faithfulness": {
+          "score": 1.0,
+          "reason": "The answer correctly states that no information regarding 'collateral requirements' (الزامات وثایق) for legal entities was found in the provided contexts.",
+          "source": "llm"
+        },
+        "answer_relevancy": {
+          "score": 0.0,
+          "reason": "The answer explicitly states that no information was found in the knowledge base to answer the question.",
+          "source": "llm"
+        },
+        "context_relevancy": {
+          "score": 0.0,
+          "reason": "The question asks about collateral requirements (وثایق) for legal entities, but the retrieved chunks only discuss credit scoring, credit reports, and check reports for legal entities.",
+          "source": "llm"
+        },
+        "context_recall": {
+          "score": 0.35,
+          "reason": "heuristic max_overlap 0.05 blended 0.19",
+          "source": "heuristic"
+        },
+        "hallucination": {
+          "score": 0.0,
+          "reason": "abstention phrase -> not hallucinated (correct abstention)",
+          "source": "heuristic"
+        },
+        "ambiguity_resolution": {
+          "score": 1.0,
+          "reason": "expected stop, got stop -> correct (no spurious clarify)",
+          "source": "heuristic"
+        },
+        "sticky_persistence": {
+          "score": 0.0,
+          "reason": "subspace_match false (exp facilities_legal, got None)",
+          "source": "heuristic"
+        },
+        "retrieval_hit": {
+          "score": 1.0,
+          "reason": "hit: 5/5 chunks contain facilities_legal keywords",
+          "source": "heuristic"
+        },
+        "non_hallucination": {
+          "score": 1.0,
+          "reason": "1 - hallucination (abstention phrase -> not hallucinated (correct abstention))",
+          "source": "heuristic"
+        }
+      }
+    },
+    {
+      "conv_id": "single_general_granular",
+      "turn_index": 1,
+      "user": "تاریخچه شرکت اعتبارسنجی ایران را بگو",
+      "expected_finish": "stop",
+      "expected_subspace": "general",
+      "finish_reason": "stop",
+      "applied_subspace": "general",
+      "latency_ms": 10063,
+      "http_status": 200,
+      "error": null,
+      "retrieved_chunks_count": 10,
+      "citations_count": 0,
+      "scores": {
+        "faithfulness": 0.7,
+        "answer_relevancy": 1.0,
+        "context_relevancy": 0.6,
+        "context_recall": 0.6,
+        "hallucination": 0.0,
+        "ambiguity_resolution": 1.0,
+        "sticky_persistence": 1.0,
+        "retrieval_hit": 1.0,
+        "non_hallucination": 1.0
+      },
+      "metrics": {
+        "faithfulness": {
+          "score": 0.7,
+          "reason": "Most claims regarding the founding date, legal basis, ownership, and the 1395/1398/1403 milestones are supported. However, claims about the year 1388 (start of credit validation), the year 1400 (update of credit score and objection system), and the year 1404 (check credit score) are not mentioned in the provided contexts.",
+          "source": "llm"
+        },
+        "answer_relevancy": {
+          "score": 1.0,
+          "reason": "The answer provides a detailed chronological history of the company, including its founding date, legal basis, key milestones from 1388 to 1404, and its evolution in credit scoring models.",
+          "source": "llm"
+        },
+        "context_relevancy": {
+          "score": 0.6,
+          "reason": "Chunks 1, 3, and 5 provide specific historical details (founding date, legal basis, and evolution), while Chunks 2 and 4 focus on general identity and comparisons.",
+          "source": "llm"
+        },
+        "context_recall": {
+          "score": 0.6,
+          "reason": "heuristic max_overlap 0.19 blended 0.34",
+          "source": "heuristic"
+        },
+        "hallucination": {
+          "score": 0.0,
+          "reason": "coverage 0.57 -> not hallucinated",
+          "source": "heuristic"
+        },
+        "ambiguity_resolution": {
+          "score": 1.0,
+          "reason": "expected stop, got stop -> correct (no spurious clarify)",
+          "source": "heuristic"
+        },
+        "sticky_persistence": {
+          "score": 1.0,
+          "reason": "bench subspace_match true",
+          "source": "heuristic"
+        },
+        "retrieval_hit": {
+          "score": 1.0,
+          "reason": "hit: 5/5 chunks contain general keywords",
+          "source": "heuristic"
+        },
+        "non_hallucination": {
+          "score": 1.0,
+          "reason": "1 - hallucination (coverage 0.57 -> not hallucinated)",
+          "source": "heuristic"
+        }
+      }
+    },
+    {
+      "conv_id": "single_cheque_bounce_effect",
+      "turn_index": 1,
+      "user": "تاثیر چک برگشتی بر امتیاز اعتباری چقدر است؟",
+      "expected_finish": "stop",
+      "expected_subspace": "cheque",
+      "finish_reason": "stop",
+      "applied_subspace": null,
+      "latency_ms": 10979,
+      "http_status": 200,
+      "error": null,
+      "retrieved_chunks_count": 10,
+      "citations_count": 5,
+      "scores": {
+        "faithfulness": 0.6,
+        "answer_relevancy": 1.0,
+        "context_relevancy": 1.0,
+        "context_recall": 0.6,
+        "hallucination": 0.0,
+        "ambiguity_resolution": 1.0,
+        "sticky_persistence": 0.0,
+        "retrieval_hit": 1.0,
+        "non_hallucination": 1.0
+      },
+      "metrics": {
+        "faithfulness": {
+          "score": 0.6,
+          "reason": "The answer correctly identifies that all types of bounced checks (including guarantee checks) lower the credit score, that unpaid checks lead to a score of 250 and rank E3, and that the impact lasts for 5 years. However, it introduces claims not found in the context, such as the use of 'AI models' to calculate the score based on the number and amount of checks, and the specific impact on company CEOs.",
+          "source": "llm"
+        },
+        "answer_relevancy": {
+          "score": 1.0,
+          "reason": "The answer directly and comprehensively addresses the question by explaining the specific impact of bounced checks on credit scores, mentioning the minimum score (250), the credit grade (E3), the duration of the negative impact (5 years), and the factors influencing the score calculation.",
+          "source": "llm"
+        },
+        "context_relevancy": {
+          "score": 1.0,
+          "reason": "All retrieved chunks directly address the impact of bounced checks on credit scores, providing details on score reduction, the 5-year impact period, and specific score outcomes.",
+          "source": "llm"
+        },
+        "context_recall": {
+          "score": 0.6,
+          "reason": "heuristic max_overlap 0.12 blended 0.23",
+          "source": "heuristic"
+        },
+        "hallucination": {
+          "score": 0.0,
+          "reason": "coverage 0.41 -> not hallucinated",
+          "source": "heuristic"
+        },
+        "ambiguity_resolution": {
+          "score": 1.0,
+          "reason": "expected stop, got stop -> correct (no spurious clarify)",
+          "source": "heuristic"
+        },
+        "sticky_persistence": {
+          "score": 0.0,
+          "reason": "subspace_match false (exp cheque, got None)",
+          "source": "heuristic"
+        },
+        "retrieval_hit": {
+          "score": 1.0,
+          "reason": "hit: 5/5 chunks contain cheque keywords",
+          "source": "heuristic"
+        },
+        "non_hallucination": {
+          "score": 1.0,
+          "reason": "1 - hallucination (coverage 0.41 -> not hallucinated)",
+          "source": "heuristic"
+        }
+      }
+    },
+    {
+      "conv_id": "single_facilities_person_income",
+      "turn_index": 1,
+      "user": "آیا میزان درآمد یا گردش حساب در رتبه اعتباری تاثیر دارد؟",
+      "expected_finish": "stop",
+      "expected_subspace": "facilities_person",
+      "finish_reason": "stop",
+      "applied_subspace": null,
+      "latency_ms": 9421,
+      "http_status": 200,
+      "error": null,
+      "retrieved_chunks_count": 10,
+      "citations_count": 5,
+      "scores": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 1.0,
+        "context_relevancy": 1.0,
+        "context_recall": 0.6,
+        "hallucination": 0.0,
+        "ambiguity_resolution": 1.0,
+        "sticky_persistence": 0.0,
+        "retrieval_hit": 1.0,
+        "non_hallucination": 1.0
+      },
+      "metrics": {
+        "faithfulness": {
+          "score": 1.0,
+          "reason": "All claims in the answer are directly supported by the provided contexts. The answer correctly states that income and account turnover currently have no impact on credit scores for individuals or companies (Contexts 1, 3, 4, 5), mentions the possibility of future inclusion (Contexts 1, 3, 4), notes that company turnover doesn't affect personal credit (Context 2), and lists the actual influencing factors such as repayment history, bounced checks, taxes, and judgments (Context 2, 3, 5).",
+          "source": "llm"
+        },
+        "answer_relevancy": {
+          "score": 1.0,
+          "reason": "The answer directly and explicitly addresses the question, stating that income and account turnover currently have no impact on the credit rating and explaining the factors that actually do.",
+          "source": "llm"
+        },
+        "context_relevancy": {
+          "score": 1.0,
+          "reason": "All retrieved chunks directly address whether income or account turnover (گردش حساب) affects the credit score, consistently stating that they currently do not.",
+          "source": "llm"
+        },
+        "context_recall": {
+          "score": 0.6,
+          "reason": "heuristic max_overlap 0.12 blended 0.30",
+          "source": "heuristic"
+        },
+        "hallucination": {
+          "score": 0.0,
+          "reason": "coverage 0.57 -> not hallucinated",
+          "source": "heuristic"
+        },
+        "ambiguity_resolution": {
+          "score": 1.0,
+          "reason": "expected stop, got stop -> correct (no spurious clarify)",
+          "source": "heuristic"
+        },
+        "sticky_persistence": {
+          "score": 0.0,
+          "reason": "subspace_match false (exp facilities_person, got None)",
+          "source": "heuristic"
+        },
+        "retrieval_hit": {
+          "score": 1.0,
+          "reason": "hit: 5/5 chunks contain facilities_person keywords",
+          "source": "heuristic"
+        },
+        "non_hallucination": {
+          "score": 1.0,
+          "reason": "1 - hallucination (coverage 0.57 -> not hallucinated)",
+          "source": "heuristic"
+        }
+      }
+    },
+    {
+      "conv_id": "single_facilities_legal_board",
+      "turn_index": 1,
+      "user": "هیات مدیره شرکت اعتبارسنجی ایران چه کسانی هستند؟",
+      "expected_finish": "stop",
+      "expected_subspace": "general",
+      "finish_reason": "stop",
+      "applied_subspace": "general",
+      "latency_ms": 8766,
+      "http_status": 200,
+      "error": null,
+      "retrieved_chunks_count": 10,
+      "citations_count": 5,
+      "scores": {
+        "faithfulness": 0.6,
+        "answer_relevancy": 1.0,
+        "context_relevancy": 0.4,
+        "context_recall": 0.6,
+        "hallucination": 0.0,
+        "ambiguity_resolution": 1.0,
+        "sticky_persistence": 1.0,
+        "retrieval_hit": 1.0,
+        "non_hallucination": 1.0
+      },
+      "metrics": {
+        "faithfulness": {
+          "score": 0.6,
+          "reason": "The claims regarding Kamil Shaeri (Chairman) and Reza Ghasempour (CEO and Board Member) are fully supported by Context 4 and 5. However, there is no mention of Mohsen Sadeghi in any of the provided contexts, making that claim unsupported.",
+          "source": "llm"
+        },
+        "answer_relevancy": {
+          "score": 1.0,
+          "reason": "The answer directly and comprehensively lists the members of the board of directors (Komail Shaeri, Mohsen Sadeghi, and Reza Ghasempour) along with their roles and qualifications.",
+          "source": "llm"
+        },
+        "context_relevancy": {
+          "score": 0.4,
+          "reason": "Chunks 4 and 5 provide names of the CEO/Board Member and the Chairman of the Board, which are relevant. Chunks 1, 2, and 3 only describe the company and are not relevant to the specific question about the board members.",
+          "source": "llm"
+        },
+        "context_recall": {
+          "score": 0.6,
+          "reason": "heuristic max_overlap 0.06 blended 0.25",
+          "source": "heuristic"
+        },
+        "hallucination": {
+          "score": 0.0,
+          "reason": "coverage 0.53 -> not hallucinated",
+          "source": "heuristic"
+        },
+        "ambiguity_resolution": {
+          "score": 1.0,
+          "reason": "expected stop, got stop -> correct (no spurious clarify)",
+          "source": "heuristic"
+        },
+        "sticky_persistence": {
+          "score": 1.0,
+          "reason": "bench subspace_match true",
+          "source": "heuristic"
+        },
+        "retrieval_hit": {
+          "score": 1.0,
+          "reason": "hit: 5/5 chunks contain general keywords",
+          "source": "heuristic"
+        },
+        "non_hallucination": {
+          "score": 1.0,
+          "reason": "1 - hallucination (coverage 0.53 -> not hallucinated)",
+          "source": "heuristic"
+        }
+      }
+    },
+    {
+      "conv_id": "single_general_shareholders",
+      "turn_index": 1,
+      "user": "سهامداران شرکت اعتبارسنجی ایران چه کسانی هستند؟",
+      "expected_finish": "stop",
+      "expected_subspace": "general",
+      "finish_reason": "stop",
+      "applied_subspace": "facilities_legal",
+      "latency_ms": 4872,
+      "http_status": 200,
+      "error": null,
+      "retrieved_chunks_count": 10,
+      "citations_count": 5,
+      "scores": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.0,
+        "context_relevancy": 0.0,
+        "context_recall": 0.6,
+        "hallucination": 0.0,
+        "ambiguity_resolution": 1.0,
+        "sticky_persistence": 0.0,
+        "retrieval_hit": 1.0,
+        "non_hallucination": 1.0
+      },
+      "metrics": {
+        "faithfulness": {
+          "score": 1.0,
+          "reason": "The answer correctly states that no information regarding the shareholders of the company was found in the provided contexts.",
+          "source": "llm"
+        },
+        "answer_relevancy": {
+          "score": 0.0,
+          "reason": "The answer explicitly states that no information was found in the knowledge base to answer the question.",
+          "source": "llm"
+        },
+        "context_relevancy": {
+          "score": 0.0,
+          "reason": "None of the retrieved chunks contain information about the shareholders of the Iran Credit Scoring Company; they focus on data accuracy, information sources, and international credit history.",
+          "source": "llm"
+        },
+        "context_recall": {
+          "score": 0.6,
+          "reason": "heuristic max_overlap 0.07 blended 0.25",
+          "source": "heuristic"
+        },
+        "hallucination": {
+          "score": 0.0,
+          "reason": "abstention phrase -> not hallucinated (correct abstention)",
+          "source": "heuristic"
+        },
+        "ambiguity_resolution": {
+          "score": 1.0,
+          "reason": "expected stop, got stop -> correct (no spurious clarify)",
+          "source": "heuristic"
+        },
+        "sticky_persistence": {
+          "score": 0.0,
+          "reason": "subspace_match false (exp general, got facilities_legal)",
+          "source": "heuristic"
+        },
+        "retrieval_hit": {
+          "score": 1.0,
+          "reason": "hit: 3/5 chunks contain general keywords",
           "source": "heuristic"
         },
         "non_hallucination": {
@@ -2864,7 +2864,7 @@
       "expected_subspace": null,
       "finish_reason": "stop",
       "applied_subspace": null,
-      "latency_ms": 1295,
+      "latency_ms": 725,
       "http_status": 200,
       "error": null,
       "retrieved_chunks_count": 0,
@@ -2936,46 +2936,46 @@
       "expected_subspace": null,
       "finish_reason": "clarify",
       "applied_subspace": null,
-      "latency_ms": 3026,
+      "latency_ms": 2141,
       "http_status": 200,
       "error": null,
       "retrieved_chunks_count": 10,
       "citations_count": 0,
       "scores": {
-        "faithfulness": 0.5,
+        "faithfulness": 0.0,
         "answer_relevancy": 0.5,
-        "context_relevancy": 0.0,
+        "context_relevancy": 0.6,
         "context_recall": 0.35,
-        "hallucination": 0.0,
+        "hallucination": 0.8,
         "ambiguity_resolution": 1.0,
         "sticky_persistence": 1.0,
         "retrieval_hit": 1.0,
-        "non_hallucination": 1.0
+        "non_hallucination": 0.2
       },
       "metrics": {
         "faithfulness": {
-          "score": 0.5,
-          "reason": "The answer asks for clarification between natural persons and legal entities, which is supported by Context 1. However, there is no mention of 'check reports' (گزارش چک) in the provided contexts.",
+          "score": 0.0,
+          "reason": "The answer does not provide any information based on the provided contexts; instead, it asks clarifying questions that are not grounded in the source text.",
           "source": "llm"
         },
         "answer_relevancy": {
           "score": 0.5,
-          "reason": "The answer does not provide the status but asks for clarification to provide a relevant response, acting as a conversational bridge.",
+          "reason": "The answer does not provide the status but asks for clarification to provide a specific answer, making it partially relevant as a conversational step.",
           "source": "llm"
         },
         "context_relevancy": {
-          "score": 0.0,
-          "reason": "The question asks for a specific credit status ('How is the credit status?'), but the chunks provide general FAQs about credit scoring rules, legal entities, and tax debts rather than a specific user's status or a definition of current status.",
+          "score": 0.6,
+          "reason": "Chunks 1, 2, and 3 directly explain the reasons for the user's current credit status (negative repayment and high loan balance), while Chunks 4 and 5 are general FAQs not specific to the user's current status.",
           "source": "llm"
         },
         "context_recall": {
           "score": 0.35,
-          "reason": "heuristic max_overlap 0.07 blended 0.18",
+          "reason": "heuristic max_overlap 0.05 blended 0.13",
           "source": "heuristic"
         },
         "hallucination": {
-          "score": 0.0,
-          "reason": "coverage 0.33 -> not hallucinated",
+          "score": 0.8,
+          "reason": "low lexical coverage 0.24 -> likely hallucinated",
           "source": "heuristic"
         },
         "ambiguity_resolution": {
@@ -2994,8 +2994,8 @@
           "source": "heuristic"
         },
         "non_hallucination": {
-          "score": 1.0,
-          "reason": "1 - hallucination (coverage 0.33 -> not hallucinated)",
+          "score": 0.2,
+          "reason": "1 - hallucination (low lexical coverage 0.24 -> likely hallucinated)",
           "source": "heuristic"
         }
       }
@@ -3008,46 +3008,46 @@
       "expected_subspace": "general",
       "finish_reason": "stop",
       "applied_subspace": null,
-      "latency_ms": 10175,
+      "latency_ms": 6226,
       "http_status": 200,
       "error": null,
       "retrieved_chunks_count": 10,
       "citations_count": 5,
       "scores": {
-        "faithfulness": 1.0,
-        "answer_relevancy": 0.7,
+        "faithfulness": 0.0,
+        "answer_relevancy": 1.0,
         "context_relevancy": 0.0,
         "context_recall": 0.35,
-        "hallucination": 1.0,
+        "hallucination": 0.0,
         "ambiguity_resolution": 1.0,
         "sticky_persistence": 0.0,
         "retrieval_hit": 0.0,
-        "non_hallucination": 0.0
+        "non_hallucination": 1.0
       },
       "metrics": {
         "faithfulness": {
-          "score": 1.0,
-          "reason": "The answer correctly states that G5 is not mentioned in the contexts, accurately summarizes the A-rank ranges (640-900) and sub-categories (A1, A2, A3) based on Contexts 1, 2, and 4, and correctly refers the user to the website as per Context 5.",
+          "score": 0.0,
+          "reason": "The answer provides information about credit ratings (A to E) and denies the existence of a G5 rating, but none of this information is present in the provided contexts.",
           "source": "llm"
         },
         "answer_relevancy": {
-          "score": 0.7,
-          "reason": "The answer directly addresses the question by clarifying that 'G5' is not a recognized rank in the system and provides context on how the actual ranking system (A, B, C) works, although it cannot give a specific score for a non-existent rank.",
+          "score": 1.0,
+          "reason": "The answer directly addresses the question by explaining that 'G5' is not a valid grade in the system and directs the user to the official source for their actual score.",
           "source": "llm"
         },
         "context_relevancy": {
           "score": 0.0,
-          "reason": "None of the chunks provide information about the credit score range for grade G5; they only cover grades A1, A2, A3, and general score inquiries.",
+          "reason": "None of the chunks provide information about the 'G5' credit grade or the specific score associated with it.",
           "source": "llm"
         },
         "context_recall": {
           "score": 0.35,
-          "reason": "heuristic max_overlap 0.07 blended 0.17",
+          "reason": "heuristic max_overlap 0.07 blended 0.19",
           "source": "heuristic"
         },
         "hallucination": {
-          "score": 1.0,
-          "reason": "G5 hallucination: fake grade G5 invented not in contexts",
+          "score": 0.0,
+          "reason": "abstention phrase -> not hallucinated (correct abstention)",
           "source": "heuristic"
         },
         "ambiguity_resolution": {
@@ -3066,8 +3066,8 @@
           "source": "heuristic"
         },
         "non_hallucination": {
-          "score": 0.0,
-          "reason": "1 - hallucination (G5 hallucination: fake grade G5 invented not in contexts)",
+          "score": 1.0,
+          "reason": "1 - hallucination (abstention phrase -> not hallucinated (correct abstention))",
           "source": "heuristic"
         }
       }
@@ -3080,13 +3080,13 @@
       "expected_subspace": "general",
       "finish_reason": "stop",
       "applied_subspace": "general",
-      "latency_ms": 8469,
+      "latency_ms": 6981,
       "http_status": 200,
       "error": null,
       "retrieved_chunks_count": 10,
       "citations_count": 5,
       "scores": {
-        "faithfulness": 1.0,
+        "faithfulness": 0.8,
         "answer_relevancy": 1.0,
         "context_relevancy": 0.2,
         "context_recall": 0.6,
@@ -3098,28 +3098,28 @@
       },
       "metrics": {
         "faithfulness": {
-          "score": 1.0,
-          "reason": "All claims regarding Reza Ghasempour's role, tenure, education, and previous work experience are directly supported by Context 1.",
+          "score": 0.8,
+          "reason": "Most claims about Reza Ghasempour's role, education, and achievements are directly supported by Context 1. However, the final paragraph regarding his media appearances and specific goals (national credit score, economic transparency) is not mentioned in the provided contexts.",
           "source": "llm"
         },
         "answer_relevancy": {
           "score": 1.0,
-          "reason": "The answer directly identifies who Reza Ghasempour is, providing his current role, tenure, educational background, and professional history.",
+          "reason": "The answer directly identifies who Reza Ghasempour is, providing his role, education, and professional achievements.",
           "source": "llm"
         },
         "context_relevancy": {
           "score": 0.2,
-          "reason": "Only Chunk 1 is relevant as it provides information about Reza Ghasempour; the other chunks are unrelated.",
+          "reason": "Only Chunk 1 is relevant as it provides biographical information about Reza Ghasempour; the other chunks are unrelated FAQs or general information.",
           "source": "llm"
         },
         "context_recall": {
           "score": 0.6,
-          "reason": "heuristic max_overlap 0.02 blended 0.21",
+          "reason": "heuristic max_overlap 0.01 blended 0.24",
           "source": "heuristic"
         },
         "hallucination": {
           "score": 0.0,
-          "reason": "coverage 0.49 -> not hallucinated",
+          "reason": "coverage 0.59 -> not hallucinated",
           "source": "heuristic"
         },
         "ambiguity_resolution": {
@@ -3134,12 +3134,12 @@
         },
         "retrieval_hit": {
           "score": 1.0,
-          "reason": "hit: 3/5 chunks contain general keywords",
+          "reason": "hit: 4/5 chunks contain general keywords",
           "source": "heuristic"
         },
         "non_hallucination": {
           "score": 1.0,
-          "reason": "1 - hallucination (coverage 0.49 -> not hallucinated)",
+          "reason": "1 - hallucination (coverage 0.59 -> not hallucinated)",
           "source": "heuristic"
         }
       }

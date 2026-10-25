@@ -1,0 +1,1542 @@
+{
+  "meta": {
+    "timestamp": "2026-10-13T10:19:01.634584+00:00",
+    "elapsed_ms": 177192,
+    "endpoints": {
+      "orch": "http://127.0.0.1:8100/v1/chat/completions",
+      "kb": "http://127.0.0.1:8000/search/api",
+      "obs_template": "http://127.0.0.1:3000/api/observability/pipeline/{request_id}"
+    },
+    "model": "ics-helper-agent",
+    "http_timeout_s": 120.0,
+    "dry_run": false,
+    "only_ids": [
+      "conv_cheque_01",
+      "conv_facilities_legal_01",
+      "conv_general_01",
+      "conv_mixed_01",
+      "conv_hallucination_01",
+      "conv_supplement_01"
+    ],
+    "total_turns_expected": 41,
+    "total_turns_multi_expected": 29,
+    "total_turns_single_expected": 12
+  },
+  "summary": {
+    "total_conversations": 6,
+    "total_single_baselines": 0,
+    "total_turns": 12,
+    "total_turns_multi": 12,
+    "finish_mismatches": 0,
+    "finish_checked": 12,
+    "subspace_mismatches": 3,
+    "subspace_checked": 10,
+    "errors": 0,
+    "latency_ms": {
+      "p50": 13401,
+      "p95": 38278,
+      "avg": 14476,
+      "min": 2089,
+      "max": 38278
+    },
+    "kb_probes": 0
+  },
+  "conversations": [
+    {
+      "id": "conv_cheque_01",
+      "subspace": "cheque",
+      "description": "greeting -> cheque granular -> cheque sticky follow-up",
+      "request_id": "bench-conv_cheque_01-48077f56f1b2",
+      "turns": [
+        {
+          "user": "سلام",
+          "expected_finish": "greeting",
+          "expected_subspace": null,
+          "should_keep_sticky": false,
+          "is_respec": false,
+          "notes": "greeting/no-retrieve shortcut",
+          "request_id": "bench-conv_cheque_01-48077f56f1b2",
+          "http_status": 200,
+          "error": null,
+          "finish_reason": "stop",
+          "applied_subspace": null,
+          "latency_ms": 2089,
+          "latency_ms_wall": 2089,
+          "stage_timing_ms": {
+            "validate_input": 26.1,
+            "format_response": 0.1
+          },
+          "retrieval_method": "",
+          "retrieved_chunks": [],
+          "retrieved_chunks_count": 0,
+          "reranker_scores": [],
+          "citations": [],
+          "citations_count": 0,
+          "supplemental": null,
+          "supplemental_count": 0,
+          "follow_ups": null,
+          "content": "سلام! من دستیار هوشمند شرکت اعتبارسنجی ایران هستم. سوالتان را درباره گزارش اعتباری، امتیاز و رتبه، یا سوابق و چک‌ها بفرمایید.",
+          "content_preview": "سلام! من دستیار هوشمند شرکت اعتبارسنجی ایران هستم. سوالتان را درباره گزارش اعتباری، امتیاز و رتبه، یا سوابق و چک‌ها بفرمایید.",
+          "messages_sent_count": 1,
+          "raw_audit": {
+            "query": "سلام",
+            "rewritten_query": "",
+            "available_subspaces": null
+          },
+          "turn_index": 1,
+          "finish_match": true,
+          "subspace_match": null,
+          "observability": {
+            "ok": false,
+            "data_preview": "{'request_id': 'bench-conv_cheque_01-48077f56f1b2', 'timeline': {'request_id': 'bench-conv_cheque_01-48077f56f1b2', 'name': 'rag', 'timestamp': '2026-10-13T10:19:01.711415Z', 'input': 'سلام', 'output': None, 'metadata': {'model': 'ics-helper-agent', 'request_id': 'bench-conv_cheque_01-48077f56f1b2'}, 'spans': [{'span': 'validate_input', 'start': '2026-10-13T10:19:01.738597Z', 'input': 'سلام', 'out"
+          }
+        },
+        {
+          "user": "چک برگشتی چیست و چگونه رفع سوء اثر می‌شود؟",
+          "expected_finish": "stop",
+          "expected_subspace": "cheque",
+          "should_keep_sticky": false,
+          "is_respec": false,
+          "notes": "first granular cheque query, sets sticky to cheque",
+          "request_id": "bench-conv_cheque_01-48077f56f1b2",
+          "http_status": 200,
+          "error": null,
+          "finish_reason": "stop",
+          "applied_subspace": null,
+          "latency_ms": 38278,
+          "latency_ms_wall": 38278,
+          "stage_timing_ms": {
+            "validate_input": 60.8,
+            "retrieve_broadened": 4010.1,
+            "retrieve": 9672.3,
+            "build_context": 0.1,
+            "guarded_generate": 16910.7,
+            "format_response": 0.4
+          },
+          "retrieval_method": "rrf+ce",
+          "retrieved_chunks": [
+            {
+              "chunk_id": "76343b2a-95e4-48ed-aad9-4fe5eaa5c153",
+              "title": "توضیحات تشریحی دلایل کاهش امتیاز چک و روش بهبود آن",
+              "heading": "Sheet: Sheet2",
+              "content": "کد دلیل: DCH3-6\nمتن دلیل: فرد در یک ماه گذشته سابقه رفع سوء اثر چک داشته است.\nتوضیح کوتاه: سابقه چک برگشتی مهمترین عامل بر امتیاز چک شخص است. هر چه برگشت چک در تاریخ نزدیکتری اتفاق افتاده باشد، تاثیر بیشتری بر کاهش امتیاز چک خواهد داشت.\nتوضیح کامل: سابقه چک برگشتی مهمترین عامل بر امتیاز چک شخص است. ",
+              "score": 0.0,
+              "source": "both",
+              "rank_rrf": 1,
+              "rank_ce": 1,
+              "hybrid_score": 0.025677,
+              "rerank_score": 0.0
+            },
+            {
+              "chunk_id": "4d4bfbb4-d32c-46d4-991e-ac235a21383b",
+              "title": "بانک سوالات افراد در زمینه گزارش اعتبارسنجی تسهیلات",
+              "heading": "Sheet: سوالات حقوقی",
+              "content": "سوال: اگر یک چک برگشتی داشته باشم اما بلافاصله (ظرف ۲۴ ساعت) مبلغ را تأمین و چک را رفع سوءاثر کنم، باز هم در سابقه اعتباری من ثبت می‌شود؟\nپاسخ کوتاه: رفع سوءاثر چک برگشتی امتیاز و رتبه را تا حد زیادی اصلاح می‌کند اما سابقه باقی می‌ماند.\nپاسخ کامل: اطلاعات چک ها به صورت برخط دریافت می گردد و به محض ث",
+              "score": 0.025579,
+              "source": "rrf",
+              "rank_rrf": 2,
+              "rank_ce": null,
+              "hybrid_score": 0.025579,
+              "rerank_score": 0.0
+            },
+            {
+              "chunk_id": "01c16564-690e-4dce-841a-5be0bddda7bb",
+              "title": "بانک سوالات افراد در زمینه مباحث مختلف با گزارش اعتبارسنجی چک",
+              "heading": "Sheet: چت‌بات-سوال و جواب",
+              "content": "سوال: کسی که چک برگشتی را رفع سوءاثر و نقد می‌کند چه زمانی می‌تواند گزارش اعتبارسنجی چک بروز شده را دریافت نماید؟\nپاسخ کوتاه: حداکثر 24 ساعت پس از رفع سو اثر چک، امتیاز چک برای شخص قابل محاسبه خواهد بود\nپاسخ کامل: طبق اعلام بانک مرکزی، اگر شخص در لحظه دریافت گزارش دارای چک برگشتی رفع  سو اثر نشده با",
+              "score": 0.025356,
+              "source": "rrf",
+              "rank_rrf": 3,
+              "rank_ce": null,
+              "hybrid_score": 0.025356,
+              "rerank_score": 0.0
+            },
+            {
+              "chunk_id": "2958fa50-87e9-4bf1-9f38-53c78a5664be",
+              "title": "بانک سوالات افراد در زمینه گزارش اعتبارسنجی تسهیلات",
+              "heading": "Sheet: سوالات حقوقی",
+              "content": "سوال: من چکم پارسال (یا چار سال پیش یا ده سال قبل) برگشت خورده هنوز تو رتبه (امتیاز)م موثره؟\nپاسخ کوتاه: اثر منفی چک برگشتی به مرور کاهش یافته و پس از مدت پنج سال به صورت کامل پاک می شود.\nپاسخ کامل: مدت زمان رفع کامل اثر منفی چک برگشتی، 5 سال پس از رفع سو اثر چک می باشد. البته با گذشت زمان از رفع سو",
+              "score": 0.025206,
+              "source": "rrf",
+              "rank_rrf": 4,
+              "rank_ce": null,
+              "hybrid_score": 0.025206,
+              "rerank_score": 0.0
+            },
+            {
+              "chunk_id": "674f6791-9592-4b85-ac38-287d2b69ea98",
+              "title": "بانک سوالات افراد در زمینه مباحث مختلف با گزارش اعتبارسنجی چک",
+              "heading": "Sheet: چت‌بات-سوال و جواب",
+              "content": "سوال: چن سال از سوابقم موثره توی امتیاز چک؟\nپاسخ کوتاه: سوابق چک (چک‌های برگشتی تسویه‌شده و چک‌های باز) تا ۵ سال در محاسبه امتیاز چک شما مؤثر است؛ به‌جز چک برگشتیِ رفع‌سوءاثرنشده که محدودیت زمانی ندارد.\nپاسخ کامل: به‌طور کلی، سوابق چک شما — شامل چک‌های برگشتیِ تسویه‌شده و چک‌های باز — تا ۵ سال گذشته",
+              "score": 0.024594,
+              "source": "rrf",
+              "rank_rrf": 5,
+              "rank_ce": null,
+              "hybrid_score": 0.024594,
+              "rerank_score": 0.0
+            }
+          ],
+          "retrieved_chunks_count": 10,
+          "reranker_scores": [
+            0.0,
+            0.025579,
+            0.025356,
+            0.025206,
+            0.024594
+          ],
+          "citations": [],
+          "citations_count": 0,
+          "supplemental": null,
+          "supplemental_count": 0,
+          "follow_ups": null,
+          "content": "بر اساس اطلاعات موجود در پایگاه دانش، پاسخی برای این سوال یافت نشد.",
+          "content_preview": "بر اساس اطلاعات موجود در پایگاه دانش، پاسخی برای این سوال یافت نشد.",
+          "messages_sent_count": 3,
+          "raw_audit": {
+            "query": "چک برگشتی چیست و چگونه رفع سوء اثر می‌شود؟",
+            "rewritten_query": "چک برگشتی چیست و مراحل رفع سوء اثر آن چگونه است؟",
+            "available_subspaces": null
+          },
+          "turn_index": 2,
+          "finish_match": true,
+          "subspace_match": false,
+          "observability": {
+            "ok": false,
+            "data_preview": "{'id': 'bench-conv_cheque_01-48077f56f1b2', 'request_id': 'bench-conv_cheque_01-48077f56f1b2', 'chat_id': None, 'user_id': None, 'model': 'ics-helper-agent', 'user_query': 'سلام', 'rewritten_query': '', 'response': 'سلام! من دستیار هوشمند شرکت اعتبارسنجی ایران هستم. سوالتان را درباره گزارش اعتباری، امتیاز و رتبه، یا سوابق و چک\\u200cها بفرمایید.', 'stage_timing': {'validate_input': 26.1, 'format_re"
+          }
+        },
+        {
+          "user": "اگر چکم بدون موجودی باشد چه کار کنم؟",
+          "expected_finish": "stop",
+          "expected_subspace": "cheque",
+          "should_keep_sticky": true,
+          "is_respec": false,
+          "notes": "anaphoric follow-up — should stay cheque via sticky",
+          "request_id": "bench-conv_cheque_01-48077f56f1b2",
+          "http_status": 200,
+          "error": null,
+          "finish_reason": "stop",
+          "applied_subspace": null,
+          "latency_ms": 32870,
+          "latency_ms_wall": 32870,
+          "stage_timing_ms": {
+            "validate_input": 53.0,
+            "retrieve_broadened": 4504.6,
+            "retrieve": 11558.4,
+            "build_context": 0.2,
+            "guarded_generate": 18793.5,
+            "format_response": 0.4
+          },
+          "retrieval_method": "rrf+ce",
+          "retrieved_chunks": [
+            {
+              "chunk_id": "aaebdaf4-684d-4cd2-9dae-54cbfca38960",
+              "title": "بانک سوالات افراد در زمینه مباحث مختلف با گزارش اعتبارسنجی چک",
+              "heading": "Sheet: چت‌بات-سوال و جواب",
+              "content": "سوال: امتیاز کسانی که در زنجیره انتقال چک بوده اند چگونه تحت تاثیر قرار میگیرد؟ یعنی اگر چکی که شخص جزو انتقال دهندگان(و نه صادرکننده) بوده ، برگشت بخورد، امتیاز انتقال دهندگان کاهش می‌یابد؟\nپاسخ کوتاه: تحت تاثیر قرار نمیگیرد بلکه فقط امتیاز صادرکننده کاهش می یابد.\nپاسخ کامل: با توجه مسئولیت شخص صاد",
+              "score": 0.0,
+              "source": "both",
+              "rank_rrf": 1,
+              "rank_ce": 1,
+              "hybrid_score": 0.028578,
+              "rerank_score": 0.0
+            },
+            {
+              "chunk_id": "1811fe0c-44f9-499f-9474-1f887e3cf4e3",
+              "title": "توضیحات تشریحی دلایل کاهش امتیاز اعتباری مدل اصلی و روش بهبود آن",
+              "heading": "Sheet: Sheet2",
+              "content": "کد دلیل: MBC3\nمتن دلیل: فرد در 2 سال گذشته چک برگشتی با مبلغ قابل توجه داشته است.\nتوضیح کوتاه: در دو سال اخیر، چکی با مبلغ قابل توجه در سوابق شما ثبت شده که برگشت خورده است. این موضوع بر امتیاز اعتباری شما تأثیر منفی گذاشته است.\nتوضیح کامل: سوابق دو سال اخیر شما نشان میدهد چکی با مبلغ قابل توجه وجود",
+              "score": 0.02632,
+              "source": "rrf",
+              "rank_rrf": 2,
+              "rank_ce": null,
+              "hybrid_score": 0.02632,
+              "rerank_score": 0.0
+            },
+            {
+              "chunk_id": "3acf1c66-a2eb-4a24-91ef-590ddbc27a99",
+              "title": "توضیحات تشریحی بخش های مختلف گزارش اعتبارسنجی چک",
+              "heading": "Sheet: Sheet1",
+              "content": "DocumentName: ChequeReport | Title: توضیحات گزارش چک | SectionTitle: بخش اول: امتیاز چک | Content: امتیاز چک عددی در بازه 0 تا 100 بوده و هر چه به 100 نزدیک‌تر باشد، نشان‌دهنده‌ی خوش‌حسابی صادرکننده چک است. گرچه مهمترین عامل موثر بر این امتیاز، سوابق شخص در حوزه چک است اما عوامل دیگری مانند سوابق تس",
+              "score": 0.023699,
+              "source": "rrf",
+              "rank_rrf": 3,
+              "rank_ce": null,
+              "hybrid_score": 0.023699,
+              "rerank_score": 0.0
+            },
+            {
+              "chunk_id": "3fb01337-38a1-4437-b052-7ea7cb1e9f90",
+              "title": "توضیحات تشریحی دلایل کاهش امتیاز اعتباری مدل اصلی و روش بهبود آن",
+              "heading": "Sheet: Sheet2",
+              "content": "کد دلیل: MBC2\nمتن دلیل: فرد در 2 سال گذشته چکی با مبلغ کمتر از 100 میلیون ریال داشته که برگشت خورده است.\nتوضیح کوتاه: در دو سال اخیر، چکی با مبلغ بااهمیت در سوابق شما ثبت شده که برگشت خورده است. این موضوع بر امتیاز اعتباری شما تأثیر منفی گذاشته است.\nتوضیح کامل: سوابق دو سال اخیر شما نشان میدهد چکی ب",
+              "score": 0.022833,
+              "source": "rrf",
+              "rank_rrf": 4,
+              "rank_ce": null,
+              "hybrid_score": 0.022833,
+              "rerank_score": 0.0
+            },
+            {
+              "chunk_id": "95881cc3-81af-4a7f-b802-fdbf377b2535",
+              "title": "بانک سوالات افراد در زمینه گزارش اعتبارسنجی تسهیلات",
+              "heading": "Sheet: سوالات حقوقی",
+              "content": "سوال: اگر یک بانک اطلاعات بازپرداخت اقساط مرا به شرکت اعتبارسنجی ارسال نکند (اطلاعات بازپرداخت اقساط وام در گزارش اعتباری من وجود نداشته باشد)، چه اقدامی انجام دهم؟\nپاسخ کوتاه: این موضوع را به مرکز ارتباط با مشتریان شرکت اعتبارسنجی ایران اطلاع دهید.\nپاسخ کامل: شرکت اعتبارسنجی، صرفاً دریافت‌کننده و ن",
+              "score": 0.021595,
+              "source": "rrf",
+              "rank_rrf": 5,
+              "rank_ce": null,
+              "hybrid_score": 0.021595,
+              "rerank_score": 0.0
+            }
+          ],
+          "retrieved_chunks_count": 10,
+          "reranker_scores": [
+            0.0,
+            0.02632,
+            0.023699,
+            0.022833,
+            0.021595
+          ],
+          "citations": [],
+          "citations_count": 0,
+          "supplemental": null,
+          "supplemental_count": 0,
+          "follow_ups": null,
+          "content": "بر اساس اطلاعات موجود در پایگاه دانش، پاسخی برای این سوال یافت نشد.",
+          "content_preview": "بر اساس اطلاعات موجود در پایگاه دانش، پاسخی برای این سوال یافت نشد.",
+          "messages_sent_count": 5,
+          "raw_audit": {
+            "query": "اگر چکم بدون موجودی باشد چه کار کنم؟",
+            "rewritten_query": "اگر چکی که صادر کرده‌ام بدون موجودی باشد و برگشت بخورد، چه اقداماتی باید انجام دهم؟",
+            "available_subspaces": null
+          },
+          "turn_index": 3,
+          "finish_match": true,
+          "subspace_match": false,
+          "observability": {
+            "ok": false,
+            "data_preview": "{'id': 'bench-conv_cheque_01-48077f56f1b2', 'request_id': 'bench-conv_cheque_01-48077f56f1b2', 'chat_id': None, 'user_id': None, 'model': 'ics-helper-agent', 'user_query': 'چک برگشتی چیست و چگونه رفع سوء اثر می\\u200cشود؟', 'rewritten_query': 'چک برگشتی چیست و مراحل رفع سوء اثر آن چگونه است؟', 'response': 'بر اساس اطلاعات موجود در پایگاه دانش، پاسخی برای این سوال یافت نشد.', 'stage_timing': {'valid"
+          }
+        }
+      ],
+      "elapsed_ms": 73981,
+      "turns_count": 3
+    },
+    {
+      "id": "conv_facilities_legal_01",
+      "subspace": "facilities_legal",
+      "description": "facilities_legal granular -> board-role re-spec to general",
+      "request_id": "bench-conv_facilities_legal_01-e4860166a8cc",
+      "turns": [
+        {
+          "user": "محدودیت‌های تسهیلات برای اشخاص حقوقی چیست؟",
+          "expected_finish": "stop",
+          "expected_subspace": "facilities_legal",
+          "should_keep_sticky": false,
+          "is_respec": false,
+          "notes": "direct facilities_legal granular",
+          "request_id": "bench-conv_facilities_legal_01-e4860166a8cc",
+          "http_status": 200,
+          "error": null,
+          "finish_reason": "stop",
+          "applied_subspace": "facilities_legal",
+          "latency_ms": 16553,
+          "latency_ms_wall": 16553,
+          "stage_timing_ms": {
+            "validate_input": 27.3,
+            "retrieve": 1413.2,
+            "build_context": 0.1,
+            "guarded_generate": 13108.9,
+            "format_response": 1.0
+          },
+          "retrieval_method": "rrf+ce",
+          "retrieved_chunks": [
+            {
+              "chunk_id": "__faq_direct__",
+              "title": "FAQ Direct Answer",
+              "heading": "FAQ",
+              "content": "سوابق تسهیلاتی، چک و مالیاتی شرکت‌ها تا ۵ سال در پایگاه داده محاسبه می‌شود. اما با گذشت زمان اثر مثبت و منفی آن‌ کمرنگ‌تر شده و پس از ۵ سال کلاً حذف می‌گردند.",
+              "score": 1.0,
+              "source": "faq_direct",
+              "rank_rrf": 0,
+              "rank_ce": 0,
+              "hybrid_score": 1.0,
+              "rerank_score": null
+            },
+            {
+              "chunk_id": "e11ef883-8782-4684-9676-b945fa24ea1b",
+              "title": "بانک سوالات افراد در زمینه گزارش اعتبارسنجی تسهیلات",
+              "heading": "Sheet: سوالات حقوقی",
+              "content": "سوال: آیا ضمانت فردی که دارای بدهی سررسید شده پرداخت نشده است، تأثیر منفی بر رتبه اعتباری بنده خواهد داشت؟\nپاسخ کوتاه: در تسهیلاتی که شما ضامن آن هستید، بله.\nپاسخ کامل: تنها در تسهیلاتی که شما ضامن آن هستید، در صورتی که شخص صاحب وام اقساط خود را به موقع پرداخت نکند، امتیاز اعتباری شما کاهش می یابد.\n",
+              "score": 0.0,
+              "source": "both",
+              "rank_rrf": 1,
+              "rank_ce": 1,
+              "hybrid_score": 0.029206,
+              "rerank_score": 0.0
+            },
+            {
+              "chunk_id": "1c6822ca-3588-41fe-9d54-d9e78f1bdc50",
+              "title": "بانک سوالات افراد در زمینه گزارش اعتبارسنجی تسهیلات",
+              "heading": "Sheet: سوالات حقوقی",
+              "content": "سوال: اگر همزمان ضامن چند وام باشم، آیا این موضوع روی اعتبار من اثر منفی دارد؟\nپاسخ کوتاه: خیر. به این موضوع بستگی دارد که شخص متقاضی تسهیلات، اقساط را به موقع پرداخت می کند یا خیر.\nپاسخ کامل: به صورت کلی تعداد ضمانت چک، روی امتیاز تاثیری ندارد. نکته مهم این است که وام ها توسط متقاضیان اصلی به موقع ",
+              "score": 0.028612,
+              "source": "rrf",
+              "rank_rrf": 2,
+              "rank_ce": null,
+              "hybrid_score": 0.028612,
+              "rerank_score": 0.0
+            },
+            {
+              "chunk_id": "a8f9f14a-fc18-442f-998f-7025176edec5",
+              "title": "بانک سوالات افراد در زمینه گزارش اعتبارسنجی تسهیلات",
+              "heading": "Sheet: سوالات حقوقی",
+              "content": "سوال: اگر یه شرکت از بانک ضمانت‌نامه بگیره، این باعث کاهش رتبه اعتباریش میشه؟\nپاسخ کوتاه: داشتن ضمانت‌نامه بانکی به‌تنهایی باعث کاهش رتبه و امتیاز نمی‌شود.\nپاسخ کامل: خیر، صرفِ داشتن یک ضمانت‌نامه بانکی منجر به کاهش امتیاز و رتبه اعتباری یک شخص حقوقی نمی‌شود. موضوع با اهمیت، ایفای تعهدات شرکت در خصو",
+              "score": 0.02781,
+              "source": "rrf",
+              "rank_rrf": 3,
+              "rank_ce": null,
+              "hybrid_score": 0.02781,
+              "rerank_score": 0.0
+            },
+            {
+              "chunk_id": "65207d8f-e94f-499b-89a8-9899ad8f4dc4",
+              "title": "بانک سوالات افراد در زمینه گزارش اعتبارسنجی تسهیلات",
+              "heading": "Sheet: سوالات حقوقی",
+              "content": "سوال: شما جلوی وام گرفتن شرکت را گرفتید. شرکت رتبه C دارد و نمی تواند وام بگیرم.\nپاسخ کوتاه: تصمیم نهایی برای اعطای وام با بانک است؛ امتیاز و گزارش اعتباری صرفاً یک معیار تصمیم ساز است.\nپاسخ کامل: تصمیم‌گیری درباره اعطای تسهیلات کاملاً بر عهده بانک یا مؤسسه مالی است و شرکت اعتبارسنجی هیچ نقشی در رد ",
+              "score": 0.027237,
+              "source": "rrf",
+              "rank_rrf": 4,
+              "rank_ce": null,
+              "hybrid_score": 0.027237,
+              "rerank_score": 0.0
+            }
+          ],
+          "retrieved_chunks_count": 10,
+          "reranker_scores": [
+            1.0,
+            0.0,
+            0.028612,
+            0.02781,
+            0.027237
+          ],
+          "citations": [],
+          "citations_count": 0,
+          "supplemental": null,
+          "supplemental_count": 0,
+          "follow_ups": null,
+          "content": "سلام. من دستیار هوشمند شرکت اعتبارسنجی ایران هستم و می‌توانم در زمینه گزارش اعتباری، امتیاز و رتبه اعتباری، روش‌های بهبود امتیاز، بررسی سوابق منفی و چک‌ها به شما کمک کنم.\n\nدر مورد محدودیت‌های تسهیلاتی برای اشخاص حقوقی باید اشاره کنم که شرکت اعتبارسنجی ایران هیچ قدرت اجرایی برای جلوگیری از اعطای وام یا ایجاد محدودیت مستقیم ندارد. تصمیم نهایی در مورد پذیرش یا رد درخواست تسهیلات کاملا بر عهده بانک‌ها و موسسات مالی است و امتیاز اعتباری تنها به عنوان یک معیار تصمیم ساز در اختیار آن‌ها قرار می‌گیرد.\n\nبنابراین حتی اگر شرکتی رتبه اعتباری پایینی داشته باشد، باز هم امکان دریافت وام وجود دارد زیرا بانک‌ها بر اساس سیاست‌های داخلی و مقررات خود تصمیم می‌گیرند. همچنین رد شدن درخواست‌های وام در مراحل اولیه، هیچ تاثیر منفی بر رتبه یا امتیاز اعتباری شرکت ایجاد نمی‌کند.\n\nدر مورد ضمانت‌نامه‌ها، صرف داشتن یک ضمانت‌نامه بانکی باعث کاهش رتبه اعتباری نمی‌شود اما ایفای تعهدات در این زمینه اهمیت دارد. اگر اطلاعات ضمانت‌نامه به شرکت اعتبارسنجی ارسال شود و در صورت اجرا شدن آن، تاخیری در پرداخت رخ دهد، این موضوع بر امتیاز اعتباری تاثیرگذار خواهد بود.\n\nدر نهایت، سوابق مالیاتی، چک و تسهیلاتی شرکت‌ها تا بازه زمانی ۵ سال در پایگاه داده محاسبه می‌شوند. با گذشت زمان، اثرات مثبت یا منفی این سوابق کمرنگ‌تر شده و پس از سپری شدن ۵ سال، این موارد به طور کامل از سیستم حذف می‌گردند.",
+          "content_preview": "سلام. من دستیار هوشمند شرکت اعتبارسنجی ایران هستم و می‌توانم در زمینه گزارش اعتباری، امتیاز و رتبه اعتباری، روش‌های بهبود امتیاز، بررسی سوابق منفی و چک‌ها به شما کمک کنم.\n\nدر مورد محدودیت‌های تسهیلاتی برای اشخاص حقوقی باید اشاره کنم که شرکت اعتبارسنجی ایران هیچ قدرت اجرایی برای جلوگیری از اعطای وام یا ایجاد محدودیت مستقیم ندارد. تصمیم نهایی در مورد پذیرش یا رد درخواست تسهیلات کاملا بر عهده بانک‌ها",
+          "messages_sent_count": 1,
+          "raw_audit": {
+            "query": "محدودیت‌های تسهیلات برای اشخاص حقوقی چیست؟",
+            "rewritten_query": "محدودیت‌های تسهیلات برای اشخاص حقوقی چیست؟",
+            "available_subspaces": null
+          },
+          "turn_index": 1,
+          "finish_match": true,
+          "subspace_match": true,
+          "observability": {
+            "ok": false,
+            "data_preview": "{'request_id': 'bench-conv_facilities_legal_01-e4860166a8cc', 'timeline': {'request_id': 'bench-conv_facilities_legal_01-e4860166a8cc', 'name': 'rag', 'timestamp': '2026-10-13T10:20:15.630245Z', 'input': 'محدودیت\\u200cهای تسهیلات برای اشخاص حقوقی چیست؟', 'output': None, 'metadata': {'model': 'ics-helper-agent', 'request_id': 'bench-conv_facilities_legal_01-e4860166a8cc'}, 'spans': [{'span': 'valid"
+          }
+        },
+        {
+          "user": "هیات مدیره چه نقشی دارد؟",
+          "expected_finish": "stop",
+          "expected_subspace": "general",
+          "should_keep_sticky": false,
+          "is_respec": true,
+          "notes": "board-member query — general subspace, tests re-spec away from facilities_legal",
+          "request_id": "bench-conv_facilities_legal_01-e4860166a8cc",
+          "http_status": 200,
+          "error": null,
+          "finish_reason": "stop",
+          "applied_subspace": "general",
+          "latency_ms": 12147,
+          "latency_ms_wall": 12147,
+          "stage_timing_ms": {
+            "validate_input": 61.6,
+            "retrieve_retry": 29.2,
+            "retrieve_broadened": 69.6,
+            "retrieve": 2282.3,
+            "build_context": 0.1,
+            "guarded_generate": 7681.6,
+            "format_response": 0.3
+          },
+          "retrieval_method": "rrf+ce",
+          "retrieved_chunks": [
+            {
+              "chunk_id": "64e40e10-5709-4a8f-aaee-370d95e0d3e1",
+              "title": "16 کاربرد اعتبارسنجی در اقتصاد",
+              "heading": "",
+              "content": "...‌اشخاص با تحلیل الگوی تراکنش‌ها و ارتباطات، و ارایه هشدارهای زودهنگام با پایش مستمر تغییرات رفتاری به بانک‌ها و نهادهای مالی پیش از وقوع تخلف.‌...\nSection Title: 13. لندتک‌ها، BNPLها و لیزینگ | Content: لندتک‌ها، ارایه‌دهندگان BNPL و شرکت‌های لیزینگ همانند هر نهاد اعتباردهنده نیازمند ارزیابی دقیق",
+              "score": 0.0,
+              "source": "both",
+              "rank_rrf": 1,
+              "rank_ce": 1,
+              "hybrid_score": 0.028543,
+              "rerank_score": 0.0
+            },
+            {
+              "chunk_id": "520f9d0b-46f9-4f53-823f-e2290d969a46",
+              "title": "16 کاربرد اعتبارسنجی در اقتصاد",
+              "heading": "",
+              "content": "...‌در دنیا اعتبارسنجی به زیرساخت ملی تصمیم‌گیری داده‌محور تبدیل شده (اکسپرین با ~150 محصول). این گزارش 16 کاربرد اعتبارسنجی در اقتصاد ایران را تشریح می‌کند.‌...\nSection Title: 1. بانک | Content: نظام بانکی بزرگترین کاربر اعتبارسنجی است اما ظرفیت‌های زیادی برای توسعه وجود دارد: قراردادهای تعهداتی: ت",
+              "score": 0.027619,
+              "source": "rrf",
+              "rank_rrf": 2,
+              "rank_ce": null,
+              "hybrid_score": 0.027619,
+              "rerank_score": 0.0
+            },
+            {
+              "chunk_id": "745cb3e2-15bf-4e59-a2ce-321b7c957030",
+              "title": "16 کاربرد اعتبارسنجی در اقتصاد",
+              "heading": "",
+              "content": "...‌و مدیران پیش از ثبت (سوابق مالیاتی، بانکی، قضایی، پولشویی) برای جلوگیری از ثبت شرکت‌های صوری، و تحلیل شبکه ارتباطات اشخاص مرتبط با شرکت‌های پرریسک.‌...\nSection Title: 9. صدور مجوز | Content: استفاده از اعتبارسنجی به‌عنوان ابزار احراز اهلیت متقاضیان صدور مجوزهای کسب‌وکار (سامانه ملی مجوزها، بهین‌",
+              "score": 0.027057,
+              "source": "rrf",
+              "rank_rrf": 3,
+              "rank_ce": null,
+              "hybrid_score": 0.027057,
+              "rerank_score": 0.0
+            },
+            {
+              "chunk_id": "473cd427-61e1-4202-8488-fb3f789456ea",
+              "title": "16 کاربرد اعتبارسنجی در اقتصاد",
+              "heading": "",
+              "content": "...‌به‌جای نرخ یکسان، شرایط تقسیط متناسب با ریسک هر مشتری، و لحاظ‌کردن رفتار پرداخت اقساط بیمه در امتیاز اعتباری برای ایجاد انگیزه ایفای به‌موقع تعهدات.‌...\nSection Title: 4. مالیات | Content: امتیازدهی مودیان: محاسبه امتیاز مالیاتی بر اساس خوش‌حسابی، سابقه پرداخت و رعایت تکالیف قانونی، مبنای مشوق‌ه",
+              "score": 0.026901,
+              "source": "rrf",
+              "rank_rrf": 4,
+              "rank_ce": null,
+              "hybrid_score": 0.026901,
+              "rerank_score": 0.0
+            },
+            {
+              "chunk_id": "14bf6ddd-dd3c-46ce-b54d-707cb704c4a7",
+              "title": "16 کاربرد اعتبارسنجی در اقتصاد",
+              "heading": "",
+              "content": "...‌مراجعان شهرداری در مجوزها، تقسیط و بخشودگی جرایم، هدفمندسازی بازرسی‌ها، و رتبه‌بندی پیمانکاران بر اساس سوابق مالی و عملکرد برای اعطای پروژه و تعیین تضامین.‌...\nSection Title: 11. بازار سرمایه | Content: اعتباردهی کارگزاری‌ها: تعیین میزان وثیقه اعتبار معاملاتی متناسب با ریسک مشتری، مشتریان خوش‌سا",
+              "score": 0.025974,
+              "source": "rrf",
+              "rank_rrf": 5,
+              "rank_ce": null,
+              "hybrid_score": 0.025974,
+              "rerank_score": 0.0
+            }
+          ],
+          "retrieved_chunks_count": 10,
+          "reranker_scores": [
+            0.0,
+            0.027619,
+            0.027057,
+            0.026901,
+            0.025974
+          ],
+          "citations": [],
+          "citations_count": 0,
+          "supplemental": null,
+          "supplemental_count": 0,
+          "follow_ups": null,
+          "content": "بر اساس اطلاعات موجود در پایگاه دانش، پاسخی برای این سوال یافت نشد.",
+          "content_preview": "بر اساس اطلاعات موجود در پایگاه دانش، پاسخی برای این سوال یافت نشد.",
+          "messages_sent_count": 3,
+          "raw_audit": {
+            "query": "هیات مدیره چه نقشی دارد؟",
+            "rewritten_query": "هیئت مدیره در تعیین محدودیت‌های تسهیلات برای اشخاص حقوقی و فرآیند دریافت وام چه نقشی دارد؟",
+            "available_subspaces": null
+          },
+          "turn_index": 2,
+          "finish_match": true,
+          "subspace_match": true,
+          "observability": {
+            "ok": false,
+            "data_preview": "{'id': 'bench-conv_facilities_legal_01-e4860166a8cc', 'request_id': 'bench-conv_facilities_legal_01-e4860166a8cc', 'chat_id': None, 'user_id': None, 'model': 'ics-helper-agent', 'user_query': 'محدودیت\\u200cهای تسهیلات برای اشخاص حقوقی چیست؟', 'rewritten_query': 'محدودیت\\u200cهای تسهیلات برای اشخاص حقوقی چیست؟', 'response': 'سلام. من دستیار هوشمند شرکت اعتبارسنجی ایران هستم و می\\u200cتوانم در زمینه"
+          }
+        }
+      ],
+      "elapsed_ms": 29249,
+      "turns_count": 2
+    },
+    {
+      "id": "conv_general_01",
+      "subspace": "general",
+      "description": "general entity -> general intro -> cheque re-spec",
+      "request_id": "bench-conv_general_01-871f25c9343e",
+      "turns": [
+        {
+          "user": "قاسم بور کیه",
+          "expected_finish": "stop",
+          "expected_subspace": "general",
+          "should_keep_sticky": false,
+          "is_respec": false,
+          "notes": "named entity in general subspace — no clarify expected",
+          "request_id": "bench-conv_general_01-871f25c9343e",
+          "http_status": 200,
+          "error": null,
+          "finish_reason": "stop",
+          "applied_subspace": "general",
+          "latency_ms": 8810,
+          "latency_ms_wall": 8810,
+          "stage_timing_ms": {
+            "validate_input": 57.7,
+            "retrieve_retry": 39.3,
+            "retrieve_broadened": 50.4,
+            "retrieve": 200.4,
+            "build_context": 0.1,
+            "guarded_generate": 6846.5,
+            "format_response": 0.6
+          },
+          "retrieval_method": "rrf+ce",
+          "retrieved_chunks": [
+            {
+              "chunk_id": "577d3662-44d8-4152-8518-60a58dc6a11f",
+              "title": "هیات مدیره",
+              "heading": "Sheet: Sheet1",
+              "content": "Key: رضا قاسم‌پور | Value: مدیرعامل و عضو هیئت مدیره | رضا قاسم‌پور، دانش‌آموخته دکتری ریاضی کاربردی و کارشناسی ارشد اقتصاد از دانشگاه تهران، پیش از ورود به حوزه اعتبارسنجی، به‌عنوان مدیر طرح و برنامه در بانک رفاه کارگران فعالیت داشته است. او از آبان ۱۴۰۱ به‌عنوان مدیرعامل شرکت اعتبارسنجی ایران، هدا",
+              "score": 0.0,
+              "source": "both",
+              "rank_rrf": 1,
+              "rank_ce": 1,
+              "hybrid_score": 0.032266,
+              "rerank_score": 0.0
+            },
+            {
+              "chunk_id": "e1c0db0d-e9e9-47dd-8369-32e9566d53b8",
+              "title": "سوالات عمومی",
+              "heading": "Sheet: Sheet1",
+              "content": "سوال: من ضامن چند نفرم (اسم فرد: همسر، فرزند، همکار) میخوام وضعیت اقساط/پرداختشونو بدونم. چطوری میتونم ببینم؟\nپاسخ کوتاه: تنها به درخواست خود شخص میتوان به اطلاعات گزارش اعتباری او دست از طریق ارسال لینک گزارش اعتباری او دست یافت.\nپاسخ کامل: هر شخص میتواند از سه طریق گزارش اعتباری خود را در اختیار س",
+              "score": 0.029858,
+              "source": "rrf",
+              "rank_rrf": 2,
+              "rank_ce": null,
+              "hybrid_score": 0.029858,
+              "rerank_score": 0.0
+            },
+            {
+              "chunk_id": "4a11fa26-a1d2-4c42-a298-8f9e030dfd25",
+              "title": "هیات مدیره",
+              "heading": "Sheet: Sheet1",
+              "content": "Key: محسن صادقی | Value: نائب رئیس هیئت مدیره | محسن صادقی، دانش‌آموخته دکتری مدیریت مالی از دانشگاه شهید بهشتی، سابقه‌ای گسترده در حوزه مالی و سرمایه‌گذاری دارد؛ از جمله مدیریت ریسک و انطباق در بانک سرمایه‌گذاری نوین، و پژوهشگری مالی در سازمان بورس و اوراق بهادار. او از مهر ۱۴۰۱ عضو هیئت‌مدیره شرکت",
+              "score": 0.028382,
+              "source": "rrf",
+              "rank_rrf": 3,
+              "rank_ce": null,
+              "hybrid_score": 0.028382,
+              "rerank_score": 0.0
+            },
+            {
+              "chunk_id": "416a469d-8ba8-4eb3-b185-a35227afa46b",
+              "title": "16 کاربرد اعتبارسنجی در اقتصاد",
+              "heading": "",
+              "content": "...‌ریسک متهم، ارزیابی اعتبار شاهدان، بررسی اهلیت کفیل، و داشبورد جامع قضات با تجمیع اطلاعات مالی، هویتی، شغلی و قضایی برای تصمیم‌گیری سریع‌تر و دقیق‌تر.‌...\nSection Title: 8. ثبت شرکت‌ها | Content: احراز هویت و سوابق متقاضیان تاسیس: ارزیابی اهلیت اقتصادی و مدیریتی مؤسسان، اعضای هییت‌مدیره و مدیرعام",
+              "score": 0.027243,
+              "source": "rrf",
+              "rank_rrf": 4,
+              "rank_ce": null,
+              "hybrid_score": 0.027243,
+              "rerank_score": 0.0
+            },
+            {
+              "chunk_id": "bcc5b743-d37f-4c64-bd2f-a4273646bd08",
+              "title": "16 کاربرد اعتبارسنجی در اقتصاد",
+              "heading": "",
+              "content": "...‌طرفین، اعتبارسنجی موضوع معامله (سوابق تصادف و خسارت خودرو، رهن و بازداشت ملک)، ارزیابی متقابل موجر و مستاجر، و ارزیابی سازنده در مشارکت در ساخت.‌...\nSection Title: 7. قوه قضاییه | Content: تعیین وثیقه: لحاظ توان مالی، وضعیت دارایی‌ها، سوابق ایفای تعهدات و ریسک متهم در تعیین نوع و میزان وثیقه علا",
+              "score": 0.026632,
+              "source": "rrf",
+              "rank_rrf": 5,
+              "rank_ce": null,
+              "hybrid_score": 0.026632,
+              "rerank_score": 0.0
+            }
+          ],
+          "retrieved_chunks_count": 10,
+          "reranker_scores": [
+            0.0,
+            0.029858,
+            0.028382,
+            0.027243,
+            0.026632
+          ],
+          "citations": [],
+          "citations_count": 0,
+          "supplemental": null,
+          "supplemental_count": 0,
+          "follow_ups": null,
+          "content": "بر اساس اطلاعات موجود در پایگاه دانش، پاسخی برای این سوال یافت نشد.",
+          "content_preview": "بر اساس اطلاعات موجود در پایگاه دانش، پاسخی برای این سوال یافت نشد.",
+          "messages_sent_count": 1,
+          "raw_audit": {
+            "query": "قاسم بور کیه",
+            "rewritten_query": "قاسم بور کیه",
+            "available_subspaces": null
+          },
+          "turn_index": 1,
+          "finish_match": true,
+          "subspace_match": true,
+          "observability": {
+            "ok": false,
+            "data_preview": "{'request_id': 'bench-conv_general_01-871f25c9343e', 'timeline': {'request_id': 'bench-conv_general_01-871f25c9343e', 'name': 'rag', 'timestamp': '2026-10-13T10:20:44.909913Z', 'input': 'قاسم بور کیه', 'output': None, 'metadata': {'model': 'ics-helper-agent', 'request_id': 'bench-conv_general_01-871f25c9343e'}, 'spans': [{'span': 'validate_input', 'start': '2026-10-13T10:20:44.979068Z', 'input': '"
+          }
+        },
+        {
+          "user": "معرفی شرکت اعتبارسنجی ایران",
+          "expected_finish": "stop",
+          "expected_subspace": "general",
+          "should_keep_sticky": true,
+          "is_respec": false,
+          "notes": "general intro — should keep general sticky",
+          "request_id": "bench-conv_general_01-871f25c9343e",
+          "http_status": 200,
+          "error": null,
+          "finish_reason": "stop",
+          "applied_subspace": "general",
+          "latency_ms": 2145,
+          "latency_ms_wall": 2145,
+          "stage_timing_ms": {
+            "validate_input": 56.4,
+            "format_response": 0.3
+          },
+          "retrieval_method": "",
+          "retrieved_chunks": [],
+          "retrieved_chunks_count": 0,
+          "reranker_scores": [],
+          "citations": [],
+          "citations_count": 0,
+          "supplemental": null,
+          "supplemental_count": 0,
+          "follow_ups": null,
+          "content": "حوزه «پایگاه دانش عمومی» انتخاب شد. حالا سوالتان را در همین حوزه بفرمایید.",
+          "content_preview": "حوزه «پایگاه دانش عمومی» انتخاب شد. حالا سوالتان را در همین حوزه بفرمایید.",
+          "messages_sent_count": 3,
+          "raw_audit": {
+            "query": "معرفی شرکت اعتبارسنجی ایران",
+            "rewritten_query": "",
+            "available_subspaces": null
+          },
+          "turn_index": 2,
+          "finish_match": true,
+          "subspace_match": true,
+          "observability": {
+            "ok": false,
+            "data_preview": "{'id': 'bench-conv_general_01-871f25c9343e', 'request_id': 'bench-conv_general_01-871f25c9343e', 'chat_id': None, 'user_id': None, 'model': 'ics-helper-agent', 'user_query': 'قاسم بور کیه', 'rewritten_query': 'قاسم بور کیه', 'response': 'بر اساس اطلاعات موجود در پایگاه دانش، پاسخی برای این سوال یافت نشد.', 'stage_timing': {'validate_input': 57.7, 'retrieve_retry': 39.3, 'retrieve_broadened': 50.4,"
+          }
+        },
+        {
+          "user": "چک برگشتی چیست",
+          "expected_finish": "stop",
+          "expected_subspace": "cheque",
+          "should_keep_sticky": false,
+          "is_respec": true,
+          "notes": "explicit re-spec to cheque",
+          "request_id": "bench-conv_general_01-871f25c9343e",
+          "http_status": 200,
+          "error": null,
+          "finish_reason": "stop",
+          "applied_subspace": "cheque",
+          "latency_ms": 18531,
+          "latency_ms_wall": 18531,
+          "stage_timing_ms": {
+            "validate_input": 53.8,
+            "build_context": 0.1,
+            "guarded_generate": 14909.1,
+            "format_response": 0.4
+          },
+          "retrieval_method": "",
+          "retrieved_chunks": [],
+          "retrieved_chunks_count": 0,
+          "reranker_scores": [],
+          "citations": [],
+          "citations_count": 0,
+          "supplemental": null,
+          "supplemental_count": 0,
+          "follow_ups": null,
+          "content": "بر اساس اطلاعات موجود در پایگاه دانش، پاسخی برای این سوال یافت نشد.",
+          "content_preview": "بر اساس اطلاعات موجود در پایگاه دانش، پاسخی برای این سوال یافت نشد.",
+          "messages_sent_count": 5,
+          "raw_audit": {
+            "query": "چک برگشتی چیست",
+            "rewritten_query": "چک برگشتی چیست؟",
+            "available_subspaces": null
+          },
+          "turn_index": 3,
+          "finish_match": true,
+          "subspace_match": true,
+          "observability": {
+            "ok": false,
+            "data_preview": "{'id': 'bench-conv_general_01-871f25c9343e', 'request_id': 'bench-conv_general_01-871f25c9343e', 'chat_id': None, 'user_id': None, 'model': 'ics-helper-agent', 'user_query': 'معرفی شرکت اعتبارسنجی ایران', 'rewritten_query': '', 'response': 'حوزه «پایگاه دانش عمومی» انتخاب شد. حالا سوالتان را در همین حوزه بفرمایید.', 'stage_timing': {'validate_input': 56.4, 'format_response': 0.3}, 'guardrail_input"
+          }
+        }
+      ],
+      "elapsed_ms": 30366,
+      "turns_count": 3
+    },
+    {
+      "id": "conv_mixed_01",
+      "subspace": "mixed",
+      "description": "cheque -> facilities_person re-spec",
+      "request_id": "bench-conv_mixed_01-215477b690ea",
+      "turns": [
+        {
+          "user": "چک",
+          "expected_finish": "stop",
+          "expected_subspace": "cheque",
+          "should_keep_sticky": false,
+          "is_respec": false,
+          "notes": "single-token cheque spec",
+          "request_id": "bench-conv_mixed_01-215477b690ea",
+          "http_status": 200,
+          "error": null,
+          "finish_reason": "stop",
+          "applied_subspace": "cheque",
+          "latency_ms": 2151,
+          "latency_ms_wall": 2151,
+          "stage_timing_ms": {
+            "validate_input": 28.3,
+            "format_response": 0.1
+          },
+          "retrieval_method": "",
+          "retrieved_chunks": [],
+          "retrieved_chunks_count": 0,
+          "reranker_scores": [],
+          "citations": [],
+          "citations_count": 0,
+          "supplemental": null,
+          "supplemental_count": 0,
+          "follow_ups": null,
+          "content": "حوزه «گزارش اعتباری چک» انتخاب شد. حالا سوالتان را در همین حوزه بفرمایید.",
+          "content_preview": "حوزه «گزارش اعتباری چک» انتخاب شد. حالا سوالتان را در همین حوزه بفرمایید.",
+          "messages_sent_count": 1,
+          "raw_audit": {
+            "query": "چک",
+            "rewritten_query": "",
+            "available_subspaces": null
+          },
+          "turn_index": 1,
+          "finish_match": true,
+          "subspace_match": true,
+          "observability": {
+            "ok": false,
+            "data_preview": "{'request_id': 'bench-conv_mixed_01-215477b690ea', 'timeline': {'request_id': 'bench-conv_mixed_01-215477b690ea', 'name': 'rag', 'timestamp': '2026-10-13T10:21:15.247257Z', 'input': 'چک', 'output': None, 'metadata': {'model': 'ics-helper-agent', 'request_id': 'bench-conv_mixed_01-215477b690ea'}, 'spans': [{'span': 'validate_input', 'start': '2026-10-13T10:21:15.290978Z', 'input': 'چک', 'output': '"
+          }
+        },
+        {
+          "user": "حالا درباره تسهیلات اشخاص حقیقی بگو",
+          "expected_finish": "stop",
+          "expected_subspace": "facilities_person",
+          "should_keep_sticky": false,
+          "is_respec": true,
+          "notes": "explicit re-spec to facilities_person",
+          "request_id": "bench-conv_mixed_01-215477b690ea",
+          "http_status": 200,
+          "error": null,
+          "finish_reason": "stop",
+          "applied_subspace": "facilities_person",
+          "latency_ms": 13419,
+          "latency_ms_wall": 13419,
+          "stage_timing_ms": {
+            "validate_input": 74.5,
+            "format_response": 0.1
+          },
+          "retrieval_method": "",
+          "retrieved_chunks": [],
+          "retrieved_chunks_count": 0,
+          "reranker_scores": [],
+          "citations": [],
+          "citations_count": 0,
+          "supplemental": null,
+          "supplemental_count": 0,
+          "follow_ups": null,
+          "content": "حوزه «تسهیلات اشخاص حقیقی» انتخاب شد. حالا سوالتان را در همین حوزه بفرمایید.",
+          "content_preview": "حوزه «تسهیلات اشخاص حقیقی» انتخاب شد. حالا سوالتان را در همین حوزه بفرمایید.",
+          "messages_sent_count": 3,
+          "raw_audit": {
+            "query": "حالا درباره تسهیلات اشخاص حقیقی بگو",
+            "rewritten_query": "",
+            "available_subspaces": null
+          },
+          "turn_index": 2,
+          "finish_match": true,
+          "subspace_match": true,
+          "observability": {
+            "ok": false,
+            "data_preview": "{'id': 'bench-conv_mixed_01-215477b690ea', 'request_id': 'bench-conv_mixed_01-215477b690ea', 'chat_id': None, 'user_id': None, 'model': 'ics-helper-agent', 'user_query': 'چک', 'rewritten_query': '', 'response': 'حوزه «گزارش اعتباری چک» انتخاب شد. حالا سوالتان را در همین حوزه بفرمایید.', 'stage_timing': {'validate_input': 28.3, 'format_response': 0.1}, 'guardrail_input': {'allowed': True, 'action':"
+          }
+        }
+      ],
+      "elapsed_ms": 16218,
+      "turns_count": 2
+    },
+    {
+      "id": "conv_hallucination_01",
+      "subspace": "general",
+      "description": "hallucination guard: fake G5 grade must not be hallucinated",
+      "request_id": "bench-conv_hallucination_01-aebf7e36c657",
+      "turns": [
+        {
+          "user": "نمره اعتباری من G5 است چه امتیازی میگیرم",
+          "expected_finish": "stop",
+          "expected_subspace": null,
+          "should_keep_sticky": false,
+          "is_respec": false,
+          "notes": "non-existent grade G5 — expect no hallucinated grade, top_score low or refusal/no-evidence message, no invented tier",
+          "request_id": "bench-conv_hallucination_01-aebf7e36c657",
+          "http_status": 200,
+          "error": null,
+          "finish_reason": "stop",
+          "applied_subspace": null,
+          "latency_ms": 13401,
+          "latency_ms_wall": 13401,
+          "stage_timing_ms": {
+            "validate_input": 36.1,
+            "retrieve_broadened": 883.7,
+            "retrieve": 3107.1,
+            "build_context": 0.2,
+            "guarded_generate": 7562.4,
+            "format_response": 3.2
+          },
+          "retrieval_method": "rrf+ce",
+          "retrieved_chunks": [
+            {
+              "chunk_id": "b545f611-9e56-4999-8455-754a503aa240",
+              "title": "بانک سوالات افراد در زمینه گزارش اعتبارسنجی تسهیلات",
+              "heading": "Sheet: سوالات حقوقی",
+              "content": "سوال: رتبه A1 یعنی چی؟\nپاسخ کوتاه: رتبه اعتباری A1 در بازه امتیازی ۶۸۰ تا ۹۰۰ قرار دارد. رتبه A از نظر رفتار اعتباری کم ریسکترین گروه است؛ با این حال تضمین قطعی دریافت وام نیست، چون تصمیم نهایی با اعتباردهنده است.\nپاسخ کامل: رتبه اعتباری A1 در بازه‌ی امتیازی ۶۸۰ تا ۹۰۰ قرار می‌گیرد. بالاترین سطح رتب",
+              "score": 0.0,
+              "source": "both",
+              "rank_rrf": 1,
+              "rank_ce": 1,
+              "hybrid_score": 0.028371,
+              "rerank_score": 0.0
+            },
+            {
+              "chunk_id": "d03d7b55-bda6-42fc-b9e7-efd384034be6",
+              "title": "بانک سوالات افراد در زمینه گزارش اعتبارسنجی تسهیلات",
+              "heading": "Sheet: سوالات حقوقی",
+              "content": "سوال: رتبه A2 یعنی چی؟\nپاسخ کوتاه: رتبه اعتباری A2 در بازه امتیازی ۶۶۰ تا ۶۷۹ قرار دارد. رتبه A از نظر رفتار اعتباری کم ریسکترین گروه است؛ با این حال تضمین قطعی دریافت وام نیست، چون تصمیم نهایی با اعتباردهنده است.\nپاسخ کامل: رتبه اعتباری A2 در بازه‌ی امتیازی ۶۶۰ تا ۶۷۹ قرار می‌گیرد. این رتبه در نظام",
+              "score": 0.027418,
+              "source": "rrf",
+              "rank_rrf": 2,
+              "rank_ce": null,
+              "hybrid_score": 0.027418,
+              "rerank_score": 0.0
+            },
+            {
+              "chunk_id": "e3846fc3-659d-4df7-bb0c-b601dddcfb6f",
+              "title": "بانک سوالات افراد در زمینه گزارش اعتبارسنجی تسهیلات",
+              "heading": "Sheet: سوالات حقوقی",
+              "content": "سوال: چند درصد از امتیاز اعتباری من وابسته به سابقه من در چک است؟\nپاسخ کوتاه: برای افراد، 12 درصد و برای کسب و کارها، 6 درصد.\nپاسخ کامل: در نسخه های فعلی، سهم ویژگی‌های مربوط به چک، در مدلسازی اعتبارسنجی اشخاص حقیقی 12 درصد و در مدلسازی اعتبارسنجی اشخاص حقوقی 6 درصد می‌باشد.\nدسته‌بندی: چک",
+              "score": 0.026494,
+              "source": "rrf",
+              "rank_rrf": 3,
+              "rank_ce": null,
+              "hybrid_score": 0.026494,
+              "rerank_score": 0.0
+            },
+            {
+              "chunk_id": "f85b43fd-f460-4bb1-8039-29a5b14eb3ce",
+              "title": "بانک سوالات افراد در زمینه گزارش اعتبارسنجی تسهیلات",
+              "heading": "Sheet: سوالات حقوقی",
+              "content": "سوال: رتبه A3 یعنی چی؟\nپاسخ کوتاه: رتبه اعتباری A3 در بازه امتیازی ۶۴۰ تا ۶۵۹ قرار دارد. رتبه A از نظر رفتار اعتباری کم ریسکترین گروه است؛ با این حال تضمین قطعی دریافت وام نیست، چون تصمیم نهایی با اعتباردهنده است.\nپاسخ کامل: رتبه اعتباری A3 در بازه‌ی امتیازی ۶۴۰ تا ۶۵۹ قرار می‌گیرد. این رتبه پایین‌ت",
+              "score": 0.026388,
+              "source": "rrf",
+              "rank_rrf": 4,
+              "rank_ce": null,
+              "hybrid_score": 0.026388,
+              "rerank_score": 0.0
+            },
+            {
+              "chunk_id": "1292dbd2-64bf-49b1-85f0-c7f01d70a8c2",
+              "title": "بانک سوالات افراد در زمینه گزارش اعتبارسنجی تسهیلات",
+              "heading": "Sheet: سوالات حقوقی",
+              "content": "سوال: امتیازم چنده؟\nپاسخ کوتاه: به وبسایت اعتباریتو مراجعه کنید.\nپاسخ کامل: برای دریافت گزارش اعتباری و مشاهده امتیاز اعتباری خود، به وبسایت اعتباریتو مراجعه کنید: https://etebarito.ics24.ir/\nدسته‌بندی: امتیاز و رتبه اعتباری",
+              "score": 0.026333,
+              "source": "rrf",
+              "rank_rrf": 5,
+              "rank_ce": null,
+              "hybrid_score": 0.026333,
+              "rerank_score": 0.0
+            }
+          ],
+          "retrieved_chunks_count": 10,
+          "reranker_scores": [
+            0.0,
+            0.027418,
+            0.026494,
+            0.026388,
+            0.026333
+          ],
+          "citations": [],
+          "citations_count": 0,
+          "supplemental": null,
+          "supplemental_count": 0,
+          "follow_ups": null,
+          "content": "بر اساس اطلاعات موجود در پایگاه دانش، پاسخی برای این سوال یافت نشد.",
+          "content_preview": "بر اساس اطلاعات موجود در پایگاه دانش، پاسخی برای این سوال یافت نشد.",
+          "messages_sent_count": 1,
+          "raw_audit": {
+            "query": "نمره اعتباری من G5 است چه امتیازی میگیرم",
+            "rewritten_query": "نمره اعتباری من G5 است چه امتیازی میگیرم",
+            "available_subspaces": null
+          },
+          "turn_index": 1,
+          "finish_match": true,
+          "subspace_match": null,
+          "observability": {
+            "ok": false,
+            "data_preview": "{'request_id': 'bench-conv_hallucination_01-aebf7e36c657', 'timeline': {'request_id': 'bench-conv_hallucination_01-aebf7e36c657', 'name': 'rag', 'timestamp': '2026-10-13T10:21:31.483084Z', 'input': 'نمره اعتباری من G5 است چه امتیازی میگیرم', 'output': None, 'metadata': {'model': 'ics-helper-agent', 'request_id': 'bench-conv_hallucination_01-aebf7e36c657'}, 'spans': [{'span': 'validate_input', 'sta"
+          }
+        }
+      ],
+      "elapsed_ms": 13731,
+      "turns_count": 1
+    },
+    {
+      "id": "conv_supplement_01",
+      "subspace": "general",
+      "description": "supplemental entity list: shareholders",
+      "request_id": "bench-conv_supplement_01-afe55754d144",
+      "turns": [
+        {
+          "user": "سهامداران شرکت اعتبارسنجی ایران چه کسانی هستند",
+          "expected_finish": "stop",
+          "expected_subspace": "general",
+          "should_keep_sticky": false,
+          "is_respec": false,
+          "notes": "should return supplemental entity list (shareholders), not just chunks",
+          "request_id": "bench-conv_supplement_01-afe55754d144",
+          "http_status": 200,
+          "error": null,
+          "finish_reason": "stop",
+          "applied_subspace": null,
+          "latency_ms": 13323,
+          "latency_ms_wall": 13323,
+          "stage_timing_ms": {
+            "validate_input": 68.7,
+            "retrieve_broadened": 3986.1,
+            "retrieve": 8962.1,
+            "build_context": 0.3,
+            "guarded_generate": 2493.2,
+            "format_response": 0.2
+          },
+          "retrieval_method": "rrf+ce",
+          "retrieved_chunks": [
+            {
+              "chunk_id": "1f33f1d9-18cd-4f59-b54c-54c05becc99d",
+              "title": "لینک‌ها",
+              "heading": "Sheet: Sheet1",
+              "content": "Key: سایت شرکت اعتبارسنجی ایران | Value: https://ics24.ir | آشنایی با شرکت اعتبارسنجی ایران و محصولات این شرکت",
+              "score": 0.0,
+              "source": "both",
+              "rank_rrf": 1,
+              "rank_ce": 1,
+              "hybrid_score": 0.032786,
+              "rerank_score": 0.0
+            },
+            {
+              "chunk_id": "df2b840d-7c51-4682-afa8-ecd97bbb1546",
+              "title": "لینک‌ها",
+              "heading": "Sheet: Sheet1",
+              "content": "Key: محصولات شرکت اعتبارسنجی ایران | Value: https://ics24.ir/products | معرفی محصولات شرکت اعتبارسنجی ایران",
+              "score": 0.031258,
+              "source": "rrf",
+              "rank_rrf": 2,
+              "rank_ce": null,
+              "hybrid_score": 0.031258,
+              "rerank_score": 0.0
+            },
+            {
+              "chunk_id": "91bc4712-9964-4c7d-a0cf-4158ca54555b",
+              "title": "سوالات عمومی",
+              "heading": "Sheet: Sheet1",
+              "content": "سوال: شرکت اعتبارسنجی ایران یعنی چی؟\nپاسخ کوتاه: شرکت اعتبارسنجی ایران، تنها مرجع رسمی و مورد تایید بانک مرکزی جمهوری اسلامی ایران برای جمع‌آوری و پردازش اطلاعات اعتباری و ارائه گزارش اعتباری اشخاص حقیقی و حقوقی به نهادهای مالی و خود اشخاص است.\nپاسخ کامل: شرکت اعتبارسنجی ایران، تنها مرجع رسمی و مورد",
+              "score": 0.029631,
+              "source": "rrf",
+              "rank_rrf": 3,
+              "rank_ce": null,
+              "hybrid_score": 0.029631,
+              "rerank_score": 0.0
+            },
+            {
+              "chunk_id": "1d7c40a7-5271-48ff-a3a3-b6a70f840ce5",
+              "title": "بانک سوالات افراد در زمینه گزارش اعتبارسنجی تسهیلات-اصلی",
+              "heading": "Sheet: Sheet1",
+              "content": "سوال: آدرس سایت رسمی شرکت اعتبارسنجی ایران جهت اخذ  گزارش اعتبارسنجی را بنویس.\nپاسخ کوتاه: www.ics24.ir\nپاسخ کامل: لطفا جهت اخذ گزارش اعتبارسنجی خود، به سایت رسمی شرکت اعتبارسنجی ایران به آدرس ics24.ir مراجعه کنید\ntag: لینک\nدسته‌بندی: دریافت گزارش و خدمات",
+              "score": 0.028372,
+              "source": "rrf",
+              "rank_rrf": 4,
+              "rank_ce": null,
+              "hybrid_score": 0.028372,
+              "rerank_score": 0.0
+            },
+            {
+              "chunk_id": "5cfcc0c1-11f9-4c4b-a1b4-2c835a3a0890",
+              "title": "بانک سوالات افراد در زمینه گزارش اعتبارسنجی تسهیلات",
+              "heading": "Sheet: سوالات حقوقی",
+              "content": "سوال: آیا سابقه اعتباری من در شرکت‌های اعتبارسنجی دیگر کشورها می‌تواند برای دریافت تسهیلات در ایران مورد استفاده قرار گیرد؟\nپاسخ کوتاه: خیر این امکان وجود ندارد.\nپاسخ کامل: در حال حاضر ،سابقه اعتباری سایر شرکت‌های اعتباسنجی در کشورهای دیگر در اعتبارسنجی لحاظ نمی‌شود.\nدسته‌بندی: دریافت گزارش و خدمات",
+              "score": 0.027364,
+              "source": "rrf",
+              "rank_rrf": 5,
+              "rank_ce": null,
+              "hybrid_score": 0.027364,
+              "rerank_score": 0.0
+            }
+          ],
+          "retrieved_chunks_count": 10,
+          "reranker_scores": [
+            0.0,
+            0.031258,
+            0.029631,
+            0.028372,
+            0.027364
+          ],
+          "citations": [],
+          "citations_count": 0,
+          "supplemental": null,
+          "supplemental_count": 0,
+          "follow_ups": null,
+          "content": "بر اساس اطلاعات موجود در پایگاه دانش، پاسخی برای این سوال یافت نشد.",
+          "content_preview": "بر اساس اطلاعات موجود در پایگاه دانش، پاسخی برای این سوال یافت نشد.",
+          "messages_sent_count": 1,
+          "raw_audit": {
+            "query": "سهامداران شرکت اعتبارسنجی ایران چه کسانی هستند",
+            "rewritten_query": "سهامداران شرکت اعتبارسنجی ایران چه کسانی هستند",
+            "available_subspaces": null
+          },
+          "turn_index": 1,
+          "finish_match": true,
+          "subspace_match": false,
+          "observability": {
+            "ok": false,
+            "data_preview": "{'request_id': 'bench-conv_supplement_01-afe55754d144', 'timeline': {'request_id': 'bench-conv_supplement_01-afe55754d144', 'name': 'rag', 'timestamp': '2026-10-13T10:21:45.215209Z', 'input': 'سهامداران شرکت اعتبارسنجی ایران چه کسانی هستند', 'output': None, 'metadata': {'model': 'ics-helper-agent', 'request_id': 'bench-conv_supplement_01-afe55754d144'}, 'spans': [{'span': 'validate_input', 'start'"
+          }
+        }
+      ],
+      "elapsed_ms": 13644,
+      "turns_count": 1
+    }
+  ],
+  "single_baselines": [],
+  "kb_probes": null,
+  "definitions": {
+    "conversations": [
+      {
+        "id": "conv_cheque_01",
+        "subspace": "cheque",
+        "description": "greeting -> cheque granular -> cheque sticky follow-up",
+        "turns": [
+          {
+            "user": "سلام",
+            "expected_finish": "greeting",
+            "expected_subspace": null,
+            "should_keep_sticky": false,
+            "is_respec": false,
+            "notes": "greeting/no-retrieve shortcut"
+          },
+          {
+            "user": "چک برگشتی چیست و چگونه رفع سوء اثر می‌شود؟",
+            "expected_finish": "stop",
+            "expected_subspace": "cheque",
+            "should_keep_sticky": false,
+            "is_respec": false,
+            "notes": "first granular cheque query, sets sticky to cheque"
+          },
+          {
+            "user": "اگر چکم بدون موجودی باشد چه کار کنم؟",
+            "expected_finish": "stop",
+            "expected_subspace": "cheque",
+            "should_keep_sticky": true,
+            "is_respec": false,
+            "notes": "anaphoric follow-up — should stay cheque via sticky"
+          }
+        ]
+      },
+      {
+        "id": "conv_cheque_02",
+        "subspace": "cheque",
+        "description": "scattered clarify -> cheque spec -> cheque sticky granular",
+        "turns": [
+          {
+            "user": "وضعیت اعتباری چطور است",
+            "expected_finish": "clarify",
+            "expected_subspace": null,
+            "should_keep_sticky": false,
+            "is_respec": false,
+            "notes": "scattered/ambiguous — expect clarify with options"
+          },
+          {
+            "user": "چک",
+            "expected_finish": "stop",
+            "expected_subspace": "cheque",
+            "should_keep_sticky": false,
+            "is_respec": true,
+            "notes": "short re-spec to cheque"
+          },
+          {
+            "user": "تاثیر چک برگشتی بر امتیاز اعتباری چقدر است؟",
+            "expected_finish": "stop",
+            "expected_subspace": "cheque",
+            "should_keep_sticky": true,
+            "is_respec": false,
+            "notes": "granular cheque — should keep sticky cheque"
+          }
+        ]
+      },
+      {
+        "id": "conv_facilities_person_01",
+        "subspace": "facilities_person",
+        "description": "clarify -> facilities_person -> sticky -> cheque re-spec",
+        "turns": [
+          {
+            "user": "وضعیت اعتباری چطور است",
+            "expected_finish": "clarify",
+            "expected_subspace": null,
+            "should_keep_sticky": false,
+            "is_respec": false,
+            "notes": "same scattered probe as cheque_02 T1"
+          },
+          {
+            "user": "تسهیلات اشخاص حقیقی",
+            "expected_finish": "stop",
+            "expected_subspace": "facilities_person",
+            "should_keep_sticky": false,
+            "is_respec": true,
+            "notes": "re-spec to facilities_person"
+          },
+          {
+            "user": "آیا میزان درآمد یا گردش حساب من هم در بهبود رتبه اعتباری تاثیر دارد؟",
+            "expected_finish": "stop",
+            "expected_subspace": "facilities_person",
+            "should_keep_sticky": true,
+            "is_respec": false,
+            "notes": "follow-up should stay facilities_person via sticky"
+          },
+          {
+            "user": "چک",
+            "expected_finish": "stop",
+            "expected_subspace": "cheque",
+            "should_keep_sticky": false,
+            "is_respec": true,
+            "notes": "explicit re-spec to cheque — sticky should switch"
+          }
+        ]
+      },
+      {
+        "id": "conv_facilities_person_02",
+        "subspace": "facilities_person",
+        "description": "greeting -> scattered -> facilities_person granular",
+        "turns": [
+          {
+            "user": "سلام خوبی؟",
+            "expected_finish": "greeting",
+            "expected_subspace": null,
+            "should_keep_sticky": false,
+            "is_respec": false,
+            "notes": "informal greeting"
+          },
+          {
+            "user": "بدهکار شدم چیکار کنم",
+            "expected_finish": "clarify",
+            "expected_subspace": null,
+            "should_keep_sticky": false,
+            "is_respec": false,
+            "notes": "scattered informal — expect clarify"
+          },
+          {
+            "user": "اعتبارسنجی تسهیلات برای اشخاص حقیقی",
+            "expected_finish": "stop",
+            "expected_subspace": "facilities_person",
+            "should_keep_sticky": false,
+            "is_respec": true,
+            "notes": "explicit facilities_person granular"
+          }
+        ]
+      },
+      {
+        "id": "conv_facilities_legal_01",
+        "subspace": "facilities_legal",
+        "description": "facilities_legal granular -> board-role re-spec to general",
+        "turns": [
+          {
+            "user": "محدودیت‌های تسهیلات برای اشخاص حقوقی چیست؟",
+            "expected_finish": "stop",
+            "expected_subspace": "facilities_legal",
+            "should_keep_sticky": false,
+            "is_respec": false,
+            "notes": "direct facilities_legal granular"
+          },
+          {
+            "user": "هیات مدیره چه نقشی دارد؟",
+            "expected_finish": "stop",
+            "expected_subspace": "general",
+            "should_keep_sticky": false,
+            "is_respec": true,
+            "notes": "board-member query — general subspace, tests re-spec away from facilities_legal"
+          }
+        ]
+      },
+      {
+        "id": "conv_facilities_legal_02",
+        "subspace": "facilities_legal",
+        "description": "greeting -> facilities_legal short spec",
+        "turns": [
+          {
+            "user": "سلام",
+            "expected_finish": "greeting",
+            "expected_subspace": null,
+            "should_keep_sticky": false,
+            "is_respec": false,
+            "notes": "greeting"
+          },
+          {
+            "user": "تسهیلات اشخاص حقوقی",
+            "expected_finish": "stop",
+            "expected_subspace": "facilities_legal",
+            "should_keep_sticky": false,
+            "is_respec": true,
+            "notes": "short facilities_legal spec"
+          }
+        ]
+      },
+      {
+        "id": "conv_general_01",
+        "subspace": "general",
+        "description": "general entity -> general intro -> cheque re-spec",
+        "turns": [
+          {
+            "user": "قاسم بور کیه",
+            "expected_finish": "stop",
+            "expected_subspace": "general",
+            "should_keep_sticky": false,
+            "is_respec": false,
+            "notes": "named entity in general subspace — no clarify expected"
+          },
+          {
+            "user": "معرفی شرکت اعتبارسنجی ایران",
+            "expected_finish": "stop",
+            "expected_subspace": "general",
+            "should_keep_sticky": true,
+            "is_respec": false,
+            "notes": "general intro — should keep general sticky"
+          },
+          {
+            "user": "چک برگشتی چیست",
+            "expected_finish": "stop",
+            "expected_subspace": "cheque",
+            "should_keep_sticky": false,
+            "is_respec": true,
+            "notes": "explicit re-spec to cheque"
+          }
+        ]
+      },
+      {
+        "id": "conv_general_02",
+        "subspace": "general",
+        "description": "clarify -> general rejection with manager query",
+        "turns": [
+          {
+            "user": "وضعیت اعتباری چطور است",
+            "expected_finish": "clarify",
+            "expected_subspace": null,
+            "should_keep_sticky": false,
+            "is_respec": false,
+            "notes": "scattered clarify"
+          },
+          {
+            "user": "هیچکدوم موارد بالا نیست، مدیر عامل شرکت کیه؟",
+            "expected_finish": "stop",
+            "expected_subspace": "general",
+            "should_keep_sticky": false,
+            "is_respec": true,
+            "notes": "reject clarify options, ask general board/manager"
+          }
+        ]
+      },
+      {
+        "id": "conv_mixed_01",
+        "subspace": "mixed",
+        "description": "cheque -> facilities_person re-spec",
+        "turns": [
+          {
+            "user": "چک",
+            "expected_finish": "stop",
+            "expected_subspace": "cheque",
+            "should_keep_sticky": false,
+            "is_respec": false,
+            "notes": "single-token cheque spec"
+          },
+          {
+            "user": "حالا درباره تسهیلات اشخاص حقیقی بگو",
+            "expected_finish": "stop",
+            "expected_subspace": "facilities_person",
+            "should_keep_sticky": false,
+            "is_respec": true,
+            "notes": "explicit re-spec to facilities_person"
+          }
+        ]
+      },
+      {
+        "id": "conv_greeting_01",
+        "subspace": "greeting",
+        "description": "greeting x2 -> scattered clarify",
+        "turns": [
+          {
+            "user": "سلام",
+            "expected_finish": "greeting",
+            "expected_subspace": null,
+            "should_keep_sticky": false,
+            "is_respec": false,
+            "notes": "greeting 1"
+          },
+          {
+            "user": "سلام علیکم",
+            "expected_finish": "greeting",
+            "expected_subspace": null,
+            "should_keep_sticky": false,
+            "is_respec": false,
+            "notes": "greeting 2 — still no retrieval"
+          },
+          {
+            "user": "اعتبارسنجی چیست",
+            "expected_finish": "clarify",
+            "expected_subspace": null,
+            "should_keep_sticky": false,
+            "is_respec": false,
+            "notes": "overly broad — expect clarify not direct answer"
+          }
+        ]
+      },
+      {
+        "id": "conv_hallucination_01",
+        "subspace": "general",
+        "description": "hallucination guard: fake G5 grade must not be hallucinated",
+        "turns": [
+          {
+            "user": "نمره اعتباری من G5 است چه امتیازی میگیرم",
+            "expected_finish": "stop",
+            "expected_subspace": null,
+            "should_keep_sticky": false,
+            "is_respec": false,
+            "notes": "non-existent grade G5 — expect no hallucinated grade, top_score low or refusal/no-evidence message, no invented tier"
+          }
+        ]
+      },
+      {
+        "id": "conv_supplement_01",
+        "subspace": "general",
+        "description": "supplemental entity list: shareholders",
+        "turns": [
+          {
+            "user": "سهامداران شرکت اعتبارسنجی ایران چه کسانی هستند",
+            "expected_finish": "stop",
+            "expected_subspace": "general",
+            "should_keep_sticky": false,
+            "is_respec": false,
+            "notes": "should return supplemental entity list (shareholders), not just chunks"
+          }
+        ]
+      }
+    ],
+    "single_baselines": [
+      {
+        "id": "single_cheque_granular",
+        "subspace": "cheque",
+        "query": "چک برگشتی چیست و چگونه رفع اثر می‌شود؟",
+        "expected_finish": "stop",
+        "filter_path": "گزارش اعتباری چک",
+        "notes": "granular cheque — direct retrieval with filter_path"
+      },
+      {
+        "id": "single_facilities_person_granular",
+        "subspace": "facilities_person",
+        "query": "امتیاز اعتباری اشخاص حقیقی چگونه محاسبه می‌شود؟",
+        "expected_finish": "stop",
+        "filter_path": "اشخاص حقیقی/اعتبارسنجی تسهیلات",
+        "notes": "granular facilities_person"
+      },
+      {
+        "id": "single_facilities_legal_granular",
+        "subspace": "facilities_legal",
+        "query": "الزامات وثایق برای اشخاص حقوقی چیست؟",
+        "expected_finish": "stop",
+        "filter_path": "اشخاص حقوقی/اعتبارسنجی تسهیلات",
+        "notes": "granular facilities_legal"
+      },
+      {
+        "id": "single_general_granular",
+        "subspace": "general",
+        "query": "تاریخچه شرکت اعتبارسنجی ایران را بگو",
+        "expected_finish": "stop",
+        "filter_path": "پایگاه دانش عمومی",
+        "notes": "granular general"
+      },
+      {
+        "id": "single_cheque_bounce_effect",
+        "subspace": "cheque",
+        "query": "تاثیر چک برگشتی بر امتیاز اعتباری چقدر است؟",
+        "expected_finish": "stop",
+        "filter_path": "گزارش اعتباری چک",
+        "notes": "cheque score impact"
+      },
+      {
+        "id": "single_facilities_person_income",
+        "subspace": "facilities_person",
+        "query": "آیا میزان درآمد یا گردش حساب در رتبه اعتباری تاثیر دارد؟",
+        "expected_finish": "stop",
+        "filter_path": "اشخاص حقیقی/اعتبارسنجی تسهیلات",
+        "notes": "income/turnover effect on credit rank"
+      },
+      {
+        "id": "single_facilities_legal_board",
+        "subspace": "general",
+        "query": "هیات مدیره شرکت اعتبارسنجی ایران چه کسانی هستند؟",
+        "expected_finish": "stop",
+        "filter_path": "پایگاه دانش عمومی",
+        "notes": "board members — general not facilities_legal"
+      },
+      {
+        "id": "single_general_shareholders",
+        "subspace": "general",
+        "query": "سهامداران شرکت اعتبارسنجی ایران چه کسانی هستند؟",
+        "expected_finish": "stop",
+        "filter_path": "پایگاه دانش عمومی",
+        "notes": "shareholders — supplement path"
+      },
+      {
+        "id": "single_greeting",
+        "subspace": "greeting",
+        "query": "سلام",
+        "expected_finish": "greeting",
+        "filter_path": null,
+        "notes": "bare greeting baseline"
+      },
+      {
+        "id": "single_scattered",
+        "subspace": "cheque",
+        "query": "وضعیت اعتباری چطور است",
+        "expected_finish": "clarify",
+        "filter_path": null,
+        "notes": "scattered ambiguous — expect clarify"
+      },
+      {
+        "id": "single_hallucination_probe",
+        "subspace": "general",
+        "query": "نمره اعتباری من G5 است چه امتیازی میگیرم",
+        "expected_finish": "stop",
+        "filter_path": null,
+        "notes": "hallucination guard probe — same as conv_hallucination_01 T1"
+      },
+      {
+        "id": "single_qasem_bour",
+        "subspace": "general",
+        "query": "قاسم بور کیه",
+        "expected_finish": "stop",
+        "filter_path": "پایگاه دانش عمومی",
+        "notes": "entity Qasem Bour — general"
+      }
+    ]
+  }
+}
