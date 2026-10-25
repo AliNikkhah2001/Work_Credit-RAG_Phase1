@@ -13,7 +13,7 @@ Implements 8 metrics (each returns 0.0-1.0 with reasoning):
   - retrieval_hit:          1.0 if expected subspace in top-K folder_hierarchy
 
 LLM-as-judge:
-  Tries POST http://127.0.0.1:9000/v1/chat/completions (then 8100, then 18000)
+  Tries POST http://127.0.0.1:9000/v1/chat/completions (then 8100)
   with trust_env=False, asks for JSON {"score": 0.0-1.0, "reason": "..."}.
   On timeout/parse error falls back to deterministic heuristics.
 
@@ -50,10 +50,9 @@ from typing import Any, Dict, List, Optional, Tuple
 JUDGE_ENDPOINTS: List[str] = [
     "http://127.0.0.1:9000/v1/chat/completions",
     "http://127.0.0.1:8100/v1/chat/completions",
-    "http://127.0.0.1:18000/v1/chat/completions",
 ]
 
-# Model candidates for judge (H200 manager id, fallback to local-llm for Vast 18000)
+# Model candidates for judge (H200 manager id routes to TRT :8010)
 JUDGE_MODELS: List[str] = [
     os.getenv("RAGAS_JUDGE_MODEL", ""),
     "gemma-4-31b",
