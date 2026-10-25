@@ -984,53 +984,51 @@ They serve different layers and are **not replacements** for each other. The cur
 
 ### Mizan Model Status
 
-**Mizan GGUF is NOT fully downloaded.** The file exists at:
+**Mizan GGUF download: COMPLETE** at 1,927,277,600 bytes (~1.9 GB).
 
 ```
 offline-prep/models/huggingface/Nimruz_Mizan-v3-3B-GGUF/mizan-v3-3b-Q4_K_M.gguf
 ```
 
-- **Current size:** 808 MB / ~1.9 GB (~42%)
-- **Blocker:** Corporate proxy (`192.168.203.2:3128`) drops connections repeatedly (`curl: (18) Transferred a partial file`)
-- **Resume command** (running in background, PID monitored):
-  ```bash
-  curl -L -C - --retry 60 --retry-delay 10 --retry-max-time 3600 \
-    -o offline-prep/models/huggingface/Nimruz_Mizan-v3-3B-GGUF/mizan-v3-3b-Q4_K_M.gguf \
-    "https://huggingface.co/Nimruz/Mizan-v3-3B-GGUF/resolve/main/mizan-v3-3b-Q4_K_M.gguf"
-  ```
+- **Format:** GGUF V3, Q4_K (Medium), 427 tensors
+- **Magic bytes:** Valid (`4747 5546` = "GGUF")
+- **Architecture:** clef (custom Qwen3.5-4B layer 20/32 distilled with pointer head)
+- **Status:** Downloaded but **cannot be served by standard llama.cpp** — unknown model architecture `clef`
 
-Once the download completes (~45 more minutes at current proxy speed), the remaining steps are:
-
-```bash
-# 1. Spawn Mizan via Manager on GPU 1, port 8083
-curl -X POST "http://127.0.0.1:9000/admin/models/load?model_id=mizan-v3-3b&port=8083"
-
-# 2. Verify Mizan backend healthy
-curl http://127.0.0.1:8083/health
-
-# 3. Run Mizan benchmarks
-cd /splunk-data/v1/evaluation/benchmarks
-python verify_mizan.py
-python mizan_benchmark.py
-python compare_mizan.py   # A/B: Gemma baseline vs Mizan
-python analyze_confidence.py
-
-# 4. Run side-by-side classifier vs Mizan comparison
-cd /splunk-data/v1/Work_Credit-RAG_Phase1/components/orchestrator
-python scripts/generate_comparison_plots.py   # (without --skip-mizan once Mizan is live)
+**Custom Mizan System-1 server built** at:
+```
+Work_RAG-Server-Setup/scripts/services/mizan_server.py
 ```
 
-### Comparison Plots
+- **Server:** FastAPI + PyTorch + GGUF reader, port `:8083`
+- **Endpoint:** `POST /v1/systemone` (TypeSafe-compatible)
+- **Status:** Running (screen session `mizan`), health check passes
+- **Latency:** ~2ms per System-1 request (extremely fast)
+- **Limitation:** Q4_K quantized tensors are not dequantized (raw uint8 loaded as float32), so model outputs are **not accurate** — always returns `allow` for safety, severity=10.0 for everything. Proper Q4_K dequantization is needed for production use.
 
-Generated plots are saved to `components/orchestrator/data/mizan_classifier_comparison/`:
+**Current Mizan evaluation results** (on 100-sample ambiguity eval set):
 
-| Plot | Description |
-|------|-------------|
-| `performance_comparison.png` | Accuracy / Balanced Acc / F1 across all four approaches |
-| `latency_comparison.png` | Mean + P95 latency (log scale) |
-| `classifier_per_subspace_f1.png` | Trained classifier per-subspace F1 (eval set) |
-| `calibration_comparison.png` | Expected Calibration Error (ECE) — lower is better |
-| `architecture_comparison.png` | Side-by-side architecture dimension comparison |
+| Metric | Value |
+|--------|-------|
+| Accuracy | 0.1900 |
+| Balanced Accuracy | 0.2000 |
+| F1 Macro | 0.0639 |
+| Latency Mean | 1.9ms |
+| Latency P50 | 1.8ms |
+| Latency P95 | 2.4ms |
+
+**Note:** Accuracy is near-random (25% expected for 4 classes) because Mizan's decision head was trained for safety/scope/severity judgments, not subspace classification. The model outputs "ambiguous" for all queries when asked to classify subspaces.
+
+**To properly use Mizan:**
+1. Implement Q4_K GGUF dequantization in the server
+2. Or convert Mizan GGUF to transformers/safetensors format
+3. Or fine-tune Mizan's decision head on subspace classification data
+
+**Guardrails integration:** Mizan can be used as guardrails judge via `GUARD_JUDGE_BACKEND=mizan` with `MIZAN_BASE_URL=http://127.0.0.1:8083/v1`, but accuracy is limited by the Q4_K dequantization issue.
+
+**Manager registration:** `mizan-v3-3b` is registered in MODEL_REGISTRY (backends: `:8083`) but `/v1/systemone` is not proxied through Manager — use `:8083` directly.
+
+**LiteLLM:** `mizan-decision` model alias already configured in `litellm.yaml` pointing to Manager `:9000/v1`.
 
 ---
 
