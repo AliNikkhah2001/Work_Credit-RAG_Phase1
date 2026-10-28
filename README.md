@@ -10,6 +10,85 @@ Umbrella repository for a self-hosted, Persian-capable conversational RAG platfo
 
 ---
 
+## Project Hierarchy Diagram
+
+```mermaid
+graph TD
+    subgraph Root["Work_Credit-RAG-Phase1/ Umbrella Repo"]
+        direction TB
+        
+        subgraph Production["PRODUCTION LAYER ✅ Served & Deployed"]
+            direction LR
+            api["api/ API Entry Points<br/>Thin Wrappers → components/"]
+            comp["components/ Production Submodules<br/>Pinned Gitlinks"]
+            con["contracts/ API JSON Schemas"]
+            dep["deploy/ Start/Stop/Health Scripts"]
+            eval["eval/ E2E & Guardrails Tests"]
+            sc["scripts/ Utility Scripts"]
+        end
+        
+        subgraph Agent["AGENT STATE LAYER ⚠️ Agent Only"]
+            direction LR
+            ast["agent-state/<br/>Context · History · Skills<br/>Coding Standards"]
+        end
+        
+        subgraph Dev["DEVELOPMENT LAYER ❌ NOT for Production"]
+            direction LR
+            devp["dev/patches/<br/>patch_*.py one-offs"]
+            devt["dev/tests/<br/>test_*.py ad-hoc"]
+            devi["dev/investigation/<br/>fix_*.py · inspect_*.py"]
+        end
+        
+        subgraph Archive["ARCHIVE LAYER ❌ Historical Reference"]
+            direction LR
+            arc["archive/<br/>Non-code artifacts"]
+            deprec["deprecated/<br/>Obsolete scripts & plans"]
+        end
+        
+        subgraph Docs["DOCS & CONFIG"]
+            direction LR
+            rd["README.md · AGENTS.md"]
+            docs["docs/plans/<br/>million-user-scale-plan.md"]
+            lit["litellm.yaml · compose.mvp.yml"]
+        end
+    end
+
+    Production --> Agent
+    Production --> Dev
+    Production --> Docs
+    Agent --> Archive
+    Dev --> Archive
+
+    classDef production fill:#e1f5e1,stroke:#2e7d32,stroke-width:2px
+    classDef agent fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    classDef dev fill:#ffebee,stroke:#c62828,stroke-width:2px
+    classDef archive fill:#eceff1,stroke:#546e7a,stroke-width:2px,stroke-dasharray: 5 5
+    classDef docs fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
+
+    class api,comp,con,dep,eval,sc production
+    class ast agent
+    class devp,devt,devi dev
+    class arc,deprec archive
+    class rd,docs,lit docs
+```
+
+### Layer Separation Summary
+
+| Layer | Directory | Production? | Purpose |
+|-------|-----------|-------------|---------|
+| **Entry points** | `api/` | ✅ Yes | Thin wrappers importing from `components/` submodules |
+| **Implementation** | `components/` | ✅ Yes | Production code — Git submodules pinned to exact commits |
+| **Contracts** | `contracts/` | ✅ Yes | API request/response JSON schemas |
+| **Deployment** | `deploy/` | ✅ Yes | Start/stop/health scripts per host (Vast/H200/Docker) |
+| **Testing** | `eval/` | ✅ Yes | E2E, guardrails, and LLM judge evaluation |
+| **Utilities** | `scripts/` | ✅ Yes | README TOC generation, system checks |
+| **Agent context** | `agent-state/` | ⚠️ Agent only | Agent mission, history, skills, coding standards |
+| **Development** | `dev/` | ❌ No | Patches, ad-hoc tests, investigation scripts |
+| **Archive** | `archive/`, `deprecated/` | ❌ No | Historical reference, read-only |
+
+---
+
+
 ## 🌐 Research Site (NEW)
 
 **Interactive multi-page research site:** [https://alinikkhah2001.github.io/Work_Credit-RAG_Phase1/](https://alinikkhah2001.github.io/Work_Credit-RAG_Phase1/)
