@@ -12,7 +12,23 @@ Umbrella repo; implementation lives in submodules. Do NOT duplicate component co
 | `components/orchestrator` | Work_RAG-Orchestrator `main` | graph state, adapters, public API |
 | `components/tracing` | parent (not a submodule) | fallback trace collector `:3000` |
 | `agent-state/` | agent-state | `main` | agent working files (context, history, skills, coding standards) |
+| `api/` | parent repo | production | thin API entry points (thin wrappers → components/) |
+| `dev/` | parent repo | development | patches, ad-hoc tests, investigation scripts (NOT for production) |
 | parent root | this repo | `main` / `develop` | pins, integrated startup (`deploy/vast/`), E2E |
+
+### Layer separation
+
+| Layer | Directory | Production? | Purpose |
+|-------|-----------|-------------|---------|
+| Entry points | `api/` | ✅ Yes | Thin wrappers over component submodules |
+| Implementation | `components/` | ✅ Yes | Production code (submodules, pinned commits) |
+| Contracts | `contracts/` | ✅ Yes | API request/response JSON schemas |
+| Deployment | `deploy/` | ✅ Yes | Start/stop/health scripts per host |
+| Testing | `eval/` | ✅ Yes | E2E and guardrails evaluation |
+| Utilities | `scripts/` | ✅ Yes | README TOC generation, system checks |
+| Agent context | `agent-state/` | ⚠️ Agent only | Agent mission, history, skills, standards |
+| Development | `dev/` | ❌ No | Patches, ad-hoc tests, investigation scripts |
+| Archive | `archive/`, `deprecated/` | ❌ No | Historical reference, read-only |
 
 `.gitmodules` pins each submodule to `branch = main` except knowledgebase (`master`).
 
