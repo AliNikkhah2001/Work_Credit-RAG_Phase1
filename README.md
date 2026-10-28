@@ -385,6 +385,68 @@ git submodule status --recursive
 
 ---
 
+## Project Hierarchy
+
+```
+Work_Credit-RAG_Phase1/                     # Umbrella repo — production + config only
+├── .github/                                # CI/CD workflows (production)
+├── agent-state/                            # Agent working files (context, history, skills, coding standards)
+│   ├── context/                            # Current mission, todo
+│   ├── history/archive/                    # Archived agent sessions
+│   ├── skills/                             # Agent skill definitions per component
+│   ├── README.md, architecture.md, coding-standards.md, git-workflow.md, insights.md, FILE_MAP.md, onboarding.md
+├── api/                                    # Production API entry points (thin wrappers → components/)
+│   ├── __init__.py
+│   ├── orchestrator.py                     # → components/orchestrator (LangGraph :8100)
+│   ├── guardrails.py                       # → components/guardrails (policy :8200)
+│   ├── kb.py                               # → components/knowledgebase (retrieval :8000)
+│   └── tracing.py                          # → components/tracing (fallback collector :3000)
+├── components/                             # Production implementation (Git submodules — DO NOT EDIT directly)
+│   ├── server-setup/                       # Work_RAG-Server-Setup (HW, model lifecycle, infra :9000)
+│   ├── knowledgebase/                      # Work_RAG-KB (ingestion, retrieval, reranking :8000)
+│   ├── guardrails/                         # Work_RAG-Guardrails (Persian policy, guarded Gemma :8200)
+│   ├── orchestrator/                       # Work_RAG-Orchestrator (LangGraph API :8100)
+│   ├── tracing/                            # Fallback trace collector (:3000)
+│   └── openwebui-filters/                  # Open WebUI RAG trace capture
+├── contracts/                              # API contracts (JSON schemas: retrieval, rails, chat)
+├── deploy/                                 # Deployment scripts (start.sh, stop.sh, health.sh)
+│   ├── h200/                               # H200 host deployment
+│   ├── vast/                               # Vast.ai host deployment
+│   └── docker/                             # Docker Compose (privileged hosts)
+├── deprecated/                             # Deprecated files (read-only historical reference)
+├── dev/                                    # DEVELOPMENT ONLY — not for production
+│   ├── patches/                            # One-off patch scripts (patch_*.py)
+│   ├── tests/                              # Ad-hoc test scripts (test_api*.py, etc.)
+│   └── investigation/                      # Debug/investigation scripts (fix_*.py, inspect_*.py, etc.)
+├── docs/                                   # Documentation
+│   └── plans/                              # Planning documents (million-user-scale-plan.md, etc.)
+├── eval/                                   # Production evaluation tests (e2e, guardrails, LLM judge)
+├── evaluation/                             # Benchmark evaluation (RAGAS, cross-encoder, etc.)
+├── research-site/                          # Jekyll documentation site
+├── scripts/                                # Utility scripts (gen_readme_toc.py, system_check.sh)
+├── AGENTS.md                               # Agent operating manual (branch strategy, service table)
+├── README.md                               # This file (project overview + hierarchy)
+├── compose.mvp.yml                         # Docker Compose (MVP)
+├── litellm.yaml                            # LiteLLM configuration (self-hosted OpenRouter)
+└── LICENSE
+
+### Layer separation
+
+| Layer | Directory | Production? | Purpose |
+|-------|-----------|-------------|---------|
+| Entry points | `api/` | ✅ Yes | Thin wrappers over component submodules |
+| Implementation | `components/` | ✅ Yes | Production code (submodules, pinned commits) |
+| Contracts | `contracts/` | ✅ Yes | API request/response JSON schemas |
+| Deployment | `deploy/` | ✅ Yes | Start/stop/health scripts per host |
+| Testing | `eval/` | ✅ Yes | E2E and guardrails evaluation |
+| Utilities | `scripts/` | ✅ Yes | README TOC generation, system checks |
+| Agent context | `agent-state/` | ⚠️ Agent only | Agent mission, history, skills, standards |
+| Development | `dev/` | ❌ No | Patches, ad-hoc tests, investigation scripts |
+| Archive | `archive/`, `deprecated/` | ❌ No | Historical reference, read-only |
+```
+
+---
+
 ## Request Lifecycle
 
 1. **WebUI filter** (`components/openwebui-filters/rag_trace_capture.py`) — captures `filter_path` from `UserValves.scope` or `[چک]` prefix, injects `X-Request-ID`, records trace start.
