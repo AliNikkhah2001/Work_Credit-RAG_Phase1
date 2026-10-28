@@ -14,3 +14,7 @@
 	path = components/orchestrator
 	url = https://github.com/AliNikkhah2001/Work_RAG-Orchestrator.git
 	branch = main
+[submodule "agent-state"]
+	path = agent-state
+	url = https://github.com/AliNikkhah2001/ICS_ChatBot_agent-state.git
+	branch = main

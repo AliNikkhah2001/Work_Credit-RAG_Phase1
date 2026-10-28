@@ -11,9 +11,21 @@ Umbrella repo; implementation lives in submodules. Do NOT duplicate component co
 | `components/guardrails` | Work_RAG-Guardrails `main` | policy, guarded Gemma |
 | `components/orchestrator` | Work_RAG-Orchestrator `main` | graph state, adapters, public API |
 | `components/tracing` | parent (not a submodule) | fallback trace collector `:3000` |
-| parent root | this repo | pins, integrated startup (`deploy/vast/`), E2E |
+| `agent-state/` | agent-state | `main` | agent working files (context, history, skills, coding standards) |
+| parent root | this repo | `main` / `develop` | pins, integrated startup (`deploy/vast/`), E2E |
 
 `.gitmodules` pins each submodule to `branch = main` except knowledgebase (`master`).
+
+## Branch strategy
+
+| Branch | Purpose | Protection |
+|---|---|---|
+| `main` / `master` | Production — deployed code only | PR + code review required |
+| `develop` | Integration / test — features merge here | PR + code review required |
+| `feature/*` | Individual dev work | PR from feature → develop |
+
+Never push directly to `main`/`master` or `develop`. Open a pull request and
+require at least one code review before merging. See `agent-state/git-workflow.md`.
 
 ## 2. Service table (instance 50713720, 2026-09-12, 1x RTX 3090)
 
@@ -119,6 +131,8 @@ python scripts/gen_readme_toc.py --check     # CI guard (exit 1 if stale)
 - Parent pins submodules to exact commits (gitlinks). Check: `git submodule status --recursive`.
 - Component fix → commit+push on that repo's `main` (or appropriate task branch), then advance the pin with a parent commit.
 - Deployment-only material (deploy/, docs/, eval/) → parent `main` (or appropriate task/release branch).
+- Branch strategy: `main`/`master` = production, `develop` = integration/test, `feature/*` = dev work. Never push directly to `main`/`master` or `develop` — use PR + code review.
+- Branch protection (GitHub): require 1 approving review, require status checks, require branches up to date, dismiss stale approvals, no force-push, no deletions.
 - Never force-push. Never commit secrets (`*.env`, tokens, passwords, `/tmp/opencode/langfuse.env`) or generated artifacts (`*.npz`, `__pycache__`, `*.log`, venvs).
 
 ## 5. Vast gotchas
