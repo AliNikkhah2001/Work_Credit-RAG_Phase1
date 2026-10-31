@@ -138,11 +138,12 @@ graph TD
 <!-- docs-toc:start -->
 ## Documentation Index
 
-> Auto-generated from this repository's tracked Markdown notes (**106** files). Refresh with `python scripts/gen_readme_toc.py` — the `docs-toc` workflow does this automatically on push.
+> Auto-generated from this repository's tracked Markdown notes (**107** files). Refresh with `python scripts/gen_readme_toc.py` — the `docs-toc` workflow does this automatically on push.
 
 ### Repository root
 
 - [AGENTS.md — Agent Operating Manual (umbrella repo)](AGENTS.md) — Umbrella repo; implementation lives in submodules. Do NOT duplicate component code in parent.
+- [DevOps & Deployment Research Plan — Work Credit RAG Phase 1](DEVOPS_RESEARCH_PLAN.md) — 1. Multi-service Docker Compose for privileged hosts (H200, local dev)
 
 ### `.opencode/`
 
