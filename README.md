@@ -421,27 +421,20 @@ Key differences from MVP flow:
 ```mermaid
 flowchart TD
     START([START]) --> VI[validate_input]
-    VI -->|blocked| FR[format_refusal]
+    VI -->|blocked| REF[format_refusal]
     VI -->|allowed| CL[classify]
-    CL --> INF[infer_specification]
-    INF --> AMB[🧠 Ambiguity Scorer]
-    AMB --> SVM[🤖 SVM-RBF Classifier]
-    SVM --> SC{should_clarify?}
+    CL --> R{greeting / specification?}
+    R -->|yes| FR[format_response]
+    FR --> END([END])
+    R -->|no| HC[hybrid_classify]
+    HC --> RET[retrieve]
+    RET --> SC{needs clarification?}
     SC -->|yes| GC[generate_clarification]
-    GC --> END([END])
-    SC -->|no| RET[retrieve]
-    RET --> PROTO[🧠 Multi-Proto Centroids]
-    PROTO --> BC[build_context]
+    GC --> END
+    SC -->|no| BC[build_context]
     BC --> GG[guarded_generate]
-    GG --> FRMT[format_response]
-    FRMT --> END
-    FR --> END
-
-    style SC fill:#fff3e0,stroke:#ff9800
-    style GC fill:#fff8e1,stroke:#f57f17
-    style AMB fill:#e8f5e9,stroke:#4caf50
-    style SVM fill:#e3f2fd,stroke:#2196f3
-    style PROTO fill:#f3e5f5,stroke:#9c27b0
+    GG --> FR
+    REF --> END
 ```
 
 Old doc showed linear `validate → retrieve → build → generate → format`. Now there is a **diamond** before `retrieve`: ambiguous/scattered queries short-circuit to `generate_clarification` and return `finish=clarify` with `available_subspaces: ["cheque","facilities_person","facilities_legal","general"]`. Sticky is kept in `StateGraph(RAGState, MemorySaver)` checkpoint keyed by `X-Request-ID`.
