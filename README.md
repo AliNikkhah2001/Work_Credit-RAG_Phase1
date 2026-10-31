@@ -420,21 +420,21 @@ Key differences from MVP flow:
 
 ```mermaid
 flowchart TD
-    START([START]) --> VI[validate_input]
-    VI -->|blocked| REF[format_refusal]
-    VI -->|allowed| CL[classify]
-    CL --> R{greeting / specification?}
-    R -->|yes| FR[format_response]
-    FR --> END([END])
-    R -->|no| HC[hybrid_classify]
-    HC --> RET[retrieve]
-    RET --> SC{needs clarification?}
-    SC -->|yes| GC[generate_clarification]
-    GC --> END
-    SC -->|no| BC[build_context]
-    BC --> GG[guarded_generate]
-    GG --> FR
-    REF --> END
+    Start((Start)) --> VI[validate_input]
+    VI -->|blocked| Ref[format_refusal]
+    VI -->|allowed| Cl[classify]
+    Cl --> R{greeting / specification?}
+    R -->|yes| Fr[format_response]
+    Fr --> End((End))
+    R -->|no| Hc[hybrid_classify]
+    Hc --> Ret[retrieve]
+    Ret --> SC{needs clarification?}
+    SC -->|yes| Gc[generate_clarification]
+    Gc --> End((End))
+    SC -->|no| Bc[build_context]
+    Bc --> Gg[guarded_generate]
+    Gg --> Fr
+    Ref --> End((End))
 ```
 
 Old doc showed linear `validate → retrieve → build → generate → format`. Now there is a **diamond** before `retrieve`: ambiguous/scattered queries short-circuit to `generate_clarification` and return `finish=clarify` with `available_subspaces: ["cheque","facilities_person","facilities_legal","general"]`. Sticky is kept in `StateGraph(RAGState, MemorySaver)` checkpoint keyed by `X-Request-ID`.
