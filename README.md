@@ -335,7 +335,8 @@ flowchart TB
     WebUI -- "OPENAI_API_BASE_URL=8100/v1\n+ X-Request-ID" --> Orch
     Orch --> Classify
     Classify -- "question" --> HybridClf
-    Classify -- "greeting/spec" --> Clarify
+    Classify -- "greeting/spec" --> FRMT[format_response<br/>ack / smalltalk, no retrieval]
+    FRMT --> WebUI
     HybridClf -- "subspace + ambiguity" --> Ambiguity
     Ambiguity -- "should_clarify?" --> Clarify
     Clarify -- "clarify finish" --> WebUI
@@ -748,6 +749,8 @@ See `docs/benchmark-report-2026-10-12.md` §7 and `data/supplementary_architectu
 ---
 
 ## 🌐 LiteLLM Router (Self-Hosted OpenRouter Analog)
+
+> **Status:** Planned / future architecture (per `AGENTS.md` §5). Not yet deployed — the current production path uses Guardrails → Gemma :18000 (Vast) / Manager :9000 (H200) directly. This diagram shows the target routing topology.
 
 The LiteLLM router (`:4000`) serves as a self-hosted OpenRouter analog with intelligent fallback chains across model tiers:
 
