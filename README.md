@@ -19,8 +19,8 @@ graph TD
         
         subgraph Production["PRODUCTION LAYER ✅ Served & Deployed"]
             direction LR
-            api["api/ API Entry Points<br/>Thin Wrappers → components/"]
-            comp["components/ Production Submodules<br/>Pinned Gitlinks"]
+            api["api/ API Entry Points Thin Wrappers → components/"]
+            comp["components/ Production Submodules Pinned Gitlinks"]
             con["contracts/ API JSON Schemas"]
             dep["deploy/ Start/Stop/Health Scripts"]
             eval["eval/ E2E & Guardrails Tests"]
@@ -29,26 +29,26 @@ graph TD
         
         subgraph Agent["AGENT STATE LAYER ⚠️ Agent Only"]
             direction LR
-            ast["agent-state/<br/>Context · History · Skills<br/>Coding Standards"]
+            ast["agent-state/ Context · History · Skills Coding Standards"]
         end
         
         subgraph Dev["DEVELOPMENT LAYER ❌ NOT for Production"]
             direction LR
-            devp["dev/patches/<br/>patch_*.py one-offs"]
-            devt["dev/tests/<br/>test_*.py ad-hoc"]
-            devi["dev/investigation/<br/>fix_*.py · inspect_*.py"]
+            devp["dev/patches/ patch_*.py one-offs"]
+            devt["dev/tests/ test_*.py ad-hoc"]
+            devi["dev/investigation/ fix_*.py · inspect_*.py"]
         end
         
         subgraph Archive["ARCHIVE LAYER ❌ Historical Reference"]
             direction LR
-            arc["archive/<br/>Non-code artifacts"]
-            deprec["deprecated/<br/>Obsolete scripts & plans"]
+            arc["archive/ Non-code artifacts"]
+            deprec["deprecated/ Obsolete scripts & plans"]
         end
         
         subgraph Docs["DOCS & CONFIG"]
             direction LR
             rd["README.md · AGENTS.md"]
-            docs["docs/plans/<br/>million-user-scale-plan.md"]
+            docs["docs/plans/ million-user-scale-plan.md"]
             lit["litellm.yaml · compose.mvp.yml"]
         end
     end
@@ -335,7 +335,7 @@ flowchart TB
     WebUI -- "OPENAI_API_BASE_URL=8100/v1\n+ X-Request-ID" --> Orch
     Orch --> Classify
     Classify -- "question" --> HybridClf
-    Classify -- "greeting/spec" --> FRMT[format_response<br/>ack / smalltalk, no retrieval]
+    Classify -- "greeting/spec" --> FRMT[format_response ack / smalltalk, no retrieval]
     FRMT --> WebUI
     HybridClf -- "subspace + ambiguity" --> Ambiguity
     Ambiguity -- "should_clarify?" --> Clarify
