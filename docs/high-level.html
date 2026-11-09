@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dana — High-Level Detail | Work Credit RAG Phase 1</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({ startOnLoad: true, theme: 'base', securityLevel: 'loose' });</script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-container">
+      <div class="dana-logo">
+        <span class="dana-logo-text">DANA</span>
+        <span class="dana-tagline">Agent Framework</span>
+      </div>
+      <nav>
+        <ul class="nav-links">
+          <li><a href="index.html">Overview</a></li>
+          <li><a href="high-level.html" class="active">High-Level Detail</a></li>
+          <li><a href="technical.html">Technical Detail</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <section class="hero">
+    <h1>High-Level Detail</h1>
+    <p>Architecture overview, service map, and key components of the Work Credit RAG platform. High-level black box views for executives and new team members.</p>
+    <span class="dana-badge">Powered by Dana Agent Framework</span>
+  </header>
+
+  <div class="main-container">
+    <section class="section">
+      <h2>Architecture Overview</h2>
+      <p>The Work Credit RAG platform follows a layered service-oriented architecture. User requests flow from a browser through Open WebUI to the Orchestrator, which coordinates retrieval from the Knowledgebase, safety validation through Guardrails, and generation via an LLM. All interactions are traced for observability.</p>
+      <div class="alert alert-info">
+        <strong>Design principles:</strong> Self-hosted (no external model dependencies for generation), Persian-capable (language-specific safety and embedding), sticky conversation memory (X-Request-ID threading), and production-grade observability (traces, metrics, dashboards).
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Service Map</h2>
+      <p>Major platform services and their communication ports. Each service is a black box with a well-defined interface.</p>
+      <table>
+        <thead>
+          <tr><th>Service</th><th>Port</th><th>Role</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Open WebUI</td><td>:13000</td><td>Chat frontend (ICS Helper)</td></tr>
+          <tr><td>Orchestrator</td><td>:8100</td><td>LangGraph RAG graph API</td></tr>
+          <tr><td>Knowledgebase</td><td>:8000</td><td>Hybrid retrieval (BM25 + dense + rerank)</td></tr>
+          <tr><td>Guardrails</td><td>:8200</td><td>Persian safety + guarded generation</td></tr>
+          <tr><td>LLM Manager</td><td>:9000</td><td>11-model registry gateway (H200)</td></tr>
+          <tr><td>Gemma (direct)</td><td>:18000</td><td>llama-server generation (Vast)</td></tr>
+          <tr><td>Embed Servers</td><td>:8001-8003</td><td>e5-small, bge-m3, MiniLM embeddings</td></tr>
+          <tr><td>Trace Collector</td><td>:3000</td><td>Fallback observability collector</td></tr>
+          <tr><td>Langfuse</td><td>:3001</td><td>Full trace UI backend</td></tr>
+          <tr><td>LangGraph Studio</td><td>:2024</td><td>Graph debugging and state inspection</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <h2>Key Components</h2>
+      <div class="card-grid">
+        <div class="card">
+          <h3>Orchestrator (:8100)</h3>
+          <p>LangGraph-based RAG graph that validates input, classifies queries, retrieves context, builds context, generates guarded answers, and formats responses. Uses MemorySaver for sticky conversation threads.</p>
+        </div>
+        <div class="card">
+          <h3>Knowledgebase (:8000)</h3>
+          <p>Hybrid retrieval service with BM25 keyword search, dense semantic search, RRF fusion, cross-encoder reranking, and folder_hierarchy / filter_path scoping over 1123 chunks.</p>
+        </div>
+        <div class="card">
+          <h3>Guardrails (:8200)</h3>
+          <p>Persian safety policy service with input/output rails, deterministic signal detection, LLM judge, and guarded generation through upstream Gemma.</p>
+        </div>
+        <div class="card">
+          <h3>LLM Manager (:9000)</h3>
+          <p>OpenAI-compatible gateway in front of 11 llama.cpp backends with round-robin load balancing, session management, and model registry (H200 deployment).</p>
+        </div>
+        <div class="card">
+          <h3>Observability</h3>
+          <p>Trace collector (:3000) with SQLite storage, Langfuse (:3001) full trace UI, and LangGraph Studio (:2024) for graph debugging.</p>
+        </div>
+        <div class="card">
+          <h3>Open WebUI (:13000)</h3>
+          <p>Chat frontend (ICS Helper) with rag_trace_capture filter for sticky context capture and four user actions: rate, report, view, truth.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>System Overview — High-Level Black Box</h2>
+      <p>Treats each major component as a black box and shows only the high-level data flow. No internal implementation details, file paths, or function names.</p>
+      <div class="diagram-wrapper">
+        <pre class="mermaid">
+flowchart TB
+    subgraph Client["Client layer"]
+        User[User / Browser]
+        WebUI[Open WebUI :13000]
+    end
+    subgraph Platform["RAG platform"]
+        Orch[Orchestrator :8100 LangGraph RAG graph]
+        KB[Knowledgebase :8000 Hybrid retrieval]
+        Guard[Guardrails :8200 Safety guarded generation]
+        LLM[LLM Manager :9000 Model registry]
+    end
+    subgraph Obs["Observability"]
+        Coll[Collector :3000 Traces metrics]
+        Langfuse[Langfuse :3001]
+    end
+    User --> WebUI
+    WebUI --> Orch
+    Orch --> KB
+    Orch --> Guard
+    Guard --> LLM
+    Orch -.-> Coll
+    Coll --> Langfuse
+        </pre>
+      </div>
+      <div class="diagram-caption">
+        <h4>Caption: System Overview — Black Box Architecture</h4>
+        <ul>
+          <li><strong>Client layer</strong> — The user-facing tier where end users interact with the platform.</li>
+          <li><strong>User / Browser</strong> — The end user accessing the system through a web browser.</li>
+          <li><strong>Open WebUI :13000</strong> — The chat frontend (ICS Helper) that presents the conversational interface to users.</li>
+          <li><strong>RAG platform</strong> — The core platform boundary containing all backend services.</li>
+          <li><strong>Orchestrator :8100 LangGraph RAG graph</strong> — The central coordinator that manages the RAG pipeline, conversation state, and service orchestration.</li>
+          <li><strong>Knowledgebase :8000 Hybrid retrieval</strong> — The retrieval service that finds relevant documents using keyword and semantic search.</li>
+          <li><strong>Guardrails :8200 Safety guarded generation</strong> — The safety service that validates inputs and outputs, and wraps LLM generation with safety policies.</li>
+          <li><strong>LLM Manager :9000 Model registry</strong> — The gateway that manages multiple LLM backends and routes generation requests.</li>
+          <li><strong>Observability</strong> — The monitoring and tracing infrastructure that captures request telemetry.</li>
+          <li><strong>Collector :3000 Traces metrics</strong> — The fallback trace collector that stores traces in SQLite observability.db.</li>
+          <li><strong>Langfuse :3001</strong> — The full-featured trace UI backend with Postgres and ClickHouse storage.</li>
+          <li><strong>User → WebUI</strong> — The user submits a message through the browser interface.</li>
+          <li><strong>WebUI → Orch</strong> — Open WebUI forwards the request to the Orchestrator API.</li>
+          <li><strong>Orch → KB</strong> — The Orchestrator requests relevant context from the Knowledgebase.</li>
+          <li><strong>Orch → Guard</strong> — The Orchestrator sends inputs and outputs through Guardrails safety checks.</li>
+          <li><strong>Guard → LLM</strong> — Guardrails forwards generation requests to the LLM Manager.</li>
+          <li><strong>Orch →. Coll</strong> — The Orchestrator asynchronously sends trace data to the Collector.</li>
+          <li><strong>Coll → Langfuse</strong> — The Collector forwards traces to Langfuse for visualization.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Request Flow — High-Level Black Box</h2>
+      <p>Simplified sticky + filtered RAG flow. Major components are black boxes; only high-level data flow is shown. No internal implementation details.</p>
+      <div class="diagram-wrapper">
+        <pre class="mermaid">
+sequenceDiagram
+    autonumber
+    participant U as User
+    participant W as WebUI
+    participant O as Orchestrator
+    participant K as Knowledgebase
+    participant G as Guardrails
+    participant M as LLM
+    participant Obs as Observability
+
+    U->>W: Message
+    W->>O: Request + request ID
+    O->>G: Input safety check
+    alt blocked
+        O-->>W: Refusal
+    else allowed
+        O->>K: Retrieve context
+        K-->>O: Results
+        O->>G: Generate guarded answer
+        G->>M: LLM completion
+        M-->>G: Answer
+        G-->>O: Guarded answer
+        O-->>W: Response with citations
+    end
+    O->>Obs: Trace
+        </pre>
+      </div>
+      <div class="diagram-caption">
+        <h4>Caption: Request Flow — High-Level Black Box</h4>
+        <ul>
+          <li><strong>User</strong> — The end user initiating a conversation.</li>
+          <li><strong>WebUI</strong> — The chat frontend that receives the user message.</li>
+          <li><strong>Orchestrator</strong> — The central service coordinating the RAG pipeline.</li>
+          <li><strong>Knowledgebase</strong> — The document retrieval service.</li>
+          <li><strong>Guardrails</strong> — The safety validation service.</li>
+          <li><strong>LLM</strong> — The language model generating answers.</li>
+          <li><strong>Observability</strong> — The tracing and monitoring infrastructure.</li>
+          <li><strong>User → WebUI: Message</strong> — The user sends a message through the chat interface.</li>
+          <li><strong>WebUI → Orchestrator: Request + request ID</strong> — The frontend forwards the user message with a unique request identifier for sticky tracking.</li>
+          <li><strong>Orchestrator → Guardrails: Input safety check</strong> — The orchestrator validates the input for safety violations before processing.</li>
+          <li><strong>Orchestrator → WebUI: Refusal</strong> — If the input is blocked, a refusal message is returned to the user.</li>
+          <li><strong>Orchestrator → Knowledgebase: Retrieve context</strong> — If allowed, the orchestrator queries the knowledgebase for relevant documents.</li>
+          <li><strong>Knowledgebase → Orchestrator: Results</strong> — Retrieved document chunks are returned to the orchestrator.</li>
+          <li><strong>Orchestrator → Guardrails: Generate guarded answer</strong> — The orchestrator requests generation with safety guards applied.</li>
+          <li><strong>Guardrails → LLM: LLM completion</strong> — Guardrails sends the generation request to the language model.</li>
+          <li><strong>LLM → Guardrails: Answer</strong> — The language model returns a raw answer.</li>
+          <li><strong>Guardrails → Orchestrator: Guarded answer</strong> — Guardrails returns the safety-checked answer.</li>
+          <li><strong>Orchestrator → WebUI: Response with citations</strong> — The final answer with source citations is sent to the user.</li>
+          <li><strong>Orchestrator → Observability: Trace</strong> — The full request trace is recorded for observability.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Orchestrator LangGraph — High-Level Black Box</h2>
+      <p>Simplified LangGraph graph. Major nodes are black boxes; only the high-level control flow is shown. No internal implementation details, file paths, or function names.</p>
+      <div class="diagram-wrapper">
+        <pre class="mermaid">
+flowchart TD
+    Start(Start)
+    Validate[Validate input]
+    Classify[Classify query]
+    Retrieve[Retrieve context]
+    Clarify[Clarify if ambiguous]
+    Build[Build context]
+    Generate[Guarded generate]
+    Format[Format response]
+    Refuse[Format refusal]
+    End(End)
+
+    Start --> Validate
+    Validate -->|blocked| Refuse
+    Validate -->|allowed| Classify
+    Classify -->|greeting spec| Format
+    Classify -->|question| Retrieve
+    Retrieve -->|ambiguous| Clarify
+    Retrieve -->|clear| Build
+    Clarify --> End
+    Build --> Generate
+    Generate --> Format
+    Refuse --> End
+    Format --> End
+        </pre>
+      </div>
+      <div class="diagram-caption">
+        <h4>Caption: Orchestrator LangGraph — High-Level Black Box</h4>
+        <ul>
+          <li><strong>Start</strong> — Entry point of the LangGraph state graph when a request arrives.</li>
+          <li><strong>Validate input</strong> — Checks the user input for safety violations and validity.</li>
+          <li><strong>Classify query</strong> — Determines whether the query is a greeting, specification, or question.</li>
+          <li><strong>Retrieve context</strong> — Fetches relevant documents from the knowledgebase.</li>
+          <li><strong>Clarify if ambiguous</strong> — Asks the user for clarification when the query is unclear.</li>
+          <li><strong>Build context</strong> — Assembles retrieved chunks into a context window for generation.</li>
+          <li><strong>Guarded generate</strong> — Generates an answer with safety guardrails applied.</li>
+          <li><strong>Format response</strong> — Formats the final answer with citations and metadata.</li>
+          <li><strong>Format refusal</strong> — Formats a refusal message when input is blocked or no evidence is found.</li>
+          <li><strong>End</strong> — Terminal node where the response is returned to the user.</li>
+          <li><strong>Start → Validate</strong> — Every request begins with input validation.</li>
+          <li><strong>Validate → blocked → Refuse</strong> — Blocked inputs go directly to refusal formatting.</li>
+          <li><strong>Validate → allowed → Classify</strong> — Allowed inputs proceed to query classification.</li>
+          <li><strong>Classify → greeting/spec → Format</strong> — Greetings and specifications bypass retrieval and go straight to formatting.</li>
+          <li><strong>Classify → question → Retrieve</strong> — Questions proceed to context retrieval.</li>
+          <li><strong>Retrieve → ambiguous → Clarify</strong> — Unclear queries trigger clarification before retrieval.</li>
+          <li><strong>Retrieve → clear → Build</strong> — Clear queries proceed to context building.</li>
+          <li><strong>Clarify → End</strong> — After clarification, the flow ends (user must re-ask).</li>
+          <li><strong>Build → Generate</strong> — Built context is passed to the guarded generator.</li>
+          <li><strong>Generate → Format</strong> — The generated answer is formatted for the user.</li>
+          <li><strong>Refuse → End</strong> — Refusal messages terminate the flow.</li>
+          <li><strong>Format → End</strong> — Formatted responses terminate the flow.</li>
+        </ul>
+      </div>
+    </section>
+  </div>
+
+  <footer class="site-footer">
+    <p><strong class="dana-brand">DANA</strong> — Agent Framework | Work Credit RAG Phase 1</p>
+    <p>Built with Dana · Crimson Theme · GitHub Pages</p>
+  </footer>
+</body>
+</html>
