@@ -143,12 +143,17 @@ li { margin-bottom: var(--spacing-xs); }
   gap: var(--spacing-sm);
   text-decoration: none;
 }
-.dana-logo-text {
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: var(--dana-crimson);
-  letter-spacing: 0.02em;
+.dana-logo-img {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    object-fit: contain;
+    border: 2px solid var(--dana-crimson);
+    background: white;
+    padding: 2px;
 }
+.dana-logo-text { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); border: 0; }
+
 .dana-tagline {
   font-size: 0.75rem;
   color: var(--dana-gray-600);
