@@ -93,6 +93,104 @@ flowchart TB
     Coll -.-> Studio
 ```
 
+### Caption: System overview — Variant A: Detailed Technical (validated against production code)
+
+Shows every production component with its real port, code file, and function. Validated against `components/orchestrator/src/work_rag_orchestrator/graph.py`, `components/guardrails/src/work_rag_guardrails/`, `components/knowledgebase/kb-manager/kb_manager/web/routes/search.py`, and `components/server-setup/llm_inference_manager/app.py`.
+
+```mermaid
+flowchart TB
+    subgraph Client["Client layer"]
+        Browser[Browser]
+        WebUI[Open WebUI :13000\nrag_trace_capture filter\nX-Request-ID sticky thread]
+    end
+
+    subgraph Orch["Orchestration :8100\nwork_rag_orchestrator"]
+        API[api.py:create_app\nPOST /v1/chat/completions]
+        GRAPH[graph.py:rag_graph\nMemorySaver checkpointer]
+        VI[validate_input]
+        CL[classify]
+        HC[hybrid_classify]
+        RET[retrieve]
+        BC[build_context]
+        GG[guarded_generate]
+        FR[format_response]
+        RF[format_refusal]
+        GC[generate_clarification]
+    end
+
+    subgraph KB["Knowledgebase :8000\nkb_manager"]
+        KBAPI[web/app.py:app\nPOST /search/api\nPOST /search/supplement]
+        SEARCH[web/routes/search.py\nBM25 tantivy + dense MiniLM-384\nRRF k=60 bge-rerank\npgvector HNSW 1123 chunks]
+        FILTER[filter_path · folder_hierarchy]
+    end
+
+    subgraph GR["Guardrails :8200\nwork_rag_guardrails"]
+        GRAPI[api.py → service.py:create_app\nPOST /v1/rails/check\nPOST /v1/chat/completions]
+        GJUDGE[service.py:judge\nsignals + LLM judge\nUPSTREAM Gemma :18000/:9000]
+    end
+
+    subgraph LLM["LLM Manager :9000\nllm_inference_manager/app.py"]
+        MR[MODEL_REGISTRY\n11 models\ngemma-4-31b champion]
+        GW[uvicorn :9000\nproxy_chat backends 8080-8084]
+    end
+
+    subgraph Obs["Observability"]
+        Coll[Collector :3000\nobservability.db SQLite]
+        LF2[Langfuse v2 :3001]
+        Studio[Studio :2024\nLangGraph API]
+    end
+
+    Browser --> WebUI
+    WebUI --> API
+    API --> GRAPH
+    GRAPH --> VI
+    VI -->|blocked| RF
+    VI -->|allowed| CL
+    CL -->|greeting / spec| FR
+    CL -->|question| RET
+    RET --> SEARCH
+    SEARCH --> FILTER
+    RET -->|continue| BC
+    BC --> GG
+    GG --> GJUDGE
+    GJUDGE --> MR
+    GRAPH -.-> Coll
+    Coll --> LF2
+    Coll -.-> Studio
+```
+
+### Caption: System overview — Variant B: High-Level Black Box (executives / new team members)
+
+Treats each major component as a black box and shows only the high-level data flow. No internal implementation details, file paths, or function names.
+
+```mermaid
+flowchart TB
+    subgraph Client["Client layer"]
+        User[User / Browser]
+        WebUI[Open WebUI :13000]
+    end
+
+    subgraph Platform["RAG platform"]
+        Orch[Orchestrator :8100\nLangGraph RAG graph]
+        KB[Knowledgebase :8000\nHybrid retrieval]
+        Guard[Guardrails :8200\nSafety + guarded generation]
+        LLM[LLM Manager :9000\nModel registry]
+    end
+
+    subgraph Obs["Observability"]
+        Coll[Collector :3000\nTraces + metrics]
+        Langfuse[Langfuse :3001]
+    end
+
+    User --> WebUI
+    WebUI --> Orch
+    Orch --> KB
+    Orch --> Guard
+    Guard --> LLM
+    Orch -.-> Coll
+    Coll --> Langfuse
+```
+
 ### Request flow — sticky + filtered RAG
 
 ```mermaid
@@ -147,6 +245,94 @@ sequenceDiagram
     end
 ```
 
+### Caption: Request flow — Variant A: Detailed Technical (validated against production code)
+
+End-to-end sticky + filtered RAG request flow with real endpoints, ports, and node functions. Validated against `graph.py` (validate_input → classify → hybrid_classify → retrieve → build_context → guarded_generate → format_response), guardrails `POST /v1/rails/check` + `POST /v1/chat/completions`, KB `POST /search/api` + `POST /search/supplement`, and LLM Manager `:9000`.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant U as User
+    participant W as WebUI :13000
+    participant O as Orchestrator :8100
+    participant K as KB :8000
+    participant G as Guardrails :8200
+    participant M as LLM Manager :9000
+    participant Obs as Collector :3000
+
+    U->>W: Persian message
+    W->>W: rag_trace_capture filter_path + X-Request-ID
+    W->>O: POST /v1/chat/completions {messages, filter_path?, X-Request-ID}
+    O->>Obs: trace-create input
+
+    O->>G: POST /v1/rails/check validate_input input rails
+    G-->>O: {allowed, action}
+
+    alt blocked
+        O->>O: format_refusal reuses format_response
+        O-->>W: refusal finish=content_filter
+    else allowed
+        O->>O: classify greeting / spec / question
+        alt greeting / spec
+            O-->>W: format_response no retrieval
+        else question
+            alt should_clarify scattered / threshold
+                O->>O: generate_clarification {question, available_subspaces}
+                O-->>W: clarify finish=clarify no KB call
+            else retrieve
+                O->>K: POST /search/api {query, top_k=20, filter_path?}
+                K-->>O: SearchSteps final_results injected_entities
+                O->>K: POST /search/supplement {query, threshold=0.4}
+                K-->>O: supplemental entity lists
+                O->>O: build_context MAX_CHUNKS=20 MAX_CONTEXT=9000
+                alt no evidence below 0.15
+                    O-->>W: abstain no citations
+                else has evidence
+                    O->>G: POST /v1/chat/completions guarded_generate
+                    G->>M: llama-server /v1/chat/completions
+                    M-->>G: raw answer
+                    G-->>O: {answer, guardrail_output}
+                    O->>O: format_response citations grounded follow_ups
+                    O->>Obs: trace-create upsert output audit
+                    O-->>W: {choices[0].message.content, rag:{citations, supplemental, follow_ups}, audit}
+                end
+            end
+        end
+    end
+```
+
+### Caption: Request flow — Variant B: High-Level Black Box (executives / new team members)
+
+Simplified sticky + filtered RAG flow. Major components are black boxes; only high-level data flow is shown. No internal implementation details.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant U as User
+    participant W as WebUI
+    participant O as Orchestrator
+    participant K as Knowledgebase
+    participant G as Guardrails
+    participant M as LLM
+    participant Obs as Observability
+
+    U->>W: Message
+    W->>O: Request + request ID
+    O->>G: Input safety check
+    alt blocked
+        O-->>W: Refusal
+    else allowed
+        O->>K: Retrieve context
+        K-->>O: Results
+        O->>G: Generate guarded answer
+        G->>M: LLM completion
+        M-->>G: Answer
+        G-->>O: Guarded answer
+        O-->>W: Response with citations
+    end
+    O->>Obs: Trace
+```
+
 ### Orchestrator LangGraph graph
 
 ```mermaid
@@ -181,6 +367,75 @@ flowchart TD
 ```
 
 Graph nodes match `components/orchestrator/src/work_rag_orchestrator/graph.py`: `validate_input → classify → hybrid_classify → retrieve`, then conditional `should_clarify` branches to `generate_clarification` (ends) or `build_context → guarded_generate → format_response` (ends). Blocked input short-circuits to `format_refusal` (ends). Greeting/specification queries bypass retrieval and go straight to `format_response`.
+
+
+
+### Caption: Orchestrator LangGraph — Variant A: Detailed Technical (validated against production code)
+
+LangGraph state graph with real node names, file paths, ports, and conditional edge labels. Validated against `components/orchestrator/src/work_rag_orchestrator/graph.py`: nodes `validate_input`, `classify`, `hybrid_classify`, `retrieve`, `build_context`, `guarded_generate`, `format_response`, `format_refusal`, `generate_clarification`; conditional edges `should_continue_after_validation`, `should_route_after_classify`, `should_clarify`. Entry point is `validate_input`. `format_refusal` reuses the `format_response` function. `hybrid_classify` is reached only when `hybrid_classifier_enabled` is true.
+
+```mermaid
+flowchart TD
+    Start((Start))
+    VI[validate_input\nnodes/validate_input.py]
+    Cl[classify\nnodes/classify.py]
+    HC[hybrid_classify\nnodes/hybrid_classify_node.py]
+    Ret[retrieve\nnodes/retrieve.py\nPOST /search/api :8000]
+    Dec{should_clarify\nscattered / threshold}
+    GC[generate_clarification\nnodes/generate_clarification.py]
+    BC[build_context\nMAX_CHUNKS=20 MAX_CONTEXT=9000]
+    GG[guarded_generate\nnodes/guarded_generate.py\nPOST /v1/chat/completions :8200]
+    FR[format_response\nnodes/format_response.py]
+    RF[format_refusal\nreuses format_response]
+    End((End))
+
+    Start --> VI
+    VI -->|should_continue_after_validation blocked| RF
+    VI -->|allowed| Cl
+    Cl -->|should_route_after_classify greeting / spec| FR
+    Cl -->|question direct retrieve| Ret
+    Cl -->|question hybrid_classify| HC
+    HC --> Ret
+    Ret --> Dec
+    Dec -->|clarify| GC
+    Dec -->|continue| BC
+    GC --> End
+    BC --> GG
+    GG --> FR
+    RF --> End
+    FR --> End
+```
+
+### Caption: Orchestrator LangGraph — Variant B: High-Level Black Box (executives / new team members)
+
+Simplified LangGraph graph. Major nodes are black boxes; only the high-level control flow is shown. No internal implementation details, file paths, or function names.
+
+```mermaid
+flowchart TD
+    Start((Start))
+    Validate[Validate input]
+    Classify[Classify query]
+    Retrieve[Retrieve context]
+    Clarify[Clarify if ambiguous]
+    Build[Build context]
+    Generate[Guarded generate]
+    Format[Format response]
+    Refuse[Format refusal]
+    End((End))
+
+    Start --> Validate
+    Validate -->|blocked| Refuse
+    Validate -->|allowed| Classify
+    Classify -->|greeting / spec| Format
+    Classify -->|question| Retrieve
+    Retrieve -->|ambiguous| Clarify
+    Retrieve -->|clear| Build
+    Clarify --> End
+    Build --> Generate
+    Generate --> Format
+    Refuse --> End
+    Format --> End
+```
 
 </details>
 
