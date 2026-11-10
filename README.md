@@ -751,11 +751,49 @@ flowchart TB
   models[Manager / TRT / Gemma already up] --> danaProd
 ```
 
-### CI/CD roadmap checklist (next work — gate each sprint)
+### Promote stage → prod — how it works & how to use (Sprint C)
 
-Work proceeds **one sprint at a time**: implement → test on laptop Jenkins → **your approval** → next sprint. Do not start the next row until the previous is checked off here (and in chat).
+**Promotion is not automatic.** Stage (`develop` + laptop Jenkins) and prod (`main` + GPU Jenkins) are separate controllers. Moving a known-good stage tip into prod means: merge `develop` → `main` with an explicit $\textcolor{red}{\textbf{[ci prod]}}$ key so the **prod** controller rebuilds/restarts app containers. Models (Gemma / Manager / TRT) are **not** part of promote or rollback.
 
-**Completed:** Sprint **A** (#8) · Sprint **B** (#1 · #2) · Sprint **C** (#3 promote · #10 rollback). **Next up:** Sprint **D** (#4 GHCR).
+```mermaid
+flowchart LR
+  feat[feature/*] -->|PR / merge| develop
+  develop -->|laptop Jenkins + ci stage| stageOK[dana-stage green]
+  stageOK -->|promote script or PR| main
+  main -->|GPU Jenkins + ci prod| prodOK[dana-prod up]
+  prodOK --> lastGood[".last_good_sha"]
+  lastGood -.->|ci rollback| prodOK
+```
+
+| Step | What you do | What happens |
+|------|-------------|--------------|
+| 1. Land work on stage | Merge to `develop` with $\textcolor{red}{\textbf{[ci stage]}}$ (or $\textcolor{red}{\textbf{[ci auto]}}$) | Laptop Jenkins builds changed services (`CI_SERVICES`), deploys `dana-stage`, runs E2E curl |
+| 2. Confirm stage | Check Multibranch green + chat on stage ports | Do **not** promote a red build |
+| 3. Dry-run promote | `bash scripts/promote_stage_to_main.sh` | Prints `develop`/`main` SHAs, submodule pins, suggested PR title/body — **no merge** |
+| 4. Promote | Prefer PR `develop` → `main` (template: `.github/pull_request_template_promote.md`) with title containing $\textcolor{red}{\textbf{[ci prod]}}$; or `bash scripts/promote_stage_to_main.sh --execute --push` | `main` advances; GPU Jenkins polls (or Scan Now) and runs Deploy prod |
+| 5. Record last-good | Automatic after successful Deploy prod | `scripts/ci_record_last_good.sh` writes host-local `deploy/compose/.last_good_sha` (gitignored); previous tip → `.last_good_sha.prev` |
+| 6. Break-glass rollback | On `main`, empty commit with $\textcolor{red}{\textbf{[ci rollback]}}$ (prod controller only), or `bash scripts/ci_rollback.sh [--dry-run] [--sha …]` | Restores **app** compose stack to previous good SHA; Gemma/TRT untouched |
+
+**Rules of thumb**
+
+- Docs-only / no deploy → $\textcolor{red}{\textbf{[ci skip]}}$ on the merge commit so prod does not redeploy.
+- Wrong controller cannot promote: laptop has `CI_MAY_DEPLOY_PROD=0`; GPU has `CI_MAY_DEPLOY_STAGE=0`.
+- Rollback prefers `.last_good_sha.prev` (the SHA from *before* the bad deploy). If neither file exists, rollback fails until a successful prod has recorded one.
+- More operator examples: [`deploy/jenkins/README.md`](deploy/jenkins/README.md).
+
+### CI/CD roadmap checklist (gate each sprint)
+
+Work proceeds **one sprint at a time**: implement → test on laptop Jenkins → **your approval** → next sprint.
+
+**Done so far (2026-11-10)**
+
+| Sprint | IDs | What shipped |
+|--------|-----|--------------|
+| **A** | #8 | Separate stage/prod Jenkins controllers (`DANA_ROLE` / `DANA_HOST`); wrong host cannot deploy the other space |
+| **B** | #1 · #2 | Path → `CI_SERVICES` builds; `ci_submodule_sync.sh` with retries / loud missing-SHA fail |
+| **C** | #3 · #10 | Promote dry-run/execute script + PR template; last-good recording; $\textcolor{red}{\textbf{[ci rollback]}}$ |
+
+**Next up:** Sprint **D** (#4 GHCR). Pending: **E** eval smoke · **F** notifications · **G** JCasC.
 
 | Sprint | ID | Deliverable | Test / acceptance | Status |
 |--------|-----|-------------|-------------------|--------|
@@ -774,6 +812,7 @@ Work proceeds **one sprint at a time**: implement → test on laptop Jenkins →
 1. Update this table’s **Status** when a sprint starts / finishes (`☐ pending` → `… in progress` → `✅ done` + date).
 2. After each sprint: commit on `develop`, PR → `main` when you ask to merge, then wait for approval before the next sprint.
 3. Commit keys stay authoritative for deploy: $\textcolor{red}{\textbf{[ci stage]}}$, $\textcolor{red}{\textbf{[ci prod]}}$, $\textcolor{red}{\textbf{[ci auto]}}$, $\textcolor{red}{\textbf{[ci skip]}}$, $\textcolor{red}{\textbf{[ci rollback]}}$.
+4. Day-to-day **promote / rollback** usage is in the section above (not the pending D–G rows).
 
 Operator detail for Jenkins bring-up remains above and in [`deploy/jenkins/README.md`](deploy/jenkins/README.md).
 
