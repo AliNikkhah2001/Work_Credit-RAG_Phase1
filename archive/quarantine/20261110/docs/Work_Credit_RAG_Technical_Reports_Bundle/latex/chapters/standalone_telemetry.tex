@@ -1,0 +1,124 @@
+\chapter{Logging, Telemetry, and Monitoring}\label{logging-telemetry-and-monitoring}
+
+\textbf{Section summary.} Work Credit RAG treats observability as a \emph{layered} contract: KB returns per-stage \texttt{stage\_ms} (also Redis-cached); the orchestrator rolls node timings into \texttt{stage\_timing\_ms} and an optional \texttt{AuditTrail}; Langfuse v2 (or host JSONL) records spans; \texttt{components/tracing} persists SQLite + JSONL pipeline cards; guardrails and the inference manager keep their own stores. Operators read that stack at three ports: Langfuse v2 on \textbf{:3001}, the parent fallback collector on \textbf{:3000}, and LangGraph Studio on \textbf{:2024}. Studio run inputs must include \texttt{request\_id}; without it, sticky memory and trace envelopes have nothing to join on. E2E latency is dominated by \textbf{generation}, not retrieval---warm KB search is tens of milliseconds while chat turns sit near five seconds---so optimizations favor RAM-first retrieval, context trim, and TRT-LLM serving over further BM25 micro-cuts.
+
+\section{1 Multi-layer telemetry map}\label{multi-layer-telemetry-map}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.3333}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.3333}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.3333}}@{}}
+\toprule\noalign{}
+Layer & What is recorded & Primary sink \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+KB search & \texttt{bm25} / \texttt{dense} / \texttt{rrf} / \texttt{rerank} / \texttt{total} (+ \texttt{hyde}, \texttt{build\_context}) & Response JSON + Redis TTL 600s \\
+Orchestrator & Node wall times → \texttt{stage\_timing\_ms} & \texttt{AuditTrail} on non-streaming chat \\
+Distributed traces & Trace + span envelopes (Langfuse v2 HTTP) & Langfuse UI \texttt{:3001} or collector \texttt{:3000} \\
+Pipeline store & Enriched request/response cards & \texttt{/tmp/observability.db} + \texttt{/tmp/pipeline\_traces.jsonl} \\
+Guardrails & Decision events (PII-masked) & \texttt{/tmp/guard\_events.jsonl} + dashboard \texttt{:8200} \\
+Manager & Session / latency / backend metrics & \texttt{manager.db} (SQLite) \\
+Retrieval DLQ & Empty filtered retrieval & \texttt{/tmp/dlq\_retrieval.jsonl} \\
+\end{longtable}
+
+\begin{figure}
+\centering
+\includegraphics[width=0.88\linewidth,height=0.36\textheight,keepaspectratio]{../assets/diagrams/15_observability.png}
+\caption{Figure 15 --- Observability wiring}
+\end{figure}
+
+\emph{Figure 15. Observability wiring for the production stack. The orchestrator emits \texttt{stage\_timing\_ms} into AuditTrail and posts Langfuse v2 \texttt{trace-create} / \texttt{span-create} envelopes (fire-and-forget HTTP also feeds \texttt{/tmp/langfuse\_traces.jsonl} when the collector on \texttt{:3000} is the active sink). KB returns \texttt{stage\_ms} to callers and Redis (TTL 600s) so Search UI can replay timing. Guardrails append masked decisions to \texttt{guard\_events.jsonl} for the \texttt{:8200} dashboard; the manager plane keeps \texttt{manager.db} metrics for Prometheus/Grafana. ``Where did the time go?'' requires joining these stores, not a single APM.}
+
+\begin{figure}
+\centering
+\includegraphics[width=0.88\linewidth,height=0.36\textheight,keepaspectratio]{../assets/diagrams/16_obs_hl.png}
+\caption{Figure 16 --- Observability high-level}
+\end{figure}
+
+\emph{Figure 16. High-level view: RAG services emit traces and timings into SQLite, JSONL, and Langfuse; operators read them via \texttt{:3000} observe/observability, \texttt{:8200} guard, Langfuse \texttt{:3001}, and manager/Prometheus. Collapses detail so incidents start from }Stores → Dashboards* rather than code paths.*
+
+\section{\texorpdfstring{2 Knowledge-base \texttt{stage\_ms} and Redis}{2 Knowledge-base stage\_ms and Redis}}\label{knowledge-base-stage_ms-and-redis}
+
+Every successful \texttt{POST\ /search/api} response includes a \texttt{stage\_ms} object written in \texttt{kb\_manager/web/routes/search.py} as each leg finishes: BM25 (tantivy RAM index), dense MiniLM encode + HNSW/pgvector lookup, Reciprocal Rank Fusion (\texttt{k=60}), BGE-m3 cross-encoder rerank, and \texttt{total}. The same object is stored with the cached SearchSteps payload under Redis (\texttt{KB\_REDIS\_TTL}, default \textbf{600s}) or an in-memory fallback when Redis is down; exact-cache hits typically return in \textbf{2--7 ms} and never cache error responses. Operators can therefore diagnose ``dense vs rerank'' without attaching a profiler---\texttt{jq\ \textquotesingle{}.stage\_ms\textquotesingle{}} on a warm curl is the day-to-day tool.
+
+\section{\texorpdfstring{3 Orchestrator timings, AuditTrail, and \texttt{ORCH\_DEBUG}}{3 Orchestrator timings, AuditTrail, and ORCH\_DEBUG}}\label{orchestrator-timings-audittrail-and-orch_debug}
+
+Graph nodes call \texttt{record\_timing(state,\ stage,\ elapsed\_ms)} (\texttt{state.py}) so retrieve, clarify, \texttt{build\_context}, \texttt{guarded\_generate}, format, and retry/broaden paths accumulate into \texttt{state{[}"stage\_timing\_ms"{]}}. On the buffered OpenAI chat path, \texttt{api.py} builds a Pydantic \texttt{AuditTrail} that copies those timings together with retrieved chunks, guard signals, context preview, subspace ambiguity fields, and wall \texttt{latency\_ms}. Setting \texttt{ORCH\_DEBUG=1} turns on app-level INFO logging and enables opt-in context diagnostics inside \texttt{build\_context} so engineers can see what reached Gemma.
+
+The buffered path stores that \texttt{AuditTrail}. The SSE path streams tokens from Guardrails, finalizes citations and metadata, and keeps traces updating.
+
+\section{4 Langfuse v2 HTTP and host fallbacks}\label{langfuse-v2-http-and-host-fallbacks}
+
+\texttt{work\_rag\_orchestrator/tracing.py} posts direct HTTP to Langfuse v2 on \textbf{:3001}: envelopes carry top-level \texttt{id} + ISO \texttt{timestamp}, and updates re-\texttt{trace-create} the same id (v2 uses \texttt{trace-create} for updates). Posts are submitted on a small thread pool with short timeouts so tracing stays off the request loop. The same path can target the parent \texttt{components/tracing} collector on \textbf{:3000}, which appends to \texttt{/tmp/langfuse\_traces.jsonl} and exposes a Langfuse-compatible ingestion surface plus the \texttt{/observe} timeline. LangGraph Studio is the third pane, on \textbf{:2024} (panel \texttt{https://smith.langchain.com/studio/?baseUrl=http://127.0.0.1:2024}). A Studio run carries \texttt{request\_id} alongside \texttt{messages}---the same id sticky MemorySaver, Langfuse, and the collector use---so the graph thread joins the chat trace.
+
+Separately, \texttt{eval\_store.py} persists enriched pipeline cards to \textbf{\texttt{/tmp/observability.db}} (WAL SQLite, \texttt{EVAL\_DB\_PATH}) and mirrors them to \textbf{\texttt{/tmp/pipeline\_traces.jsonl}} (\texttt{TRACE\_JSONL}). The observability dashboard router under \texttt{/api/observability} is how Studio/WebUI-side tooling can push ratings and stage cards into that store.
+
+\section{5 Guard events, manager metrics, and retrieval DLQ}\label{guard-events-manager-metrics-and-retrieval-dlq}
+
+Guardrails write terminated/allowed decisions to \texttt{/tmp/guard\_events.jsonl} (\texttt{GUARD\_EVENTS\_FILE}) with digit-run PII masking, and serve aggregates on the Persian dashboard at \texttt{http://127.0.0.1:8200/dashboard}. On the model plane, \texttt{llm\_inference\_manager} keeps session, message, and latency rows in \texttt{manager.db} and surfaces KB \texttt{stage\_ms} breakdowns when a manager-side search probe is used. When filtered retrieval returns empty, orchestrator \texttt{retrieve.py} appends a record to \texttt{/tmp/dlq\_retrieval.jsonl} so those turns stay greppable.
+
+\section{6 Latency evidence}\label{latency-evidence}
+
+Warm KB retrieval (v13.1 optimization pass, 30 fresh queries, \texttt{top\_k=5}) sits well under a tenth of a second:
+
+\begin{longtable}[]{@{}lrrrr@{}}
+\toprule\noalign{}
+Config & BM25 & Dense & Rerank & Total (p50) \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+v13 README (2026-10-07) & 4.0 & 24.0 & 24.0 & \textbf{55.0 ms} \\
+Pre-opt (2026-10-13) & 3.8 & 20.5 & 20.9 & 44.4 ms \\
+Post-opt (2026-10-13) & 2.6 & 13.5 & 22.0 & \textbf{39.6 ms} \\
+\end{longtable}
+
+End-to-end chat from \texttt{bench\_report\_latest} (41 turns, model \texttt{ics-helper-agent}, 2026-10-14) reports \textbf{p50 4872 ms} and \textbf{average 4938 ms} at 0\% transport error rate. After GPU MiniLM/BGE and RAM-first indexes, \textbf{\texttt{guarded\_generate} accounts for most of the wall time}---classify/retrieve/build\_context are tens to low hundreds of milliseconds, while Gemma decode at context 8192 accounts for the multi-second remainder. Greeting and specification shortcuts that skip the LLM land near \textasciitilde0.8--1.1 s, so generation is the large slice of an end-to-end turn and hybrid search is the small one.
+
+\begin{figure}
+\centering
+\includegraphics[width=0.88\linewidth,height=0.36\textheight,keepaspectratio]{../assets/plots/latency_breakdown.png}
+\caption{Latency breakdown bars}
+\end{figure}
+
+\emph{Figure --- Latency breakdown (bars). Stacked/grouped stage bars contrast historical CPU-bound dense encode (\textasciitilde2.3 s) against the post-GPU, RAM-first profile where BM25, dense, RRF, and rerank together fit inside a \textasciitilde40--70 ms envelope. Redis hits and warm indexes set the retrieval timing; end-to-end chat p50 follows generation.}
+
+\begin{figure}
+\centering
+\includegraphics[width=0.88\linewidth,height=0.36\textheight,keepaspectratio]{../assets/plots/latency_breakdown_pie_after.png}
+\caption{Latency breakdown pie (after)}
+\end{figure}
+
+\emph{Figure --- Latency breakdown pie (after optimizations). The post-optimization pie makes the same point compositionally: once dense leaves the CPU, rerank and residual orchestration slices are visible and remain small beside the generate slice on full RAG turns. The figure pairs with the TRT champion and the context budget as the levers on that generate slice.}
+
+\section{7 Optimizations that moved the numbers}\label{optimizations-that-moved-the-numbers}
+
+\begin{itemize}
+\item
+  \textbf{RAM-first tantivy + HNSW.} Rust tantivy BM25 (≈50 MB heap, RAMDirectory) and RAM-pinned dense/pgvector HNSW remove cold disk seeks from the hot path; startup pre-warm loads indexes and CUDA kernels before the first user query.
+\item
+  \textbf{RRF then selective rerank.} Fusion at \texttt{k=60} keeps candidate quality high while the cross-encoder scores a bounded pool (GPU, pool 30)---cheap legs stay cheap.
+\item
+  \textbf{Entity / context trim.} Orchestrator supplemental injection is capped (top-3 × \textasciitilde4 KB) and \texttt{prompt\_char\_budget≈20k} / \texttt{MAX\_CHUNKS=20} hold the Gemma \textbf{8192} context window. Upstream overflow is surfaced as \texttt{finish\_reason=length}.
+\item
+  \textbf{TRT champion serving.} On the H200, TensorRT-LLM Gemma is the throughput champion versus llama.cpp Q4 for concurrent decode. Latency planning treats generate cost as a function of tokens and concurrency, read beside KB \texttt{stage\_ms}.
+\end{itemize}
+
+\section{8 Tooling}\label{tooling}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.5000}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.5000}}@{}}
+\toprule\noalign{}
+Tool & Role in telemetry / docs \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Langfuse & v2 trace/span UI (\texttt{:3001}); orchestrator posts envelopes via direct HTTP \\
+Prometheus & Manager/infra metrics scrape target referenced beside \texttt{manager.db} \\
+FastAPI & Tracing collector + observability dashboard routers \\
+httpx & Fire-and-forget Langfuse/collector posts from \texttt{tracing.py} \\
+\end{longtable}

@@ -1,0 +1,26 @@
+# Jenkins LTS on laptop — Docker socket for image builds/deploys.
+#   docker compose -f deploy/jenkins/docker-compose.yml up -d
+# UI: http://127.0.0.1:8085
+#
+# First login password:
+#   docker exec dana-jenkins cat /var/jenkins_home/secrets/initialAdminPassword
+
+services:
+  jenkins:
+    image: jenkins/jenkins:lts-jdk17
+    container_name: dana-jenkins
+    user: root
+    ports:
+      - "127.0.0.1:8085:8080"
+      - "127.0.0.1:50000:50000"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ../..:/workspace/Work_Credit-RAG_Phase1:rw
+    environment:
+      JAVA_OPTS: "-Djenkins.install.runSetupWizard=true"
+      DOCKER_HOST: unix:///var/run/docker.sock
+    restart: unless-stopped
+
+volumes:
+  jenkins_home:

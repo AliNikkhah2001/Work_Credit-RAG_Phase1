@@ -1,0 +1,365 @@
+=== . (prod=main) ===
+  legacy/chore/cleanup-consolidated @ 34c8d44 -> tag archive/legacy-chore-cleanup-consolidated then delete
+To https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1.git
+ * [new tag]         archive/legacy-chore-cleanup-consolidated -> archive/legacy-chore-cleanup-consolidated
+error: dst refspec legacy/chore/cleanup-consolidated matches more than one
+error: failed to push some refs to 'https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1.git'
+  warn: could not delete legacy/chore/cleanup-consolidated
+  legacy/chore/cleanup-phase2 @ 4696cd0 -> tag archive/legacy-chore-cleanup-phase2 then delete
+To https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1.git
+ * [new tag]         archive/legacy-chore-cleanup-phase2 -> archive/legacy-chore-cleanup-phase2
+error: dst refspec legacy/chore/cleanup-phase2 matches more than one
+error: failed to push some refs to 'https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1.git'
+  warn: could not delete legacy/chore/cleanup-phase2
+  legacy/chore/code-quality @ 1a4f125 -> tag archive/legacy-chore-code-quality then delete
+To https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1.git
+ * [new tag]         archive/legacy-chore-code-quality -> archive/legacy-chore-code-quality
+error: dst refspec legacy/chore/code-quality matches more than one
+error: failed to push some refs to 'https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1.git'
+  warn: could not delete legacy/chore/code-quality
+  legacy/chore/fix-batch1-kb-critical @ 06c0ca4 -> tag archive/legacy-chore-fix-batch1-kb-critical then delete
+To https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1.git
+ * [new tag]         archive/legacy-chore-fix-batch1-kb-critical -> archive/legacy-chore-fix-batch1-kb-critical
+error: dst refspec legacy/chore/fix-batch1-kb-critical matches more than one
+error: failed to push some refs to 'https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1.git'
+  warn: could not delete legacy/chore/fix-batch1-kb-critical
+  legacy/chore/fix-batch2-tracing-critical @ db8a3e7 -> tag archive/legacy-chore-fix-batch2-tracing-critical then delete
+To https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1.git
+ * [new tag]         archive/legacy-chore-fix-batch2-tracing-critical -> archive/legacy-chore-fix-batch2-tracing-critical
+error: dst refspec legacy/chore/fix-batch2-tracing-critical matches more than one
+error: failed to push some refs to 'https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1.git'
+  warn: could not delete legacy/chore/fix-batch2-tracing-critical
+  legacy/chore/fix-batch3-orchestrator-critical @ 4643b37 -> tag archive/legacy-chore-fix-batch3-orchestrator-critical then delete
+To https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1.git
+ * [new tag]         archive/legacy-chore-fix-batch3-orchestrator-critical -> archive/legacy-chore-fix-batch3-orchestrator-critical
+error: dst refspec legacy/chore/fix-batch3-orchestrator-critical matches more than one
+error: failed to push some refs to 'https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1.git'
+  warn: could not delete legacy/chore/fix-batch3-orchestrator-critical
+  legacy/chore/fix-batch4-guardrails-critical @ 7cf3da6 -> tag archive/legacy-chore-fix-batch4-guardrails-critical then delete
+To https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1.git
+ * [new tag]         archive/legacy-chore-fix-batch4-guardrails-critical -> archive/legacy-chore-fix-batch4-guardrails-critical
+error: dst refspec legacy/chore/fix-batch4-guardrails-critical matches more than one
+error: failed to push some refs to 'https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1.git'
+  warn: could not delete legacy/chore/fix-batch4-guardrails-critical
+  legacy/chore/fix-batch5-high @ 110fc8b -> tag archive/legacy-chore-fix-batch5-high then delete
+To https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1.git
+ * [new tag]         archive/legacy-chore-fix-batch5-high -> archive/legacy-chore-fix-batch5-high
+error: dst refspec legacy/chore/fix-batch5-high matches more than one
+error: failed to push some refs to 'https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1.git'
+  warn: could not delete legacy/chore/fix-batch5-high
+  legacy/chore/kb-and-docs-cleanup @ 641b207 -> tag archive/legacy-chore-kb-and-docs-cleanup then delete
+To https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1.git
+ * [new tag]         archive/legacy-chore-kb-and-docs-cleanup -> archive/legacy-chore-kb-and-docs-cleanup
+error: dst refspec legacy/chore/kb-and-docs-cleanup matches more than one
+error: failed to push some refs to 'https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1.git'
+  warn: could not delete legacy/chore/kb-and-docs-cleanup
+  legacy/codex/submodules-mvp-integration-20260829 @ 301d8b7 -> tag archive/legacy-codex-submodules-mvp-integration-20260829 then delete
+To https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1.git
+ * [new tag]         archive/legacy-codex-submodules-mvp-integration-20260829 -> archive/legacy-codex-submodules-mvp-integration-20260829
+error: dst refspec legacy/codex/submodules-mvp-integration-20260829 matches more than one
+error: failed to push some refs to 'https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1.git'
+  warn: could not delete legacy/codex/submodules-mvp-integration-20260829
+  legacy/feat/reranker-memory @ 44c3631 -> tag archive/legacy-feat-reranker-memory then delete
+To https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1.git
+ * [new tag]         archive/legacy-feat-reranker-memory -> archive/legacy-feat-reranker-memory
+error: dst refspec legacy/feat/reranker-memory matches more than one
+error: failed to push some refs to 'https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1.git'
+  warn: could not delete legacy/feat/reranker-memory
+  legacy/fix/async-filters @ 1cc6960 -> tag archive/legacy-fix-async-filters then delete
+To https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1.git
+ * [new tag]         archive/legacy-fix-async-filters -> archive/legacy-fix-async-filters
+error: dst refspec legacy/fix/async-filters matches more than one
+error: failed to push some refs to 'https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1.git'
+  warn: could not delete legacy/fix/async-filters
+  legacy/fix/eval-citation-metric @ 38ba337 -> tag archive/legacy-fix-eval-citation-metric then delete
+To https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1.git
+ * [new tag]         archive/legacy-fix-eval-citation-metric -> archive/legacy-fix-eval-citation-metric
+error: dst refspec legacy/fix/eval-citation-metric matches more than one
+error: failed to push some refs to 'https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1.git'
+  warn: could not delete legacy/fix/eval-citation-metric
+  legacy/fix/jsonl-path-mismatch @ b65706a -> tag archive/legacy-fix-jsonl-path-mismatch then delete
+To https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1.git
+ * [new tag]         archive/legacy-fix-jsonl-path-mismatch -> archive/legacy-fix-jsonl-path-mismatch
+error: dst refspec legacy/fix/jsonl-path-mismatch matches more than one
+error: failed to push some refs to 'https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1.git'
+  warn: could not delete legacy/fix/jsonl-path-mismatch
+  legacy/fix/schema-mismatch @ cfb311c -> tag archive/legacy-fix-schema-mismatch then delete
+To https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1.git
+ * [new tag]         archive/legacy-fix-schema-mismatch -> archive/legacy-fix-schema-mismatch
+error: dst refspec legacy/fix/schema-mismatch matches more than one
+error: failed to push some refs to 'https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1.git'
+  warn: could not delete legacy/fix/schema-mismatch
+  legacy/fix/timeseries-n1-query @ 32e779b -> tag archive/legacy-fix-timeseries-n1-query then delete
+To https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1.git
+ * [new tag]         archive/legacy-fix-timeseries-n1-query -> archive/legacy-fix-timeseries-n1-query
+error: dst refspec legacy/fix/timeseries-n1-query matches more than one
+error: failed to push some refs to 'https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1.git'
+  warn: could not delete legacy/fix/timeseries-n1-query
+  legacy/opencode-history @ 31d3e94 -> tag archive/legacy-opencode-history then delete
+To https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1.git
+ * [new tag]         archive/legacy-opencode-history -> archive/legacy-opencode-history
+error: dst refspec legacy/opencode-history matches more than one
+error: failed to push some refs to 'https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1.git'
+  warn: could not delete legacy/opencode-history
+  legacy/release/v1 @ 0013cb7 -> tag archive/legacy-release-v1 then delete
+To https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1.git
+ * [new tag]         archive/legacy-release-v1 -> archive/legacy-release-v1
+error: dst refspec legacy/release/v1 matches more than one
+error: failed to push some refs to 'https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1.git'
+  warn: could not delete legacy/release/v1
+  legacy/vast-deploy @ f54d46e -> tag archive/legacy-vast-deploy then delete
+To https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1.git
+ * [new tag]         archive/legacy-vast-deploy -> archive/legacy-vast-deploy
+error: dst refspec legacy/vast-deploy matches more than one
+error: failed to push some refs to 'https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1.git'
+  warn: could not delete legacy/vast-deploy
+  legacy/vast-gemma4-migration @ c7d1ad5 -> tag archive/legacy-vast-gemma4-migration then delete
+To https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1.git
+ * [new tag]         archive/legacy-vast-gemma4-migration -> archive/legacy-vast-gemma4-migration
+error: dst refspec legacy/vast-gemma4-migration matches more than one
+error: failed to push some refs to 'https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1.git'
+  warn: could not delete legacy/vast-gemma4-migration
+=== agent-state (prod=main) ===
+=== components/guardrails (prod=main) ===
+  chore/cleanup @ 4365320 -> tag archive/chore-cleanup then delete
+To https://github.com/AliNikkhah2001/Work_RAG-Guardrails.git
+ * [new tag]         archive/chore-cleanup -> archive/chore-cleanup
+To https://github.com/AliNikkhah2001/Work_RAG-Guardrails.git
+ - [deleted]         chore/cleanup
+  chore/code-quality @ a129d60 -> tag archive/chore-code-quality then delete
+To https://github.com/AliNikkhah2001/Work_RAG-Guardrails.git
+ * [new tag]         archive/chore-code-quality -> archive/chore-code-quality
+To https://github.com/AliNikkhah2001/Work_RAG-Guardrails.git
+ - [deleted]         chore/code-quality
+  chore/fix-batch4-guardrails-critical @ f3553cb -> tag archive/chore-fix-batch4-guardrails-critical then delete
+To https://github.com/AliNikkhah2001/Work_RAG-Guardrails.git
+ * [new tag]         archive/chore-fix-batch4-guardrails-critical -> archive/chore-fix-batch4-guardrails-critical
+To https://github.com/AliNikkhah2001/Work_RAG-Guardrails.git
+ - [deleted]         chore/fix-batch4-guardrails-critical
+  vast-gemma4-migration @ 80547df -> tag archive/vast-gemma4-migration then delete
+To https://github.com/AliNikkhah2001/Work_RAG-Guardrails.git
+ * [new tag]         archive/vast-gemma4-migration -> archive/vast-gemma4-migration
+To https://github.com/AliNikkhah2001/Work_RAG-Guardrails.git
+ - [deleted]         vast-gemma4-migration
+=== components/knowledgebase (prod=master) ===
+  Deprecated/feat/benchmark-famteb @ f5c8abd -> tag archive/Deprecated-feat-benchmark-famteb then delete
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ * [new tag]         archive/Deprecated-feat-benchmark-famteb -> archive/Deprecated-feat-benchmark-famteb
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ - [deleted]         Deprecated/feat/benchmark-famteb
+  Deprecated/feat/benchmark-famteb-live @ 63f5ae7 -> tag archive/Deprecated-feat-benchmark-famteb-live then delete
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ * [new tag]         archive/Deprecated-feat-benchmark-famteb-live -> archive/Deprecated-feat-benchmark-famteb-live
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ - [deleted]         Deprecated/feat/benchmark-famteb-live
+  Deprecated/feat/content-format @ 642430b -> tag archive/Deprecated-feat-content-format then delete
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ * [new tag]         archive/Deprecated-feat-content-format -> archive/Deprecated-feat-content-format
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ - [deleted]         Deprecated/feat/content-format
+  Deprecated/feat/contextual-retrieval @ f5c8abd -> tag archive/Deprecated-feat-contextual-retrieval then delete
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ * [new tag]         archive/Deprecated-feat-contextual-retrieval -> archive/Deprecated-feat-contextual-retrieval
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ - [deleted]         Deprecated/feat/contextual-retrieval
+  Deprecated/feat/corpus-dedup @ 9daf8fc -> tag archive/Deprecated-feat-corpus-dedup then delete
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ * [new tag]         archive/Deprecated-feat-corpus-dedup -> archive/Deprecated-feat-corpus-dedup
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ - [deleted]         Deprecated/feat/corpus-dedup
+  Deprecated/feat/cross-encoder-reranker @ f5c8abd -> tag archive/Deprecated-feat-cross-encoder-reranker then delete
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ * [new tag]         archive/Deprecated-feat-cross-encoder-reranker -> archive/Deprecated-feat-cross-encoder-reranker
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ - [deleted]         Deprecated/feat/cross-encoder-reranker
+  Deprecated/feat/eval @ 63be10f -> tag archive/Deprecated-feat-eval then delete
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ * [new tag]         archive/Deprecated-feat-eval -> archive/Deprecated-feat-eval
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ - [deleted]         Deprecated/feat/eval
+  Deprecated/feat/fix-keyword-extraction @ 15a8c04 -> tag archive/Deprecated-feat-fix-keyword-extraction then delete
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ * [new tag]         archive/Deprecated-feat-fix-keyword-extraction -> archive/Deprecated-feat-fix-keyword-extraction
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ - [deleted]         Deprecated/feat/fix-keyword-extraction
+  Deprecated/feat/hyde-pseudo-doc @ f5c8abd -> tag archive/Deprecated-feat-hyde-pseudo-doc then delete
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ * [new tag]         archive/Deprecated-feat-hyde-pseudo-doc -> archive/Deprecated-feat-hyde-pseudo-doc
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ - [deleted]         Deprecated/feat/hyde-pseudo-doc
+  Deprecated/feat/hyde-ragas @ 5dad5d1 -> tag archive/Deprecated-feat-hyde-ragas then delete
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ * [new tag]         archive/Deprecated-feat-hyde-ragas -> archive/Deprecated-feat-hyde-ragas
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ - [deleted]         Deprecated/feat/hyde-ragas
+  Deprecated/feat/hyde-wiring @ 9daf8fc -> tag archive/Deprecated-feat-hyde-wiring then delete
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ * [new tag]         archive/Deprecated-feat-hyde-wiring -> archive/Deprecated-feat-hyde-wiring
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ - [deleted]         Deprecated/feat/hyde-wiring
+  Deprecated/feat/incomplete-qa @ 5771a2c -> tag archive/Deprecated-feat-incomplete-qa then delete
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ * [new tag]         archive/Deprecated-feat-incomplete-qa -> archive/Deprecated-feat-incomplete-qa
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ - [deleted]         Deprecated/feat/incomplete-qa
+  Deprecated/feat/latency-optimize @ 9daf8fc -> tag archive/Deprecated-feat-latency-optimize then delete
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ * [new tag]         archive/Deprecated-feat-latency-optimize -> archive/Deprecated-feat-latency-optimize
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ - [deleted]         Deprecated/feat/latency-optimize
+  Deprecated/feat/multi-query-rewriting @ f5c8abd -> tag archive/Deprecated-feat-multi-query-rewriting then delete
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ * [new tag]         archive/Deprecated-feat-multi-query-rewriting -> archive/Deprecated-feat-multi-query-rewriting
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ - [deleted]         Deprecated/feat/multi-query-rewriting
+  Deprecated/feat/multi-query-wiring @ 9daf8fc -> tag archive/Deprecated-feat-multi-query-wiring then delete
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ * [new tag]         archive/Deprecated-feat-multi-query-wiring -> archive/Deprecated-feat-multi-query-wiring
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ - [deleted]         Deprecated/feat/multi-query-wiring
+  Deprecated/feat/parent-scope @ a337706 -> tag archive/Deprecated-feat-parent-scope then delete
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ * [new tag]         archive/Deprecated-feat-parent-scope -> archive/Deprecated-feat-parent-scope
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ - [deleted]         Deprecated/feat/parent-scope
+  Deprecated/feat/qa-massive-and-zip @ f111939 -> tag archive/Deprecated-feat-qa-massive-and-zip then delete
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ * [new tag]         archive/Deprecated-feat-qa-massive-and-zip -> archive/Deprecated-feat-qa-massive-and-zip
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ - [deleted]         Deprecated/feat/qa-massive-and-zip
+  Deprecated/feat/reranker-memory @ 3f78ed8 -> tag archive/Deprecated-feat-reranker-memory then delete
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ * [new tag]         archive/Deprecated-feat-reranker-memory -> archive/Deprecated-feat-reranker-memory
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ - [deleted]         Deprecated/feat/reranker-memory
+  Deprecated/feat/retrieval-tuning @ 8b31883 -> tag archive/Deprecated-feat-retrieval-tuning then delete
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ * [new tag]         archive/Deprecated-feat-retrieval-tuning -> archive/Deprecated-feat-retrieval-tuning
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ - [deleted]         Deprecated/feat/retrieval-tuning
+  Deprecated/feat/synthetic-gemma-remote @ fff461f -> tag archive/Deprecated-feat-synthetic-gemma-remote then delete
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ * [new tag]         archive/Deprecated-feat-synthetic-gemma-remote -> archive/Deprecated-feat-synthetic-gemma-remote
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ - [deleted]         Deprecated/feat/synthetic-gemma-remote
+  Deprecated/feat/synthetic-generation @ 3a005cf -> tag archive/Deprecated-feat-synthetic-generation then delete
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ * [new tag]         archive/Deprecated-feat-synthetic-generation -> archive/Deprecated-feat-synthetic-generation
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ - [deleted]         Deprecated/feat/synthetic-generation
+  Deprecated/feat/table-aware-chunker @ 469a148 -> tag archive/Deprecated-feat-table-aware-chunker then delete
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ * [new tag]         archive/Deprecated-feat-table-aware-chunker -> archive/Deprecated-feat-table-aware-chunker
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ - [deleted]         Deprecated/feat/table-aware-chunker
+  Deprecated/fix/cli-v7-database-arg @ 2432acd -> tag archive/Deprecated-fix-cli-v7-database-arg then delete
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ * [new tag]         archive/Deprecated-fix-cli-v7-database-arg -> archive/Deprecated-fix-cli-v7-database-arg
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ - [deleted]         Deprecated/fix/cli-v7-database-arg
+  Deprecated/stable/v7.2 @ 1b77597 -> tag archive/Deprecated-stable-v7.2 then delete
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ * [new tag]         archive/Deprecated-stable-v7.2 -> archive/Deprecated-stable-v7.2
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ - [deleted]         Deprecated/stable/v7.2
+  Deprecated/vast-gemma4-migration @ b7c23c7 -> tag archive/Deprecated-vast-gemma4-migration then delete
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ * [new tag]         archive/Deprecated-vast-gemma4-migration -> archive/Deprecated-vast-gemma4-migration
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ - [deleted]         Deprecated/vast-gemma4-migration
+  legacy/backup-pre-pull-26b4fe3 @ 26b4fe3 -> tag archive/legacy-backup-pre-pull-26b4fe3 then delete
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ * [new tag]         archive/legacy-backup-pre-pull-26b4fe3 -> archive/legacy-backup-pre-pull-26b4fe3
+error: dst refspec legacy/backup-pre-pull-26b4fe3 matches more than one
+error: failed to push some refs to 'https://github.com/AliNikkhah2001/Work_RAG-KB.git'
+  warn: could not delete legacy/backup-pre-pull-26b4fe3
+  legacy/chore/cleanup @ 67c7cf2 -> tag archive/legacy-chore-cleanup then delete
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ * [new tag]         archive/legacy-chore-cleanup -> archive/legacy-chore-cleanup
+error: dst refspec legacy/chore/cleanup matches more than one
+error: failed to push some refs to 'https://github.com/AliNikkhah2001/Work_RAG-KB.git'
+  warn: could not delete legacy/chore/cleanup
+  legacy/chore/fix-batch1-kb-critical @ c840521 -> tag archive/legacy-chore-fix-batch1-kb-critical then delete
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ * [new tag]         archive/legacy-chore-fix-batch1-kb-critical -> archive/legacy-chore-fix-batch1-kb-critical
+error: dst refspec legacy/chore/fix-batch1-kb-critical matches more than one
+error: failed to push some refs to 'https://github.com/AliNikkhah2001/Work_RAG-KB.git'
+  warn: could not delete legacy/chore/fix-batch1-kb-critical
+  legacy/chore/fix-batch5-high @ f823beb -> tag archive/legacy-chore-fix-batch5-high then delete
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ * [new tag]         archive/legacy-chore-fix-batch5-high -> archive/legacy-chore-fix-batch5-high
+error: dst refspec legacy/chore/fix-batch5-high matches more than one
+error: failed to push some refs to 'https://github.com/AliNikkhah2001/Work_RAG-KB.git'
+  warn: could not delete legacy/chore/fix-batch5-high
+  legacy/feat/advanced-retrieval-synthetic @ 57d9c64 -> tag archive/legacy-feat-advanced-retrieval-synthetic then delete
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ * [new tag]         archive/legacy-feat-advanced-retrieval-synthetic -> archive/legacy-feat-advanced-retrieval-synthetic
+error: dst refspec legacy/feat/advanced-retrieval-synthetic matches more than one
+error: failed to push some refs to 'https://github.com/AliNikkhah2001/Work_RAG-KB.git'
+  warn: could not delete legacy/feat/advanced-retrieval-synthetic
+  legacy/feat/settings-configs @ 4b28716 -> tag archive/legacy-feat-settings-configs then delete
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ * [new tag]         archive/legacy-feat-settings-configs -> archive/legacy-feat-settings-configs
+error: dst refspec legacy/feat/settings-configs matches more than one
+error: failed to push some refs to 'https://github.com/AliNikkhah2001/Work_RAG-KB.git'
+  warn: could not delete legacy/feat/settings-configs
+  legacy/fix/retrieval-bugs @ 7b34933 -> tag archive/legacy-fix-retrieval-bugs then delete
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ * [new tag]         archive/legacy-fix-retrieval-bugs -> archive/legacy-fix-retrieval-bugs
+error: dst refspec legacy/fix/retrieval-bugs matches more than one
+error: failed to push some refs to 'https://github.com/AliNikkhah2001/Work_RAG-KB.git'
+  warn: could not delete legacy/fix/retrieval-bugs
+  legacy/server @ 26b4fe3 -> tag archive/legacy-server then delete
+To https://github.com/AliNikkhah2001/Work_RAG-KB.git
+ * [new tag]         archive/legacy-server -> archive/legacy-server
+error: dst refspec legacy/server matches more than one
+error: failed to push some refs to 'https://github.com/AliNikkhah2001/Work_RAG-KB.git'
+  warn: could not delete legacy/server
+=== components/orchestrator (prod=main) ===
+  chore/cleanup @ 5983e88 -> tag archive/chore-cleanup then delete
+To https://github.com/AliNikkhah2001/Work_RAG-Orchestrator.git
+ * [new tag]         archive/chore-cleanup -> archive/chore-cleanup
+To https://github.com/AliNikkhah2001/Work_RAG-Orchestrator.git
+ - [deleted]         chore/cleanup
+  chore/code-quality @ 5ab90c9 -> tag archive/chore-code-quality then delete
+To https://github.com/AliNikkhah2001/Work_RAG-Orchestrator.git
+ * [new tag]         archive/chore-code-quality -> archive/chore-code-quality
+To https://github.com/AliNikkhah2001/Work_RAG-Orchestrator.git
+ - [deleted]         chore/code-quality
+  chore/fix-batch3-orchestrator-critical @ 6985d3c -> tag archive/chore-fix-batch3-orchestrator-critical then delete
+To https://github.com/AliNikkhah2001/Work_RAG-Orchestrator.git
+ * [new tag]         archive/chore-fix-batch3-orchestrator-critical -> archive/chore-fix-batch3-orchestrator-critical
+To https://github.com/AliNikkhah2001/Work_RAG-Orchestrator.git
+ - [deleted]         chore/fix-batch3-orchestrator-critical
+  chore/fix-batch5-high @ c873dc9 -> tag archive/chore-fix-batch5-high then delete
+To https://github.com/AliNikkhah2001/Work_RAG-Orchestrator.git
+ * [new tag]         archive/chore-fix-batch5-high -> archive/chore-fix-batch5-high
+To https://github.com/AliNikkhah2001/Work_RAG-Orchestrator.git
+ - [deleted]         chore/fix-batch5-high
+  vast-gemma4-migration @ cee7a54 -> tag archive/vast-gemma4-migration then delete
+To https://github.com/AliNikkhah2001/Work_RAG-Orchestrator.git
+ * [new tag]         archive/vast-gemma4-migration -> archive/vast-gemma4-migration
+To https://github.com/AliNikkhah2001/Work_RAG-Orchestrator.git
+ - [deleted]         vast-gemma4-migration
+=== components/server-setup (prod=main) ===
+  chore/cleanup @ 4f4dd2f -> tag archive/chore-cleanup then delete
+To https://github.com/AliNikkhah2001/Work_RAG-Server-Setup.git
+ * [new tag]         archive/chore-cleanup -> archive/chore-cleanup
+To https://github.com/AliNikkhah2001/Work_RAG-Server-Setup.git
+ - [deleted]         chore/cleanup
+  chore/fix-batch2-tracing-critical @ 9f2eb80 -> tag archive/chore-fix-batch2-tracing-critical then delete
+To https://github.com/AliNikkhah2001/Work_RAG-Server-Setup.git
+ * [new tag]         archive/chore-fix-batch2-tracing-critical -> archive/chore-fix-batch2-tracing-critical
+To https://github.com/AliNikkhah2001/Work_RAG-Server-Setup.git
+ - [deleted]         chore/fix-batch2-tracing-critical
+  deepseek-fp16 @ 37e3e1c -> tag archive/deepseek-fp16 then delete
+To https://github.com/AliNikkhah2001/Work_RAG-Server-Setup.git
+ * [new tag]         archive/deepseek-fp16 -> archive/deepseek-fp16
+To https://github.com/AliNikkhah2001/Work_RAG-Server-Setup.git
+ - [deleted]         deepseek-fp16
+  vast-gemma4-migration @ 5d5a7e4 -> tag archive/vast-gemma4-migration then delete
+To https://github.com/AliNikkhah2001/Work_RAG-Server-Setup.git
+ * [new tag]         archive/vast-gemma4-migration -> archive/vast-gemma4-migration
+To https://github.com/AliNikkhah2001/Work_RAG-Server-Setup.git
+ - [deleted]         vast-gemma4-migration
+Done. Review tags archive/* if anything must be restored.

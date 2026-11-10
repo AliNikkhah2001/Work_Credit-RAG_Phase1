@@ -1,0 +1,521 @@
+{
+  "generated": "2026-11-10T00:26:11.232606Z",
+  "repos": [
+    {
+      "name": "Work_Credit-RAG_Phase1",
+      "path": ".",
+      "prod_branch": "main",
+      "has_develop": true,
+      "stale_candidates": [
+        {
+          "branch": "legacy/chore/cleanup-consolidated",
+          "tip": "34c8d44",
+          "ahead_of_prod": "0",
+          "subject": "chore: advance submodule pins for cleanup",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "legacy/chore/cleanup-phase2",
+          "tip": "4696cd0",
+          "ahead_of_prod": "0",
+          "subject": "chore: update server-setup pin to c4b5efb",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "legacy/chore/code-quality",
+          "tip": "1a4f125",
+          "ahead_of_prod": "0",
+          "subject": "docs: add audit history and fix plans for 142 errors (2026-09-27)",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "legacy/chore/fix-batch1-kb-critical",
+          "tip": "06c0ca4",
+          "ahead_of_prod": "0",
+          "subject": "chore: update knowledgebase pin for K-C4 reaper",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "legacy/chore/fix-batch2-tracing-critical",
+          "tip": "db8a3e7",
+          "ahead_of_prod": "0",
+          "subject": "fix: T-C1 gitignore, T-C2 tracing auth",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "legacy/chore/fix-batch3-orchestrator-critical",
+          "tip": "4643b37",
+          "ahead_of_prod": "0",
+          "subject": "chore: update orchestrator pin for Batch 3 critical",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "legacy/chore/fix-batch4-guardrails-critical",
+          "tip": "7cf3da6",
+          "ahead_of_prod": "0",
+          "subject": "chore: update guardrails pin for Batch 4 critical",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "legacy/chore/fix-batch5-high",
+          "tip": "110fc8b",
+          "ahead_of_prod": "0",
+          "subject": "feat: star scoring + report problem + retrieved dump (ICS only)",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "legacy/chore/kb-and-docs-cleanup",
+          "tip": "641b207",
+          "ahead_of_prod": "0",
+          "subject": "chore: integrate KB submodule updates and cleanup docs",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "legacy/codex/submodules-mvp-integration-20260829",
+          "tip": "301d8b7",
+          "ahead_of_prod": "0",
+          "subject": "refactor: compose RAG platform from component submodules",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "legacy/feat/reranker-memory",
+          "tip": "44c3631",
+          "ahead_of_prod": "0",
+          "subject": "chore: add reranker benchmark results + plots, system scripts; pin kb 3f78ed8",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "legacy/fix/async-filters",
+          "tip": "1cc6960",
+          "ahead_of_prod": "1",
+          "subject": "fix(tracing): eliminate async blocking in openwebui filters using asyncio.to_thread",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "legacy/fix/eval-citation-metric",
+          "tip": "38ba337",
+          "ahead_of_prod": "0",
+          "subject": "fix(eval): calculate actual citation accuracy instead of duplicate retrieval hit rate",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "legacy/fix/jsonl-path-mismatch",
+          "tip": "b65706a",
+          "ahead_of_prod": "1",
+          "subject": "fix(tracing): align eval_store JSONL path with app.py",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "legacy/fix/schema-mismatch",
+          "tip": "cfb311c",
+          "ahead_of_prod": "1",
+          "subject": "fix(tracing): Align trace capture schema with eval_store",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "legacy/fix/timeseries-n1-query",
+          "tip": "32e779b",
+          "ahead_of_prod": "1",
+          "subject": "perf(tracing): eliminate N+1 queries in timeseries generation",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "legacy/opencode-history",
+          "tip": "31d3e94",
+          "ahead_of_prod": "27",
+          "subject": "benchmark: baseline-v2 results (stable corpus 0368bdd4, 776 queries)",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "legacy/release/v1",
+          "tip": "0013cb7",
+          "ahead_of_prod": "0",
+          "subject": "feat(release): agent skills (AGENTS.md, COMMANDS.md, stop/health), dockerized stack (deploy/docker)",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "legacy/vast-deploy",
+          "tip": "f54d46e",
+          "ahead_of_prod": "0",
+          "subject": "feat(deploy): orch pin cee7a54 (spans, greeting intro, plain-text answers)",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "legacy/vast-gemma4-migration",
+          "tip": "c7d1ad5",
+          "ahead_of_prod": "0",
+          "subject": "feat(phase1): 120-q agent benchmark + LLM-judge + report site, cite-max-2, Q8 rerun (no gain)",
+          "action": "tag-then-delete"
+        }
+      ]
+    },
+    {
+      "name": "ICS_ChatBot_agent-state",
+      "path": "agent-state",
+      "prod_branch": "main",
+      "has_develop": true,
+      "stale_candidates": []
+    },
+    {
+      "name": "Work_RAG-Guardrails",
+      "path": "components/guardrails",
+      "prod_branch": "main",
+      "has_develop": true,
+      "stale_candidates": [
+        {
+          "branch": "chore/cleanup",
+          "tip": "4365320",
+          "ahead_of_prod": "0",
+          "subject": "chore: fix dead code, remove unused imports",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "chore/code-quality",
+          "tip": "a129d60",
+          "ahead_of_prod": "0",
+          "subject": "perf: compile clean_gemma regex, remove import re from hot path",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "chore/fix-batch4-guardrails-critical",
+          "tip": "f3553cb",
+          "ahead_of_prod": "0",
+          "subject": "fix: Batch 4 \u2014 guardrails critical G-C1..C6",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "vast-gemma4-migration",
+          "tip": "80547df",
+          "ahead_of_prod": "0",
+          "subject": "docs(guardrails): update README to implemented v2 runtime (rails API, config, eval)",
+          "action": "tag-then-delete"
+        }
+      ]
+    },
+    {
+      "name": "Work_RAG-KB",
+      "path": "components/knowledgebase",
+      "prod_branch": "master",
+      "has_develop": true,
+      "stale_candidates": [
+        {
+          "branch": "Deprecated/feat/benchmark-famteb",
+          "tip": "f5c8abd",
+          "ahead_of_prod": "0",
+          "subject": "trigger pages deploy",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "Deprecated/feat/benchmark-famteb-live",
+          "tip": "63f5ae7",
+          "ahead_of_prod": "0",
+          "subject": "docs: comprehensive W1+W5 fix report + smoke test famteb",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "Deprecated/feat/content-format",
+          "tip": "642430b",
+          "ahead_of_prod": "0",
+          "subject": "\ufefftest(chunker): content format uses clean newlines + Persian labels",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "Deprecated/feat/contextual-retrieval",
+          "tip": "f5c8abd",
+          "ahead_of_prod": "0",
+          "subject": "trigger pages deploy",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "Deprecated/feat/corpus-dedup",
+          "tip": "9daf8fc",
+          "ahead_of_prod": "0",
+          "subject": "docs: add checkboxed roadmap for W1-W5 fixes (9 phases)",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "Deprecated/feat/cross-encoder-reranker",
+          "tip": "f5c8abd",
+          "ahead_of_prod": "0",
+          "subject": "trigger pages deploy",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "Deprecated/feat/eval",
+          "tip": "63be10f",
+          "ahead_of_prod": "0",
+          "subject": "\ufefffeat(eval): add ranx and RAGAS evaluation backends",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "Deprecated/feat/fix-keyword-extraction",
+          "tip": "15a8c04",
+          "ahead_of_prod": "0",
+          "subject": "fix(W1-A): sanitize keyword_only junk (\u0645\u062f\u0644: \u062d\u0642\u06cc\u0642\u06cc) + fix Persian digit map",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "Deprecated/feat/hyde-pseudo-doc",
+          "tip": "f5c8abd",
+          "ahead_of_prod": "0",
+          "subject": "trigger pages deploy",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "Deprecated/feat/hyde-ragas",
+          "tip": "5dad5d1",
+          "ahead_of_prod": "0",
+          "subject": "fix(phase8): dead code removal \u2014 C19 _CONTEXT_TEMPLATE, C20 _compute_idf, C21 generate_beam, B16 identity typos, B17 manner stop-word",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "Deprecated/feat/hyde-wiring",
+          "tip": "9daf8fc",
+          "ahead_of_prod": "0",
+          "subject": "docs: add checkboxed roadmap for W1-W5 fixes (9 phases)",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "Deprecated/feat/incomplete-qa",
+          "tip": "5771a2c",
+          "ahead_of_prod": "0",
+          "subject": "\ufefffeat(chunker): skip incomplete QA rows (Option A)",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "Deprecated/feat/latency-optimize",
+          "tip": "9daf8fc",
+          "ahead_of_prod": "0",
+          "subject": "docs: add checkboxed roadmap for W1-W5 fixes (9 phases)",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "Deprecated/feat/multi-query-rewriting",
+          "tip": "f5c8abd",
+          "ahead_of_prod": "0",
+          "subject": "trigger pages deploy",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "Deprecated/feat/multi-query-wiring",
+          "tip": "9daf8fc",
+          "ahead_of_prod": "0",
+          "subject": "docs: add checkboxed roadmap for W1-W5 fixes (9 phases)",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "Deprecated/feat/parent-scope",
+          "tip": "a337706",
+          "ahead_of_prod": "0",
+          "subject": "\ufeffui(web): expose parent chunk scope choice on pipeline page",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "Deprecated/feat/qa-massive-and-zip",
+          "tip": "f111939",
+          "ahead_of_prod": "0",
+          "subject": "feat(qa): massive QA harness and zip browser",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "Deprecated/feat/reranker-memory",
+          "tip": "3f78ed8",
+          "ahead_of_prod": "0",
+          "subject": "data(kb): dense MiniLM embeddings snapshot (2077 chunks, eval reproducibility)",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "Deprecated/feat/retrieval-tuning",
+          "tip": "8b31883",
+          "ahead_of_prod": "0",
+          "subject": "fix(retrieval): IVA 4 misses \u0393\u00c7\u00f6 RERANKER_TOP_K 50->100, colloquial expansion, strip leading \u256a\u00a2, duplicate gold",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "Deprecated/feat/synthetic-gemma-remote",
+          "tip": "fff461f",
+          "ahead_of_prod": "0",
+          "subject": "docs: add synthetic Gemma 30B remote execution guide (black-box API)",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "Deprecated/feat/synthetic-generation",
+          "tip": "3a005cf",
+          "ahead_of_prod": "0",
+          "subject": "feat: Complete retrieval v4 overhaul + synthetic data generation",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "Deprecated/feat/table-aware-chunker",
+          "tip": "469a148",
+          "ahead_of_prod": "0",
+          "subject": "feat(parser): type-aware schemas glossary/staff/loan/timeline + row-wise chunking",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "Deprecated/fix/cli-v7-database-arg",
+          "tip": "2432acd",
+          "ahead_of_prod": "1",
+          "subject": "fix(kb): cli PipelineOrchestrator arg database=db not db (was TypeError on ingest --full)",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "Deprecated/stable/v7.2",
+          "tip": "1b77597",
+          "ahead_of_prod": "0",
+          "subject": "merge: feat/qa-massive-and-zip into master",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "Deprecated/vast-gemma4-migration",
+          "tip": "b7c23c7",
+          "ahead_of_prod": "0",
+          "subject": "fix(kb): await search in request loop instead of to_thread (asyncpg pool binds to first loop; worker thread raised 'attached to a different loop')",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "legacy/backup-pre-pull-26b4fe3",
+          "tip": "26b4fe3",
+          "ahead_of_prod": "8",
+          "subject": "initial server branch",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "legacy/chore/cleanup",
+          "tip": "67c7cf2",
+          "ahead_of_prod": "0",
+          "subject": "chore: phase2 docs cleanup",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "legacy/chore/fix-batch1-kb-critical",
+          "tip": "c840521",
+          "ahead_of_prod": "3",
+          "subject": "fix: K-C4 add stage reaper and quota constants",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "legacy/chore/fix-batch5-high",
+          "tip": "f823beb",
+          "ahead_of_prod": "4",
+          "subject": "fix: K-H1 remove db_url leak, K-H6 is_relative_to for zip-slip",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "legacy/feat/advanced-retrieval-synthetic",
+          "tip": "57d9c64",
+          "ahead_of_prod": "7",
+          "subject": "fix(synthetic): use suffixed output filenames in save paths",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "legacy/feat/settings-configs",
+          "tip": "4b28716",
+          "ahead_of_prod": "1",
+          "subject": "feat(settings-configs): complete settings & configs section",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "legacy/fix/retrieval-bugs",
+          "tip": "7b34933",
+          "ahead_of_prod": "0",
+          "subject": "feat(ui): add retrieval sandbox, fix stale doc bugs, add git vault versioning",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "legacy/server",
+          "tip": "26b4fe3",
+          "ahead_of_prod": "8",
+          "subject": "initial server branch",
+          "action": "tag-then-delete"
+        }
+      ]
+    },
+    {
+      "name": "Work_RAG-Orchestrator",
+      "path": "components/orchestrator",
+      "prod_branch": "main",
+      "has_develop": true,
+      "stale_candidates": [
+        {
+          "branch": "chore/cleanup",
+          "tip": "5983e88",
+          "ahead_of_prod": "0",
+          "subject": "chore: remove top-level app anti-pattern",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "chore/code-quality",
+          "tip": "5ab90c9",
+          "ahead_of_prod": "0",
+          "subject": "refactor: timing helper, async observability, compiled clean",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "chore/fix-batch3-orchestrator-critical",
+          "tip": "6985d3c",
+          "ahead_of_prod": "0",
+          "subject": "fix: Batch 3 \u2014 orchestrator critical (O-C1..C8)",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "chore/fix-batch5-high",
+          "tip": "c873dc9",
+          "ahead_of_prod": "0",
+          "subject": "feat: /report handler + auto-save observability + chunk source in audit",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "feat/reranker-memory",
+          "tip": "9d3b8b1",
+          "ahead_of_prod": "0",
+          "subject": "docs(orch): update README to implemented runtime (API contract, memory, tracing)",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "vast-gemma4-migration",
+          "tip": "cee7a54",
+          "ahead_of_prod": "0",
+          "subject": "feat(orch): per-node langfuse spans, new-chat greeting+intro prompt, plain-text answers (no markdown/[n])",
+          "action": "tag-then-delete"
+        }
+      ]
+    },
+    {
+      "name": "Work_RAG-Server-Setup",
+      "path": "components/server-setup",
+      "prod_branch": "main",
+      "has_develop": true,
+      "stale_candidates": [
+        {
+          "branch": "chore/cleanup",
+          "tip": "4f4dd2f",
+          "ahead_of_prod": "0",
+          "subject": "chore: cleanup \u2014 archive stale files, fix dead code",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "chore/fix-batch2-tracing-critical",
+          "tip": "9f2eb80",
+          "ahead_of_prod": "0",
+          "subject": "fix: T-C3 CORS explicit origins",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "deepseek-fp16",
+          "tip": "37e3e1c",
+          "ahead_of_prod": "0",
+          "subject": "auto: status update [2026-08-19 15:38:23]",
+          "action": "tag-then-delete"
+        },
+        {
+          "branch": "vast-gemma4-migration",
+          "tip": "5d5a7e4",
+          "ahead_of_prod": "0",
+          "subject": "feat(vast): add Vast.ai compose overlay for data-plane",
+          "action": "tag-then-delete"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,117 @@
+\chapter{Security and Networking}\label{security-and-networking}
+
+Work Credit RAG separates safety into three planes that stay distinct in design reviews. \textbf{Content safety} decides whether a Persian turn may be answered. \textbf{Application security} decides how services validate, store, and render request data. \textbf{Network exposure} decides which sockets a packet can reach. Guardrails on \texttt{:8200} is the content-safety boundary. Host bind addresses, Docker publish rules, and the corporate Squid proxy form the network plane. This chapter states each plane, the H200 black-box port map, the security control classes used in reviews, and the guardrails signal and policy architecture.
+
+\section{Threat model}\label{threat-model}
+
+\textbf{Content safety} is the product promise to credit-domain users. Every user turn is checked before retrieval is allowed to drive an answer, and every completed assistant reply is checked again before it returns to WebUI. The detectors look for prompt injection and jailbreak phrasing, HurtLex hate, Persian profanity, out-of-domain text, Iranian PII, and secret markers. A secret marker is a hard stop. Other signals are evidence for a judge. Timeout, an empty verdict, a missing policy, or a transport error fails closed: the caller receives a premade Persian refusal rather than the upstream text. Iranian PII that survives an allow decision is masked.
+
+\textbf{Application security} is the integrity of the processes behind those HTTP ports. Reviews cover upload filename handling, admin and ingest authentication, archive expansion quotas, template escaping for ingested office content, CORS origin and credential pairing, process-launch argument validation on the model manager, server-side request targets, Iranian PII and secret checks on the generation path, and stream-state isolation in the orchestrator.
+
+\textbf{Network exposure} is which sockets exist outside the host. On the self-hosted \textbf{H200} lab server (\texttt{ai-gpu1}) inference and embeddings listen on the internal port range, Docker publishes a data plane, and corporate egress is forced through Squid. Localhost clients construct \texttt{httpx.AsyncClient(...,\ trust\_env=False)} so proxy variables do not redirect loopback health checks. The three planes meet at one rule: a browser that can open WebUI must still be unable to open raw model backends, Postgres, or Redis as public services.
+
+\section{Black-box service and network view}\label{black-box-service-and-network-view}
+
+From outside the process boundary the platform is a set of listeners on the H200 lab server plus one proxy hop. The LLM Inference Manager is the OpenAI-shaped front door; llama.cpp and TensorRT-LLM are backends; Docker owns the data plane for WebUI, databases, and monitoring.
+
+\begin{figure}
+\centering
+\includegraphics[width=0.88\linewidth,height=0.36\textheight,keepaspectratio]{../assets/diagrams/security_dual_host_net.png}
+\caption{Dual-host networking}
+\end{figure}
+
+\emph{H200 lab networking. Manager, DeepSeek, embeddings, the Gemma pool, and TRT-LLM run on the host network. Docker publishes WebUI, pgvector, and Redis on high ports. Squid at \texttt{http://192.168.203.2:3128} is egress for package and model downloads. \texttt{httpx} clients that talk to localhost set \texttt{trust\_env=False} so that proxy variable cannot hairpin a loopback health check.}
+
+\subsection{H200 listeners}\label{h200-listeners}
+
+The project runs on the self-hosted H200 lab server. The manager on \texttt{:9000} is the gateway (\texttt{/v1/chat/completions}, admin load, Triton promote). DeepSeek-V4-Flash on \texttt{:9001} is a standalone wrapper and is not in \texttt{MODEL\_REGISTRY}. Embedding workers are multilingual-e5-small \texttt{:8001} (384-d), bge-m3 \texttt{:8002} (1024-d), and MiniLM \texttt{:8003} (384-d, OpenAI \texttt{/v1/embeddings}). Five llama.cpp Gemma replicas occupy \texttt{:8080}--\texttt{:8084}. TensorRT-LLM champion traffic is \texttt{:8010}. Dynamic extra llama.cpp ports \texttt{:8085}--\texttt{:8100} and Qwen on \texttt{:8090} exist on the host map and are treated as the same internal tier as the Gemma pool.
+
+Application listeners on the same host include Open WebUI \texttt{:13000}, orchestrator \texttt{:8100}, knowledge base \texttt{:8000}, guardrails \texttt{:8200}, the fallback trace collector \texttt{:3000}, Langfuse \texttt{:3001}, and LangGraph Studio \texttt{:2024}. Studio run input carries \texttt{request\_id}.
+
+Docker on the same host publishes the data plane and the browser UI. The runbook inventory includes Open WebUI \texttt{13000→8080}, pgvector \texttt{15432→5432}, Redis \texttt{16379→6379}, Qdrant \texttt{16333} (gRPC \texttt{16334}), Milvus \texttt{19530}, Grafana \texttt{13001}, Prometheus \texttt{19090}, and the OpenTelemetry collector \texttt{14317}. Those published container ports are reachable on the host network. Postgres and Redis remain internal services for the data plane rather than public internet endpoints.
+
+\subsection{\texorpdfstring{Squid and \texttt{trust\_env}}{Squid and trust\_env}}\label{squid-and-trust_env}
+
+Corporate egress on \texttt{ai-gpu1} is Squid at \texttt{http://192.168.203.2:3128}, exported as \texttt{HTTP\_PROXY} and \texttt{HTTPS\_PROXY} for apt, pip, git, and Hugging Face. Manager, guardrails, and the orchestrator's localhost clients construct \texttt{httpx.AsyncClient(...,\ trust\_env=False)}. With the flag off, a health check to \texttt{:8010}, \texttt{:8080}, or \texttt{:9000} stays on the loopback interface. Manual probes use \texttt{curl\ -\/-noproxy\ \textquotesingle{}*\textquotesingle{}}.
+
+\subsection{Compose MVP surface}\label{compose-mvp-surface}
+
+\texttt{compose.mvp.yml} is the privileged-host packaging of the MVP on hosts that run Docker. The file is explicit about the public surface: Open WebUI is published as \texttt{0.0.0.0:13000:8080}, and the Langfuse container is published as \texttt{0.0.0.0:3000:3000}. Knowledge base \texttt{:8000}, guardrails \texttt{:8200}, orchestrator \texttt{:8100}, Postgres \texttt{:5432}, and Redis \texttt{:6379} are \texttt{expose}d onto the Docker network so containers resolve each other by name. Guardrails reaches the model plane through the manager on the host network.
+
+\begin{figure}
+\centering
+\includegraphics[width=0.88\linewidth,height=0.36\textheight,keepaspectratio]{../assets/diagrams/security_compose_mvp.png}
+\caption{Compose MVP surface}
+\end{figure}
+
+\emph{Compose MVP surface. WebUI on \texttt{:13000} and Langfuse on \texttt{:3000} attach to host interfaces. Orchestrator, KB, guardrails, Postgres, and Redis stay on the Docker DNS network for service discovery.}
+
+\section{Security control classes}\label{security-control-classes}
+
+The table below summarizes the production security controls used when reviewing the stack. Each row names the control and what it covers in this architecture.
+
+\begin{figure}
+\centering
+\includegraphics[width=0.88\linewidth,height=0.36\textheight,keepaspectratio]{../assets/diagrams/security_audit_hotspots.png}
+\caption{Audit hotspots}
+\end{figure}
+
+\emph{Security control classes across knowledge base, manager and tracing, guardrails, and the orchestrator stream path. Reviews walk each control against the owning component on the H200 deployment.}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.5000}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.5000}}@{}}
+\toprule\noalign{}
+Control & What it covers \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Content adjudication & Judge and policy document assembly; Persian instruction-override phrasing handled as the \texttt{prompt\_injection} and jailbreak content-safety categories; ingestion logs on collector endpoints. \\
+Upload and export paths & Upload filenames are sanitized into the upload directory. \texttt{from-path} and export-path reads stay under restricted roots. \\
+Admin authentication & KB admin and ingest routers check \texttt{X-Admin-Token} / \texttt{KB\_ADMIN\_TOKEN}. Manager and tracing dashboard and ingestion endpoints require authentication. \\
+Archive limits & Ingest applies archive expansion quotas, compression-ratio checks, byte caps, and stage-directory retention. \\
+CORS & The manager and related dashboards use explicit CORS origin lists paired with credential flags. \\
+Process launch & Process launches omit \texttt{shell=True}. Admin load validates \texttt{port} and \texttt{n\_ctx} ranges and uses model-registry allowlists. \\
+Callback targets & Studio and related collector callbacks use allowlisted server-side request targets. \\
+Rendered content & Ingested chunk text is escaped in KB templates. Observability pages use safe DOM assignment. \\
+PII and secrets & PII-IR is Persian-digit and spaced-Sheba aware. Secret markers are hard blocks. Output rails run on streamed completions. \\
+Stream isolation & The orchestrator isolates per-request stream state so concurrent turns do not share mutable initial state. \\
+\end{longtable}
+
+\section{Guardrails signal and policy architecture}\label{guardrails-signal-and-policy-architecture}
+
+Guardrails is a sealed HTTP box on \texttt{:8200}. Orchestrator \texttt{:8100} posts \texttt{POST\ /v1/rails/check} with \texttt{\{stage,\ text,\ request\_id\}} for input and again for output, then \texttt{POST\ /v1/chat/completions} for guarded generation. Guardrails is the component that dials the H200 LLM manager on \texttt{:9000}. WebUI never receives upstream model URLs.
+
+\begin{figure}
+\centering
+\includegraphics[width=0.88\linewidth,height=0.36\textheight,keepaspectratio]{../assets/diagrams/security_guard_blackbox.png}
+\caption{Guardrails black-box}
+\end{figure}
+
+\emph{Guardrails black box. Callers see two routes and one outcome: a PII-masked completion with \texttt{finish\_reason=stop}, a length-mapped upstream condition with \texttt{finish\_reason=length}, or a category refusal with \texttt{finish\_reason=content\_filter}. Inside the box, input rails run before the upstream call and output rails run on the completed text. The upstream arrow terminates at the H200 manager. A judge error, an empty verdict, or a timeout refuses the turn.}
+
+Inside the box the order is deterministic signals, then a policy judge, then a direct-LLM yes/no self-check. \texttt{collect\_signals} normalizes Persian text and emits evidence: injection, jailbreak, HurtLex hate, profanity, scope, and PII. Those hits do not themselves block, except \texttt{secret} (\texttt{sk-} prefixes, \texttt{api\_key}, \texttt{database\_url}, \texttt{Bearer}), which \texttt{adjudicate} refuses immediately. \texttt{GUARD\_JUDGE\_BACKEND} selects \texttt{gemma} (pinned policy, parse \texttt{VERDICT} / \texttt{CATEGORY}), \texttt{mizan} (Manager \texttt{/systemone}), or \texttt{hybrid} (Mizan first, Gemma when confidence is low or a hard signal fired). \texttt{GUARD\_JUDGE\_MODE=on-signal} skips the LLM judge when the text is clean; \texttt{always} forces it. The self-check is selected by \texttt{GUARD\_NEMO\_SELFCHECK} (\texttt{on}, \texttt{shadow}, or \texttt{off}). An error in that check fails closed.
+
+Datasets and policy files that feed the box:
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.5385}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.4615}}@{}}
+\toprule\noalign{}
+Asset & Role \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+\texttt{kb/hurtlex\_fa.json} (HurtLex FA 1.2) & Hate and insult lemmas, on the order of 2464 entries across 17 categories, used by \texttt{check\_hurtlex}. \\
+\texttt{kb/hurtlex\_allowlist.json} & Exact-word credit and social exceptions: \textbf{28 lemmas}. Profanity, PII, and secrets are not allowlisted. \\
+\texttt{kb/prompt\_injection\_fa.json} & About 26 Persian injection and jailbreak patterns for \texttt{check\_prompt\_injection\_fa}. \\
+\texttt{kb/persian\_swear.json} & About 322 profanity entries for \texttt{check\_profanity\_fa}. Strict. \\
+\texttt{policies/ics-credit-v1.0.0.yaml} & Versioned ICS policy, pinned by \texttt{policies/active.yaml}. Categories include \texttt{out-of-domain} (company and people questions stay in domain) and \texttt{ungrounded-advice}. \texttt{domain\_keywords} drive the fast pre-check. New policy ships as a new file plus a pin move. Released versions stay immutable. \\
+\texttt{eval/samples/} & Offline expectations: \texttt{prompt\_injection.json}, \texttt{pii.json}, \texttt{hate\_toxicity.json}, \texttt{financial\_false\_positive.json}, \texttt{benign\_credit.json}. \\
+\end{longtable}
+
+\textbf{PII-IR} is the output-stage Iranian identifier check: national ID with a mod-11 test, Sheba / IR-IBAN with mod-97, and mobile or landline shapes. A validator hit on an otherwise allowed answer is mask-and-continue (\texttt{{[}masked-pii{]}}). A secret marker is a hard block, not a mask. Event logs store the masked form.
+
+Production refusals are premade Persian strings keyed by category (\texttt{prompt\_injection}, \texttt{jailbreak}, \texttt{hate}, offense, \texttt{out\_of\_scope}, \texttt{pii}, \texttt{secret}, \texttt{policy}, \texttt{engine\_error}). The \texttt{reason} field in production mode does not echo the regex or the judge trace. Output-stage hate and profanity refusals attribute the problem to the answer. Upstream context overflow is mapped to \texttt{finish\_reason=length} with a short Persian retry hint.

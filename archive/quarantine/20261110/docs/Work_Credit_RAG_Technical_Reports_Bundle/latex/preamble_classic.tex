@@ -1,0 +1,132 @@
+% Classic professional report preamble (KOMA scrreprt) — serif-only, no Arial
+\usepackage{fontspec}
+\usepackage{microtype}
+\usepackage{graphicx}
+\graphicspath{{../}{../assets/}{../assets/diagrams/}{../assets/logo/}{../assets/fonts/}}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{calc}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{setspace}
+\usepackage{enumitem}
+\usepackage{geometry}
+\usepackage{scrlayer-scrpage}
+
+% Pandoc longtable helpers
+\providecommand{\real}[1]{#1}
+\providecommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+
+\geometry{margin=1.15in, top=1.2in, bottom=1.2in}
+
+% Entity colors (non-black)
+\definecolor{termcolor}{HTML}{1B4F72}      % bold technical terms
+\definecolor{emphcolor}{HTML}{0E6655}      % italic emphasis
+\definecolor{codecolor}{HTML}{4A235A}      % code / variables / paths
+\definecolor{rulecolor}{HTML}{2C3E50}
+
+% Serif body + serif headings + serif mono (TeX Gyre)
+\newcommand{\GyrePath}{/usr/local/texlive/2024/texmf-dist/fonts/opentype/public/tex-gyre/}
+\setmainfont{TeXGyrePagella}[
+  Extension=.otf,
+  UprightFont=*-regular,
+  ItalicFont=*-italic,
+  BoldFont=*-bold,
+  BoldItalicFont=*-bolditalic,
+  Path=\GyrePath
+]
+\setsansfont{TeXGyrePagella}[
+  Extension=.otf,
+  UprightFont=*-regular,
+  ItalicFont=*-italic,
+  BoldFont=*-bold,
+  BoldItalicFont=*-bolditalic,
+  Path=\GyrePath
+]
+\setmonofont{TeXGyreCursor}[
+  Extension=.otf,
+  UprightFont=*-regular,
+  ItalicFont=*-italic,
+  BoldFont=*-bold,
+  BoldItalicFont=*-bolditalic,
+  Path=\GyrePath,
+  Scale=0.92
+]
+% Persian / Arabic serif (Amiri, vendored under assets/fonts)
+\newfontfamily\persianfont{Amiri}[
+  Path=../assets/fonts/,
+  Extension=.ttf,
+  UprightFont=Amiri-Regular,
+  BoldFont=Amiri-Bold,
+  ItalicFont=Amiri-Italic,
+  BoldItalicFont=Amiri-BoldItalic,
+  Script=Arabic,
+  Scale=1.05
+]
+
+\usepackage{ucharclasses}
+\setTransitionsFor{Arabic}{\persianfont}{\normalfont}
+
+% Colored bold / italic / code for special entities
+\let\icbold\textbf
+\let\icemph\emph
+\let\ictt\texttt
+\renewcommand{\textbf}[1]{\textcolor{termcolor}{\icbold{#1}}}
+\renewcommand{\emph}[1]{\textcolor{emphcolor}{\icemph{#1}}}
+\renewcommand{\texttt}[1]{\textcolor{codecolor}{\fontsize{8.5}{10}\selectfont\icbold{#1}}}
+
+\KOMAoptions{chapterprefix=false, numbers=noenddot}
+\addtokomafont{disposition}{\rmfamily\bfseries\color{termcolor}}
+\addtokomafont{chapter}{\Huge}
+\addtokomafont{section}{\Large}
+\addtokomafont{subsection}{\large}
+
+\setstretch{1.25}
+\setlength{\parskip}{0.55em}
+\setlength{\parindent}{0pt}
+\setlist[itemize]{topsep=0.4em,itemsep=0.25em}
+\setlist[enumerate]{topsep=0.4em,itemsep=0.25em}
+
+\captionsetup{
+  font=small,
+  labelfont={bf,rm,color=termcolor},
+  justification=raggedright,
+  singlelinecheck=false,
+  skip=10pt
+}
+
+\hypersetup{
+  colorlinks=false,
+  pdfborder={0 0 0}
+}
+
+% No branded headers — page number only
+\clearscrheadings
+\clearscrplain
+\ihead{}
+\ohead{}
+\chead{}
+\ifoot{}
+\ofoot{}
+\cfoot{\pagemark}
+\setkomafont{pageheadfoot}{\normalfont\rmfamily\small}
+\setkomafont{pagenumber}{\normalfont\rmfamily\small}
+\pagestyle{scrheadings}
+
+
+% More air around chapters
+\renewcommand*{\chapterheadstartvskip}{\vspace*{1.8\baselineskip}}
+\renewcommand*{\chapterheadendvskip}{\vspace*{1.2\baselineskip}}
+
+% Every \section starts on a new page
+\usepackage{etoolbox}
+\preto{\section}{\clearpage}
+
+% Compact tables to reduce overflow
+\AtBeginEnvironment{longtable}{\small\setlength{\tabcolsep}{4pt}}
+\AtBeginEnvironment{tabular}{\small\setlength{\tabcolsep}{4pt}}
