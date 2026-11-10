@@ -168,7 +168,8 @@ services:
     image: ${REGISTRY:-}rag-webui:${TAG:-local}
     environment:
       WEBUI_AUTH: "false"
-      WEBUI_NAME: "Dana (local)"
+      WEBUI_NAME: "دانا"
+      DEFAULT_INTERFACE_SETTINGS: '{"dana_theme_id":"ics-dark"}'
       USE_OLLAMA_DOCKER: "false"
       USE_CUDA_DOCKER: "false"
       OPENAI_API_BASE_URL: http://orchestrator:8100/v1
