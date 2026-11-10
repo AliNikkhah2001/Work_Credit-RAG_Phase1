@@ -50,6 +50,9 @@ services:
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
       KB_OPENROUTER_API_KEY: ${KB_OPENROUTER_API_KEY:-${OPENROUTER_API_KEY}}
       KB_OPENROUTER_BASE_URL: ${KB_OPENROUTER_BASE_URL:-https://openrouter.ai/api/v1}
+    volumes:
+      # Persist registry pack edits from the UI onto the host tree
+      - ../../components/knowledgebase/kb-manager/packs:/app/packs
     ports:
       - "127.0.0.1:8000:8000"
 
