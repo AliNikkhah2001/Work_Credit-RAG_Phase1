@@ -370,6 +370,93 @@ Pending:
 
 </details>
 
+## CI/CD & Jenkins (dev / stage / prod)
+
+Full operator guide: [`deploy/jenkins/README.md`](deploy/jenkins/README.md). Compose overlays: [`deploy/compose/README.md`](deploy/compose/README.md).  
+GPU first-time Jenkins: [`components/server-setup/README.md`](components/server-setup/README.md) § Jenkins / CI on H200.
+
+### Design (no paid webhook)
+
+Jenkins **polls GitHub every hour** (`pollSCM` in root [`Jenkinsfile`](Jenkinsfile)). No Cloudflare tunnel required. After you push, either wait for the hourly scan or click **Scan Multibranch Pipeline Now** / **Build Now**.
+
+| Space | Branch | What runs | LLM |
+|-------|--------|-----------|-----|
+| **dev** | `feature/*` / PR | lint + optional image build | — |
+| **stage** | `develop` | build → `dana-stage` compose (alt ports) + E2E | OpenRouter (`LLM_UPSTREAM_MODE=openrouter`) on laptop |
+| **prod** | `main` | build → `dana-prod` (laptop sim) or GPU self-hosted | OpenRouter on laptop; Gemma/Manager/TRT on H200 |
+
+Self-hosted Gemma / TRT paths (`deploy/vast/`, `deploy/docker/`, server-setup manager) are **unchanged**. Laptop OpenRouter is used **only** when `DANA_ENV=test` and `LLM_UPSTREAM_MODE=openrouter` with `compose.local.yml`.
+
+### Commit-message triggers (bold + red)
+
+These tokens are case-insensitive and may appear anywhere in the commit subject/body:
+
+| Token | Effect |
+|-------|--------|
+| $\textcolor{red}{\textbf{[ci skip]}}$ / $\textcolor{red}{\textbf{[skip ci]}}$ | Skip pipeline work |
+| $\textcolor{red}{\textbf{[ci build]}}$ | Build Docker images |
+| $\textcolor{red}{\textbf{[ci stage]}}$ | Build + **stage** deploy on `develop` — **no human approval** |
+| $\textcolor{red}{\textbf{[ci prod]}}$ | Build + **prod** deploy on `main` — **no human approval** |
+| $\textcolor{red}{\textbf{[ci auto]}}$ | Unattended: stage on `develop`, prod on `main` |
+
+Without $\textcolor{red}{\textbf{[ci prod]}}$ / $\textcolor{red}{\textbf{[ci auto]}}$ on `main`, Jenkins still asks for a manual **Deploy** confirmation if a build was requested.
+
+```bash
+# Stage (develop) — unattended after poll/scan
+git commit -m "feat: retrieval tweak [ci stage]"
+git push origin develop
+
+# Prod (main) — unattended (laptop prod-sim or H200 when DANA_HOST=gpu)
+git commit -m "chore: release pins [ci prod]"
+git push origin main
+
+# Skip noise
+git commit -m "docs: fix typo [ci skip]"
+```
+
+Gate logic (local test): `python3 scripts/ci_message_gate.py --self-test`
+
+### CI architecture
+
+```mermaid
+flowchart LR
+  subgraph gh [GitHub]
+    feat[feature branches]
+    develop[develop]
+    main[main]
+  end
+  subgraph jen [Jenkins pollSCM hourly]
+    gate[ci_message_gate keys]
+    build[docker compose build]
+    stage[dana-stage]
+    prod[dana-prod / GPU]
+  end
+  feat -->|PR or ci build| gate
+  develop -->|ci stage / ci auto| gate
+  main -->|ci prod / ci auto| gate
+  gate --> build
+  build --> stage
+  build --> prod
+```
+
+### Docker containers (laptop test stack)
+
+| Service | Port (local) | Image |
+|---------|--------------|-------|
+| Open WebUI | `13000` | `ghcr.io/open-webui/open-webui` |
+| Orchestrator | `8100` | `rag-orchestrator` |
+| Guardrails | `8200` | `rag-guardrails` |
+| KB | `8000` | `rag-kb` |
+| LiteLLM | `4000` | LiteLLM (OpenRouter) |
+| Postgres pgvector | `15432` | `pgvector/pgvector` |
+| Redis | `16379` | `redis:7` |
+| Tracing | `13002` | `rag-tracing` |
+| Jenkins | `8085` | `jenkins/jenkins:lts` |
+
+Stage uses alt ports (`18100`, `18200`, …) via `compose.stage.yml`.
+
+---
+
 ## Verification
 
 ```bash
@@ -410,6 +497,7 @@ See [LICENSE](LICENSE). Each submodule may also declare its own license and depe
 ## Links
 
 - Runbook: [AGENTS.md](AGENTS.md) §2–3 + `deploy/vast/start.sh` + `deploy/vast/health.sh`
+- CI/CD: [deploy/jenkins/README.md](deploy/jenkins/README.md) · Compose: [deploy/compose/README.md](deploy/compose/README.md)
 - Bench report: [docs/benchmark-report-2026-10-12.md](docs/benchmark-report-2026-10-12.md) (also `evaluation/artifacts/bench_report_latest.html`)
 - Compose: [compose.mvp.yml](compose.mvp.yml) + [deploy/docker/docker-compose.yml](deploy/docker/docker-compose.yml)
 - Guardrails allowlist: `components/guardrails/kb/hurtlex_allowlist.json`
