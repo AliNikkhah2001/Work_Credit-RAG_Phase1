@@ -197,3 +197,7 @@ deploy/docker/.env
 deploy/compose/.last_good_sha
 deploy/compose/.last_good_sha.prev
 .ci-rollback-work/
+
+# tracing CI wheel cache placeholder (*.whl stay ignored via wheels/)
+!components/tracing/wheels/
+!components/tracing/wheels/.gitkeep

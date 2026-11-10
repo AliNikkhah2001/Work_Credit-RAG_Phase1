@@ -229,9 +229,30 @@ pipeline {
                       fi
                     fi
                     echo "Building compose services: ${BUILD_SERVICES} (parallel_limit=${COMPOSE_PARALLEL_LIMIT})"
+                    # Ensure tracing optional wheels/ context exists (host may prefetch *.whl when PyPI works)
+                    mkdir -p components/tracing/wheels
+                    touch components/tracing/wheels/.gitkeep
                     # Serialize develop/main docker builds on one host (flock) + retry PyPI timeouts
                     LOCK="${HOST_REPO}/.ci-workspace/.dana-docker-build.lock"
                     mkdir -p "$(dirname "$LOCK")"
+                    image_for() {
+                      case "$1" in
+                        kb) echo rag-kb:local ;;
+                        guardrails) echo rag-guardrails:local ;;
+                        orchestrator) echo rag-orchestrator:local ;;
+                        tracing) echo rag-tracing:local ;;
+                        webui) echo rag-webui:local ;;
+                        *) echo "" ;;
+                      esac
+                    }
+                    have_all_images() {
+                      for s in ${BUILD_SERVICES}; do
+                        img="$(image_for "$s")"
+                        [ -n "$img" ] || continue
+                        docker image inspect "$img" >/dev/null 2>&1 || return 1
+                      done
+                      return 0
+                    }
                     (
                       flock -w 2400 9
                       build_once() {
@@ -248,6 +269,14 @@ pipeline {
                         echo "build attempt ${attempt} failed — retrying in 20s (often PyPI ReadTimeout)"
                         sleep 20
                       done
+                      if [ "$ok" != "1" ]; then
+                        # Laptop CI: files.pythonhosted.org often stalls via Docker Desktop proxy.
+                        # Reuse existing :local images so stage deploy/E2E can still run.
+                        if [ "${DANA_HOST:-laptop}" = "laptop" ] && [ "${CI_FORCE_BUILD:-0}" != "1" ] && have_all_images; then
+                          echo "WARNING: compose build failed after retries, but all required :local images exist — continuing with cached images (set CI_FORCE_BUILD=1 to fail hard)."
+                          ok=1
+                        fi
+                      fi
                       [ "$ok" = "1" ] || exit 1
                     ) 9>"$LOCK"
                     for s in ${BUILD_SERVICES}; do

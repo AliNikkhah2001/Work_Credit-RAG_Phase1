@@ -1,7 +1,13 @@
 FROM python:3.11-slim
 WORKDIR /app
 ENV PIP_DEFAULT_TIMEOUT=120
-RUN pip install --no-cache-dir --default-timeout=120 fastapi uvicorn
+# Optional host-prefetched wheels (CI copies into build context when PyPI is flaky)
+COPY wheels/ /wheels/
+RUN if ls /wheels/*.whl >/dev/null 2>&1; then \
+      pip install --no-cache-dir --no-index --find-links=/wheels fastapi uvicorn ; \
+    else \
+      pip install --no-cache-dir --retries 10 --default-timeout=120 fastapi uvicorn ; \
+    fi
 COPY app.py observe.py eval_store.py dashboard_api.py __init__.py ./
 ENV TRACE_JSONL=/data/langfuse_traces.jsonl
 EXPOSE 3000
