@@ -1,8 +1,14 @@
-# Jenkins LTS on laptop — Docker socket for image builds/deploys.
-#   docker compose -f deploy/jenkins/docker-compose.yml up -d
+# Jenkins LTS — laptop STAGE controller (Sprint A).
+#   docker compose -f deploy/jenkins/docker-compose.yml up -d --build
 # UI: http://127.0.0.1:8085
+# Multibranch job recommendation: dana-rag-stage (develop + feature/*).
 #
-# First login password:
+# GPU / prod controller (separate host):
+#   docker compose -f deploy/jenkins/docker-compose.yml \
+#     -f deploy/jenkins/docker-compose.gpu.yml up -d --build
+#   → job dana-rag-prod, main only, DANA_ROLE=prod
+#
+# First login password (fresh volume):
 #   docker exec dana-jenkins cat /var/jenkins_home/secrets/initialAdminPassword
 
 services:
@@ -26,8 +32,10 @@ services:
     environment:
       JAVA_OPTS: "-Djenkins.install.runSetupWizard=false"
       DOCKER_HOST: unix:///var/run/docker.sock
-      # Used by Jenkinsfile customWorkspace
       DANA_HOST_REPO: /Users/alinikkhah/Documents/Work/CreditScoring/Chatbot_production_v1
+      DANA_HOST: laptop
+      # stage controller: may deploy dana-stage; must NOT deploy prod/gpu
+      DANA_ROLE: stage
     restart: unless-stopped
 
 volumes:
