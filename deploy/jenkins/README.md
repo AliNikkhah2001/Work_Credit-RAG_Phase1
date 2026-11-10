@@ -72,6 +72,52 @@ git push origin main
 
 ---
 
+## Promote & rollback (Sprint C) — operator detail
+
+Parent overview: root `README.md` → **Promote stage → prod**.
+
+### Promote (`develop` → `main`)
+
+1. Wait for laptop Multibranch **green** on `develop` after $\textcolor{red}{\textbf{[ci stage]}}$.
+2. Dry-run (always first):
+
+   ```bash
+   bash scripts/promote_stage_to_main.sh
+   ```
+
+   Shows tip SHAs, submodule pins, and a suggested PR title ending in `[ci prod]`.
+3. Ship to prod one of two ways:
+   - **PR (preferred):** open `develop` → `main` using `.github/pull_request_template_promote.md`; title must include $\textcolor{red}{\textbf{[ci prod]}}$.
+   - **Local merge:** `bash scripts/promote_stage_to_main.sh --execute --push` (merges with `[ci prod]` in the message).
+4. On the **GPU** controller: wait for hourly poll or **Scan Multibranch Now** → Deploy prod → health probes → `ci_record_last_good.sh` writes `deploy/compose/.last_good_sha` under `DANA_HOST_REPO` (gitignored).
+
+Promotion never touches Gemma / Manager / TRT. Docs-only merges should use $\textcolor{red}{\textbf{[ci skip]}}$ so prod does not redeploy.
+
+### Rollback (apps only)
+
+After at least one successful prod deploy, the host has:
+
+| File | Meaning |
+|------|---------|
+| `deploy/compose/.last_good_sha` | Tip that just passed health probes |
+| `deploy/compose/.last_good_sha.prev` | Previous tip (preferred rollback target) |
+
+```bash
+# Inspect without touching compose
+bash scripts/ci_rollback.sh --dry-run
+
+# Jenkins break-glass (prod controller + main only)
+git commit --allow-empty -m "chore: break glass [ci rollback]"
+git push origin main
+
+# Or pin an explicit SHA on the host
+bash scripts/ci_rollback.sh --sha <good_sha>
+```
+
+Gate sets `CI_ROLLBACK=1` → Jenkins runs **Rollback prod** and skips Build / Deploy / E2E. Laptop stage controllers never run rollback (`CI_MAY_DEPLOY_PROD=0`).
+
+---
+
 ## CI flow diagram
 
 ```mermaid
