@@ -146,7 +146,8 @@ pipeline {
                     test -f ${ENV_FILE} || cp deploy/compose/.env.example ${ENV_FILE}
                     export TAG=${TAG}
                     # Open WebUI Vite OOMs inside Docker Desktop (~8Gi). Prefer host npm build
-                    # when available; otherwise compose uses whatever FE assets/image already exist.
+                    # when available; else reuse host-repo build/ or skip webui image build.
+                    BUILD_SERVICES="kb guardrails orchestrator tracing"
                     if [ -f components/webui/package.json ] && command -v npm >/dev/null 2>&1; then
                       (
                         cd components/webui
@@ -155,14 +156,22 @@ pipeline {
                         npm run build
                         find build -type f -name '*.map' -delete || true
                       )
+                      BUILD_SERVICES="${BUILD_SERVICES} webui"
+                    elif [ ! -d components/webui/build ] && [ -d "${HOST_REPO}/components/webui/build" ]; then
+                      mkdir -p components/webui
+                      cp -a "${HOST_REPO}/components/webui/build" components/webui/build
+                      BUILD_SERVICES="${BUILD_SERVICES} webui"
+                      echo "Using WebUI build/ copied from host repo"
+                    elif [ -d components/webui/build ]; then
+                      BUILD_SERVICES="${BUILD_SERVICES} webui"
                     else
-                      echo "Skipping host WebUI npm build (npm missing or no package.json)"
+                      echo "Skipping rag-webui image build (no npm and no components/webui/build)"
                     fi
                     # Laptop stage controller: local overlay. GPU prod: compose.gpu.
                     if [ "${DANA_HOST:-laptop}" = "gpu" ] || [ "${DANA_ROLE:-stage}" = "prod" ]; then
-                      docker compose -f ${COMPOSE_BASE} -f ${COMPOSE_GPU} --env-file ${ENV_FILE_PROD:-${ENV_FILE}} build
+                      docker compose -f ${COMPOSE_BASE} -f ${COMPOSE_GPU} --env-file ${ENV_FILE_PROD:-${ENV_FILE}} build ${BUILD_SERVICES}
                     else
-                      docker compose -f ${COMPOSE_BASE} -f ${COMPOSE_LOCAL} --env-file ${ENV_FILE} build
+                      docker compose -f ${COMPOSE_BASE} -f ${COMPOSE_LOCAL} --env-file ${ENV_FILE} build ${BUILD_SERVICES}
                     fi
                     docker tag rag-kb:local ${REGISTRY}rag-kb:${TAG} || true
                     docker tag rag-guardrails:local ${REGISTRY}rag-guardrails:${TAG} || true
