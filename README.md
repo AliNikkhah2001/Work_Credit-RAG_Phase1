@@ -710,6 +710,47 @@ flowchart LR
 
 Stage uses alt ports (`18100`, `18200`, …) via `compose.stage.yml`.
 
+### Server first-boot checklist (GPU / production host)
+
+Laptop Jenkins and GPU Jenkins are **two separate controllers**. Same GitHub repo and commit keys; **different** `jenkins_home` (admin password, jobs, credentials). The `dana-jenkins:lts` image is reusable software — it does **not** carry your laptop password or job history unless you explicitly migrate the volume.
+
+Do this **once** on the production GPU server (H200 / Vast with GPU):
+
+| Step | Action | Notes |
+|------|--------|-------|
+| 0 | **Prereqs** | Docker Engine, NVIDIA Container Toolkit, `nvidia-smi` OK, GitHub PAT (repo read), disk for images + HF cache |
+| 1 | **Clone umbrella** | `git clone --recurse-submodules https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1.git` then `cd Work_Credit-RAG_Phase1` |
+| 2 | **Bring up LLMs first** | Manager `:9000` / TRT / `deploy/vast/start.sh` Gemma `:18000` — CI only rebuilds **app** containers (KB, guardrails, orchestrator, webui, …), not the model servers |
+| 3 | **Prod env file** | Create gitignored `deploy/compose/.env.prod` with `DANA_ENV=prod`, `DANA_HOST=gpu`, `LLM_UPSTREAM_MODE=self_hosted`, `UPSTREAM_LLM_BASE_URL=…`, `KB_EMBED_DEVICE=cuda`, `KB_RERANKER_DEVICE=cuda`. **No OpenRouter keys** on this host |
+| 4 | **Fix Jenkins host path** | Edit `deploy/jenkins/docker-compose.yml`: replace the Mac absolute bind with **this server’s** clone path (same path inside the container and on the host so `docker.sock` bind mounts work). Set `DANA_HOST_REPO` to that path |
+| 5 | **Start Jenkins** | `docker compose -f deploy/jenkins/docker-compose.yml up -d --build` → UI `:8085` |
+| 6 | **Wizard / admin** | Fresh volume → new admin password (`docker exec dana-jenkins cat /var/jenkins_home/secrets/initialAdminPassword`). Optional: `docker load` a saved `dana-jenkins:lts` image to skip rebuild; still a **new** Jenkins unless you restore `jenkins_home` |
+| 7 | **Plugins** | Pipeline, Git, GitHub Branch Source, Docker Pipeline / docker-workflow (image already aims to include CLI tools) |
+| 8 | **Credentials** | System credential `github-pat` only (username + PAT). Do **not** copy laptop OpenRouter secrets |
+| 9 | **Multibranch job** | Name `dana-rag` → GitHub `AliNikkhah2001/Work_Credit-RAG_Phase1` → branches `main` (required), optionally `develop` → Jenkinsfile at repo root. Prefer **prod-only** on GPU (`main`); keep stage on laptop |
+| 10 | **Agent env** | Controller/agent env: `DANA_HOST=gpu` so Jenkinsfile uses `compose.gpu.yml` for prod |
+| 11 | **Smoke** | From laptop: `git push origin main` with $\textcolor{red}{\textbf{[ci prod]}}$ → on server **Scan Multibranch** / wait for hourly poll → confirm `:8100` chat and `LLM_UPSTREAM_MODE=self_hosted` |
+| 12 | **Ops** | Never `pkill python`; use `bash deploy/vast/stop.sh`. Keep Gemma/postgres loopback-only. Backup `jenkins_home` volume if you care about job history |
+
+Detailed twin of this list: [`deploy/jenkins/README.md`](deploy/jenkins/README.md) and [`components/server-setup/README.md`](components/server-setup/README.md) § Jenkins / CI on H200.
+
+```mermaid
+flowchart TB
+  subgraph laptop [Laptop Jenkins]
+    stageKey["develop + ci stage"]
+    danaStage[dana-stage OpenRouter]
+  end
+  subgraph gpu [GPU Jenkins]
+    prodKey["main + ci prod"]
+    danaProd[compose.gpu self_hosted]
+  end
+  gh[GitHub Work_Credit-RAG_Phase1] --> laptop
+  gh --> gpu
+  stageKey --> danaStage
+  prodKey --> danaProd
+  models[Manager / TRT / Gemma already up] --> danaProd
+```
+
 ---
 
 ## Verification
