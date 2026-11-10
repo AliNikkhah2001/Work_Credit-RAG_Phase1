@@ -146,11 +146,32 @@ pipeline {
                     expression { return env.CI_SKIP != '1' }
                     expression { return env.CI_ROLLBACK != '1' }
                     anyOf {
+                        // Explicit rebuild anywhere
                         expression { return env.CI_BUILD == '1' }
-                        expression { return env.CI_STAGE == '1' }
-                        expression { return env.CI_PROD == '1' }
-                        expression { return env.CI_AUTO == '1' }
-                        expression { return env.CHANGE_ID != null && env.CI_HEAVY_PATHS == '1' }
+                        // Stage controller: only build for develop (ignore [ci stage] on main merges)
+                        allOf {
+                            expression { return env.CI_MAY_DEPLOY_STAGE == '1' }
+                            expression { return env.CI_MAY_DEPLOY_PROD != '1' }
+                            anyOf {
+                                branch 'develop'
+                                expression { return env.CHANGE_ID != null }
+                            }
+                            anyOf {
+                                expression { return env.CI_STAGE == '1' }
+                                expression { return env.CI_AUTO == '1' }
+                                expression { return env.CHANGE_ID != null && env.CI_HEAVY_PATHS == '1' }
+                            }
+                        }
+                        // Prod controller: only build for main
+                        allOf {
+                            expression { return env.CI_MAY_DEPLOY_PROD == '1' }
+                            branch 'main'
+                            anyOf {
+                                expression { return env.CI_PROD == '1' }
+                                expression { return env.CI_AUTO == '1' }
+                                expression { return env.CI_HEAVY_PATHS == '1' }
+                            }
+                        }
                     }
                 }
             }
@@ -166,6 +187,9 @@ pipeline {
                     done
                     test -f ${ENV_FILE} || cp deploy/compose/.env.example ${ENV_FILE}
                     export TAG=${TAG}
+                    # Slow/flaky PyPI under parallel compose builds (common on laptop CI)
+                    export PIP_DEFAULT_TIMEOUT="${PIP_DEFAULT_TIMEOUT:-120}"
+                    export COMPOSE_PARALLEL_LIMIT="${COMPOSE_PARALLEL_LIMIT:-1}"
                     SVC="${CI_SERVICES:-all}"
                     if [ "$SVC" = "none" ]; then
                       echo "CI_SERVICES=none — skipping image build"
@@ -204,12 +228,28 @@ pipeline {
                         BUILD_SERVICES="$(echo "$BUILD_SERVICES" | tr ' ' '\n' | grep -v '^webui$' | tr '\n' ' ')"
                       fi
                     fi
-                    echo "Building compose services: ${BUILD_SERVICES}"
-                    if [ "${DANA_HOST:-laptop}" = "gpu" ] || [ "${DANA_ROLE:-stage}" = "prod" ]; then
-                      docker compose -f ${COMPOSE_BASE} -f ${COMPOSE_GPU} --env-file ${ENV_FILE_PROD:-${ENV_FILE}} build ${BUILD_SERVICES}
-                    else
-                      docker compose -f ${COMPOSE_BASE} -f ${COMPOSE_LOCAL} --env-file ${ENV_FILE} build ${BUILD_SERVICES}
-                    fi
+                    echo "Building compose services: ${BUILD_SERVICES} (parallel_limit=${COMPOSE_PARALLEL_LIMIT})"
+                    # Serialize develop/main docker builds on one host (flock) + retry PyPI timeouts
+                    LOCK="${HOST_REPO}/.ci-workspace/.dana-docker-build.lock"
+                    mkdir -p "$(dirname "$LOCK")"
+                    (
+                      flock -w 2400 9
+                      build_once() {
+                        if [ "${DANA_HOST:-laptop}" = "gpu" ] || [ "${DANA_ROLE:-stage}" = "prod" ]; then
+                          docker compose -f ${COMPOSE_BASE} -f ${COMPOSE_GPU} --env-file ${ENV_FILE_PROD:-${ENV_FILE}} build ${BUILD_SERVICES}
+                        else
+                          docker compose -f ${COMPOSE_BASE} -f ${COMPOSE_LOCAL} --env-file ${ENV_FILE} build ${BUILD_SERVICES}
+                        fi
+                      }
+                      ok=0
+                      for attempt in 1 2 3; do
+                        echo "docker compose build attempt ${attempt}/3"
+                        if build_once; then ok=1; break; fi
+                        echo "build attempt ${attempt} failed — retrying in 20s (often PyPI ReadTimeout)"
+                        sleep 20
+                      done
+                      [ "$ok" = "1" ] || exit 1
+                    ) 9>"$LOCK"
                     for s in ${BUILD_SERVICES}; do
                       case "$s" in
                         kb) docker tag rag-kb:local ${REGISTRY}rag-kb:${TAG} || true ;;
