@@ -1,30 +1,31 @@
 # Stage overlay (Jenkins develop): alt host ports so it can coexist with local/prod-sim.
+# Uses Compose !override so ports REPLACE local.yml (compose merges sequences by append).
 #   docker compose -p dana-stage -f deploy/compose/compose.base.yml -f deploy/compose/compose.local.yml -f deploy/compose/compose.stage.yml --env-file deploy/compose/.env up -d
 
 services:
   litellm:
-    ports:
+    ports: !override
       - "127.0.0.1:14000:4000"
   kb:
-    ports:
+    ports: !override
       - "127.0.0.1:18000:8000"
   guardrails:
-    ports:
+    ports: !override
       - "127.0.0.1:18200:8200"
   orchestrator:
-    ports:
+    ports: !override
       - "127.0.0.1:18100:8100"
   postgres:
-    ports:
-      - "127.0.0.1:15432:5432"
+    ports: !override
+      - "127.0.0.1:25432:5432"
   redis:
-    ports:
-      - "127.0.0.1:16379:6379"
+    ports: !override
+      - "127.0.0.1:26379:6379"
   tracing:
-    ports:
+    ports: !override
       - "127.0.0.1:13001:3000"
   webui:
-    ports:
+    ports: !override
       - "127.0.0.1:13100:8080"
     environment:
       WEBUI_NAME: "Dana (stage)"
