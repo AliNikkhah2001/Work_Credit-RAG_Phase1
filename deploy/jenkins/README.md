@@ -127,6 +127,14 @@ See also parent `README.md` → **Server first-boot checklist** and `components/
 ---
 
 
+## CI/CD roadmap (gated sprints)
+
+Parent `README.md` → **CI/CD roadmap checklist** is the source of truth (sprints A–G: separate jobs, path builds, submodule checkout, promote, rollback, registry, eval smoke, GitHub notifications, JCasC).
+
+Process: one sprint → test → human approval → next. Do not start the next sprint until the previous row is marked done in the parent README.
+
+---
+
 ## Manual “run now” without waiting for the hour
 
 In Jenkins → `dana-rag` → branch → **Build Now**, or **Scan Multibranch Pipeline Now** after a tagged push.
