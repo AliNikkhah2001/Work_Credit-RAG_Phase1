@@ -143,7 +143,17 @@ services:
     restart: unless-stopped
 
   webui:
-    image: ghcr.io/open-webui/open-webui:main
+    # Frontend is built on the host first (Docker Desktop OOMs on Vite):
+    #   bash components/webui/scripts/dana-local-image.sh
+    # Jenkins Build stage runs that script before compose build.
+    build:
+      context: ../../components/webui
+      dockerfile: Dockerfile.local
+      args:
+        USE_SLIM: "true"
+        USE_CUDA: "false"
+        USE_OLLAMA: "false"
+    image: ${REGISTRY:-}rag-webui:${TAG:-local}
     environment:
       WEBUI_AUTH: "false"
       WEBUI_NAME: "Dana (local)"
@@ -151,9 +161,17 @@ services:
       USE_CUDA_DOCKER: "false"
       OPENAI_API_BASE_URL: http://orchestrator:8100/v1
       OPENAI_API_KEY: sk-local-dev
+    volumes:
+      - webui_data:/app/backend/data
     depends_on:
       orchestrator:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl --silent --fail http://localhost:8080/health | jq -ne 'input.status == true' || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 120s
     networks: [rag]
     restart: unless-stopped
 
@@ -162,6 +180,7 @@ volumes:
   redis_data:
   models:
   trace_data:
+  webui_data:
 
 networks:
   rag:

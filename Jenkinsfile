@@ -130,6 +130,17 @@ pipeline {
                     done
                     test -f ${ENV_FILE} || cp deploy/compose/.env.example ${ENV_FILE}
                     export TAG=${TAG}
+                    # Open WebUI Vite OOMs inside Docker Desktop (~8Gi). Build FE on host,
+                    # then let compose package Dockerfile.local (needs components/webui/build).
+                    if [ -f components/webui/package.json ]; then
+                      (
+                        cd components/webui
+                        export NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=8192}"
+                        ONNXRUNTIME_NODE_INSTALL_CUDA=skip npm ci --force
+                        npm run build
+                        find build -type f -name '*.map' -delete || true
+                      )
+                    fi
                     # Laptop/test Multibranch uses OpenRouter local overlay unless DANA_HOST=gpu
                     if [ "${DANA_HOST:-laptop}" = "gpu" ]; then
                       docker compose -f ${COMPOSE_BASE} -f ${COMPOSE_GPU} --env-file ${ENV_FILE_PROD:-${ENV_FILE}} build
@@ -140,6 +151,7 @@ pipeline {
                     docker tag rag-guardrails:local ${REGISTRY}rag-guardrails:${TAG} || true
                     docker tag rag-orchestrator:local ${REGISTRY}rag-orchestrator:${TAG} || true
                     docker tag rag-tracing:local ${REGISTRY}rag-tracing:${TAG} || true
+                    docker tag rag-webui:local ${REGISTRY}rag-webui:${TAG} || true
                 '''
             }
         }

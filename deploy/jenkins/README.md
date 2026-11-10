@@ -94,20 +94,38 @@ Ensure `deploy/compose/.env` exists on the Jenkins agent host (gitignored) with 
 
 ---
 
-## First-time GPU server (H200) setup
+## First-time GPU server (H200) setup — first-boot checklist
 
-See also `components/server-setup/README.md` → **Jenkins / CI on H200**.
+See also parent `README.md` → **Server first-boot checklist** and `components/server-setup/README.md` → **Jenkins / CI on H200**.
 
-Summary:
+### What transfers vs what you redo
 
-1. Install Docker + NVIDIA Container Toolkit; clone umbrella with submodules.
-2. Run `deploy/jenkins/docker-compose.yml` (or host Jenkins) with Docker socket.
-3. Same Multibranch job; set agent env `DANA_HOST=gpu`.
-4. Create `deploy/compose/.env.prod` with `LLM_UPSTREAM_MODE=self_hosted` (no OpenRouter).
-5. Ensure Gemma/Manager/TRT already healthy (`deploy/vast` or manager `:9000`).
-6. Prod deploys use `compose.gpu.yml` when `DANA_HOST=gpu`.
+| Artifact | Reuse on server? |
+|---|---|
+| `deploy/jenkins/Dockerfile` → `dana-jenkins:lts` | Yes — rebuild or `docker save` / `docker load` |
+| `Jenkinsfile` + commit keys | Yes — from Git |
+| Laptop `jenkins_home` (password, jobs, history) | **No** (unless you deliberately copy the volume) |
+| OpenRouter / LiteLLM secrets | **No** — GPU is self-hosted only |
+| GitHub PAT credential | Recreate on server (same PAT OK) |
+| App images `rag-*` | Rebuild on server or pull from a registry (future) |
+
+### Checklist
+
+1. **Prereqs:** Docker + NVIDIA Container Toolkit; `nvidia-smi` OK; GitHub PAT.
+2. **Clone:** `git clone --recurse-submodules …/Work_Credit-RAG_Phase1.git`
+3. **LLMs up first:** Manager `:9000` / TRT / `deploy/vast/start.sh` — not started by Jenkins app deploy.
+4. **`deploy/compose/.env.prod`:** `DANA_ENV=prod`, `DANA_HOST=gpu`, `LLM_UPSTREAM_MODE=self_hosted`, CUDA embed/rerank, upstream URL to Manager or Gemma. No OpenRouter.
+5. **Edit `deploy/jenkins/docker-compose.yml`:** bind-mount the **server absolute path** to the same path inside the container (replace the Mac path). Set `DANA_HOST_REPO` accordingly.
+6. **Start Jenkins:** `docker compose -f deploy/jenkins/docker-compose.yml up -d --build` → `:8085`
+7. **Admin:** new password from `initialAdminPassword` (fresh volume).
+8. **Credential** `github-pat` (username + PAT).
+9. **Multibranch** `dana-rag` → discover `main` (prod). Optionally omit `develop` so this controller is prod-only; laptop keeps stage.
+10. **Env:** `DANA_HOST=gpu` on the agent so prod uses `compose.gpu.yml`.
+11. **Trigger:** push `main` with `[ci prod]` from laptop → Scan Now or wait for hourly poll.
+12. **Verify:** orchestrator health + chat; confirm no LiteLLM dependency.
 
 ---
+
 
 ## Manual “run now” without waiting for the hour
 
