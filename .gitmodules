@@ -18,3 +18,7 @@
 	path = agent-state
 	url = https://github.com/AliNikkhah2001/ICS_ChatBot_agent-state.git
 	branch = main
+[submodule "components/webui"]
+	path = components/webui
+	url = https://github.com/AliNikkhah2001/Work_RAG-WebUI.git
+	branch = main
