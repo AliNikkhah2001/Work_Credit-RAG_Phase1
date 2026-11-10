@@ -12,12 +12,12 @@
 // for stage/prod deploy (except optional path-triggered feature builds).
 
 pipeline {
-    // Host-bind path from deploy/jenkins/docker-compose.yml so `docker compose`
-    // volume mounts resolve on the Docker daemon (not inside jenkins_home).
+    // Same absolute path as the Mac host repo (see deploy/jenkins/docker-compose.yml)
+    // so docker.sock bind mounts resolve. Nested .ci-workspace keeps the clone clean.
     agent {
         node {
             label ''
-            customWorkspace '/workspace/Work_Credit-RAG_Phase1/.ci-workspace'
+            customWorkspace '/Users/alinikkhah/Documents/Work/CreditScoring/Chatbot_production_v1/.ci-workspace'
         }
     }
 
@@ -122,8 +122,9 @@ pipeline {
                 sh '''
                     set -e
                     # Prefer laptop secrets from host clone (gitignored); workspace is .ci-workspace
+                    HOST_REPO="${DANA_HOST_REPO:-/Users/alinikkhah/Documents/Work/CreditScoring/Chatbot_production_v1}"
                     for src in \
-                      /workspace/Work_Credit-RAG_Phase1/deploy/compose/.env \
+                      "${HOST_REPO}/deploy/compose/.env" \
                       ../deploy/compose/.env; do
                       if [ -f "$src" ]; then cp -f "$src" ${ENV_FILE}; break; fi
                     done
@@ -157,8 +158,9 @@ pipeline {
             steps {
                 sh '''
                     set -e
+                    HOST_REPO="${DANA_HOST_REPO:-/Users/alinikkhah/Documents/Work/CreditScoring/Chatbot_production_v1}"
                     for src in \
-                      /workspace/Work_Credit-RAG_Phase1/deploy/compose/.env \
+                      "${HOST_REPO}/deploy/compose/.env" \
                       ../deploy/compose/.env; do
                       if [ -f "$src" ]; then cp -f "$src" ${ENV_FILE}; break; fi
                     done
