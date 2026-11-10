@@ -24,6 +24,20 @@ is_only_optional_nested_failure() {
   return 0
 }
 
+# CI workspace is disposable. Local edits (docker cp, hotpatches, interrupted
+# checkouts) otherwise block `submodule update` and leave stage on a stale pin
+# while the parent gitlink already advanced — classic laptop Jenkins race.
+reset_dirty_submodules() {
+  echo "ci_submodule_sync: resetting dirty submodule worktrees (CI_FORCE_CLEAN=${CI_FORCE_CLEAN:-1})"
+  if [ "${CI_FORCE_CLEAN:-1}" != "1" ]; then
+    return 0
+  fi
+  git submodule foreach --recursive '
+    git reset --hard HEAD >/dev/null 2>&1 || true
+    git clean -fd >/dev/null 2>&1 || true
+  ' || true
+}
+
 attempt=1
 while true; do
   echo "ci_submodule_sync: attempt ${attempt}/${MAX_ATTEMPTS}"
@@ -31,15 +45,18 @@ while true; do
   out_sync="$(git submodule sync --recursive 2>&1)"
   rc_sync=$?
 
+  reset_dirty_submodules
+
   # Required: top-level component pins (kb, orchestrator, guardrails, webui, …)
-  out_top="$(git submodule update --init --depth 1 2>&1)"
+  # --force: discard checked-out divergence so parent pins always win in CI.
+  out_top="$(git submodule update --init --force --depth 1 2>&1)"
   rc_top=$?
 
   # Optional: full recurse (includes kb-source corpus). Soft-fail if only that pin breaks.
   git submodule foreach --recursive \
     'git fetch --unshallow 2>/dev/null || git fetch --tags --force origin 2>/dev/null || true' \
     >/dev/null 2>&1
-  out_nest="$(git submodule update --init --recursive --depth 1 2>&1; git submodule update --init --recursive 2>&1)"
+  out_nest="$(git submodule update --init --force --recursive --depth 1 2>&1; git submodule update --init --force --recursive 2>&1)"
   rc_nest=$?
   set -e
 
