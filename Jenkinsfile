@@ -145,9 +145,9 @@ pipeline {
                     done
                     test -f ${ENV_FILE} || cp deploy/compose/.env.example ${ENV_FILE}
                     export TAG=${TAG}
-                    # Open WebUI Vite OOMs inside Docker Desktop (~8Gi). Build FE on host,
-                    # then let compose package Dockerfile.local (needs components/webui/build).
-                    if [ -f components/webui/package.json ]; then
+                    # Open WebUI Vite OOMs inside Docker Desktop (~8Gi). Prefer host npm build
+                    # when available; otherwise compose uses whatever FE assets/image already exist.
+                    if [ -f components/webui/package.json ] && command -v npm >/dev/null 2>&1; then
                       (
                         cd components/webui
                         export NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=8192}"
@@ -155,9 +155,11 @@ pipeline {
                         npm run build
                         find build -type f -name '*.map' -delete || true
                       )
+                    else
+                      echo "Skipping host WebUI npm build (npm missing or no package.json)"
                     fi
-                    # Laptop/test Multibranch uses OpenRouter local overlay unless DANA_HOST=gpu
-                    if [ "${DANA_HOST:-laptop}" = "gpu" ]; then
+                    # Laptop stage controller: local overlay. GPU prod: compose.gpu.
+                    if [ "${DANA_HOST:-laptop}" = "gpu" ] || [ "${DANA_ROLE:-stage}" = "prod" ]; then
                       docker compose -f ${COMPOSE_BASE} -f ${COMPOSE_GPU} --env-file ${ENV_FILE_PROD:-${ENV_FILE}} build
                     else
                       docker compose -f ${COMPOSE_BASE} -f ${COMPOSE_LOCAL} --env-file ${ENV_FILE} build
