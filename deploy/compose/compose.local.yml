@@ -1,4 +1,7 @@
-# Laptop overlay: LiteLLM → OpenRouter; CPU retrieval; loopback debug ports.
+# Laptop/test overlay: LiteLLM → OpenRouter; CPU retrieval; loopback debug ports.
+# REQUIRES in .env: DANA_ENV=test and LLM_UPSTREAM_MODE=openrouter
+# Do NOT use this overlay on the GPU server (use compose.gpu.yml / deploy/vast / deploy/docker).
+#
 #   docker compose -f deploy/compose/compose.base.yml -f deploy/compose/compose.local.yml --env-file deploy/compose/.env up -d --build
 
 services:

@@ -1,0 +1,32 @@
+# GPU / self-hosted overlay — use on H200/Vast with NVIDIA toolkit.
+# Requires LLM_UPSTREAM_MODE=self_hosted (do NOT enable OpenRouter litellm here).
+#
+#   DANA_ENV=prod LLM_UPSTREAM_MODE=self_hosted \
+#   docker compose -f deploy/compose/compose.base.yml \
+#     -f deploy/compose/compose.gpu.yml --env-file deploy/compose/.env.prod up -d --build
+#
+# Prefer existing privileged stack when available:
+#   deploy/docker/docker-compose.yml  (llama-server + full CUDA)
+#   deploy/vast/start.sh              (unprivileged host, Gemma :18000)
+
+services:
+  # No litellm service on GPU/prod path.
+  guardrails:
+    environment:
+      UPSTREAM_LLM_BASE_URL: ${UPSTREAM_LLM_BASE_URL:-http://host.docker.internal:18000/v1}
+      UPSTREAM_LLM_MODEL: ${UPSTREAM_LLM_MODEL:-unsloth/gemma-4-31B-it-GGUF:UD-Q4_K_XL}
+      UPSTREAM_LLM_API_KEY: ${LLM_API_KEY:-sk-local-dev}
+      LLM_BASE_URL: ${UPSTREAM_LLM_BASE_URL:-http://host.docker.internal:18000/v1}
+      LLM_MODEL: ${UPSTREAM_LLM_MODEL:-unsloth/gemma-4-31B-it-GGUF:UD-Q4_K_XL}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  kb:
+    environment:
+      KB_EMBED_DEVICE: ${KB_EMBED_DEVICE:-cuda}
+      KB_RERANKER_DEVICE: ${KB_RERANKER_DEVICE:-cuda}
+      KB_USE_TANTIVY: ${KB_USE_TANTIVY:-true}
+
+  orchestrator:
+    environment:
+      UPSTREAM_LLM_MODEL: ${UPSTREAM_LLM_MODEL:-unsloth/gemma-4-31B-it-GGUF:UD-Q4_K_XL}

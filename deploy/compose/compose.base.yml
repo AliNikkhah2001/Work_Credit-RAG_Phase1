@@ -75,11 +75,15 @@ services:
     environment:
       GUARDRAILS_HOST: 0.0.0.0
       GUARDRAILS_PORT: 8200
-      UPSTREAM_LLM_BASE_URL: ${UPSTREAM_LLM_BASE_URL:-http://litellm:4000/v1}
-      UPSTREAM_LLM_MODEL: ${UPSTREAM_LLM_MODEL:-chat-primary}
-      UPSTREAM_LLM_API_KEY: ${LLM_API_KEY:-sk-litellm-local-dev-change-me}
-      LLM_BASE_URL: ${UPSTREAM_LLM_BASE_URL:-http://litellm:4000/v1}
-      LLM_MODEL: ${UPSTREAM_LLM_MODEL:-chat-primary}
+      # Defaults are overridden by compose.local.yml (openrouter) or compose.gpu.yml (self-hosted).
+      # Set LLM_UPSTREAM_MODE=openrouter only on laptop/test; self_hosted on GPU server.
+      UPSTREAM_LLM_BASE_URL: ${UPSTREAM_LLM_BASE_URL:-http://host.docker.internal:18000/v1}
+      UPSTREAM_LLM_MODEL: ${UPSTREAM_LLM_MODEL:-unsloth/gemma-4-31B-it-GGUF:UD-Q4_K_XL}
+      UPSTREAM_LLM_API_KEY: ${LLM_API_KEY:-sk-local-dev}
+      LLM_BASE_URL: ${UPSTREAM_LLM_BASE_URL:-http://host.docker.internal:18000/v1}
+      LLM_MODEL: ${UPSTREAM_LLM_MODEL:-unsloth/gemma-4-31B-it-GGUF:UD-Q4_K_XL}
+      LLM_UPSTREAM_MODE: ${LLM_UPSTREAM_MODE:-self_hosted}
+      DANA_ENV: ${DANA_ENV:-prod}
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; print(urllib.request.urlopen('http://127.0.0.1:8200/health').read())"]
       interval: 10s
@@ -99,7 +103,9 @@ services:
       ORCHESTRATOR_PORT: 8100
       KB_BASE_URL: http://kb:8000
       GUARDRAILS_BASE_URL: http://guardrails:8200
-      UPSTREAM_LLM_MODEL: ${UPSTREAM_LLM_MODEL:-chat-primary}
+      UPSTREAM_LLM_MODEL: ${UPSTREAM_LLM_MODEL:-unsloth/gemma-4-31B-it-GGUF:UD-Q4_K_XL}
+      LLM_UPSTREAM_MODE: ${LLM_UPSTREAM_MODE:-self_hosted}
+      DANA_ENV: ${DANA_ENV:-prod}
       REQUEST_TIMEOUT_SECONDS: ${REQUEST_TIMEOUT_SECONDS:-120}
       RETRIEVAL_TOP_K: ${RETRIEVAL_TOP_K:-5}
       TRACE_ENABLED: ${TRACE_ENABLED:-false}

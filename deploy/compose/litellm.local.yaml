@@ -1,8 +1,5 @@
-# LiteLLM local laptop config — OpenRouter as chat generation upstream.
-# App code talks only to this gateway (OpenAI-compatible). Never commit secrets.
-#
-# Override model via env OPENROUTER_MODEL if needed; default is set below.
-# LiteLLM maps openrouter/<vendor>/<model> when OPENROUTER_API_KEY is set.
+# LiteLLM — laptop/test only (LLM_UPSTREAM_MODE=openrouter).
+# Self-hosted Gemma/TRT configs live in deploy/vast/ and deploy/docker/ — do not remove.
 
 general_settings:
   master_key: os.environ/LITELLM_MASTER_KEY
@@ -10,21 +7,22 @@ general_settings:
   set_verbose: false
 
 model_list:
+  # Closest match to production self-hosted Gemma 4 31B IT
   - model_name: chat-primary
     litellm_params:
-      model: openrouter/google/gemma-3-27b-it
+      model: openrouter/google/gemma-4-31b-it
       api_key: os.environ/OPENROUTER_API_KEY
     model_info:
       max_tokens: 8192
 
   - model_name: gemma-4-31b
     litellm_params:
-      model: openrouter/google/gemma-3-27b-it
+      model: openrouter/google/gemma-4-31b-it
       api_key: os.environ/OPENROUTER_API_KEY
 
   - model_name: openrouter-chat
     litellm_params:
-      model: openrouter/google/gemma-3-27b-it
+      model: openrouter/google/gemma-4-31b-it
       api_key: os.environ/OPENROUTER_API_KEY
 
 litellm_settings:

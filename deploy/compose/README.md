@@ -1,19 +1,28 @@
-# Dana compose stack (laptop → H200)
+# Dana compose stack (laptop test ↔ GPU prod)
 
-## Profiles
+## LLM upstream flag (required mental model)
 
-| File | Role |
-|---|---|
-| `compose.base.yml` | Shared: postgres, redis, kb, guardrails, orchestrator, tracing, webui |
-| `compose.local.yml` | LiteLLM→OpenRouter, CPU embed/rerank, loopback ports |
-| `compose.stage.yml` | Alt ports for Jenkins `develop` |
-| `compose.prod-sim.yml` | Standard ports for Jenkins `main` (laptop prod-sim) |
+| `DANA_ENV` | `LLM_UPSTREAM_MODE` | Overlay | Generation backend |
+|---|---|---|---|
+| `test` | `openrouter` | `compose.local.yml` | LiteLLM → OpenRouter (`google/gemma-4-31b-it`) |
+| `prod` | `self_hosted` | `compose.gpu.yml` or `deploy/docker/` / `deploy/vast/` | Gemma `:18000` / Manager `:9000` / TRT |
 
-## Quick start (laptop)
+**Never** set `LLM_UPSTREAM_MODE=openrouter` on the GPU server. App code only sees OpenAI-compatible `UPSTREAM_LLM_*` URLs.
+
+Self-hosted Gemma/TRT paths are unchanged:
+
+- [deploy/vast/start.sh](../vast/start.sh) — llama-server `:18000`
+- [deploy/docker/docker-compose.yml](../docker/docker-compose.yml) — CUDA `llama-server` image
+- Server-setup manager / TRT docs under `components/server-setup/`
+
+## Laptop (test)
 
 ```bash
 cp deploy/compose/.env.example deploy/compose/.env
-# set OPENROUTER_API_KEY=
+# set OPENROUTER_API_KEY=...
+# ensure:
+#   DANA_ENV=test
+#   LLM_UPSTREAM_MODE=openrouter
 
 docker compose -f deploy/compose/compose.base.yml \
   -f deploy/compose/compose.local.yml \
@@ -21,12 +30,26 @@ docker compose -f deploy/compose/compose.base.yml \
   up -d --build
 ```
 
-Health: `curl -s localhost:8000/health`; chat: `localhost:8100/v1/chat/completions`; UI: `localhost:13000`.
+UI: http://127.0.0.1:13000 · API: http://127.0.0.1:8100 · Jenkins: http://127.0.0.1:8085
 
-## Prod cutover (H200)
+## GPU server (prod)
 
-Same images. Change only:
+Prefer existing stacks (`deploy/vast/` or `deploy/docker/`). If using this compose family:
 
-- `UPSTREAM_LLM_BASE_URL=http://llm-manager:9000/v1` (or Gemma)
-- `KB_EMBED_DEVICE=cuda` / `KB_RERANKER_DEVICE=cuda`
-- Drop LiteLLM service (or keep as optional gateway)
+```bash
+# .env.prod: DANA_ENV=prod, LLM_UPSTREAM_MODE=self_hosted, KB_*_DEVICE=cuda
+docker compose -f deploy/compose/compose.base.yml \
+  -f deploy/compose/compose.gpu.yml \
+  --env-file deploy/compose/.env.prod \
+  up -d --build
+```
+
+## Profiles
+
+| File | Role |
+|---|---|
+| `compose.base.yml` | Shared services (default upstream = self-hosted Gemma) |
+| `compose.local.yml` | LiteLLM OpenRouter + CPU embed/rerank + loopback ports |
+| `compose.stage.yml` | Alt ports for Jenkins `develop` |
+| `compose.prod-sim.yml` | Laptop prod-sim naming (still OpenRouter if local overlay) |
+| `compose.gpu.yml` | Self-hosted Gemma upstream + CUDA devices |
