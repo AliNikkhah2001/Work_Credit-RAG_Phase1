@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dana — Technical Detail | Work Credit RAG Phase 1</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({ startOnLoad: true, theme: 'base', securityLevel: 'loose' });</script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-container">
+      <div class="dana-logo">
+        <img src="dana-logo.png" alt="Dana Logo" class="dana-logo-img">
+        <span class="dana-tagline">Agent Framework</span>
+      </div>
+      <nav>
+        <ul class="nav-links">
+          <li><a href="index.html">Overview</a></li>
+          <li><a href="high-level.html">High-Level Detail</a></li>
+          <li><a href="technical.html" class="active">Technical Detail</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <section class="hero">
+    <h1>Technical Detail</h1>
+    <p>In-depth technical reference for the Work Credit RAG platform. All mermaid diagrams with detailed captions, code structure, API contracts, configuration, and observability.</p>
+    <span class="dana-badge">Powered by Dana Agent Framework</span>
+  </header>
+
+  <div class="main-container">
+    <section class="section">
+      <h2>System Overview — Detailed Technical</h2>
+      <p>Shows every production component with its real port, code file, and function. Validated against components/orchestrator/src/work_rag_orchestrator/graph.py, components/guardrails/src/work_rag_guardrails/, components/knowledgebase/kb-manager/kb_manager/web/routes/search.py, and components/server-setup/llm_inference_manager/app.py.</p>
+      <div class="diagram-wrapper">
+        <pre class="mermaid">
+flowchart TB
+    subgraph Client["Client layer"]
+        Browser[Browser]
+        WebUI[Open WebUI :13000 rag_trace_capture filter X-Request-ID sticky thread]
+    end
+    subgraph Orch["Orchestration :8100 work_rag_orchestrator"]
+        API[api.py create_app POST /v1/chat/completions]
+        GRAPH[graph.py rag_graph MemorySaver checkpointer]
+        VI[validate_input]
+        CL[classify]
+        HC[hybrid_classify]
+        RET[retrieve]
+        BC[build_context]
+        GG[guarded_generate]
+        FR[format_response]
+        RF[format_refusal]
+        GC[generate_clarification]
+    end
+    subgraph KB["Knowledgebase :8000 kb_manager"]
+        KBAPI[web/app.py app POST /search/api POST /search/supplement]
+        SEARCH[web/routes/search.py BM25 tantivy dense MiniLM-384 RRF k=60 bge-rerank pgvector HNSW 1123 chunks]
+        FILTER[filter_path folder_hierarchy]
+    end
+    subgraph GR["Guardrails :8200 work_rag_guardrails"]
+        GRAPI[api.py service.py create_app POST /v1/rails/check POST /v1/chat/completions]
+        GJUDGE[service.py judge signals LLM judge UPSTREAM Gemma :18000 :9000]
+    end
+    subgraph LLM["LLM Manager :9000 llm_inference_manager/app.py"]
+        MR[MODEL_REGISTRY 11 models gemma-4-31b champion]
+        GW[uvicorn :9000 proxy_chat backends 8080-8084]
+    end
+    subgraph Obs["Observability"]
+        Coll[Collector :3000 observability.db SQLite]
+        LF2[Langfuse v2 :3001]
+        Studio[Studio :2024 LangGraph API]
+    end
+    Browser --> WebUI
+    WebUI --> API
+    API --> GRAPH
+    GRAPH --> VI
+    VI -->|blocked| RF
+    VI -->|allowed| CL
+    CL -->|greeting spec| FR
+    CL -->|question| RET
+    RET --> SEARCH
+    SEARCH --> FILTER
+    RET -->|continue| BC
+    BC --> GG
+    GG --> GJUDGE
+    GJUDGE --> MR
+    GRAPH -.-> Coll
+    Coll --> LF2
+    Coll -.-> Studio
+        </pre>
+      </div>
+      <div class="diagram-caption">
+        <h4>Caption: System Overview — Variant A Detailed Technical</h4>
+        <ul>
+          <li><strong>Client layer</strong> — The user-facing tier containing the browser and Open WebUI interface.</li>
+          <li><strong>Browser</strong> — The end user's web browser accessing Open WebUI.</li>
+          <li><strong>Open WebUI :13000 rag_trace_capture filter X-Request-ID sticky thread</strong> — The chat frontend on port 13000 with the rag_trace_capture filter that captures filter_path, injects X-Request-ID, and maintains sticky conversation threads.</li>
+          <li><strong>Orchestration :8100 work_rag_orchestrator</strong> — The orchestrator service on port 8100 implementing the LangGraph RAG graph.</li>
+          <li><strong>api.py create_app POST /v1/chat/completions</strong> — The FastAPI application entry point exposing the OpenAI-compatible chat completions endpoint.</li>
+          <li><strong>graph.py rag_graph MemorySaver checkpointer</strong> — The LangGraph state graph definition with MemorySaver for persistent conversation state.</li>
+          <li><strong>validate_input</strong> — Graph node that validates user input through guardrails input rails.</li>
+          <li><strong>classify</strong> — Graph node that classifies queries as greeting, specification, or question.</li>
+          <li><strong>hybrid_classify</strong> — Graph node that applies SVM-RBF hybrid classification for query routing (when enabled).</li>
+          <li><strong>retrieve</strong> — Graph node that queries the knowledgebase for relevant document chunks.</li>
+          <li><strong>build_context</strong> — Graph node that assembles retrieved chunks into a bounded context window.</li>
+          <li><strong>guarded_generate</strong> — Graph node that requests safety-guarded generation from Guardrails.</li>
+          <li><strong>format_response</strong> — Graph node that formats the final answer with citations and follow-ups.</li>
+          <li><strong>format_refusal</strong> — Graph node that formats refusal messages for blocked inputs.</li>
+          <li><strong>generate_clarification</strong> — Graph node that generates clarification questions for ambiguous queries.</li>
+          <li><strong>Knowledgebase :8000 kb_manager</strong> — The retrieval service on port 8000 managing the document index.</li>
+          <li><strong>web/app.py app POST /search/api POST /search/supplement</strong> — The KB FastAPI app exposing search and supplement endpoints.</li>
+          <li><strong>web/routes/search.py BM25 tantivy dense MiniLM-384 RRF k=60 bge-rerank pgvector HNSW 1123 chunks</strong> — The search pipeline implementing BM25 keyword search, dense MiniLM-384 embeddings, Reciprocal Rank Fusion with k=60, bge-reranker cross-encoding, pgvector HNSW index over 1123 chunks.</li>
+          <li><strong>filter_path folder_hierarchy</strong> — Path-based and tag-based filtering mechanisms for scoping retrieval to specific document subspaces.</li>
+          <li><strong>Guardrails :8200 work_rag_guardrails</strong> — The safety service on port 8200 implementing Persian safety policies.</li>
+          <li><strong>api.py service.py create_app POST /v1/rails/check POST /v1/chat/completions</strong> — Guardrails FastAPI app with input rail checking and guarded chat completions.</li>
+          <li><strong>service.py judge signals LLM judge UPSTREAM Gemma :18000 :9000</strong> — The LLM judge service using deterministic signals plus Gemma-based judgment, calling upstream Gemma on :18000 (Vast) or :9000 (H200 manager).</li>
+          <li><strong>LLM Manager :9000 llm_inference_manager/app.py</strong> — The LLM inference gateway on port 9000 managing multiple model backends.</li>
+          <li><strong>MODEL_REGISTRY 11 models gemma-4-31b champion</strong> — The model registry containing 11 registered models with gemma-4-31b as the champion model.</li>
+          <li><strong>uvicorn :9000 proxy_chat backends 8080-8084</strong> — The uvicorn server on port 9000 proxying chat requests to llama.cpp backends on ports 8080-8084.</li>
+          <li><strong>Observability</strong> — The tracing and monitoring infrastructure.</li>
+          <li><strong>Collector :3000 observability.db SQLite</strong> — The fallback trace collector on port 3000 storing traces in SQLite.</li>
+          <li><strong>Langfuse v2 :3001</strong> — The Langfuse v2 tracing backend on port 3001.</li>
+          <li><strong>Studio :2024 LangGraph API</strong> — The LangGraph Studio API on port 2024 for graph debugging.</li>
+          <li><strong>Browser → WebUI</strong> — The user's browser loads the Open WebUI interface.</li>
+          <li><strong>WebUI → API</strong> — Open WebUI forwards requests to the orchestrator API.</li>
+          <li><strong>API → GRAPH</strong> — The API routes requests into the LangGraph state graph.</li>
+          <li><strong>GRAPH → VI</strong> — The graph starts execution at the validate_input node.</li>
+          <li><strong>VI → blocked → RF</strong> — If input is blocked, execution goes to format_refusal.</li>
+          <li><strong>VI → allowed → CL</strong> — If input is allowed, execution proceeds to classify.</li>
+          <li><strong>CL → greeting spec → FR</strong> — Greetings and specifications bypass retrieval and go to format_response.</li>
+          <li><strong>CL → question → RET</strong> — Questions proceed to the retrieve node.</li>
+          <li><strong>RET → SEARCH</strong> — The retrieve node calls the KB search API.</li>
+          <li><strong>SEARCH → FILTER</strong> — Search results are filtered by path and folder hierarchy.</li>
+          <li><strong>RET → continue → BC</strong> — Retrieved results continue to context building.</li>
+          <li><strong>BC → GG</strong> — Built context is passed to guarded generation.</li>
+          <li><strong>GG → GJUDGE</strong> — Guarded generation calls the LLM judge for safety validation.</li>
+          <li><strong>GJUDGE → MR</strong> — The judge queries the model registry for the upstream LLM.</li>
+          <li><strong>GRAPH →. Coll</strong> — The graph asynchronously sends trace data to the collector.</li>
+          <li><strong>Coll → LF2</strong> — The collector forwards traces to Langfuse.</li>
+          <li><strong>Coll →. Studio</strong> — The collector also connects to LangGraph Studio.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>System Overview — High-Level Black Box</h2>
+      <p>Treats each major component as a black box and shows only the high-level data flow. No internal implementation details, file paths, or function names.</p>
+      <div class="diagram-wrapper">
+        <pre class="mermaid">
+flowchart TB
+    subgraph Client["Client layer"]
+        User[User / Browser]
+        WebUI[Open WebUI :13000]
+    end
+    subgraph Platform["RAG platform"]
+        Orch[Orchestrator :8100 LangGraph RAG graph]
+        KB[Knowledgebase :8000 Hybrid retrieval]
+        Guard[Guardrails :8200 Safety guarded generation]
+        LLM[LLM Manager :9000 Model registry]
+    end
+    subgraph Obs["Observability"]
+        Coll[Collector :3000 Traces metrics]
+        Langfuse[Langfuse :3001]
+    end
+    User --> WebUI
+    WebUI --> Orch
+    Orch --> KB
+    Orch --> Guard
+    Guard --> LLM
+    Orch -.-> Coll
+    Coll --> Langfuse
+        </pre>
+      </div>
+      <div class="diagram-caption">
+        <h4>Caption: System Overview — Variant B High-Level Black Box</h4>
+        <ul>
+          <li><strong>Client layer</strong> — The user-facing tier of the platform.</li>
+          <li><strong>User / Browser</strong> — The end user accessing the system through a web browser.</li>
+          <li><strong>Open WebUI :13000</strong> — The chat frontend presenting the conversational interface.</li>
+          <li><strong>RAG platform</strong> — The core platform boundary containing all backend services.</li>
+          <li><strong>Orchestrator :8100 LangGraph RAG graph</strong> — The central coordinator managing the RAG pipeline.</li>
+          <li><strong>Knowledgebase :8000 Hybrid retrieval</strong> — The retrieval service finding relevant documents.</li>
+          <li><strong>Guardrails :8200 Safety guarded generation</strong> — The safety service validating inputs and outputs.</li>
+          <li><strong>LLM Manager :9000 Model registry</strong> — The gateway managing LLM backends.</li>
+          <li><strong>Observability</strong> — The monitoring and tracing infrastructure.</li>
+          <li><strong>Collector :3000 Traces metrics</strong> — The trace collector storing telemetry data.</li>
+          <li><strong>Langfuse :3001</strong> — The full-featured trace UI backend.</li>
+          <li><strong>User → WebUI</strong> — The user submits a message through the browser.</li>
+          <li><strong>WebUI → Orch</strong> — Open WebUI forwards the request to the Orchestrator.</li>
+          <li><strong>Orch → KB</strong> — The Orchestrator requests context from the Knowledgebase.</li>
+          <li><strong>Orch → Guard</strong> — The Orchestrator sends inputs through Guardrails safety checks.</li>
+          <li><strong>Guard → LLM</strong> — Guardrails forwards generation to the LLM Manager.</li>
+          <li><strong>Orch →. Coll</strong> — The Orchestrator asynchronously sends traces to the Collector.</li>
+          <li><strong>Coll → Langfuse</strong> — The Collector forwards traces to Langfuse for visualization.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Request Flow — Sticky + Filtered RAG (Detailed Technical)</h2>
+      <p>End-to-end sticky + filtered RAG request flow with real endpoints, ports, and node functions. Validated against graph.py (validate_input → classify → hybrid_classify → retrieve → build_context → guarded_generate → format_response), guardrails POST /v1/rails/check + POST /v1/chat/completions, KB POST /search/api + POST /search/supplement, and LLM Manager :9000.</p>
+      <div class="diagram-wrapper">
+        <pre class="mermaid">
+sequenceDiagram
+    autonumber
+    participant U as User
+    participant W as WebUI :13000
+    participant O as Orchestrator :8100
+    participant K as KB :8000
+    participant G as Guardrails :8200
+    participant M as LLM Manager :9000
+    participant Obs as Collector :3000
+
+    U->>W: Persian message
+    W->>W: rag_trace_capture filter_path + X-Request-ID
+    W->>O: POST /v1/chat/completions {messages filter_path? X-Request-ID}
+    O->>Obs: trace-create input
+
+    O->>G: POST /v1/rails/check validate_input input rails
+    G-->>O: {allowed action}
+
+    alt blocked
+        O->>O: format_refusal reuses format_response
+        O-->>W: refusal finish=content_filter
+    else allowed
+        O->>O: classify greeting / spec / question
+        alt greeting / spec
+            O-->>W: format_response no retrieval
+        else question
+            alt should_clarify scattered / threshold
+                O->>O: generate_clarification {question available_subspaces}
+                O-->>W: clarify finish=clarify no KB call
+            else retrieve
+                O->>K: POST /search/api {query top_k=20 filter_path?}
+                K-->>O: SearchSteps final_results injected_entities
+                O->>K: POST /search/supplement {query threshold=0.4}
+                K-->>O: supplemental entity lists
+                O->>O: build_context MAX_CHUNKS=20 MAX_CONTEXT=9000
+                alt no evidence below 0.15
+                    O-->>W: abstain no citations
+                else has evidence
+                    O->>G: POST /v1/chat/completions guarded_generate
+                    G->>M: llama-server /v1/chat/completions
+                    M-->>G: raw answer
+                    G-->>O: {answer guardrail_output}
+                    O->>O: format_response citations grounded follow_ups
+                    O->>Obs: trace-create upsert output audit
+                    O-->>W: {choices[0].message.content rag:{citations supplemental follow_ups} audit}
+                end
+            end
+        end
+    end
+        </pre>
+      </div>
+      <div class="diagram-caption">
+        <h4>Caption: Request Flow — Variant A Detailed Technical</h4>
+        <ul>
+          <li><strong>User</strong> — The end user sending a Persian-language message.</li>
+          <li><strong>WebUI :13000</strong> — The Open WebUI chat frontend on port 13000.</li>
+          <li><strong>Orchestrator :8100</strong> — The LangGraph orchestrator API on port 8100.</li>
+          <li><strong>KB :8000</strong> — The knowledgebase retrieval service on port 8000.</li>
+          <li><strong>Guardrails :8200</strong> — The safety service on port 8200.</li>
+          <li><strong>LLM Manager :9000</strong> — The LLM inference gateway on port 9000.</li>
+          <li><strong>Collector :3000</strong> — The observability trace collector on port 3000.</li>
+          <li><strong>User → WebUI: Persian message</strong> — The user sends a Persian-language message through the chat interface.</li>
+          <li><strong>WebUI → WebUI: rag_trace_capture filter_path + X-Request-ID</strong> — The rag_trace_capture filter extracts filter_path from the message scope or [چک] prefix, injects X-Request-ID, and records trace start.</li>
+          <li><strong>WebUI → Orchestrator: POST /v1/chat/completions {messages filter_path? X-Request-ID}</strong> — Open WebUI forwards the chat request with messages, optional filter_path, and the sticky request ID.</li>
+          <li><strong>Orchestrator → Collector: trace-create input</strong> — The orchestrator asynchronously creates a trace record for the input.</li>
+          <li><strong>Orchestrator → Guardrails: POST /v1/rails/check validate_input input rails</strong> — The orchestrator sends the input through Guardrails input safety rails.</li>
+          <li><strong>Guardrails → Orchestrator: {allowed action}</strong> — Guardrails returns whether the input is allowed and what action to take.</li>
+          <li><strong>Orchestrator → Orchestrator: format_refusal reuses format_response</strong> — If blocked, the orchestrator formats a refusal using the format_response function.</li>
+          <li><strong>Orchestrator → WebUI: refusal finish=content_filter</strong> — A refusal message is returned with content_filter finish reason.</li>
+          <li><strong>Orchestrator → Orchestrator: classify greeting / spec / question</strong> — If allowed, the query is classified as greeting, specification, or question.</li>
+          <li><strong>Orchestrator → WebUI: format_response no retrieval</strong> — Greetings and specifications get a direct response without KB retrieval.</li>
+          <li><strong>Orchestrator → Orchestrator: generate_clarification {question available_subspaces}</strong> — For scattered/ambiguous queries, a clarification question is generated with available subspaces.</li>
+          <li><strong>Orchestrator → WebUI: clarify finish=clarify no KB call</strong> — A clarification request is returned without calling the knowledgebase.</li>
+          <li><strong>Orchestrator → KB: POST /search/api {query top_k=20 filter_path?}</strong> — For clear questions, the orchestrator queries the KB with top_k=20 and optional filter_path.</li>
+          <li><strong>KB → Orchestrator: SearchSteps final_results injected_entities</strong> — The KB returns search results with final results and injected entities.</li>
+          <li><strong>Orchestrator → KB: POST /search/supplement {query threshold=0.4}</strong> — A supplementary search is called for entity lists with 0.4 similarity threshold.</li>
+          <li><strong>KB → Orchestrator: supplemental entity lists</strong> — Additional entity lists are returned to augment context.</li>
+          <li><strong>Orchestrator → Orchestrator: build_context MAX_CHUNKS=20 MAX_CONTEXT=9000</strong> — Context is built with maximum 20 chunks and 9000 character limit.</li>
+          <li><strong>Orchestrator → WebUI: abstain no citations</strong> — If evidence score is below 0.15, the system abstains with no citations.</li>
+          <li><strong>Orchestrator → Guardrails: POST /v1/chat/completions guarded_generate</strong> — If evidence exists, guarded generation is requested.</li>
+          <li><strong>Guardrails → LLM Manager: llama-server /v1/chat/completions</strong> — Guardrails forwards to llama-server for generation.</li>
+          <li><strong>LLM Manager → Guardrails: raw answer</strong> — The raw model answer is returned.</li>
+          <li><strong>Guardrails → Orchestrator: {answer guardrail_output}</strong> — Guardrails returns the answer with guardrail output metadata.</li>
+          <li><strong>Orchestrator → Orchestrator: format_response citations grounded follow_ups</strong> — The final response is formatted with citations, grounded follow-ups, and supplemental data.</li>
+          <li><strong>Orchestrator → Collector: trace-create upsert output audit</strong> — The output trace is upserted with audit information.</li>
+          <li><strong>Orchestrator → WebUI: {choices[0].message.content rag:{citations supplemental follow_ups} audit}</strong> — The final response with message content, RAG data, and audit is returned.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Request Flow — High-Level Black Box</h2>
+      <p>Simplified sticky + filtered RAG flow. Major components are black boxes; only high-level data flow is shown. No internal implementation details.</p>
+      <div class="diagram-wrapper">
+        <pre class="mermaid">
+sequenceDiagram
+    autonumber
+    participant U as User
+    participant W as WebUI
+    participant O as Orchestrator
+    participant K as Knowledgebase
+    participant G as Guardrails
+    participant M as LLM
+    participant Obs as Observability
+
+    U->>W: Message
+    W->>O: Request + request ID
+    O->>G: Input safety check
+    alt blocked
+        O-->>W: Refusal
+    else allowed
+        O->>K: Retrieve context
+        K-->>O: Results
+        O->>G: Generate guarded answer
+        G->>M: LLM completion
+        M-->>G: Answer
+        G-->>O: Guarded answer
+        O-->>W: Response with citations
+    end
+    O->>Obs: Trace
+        </pre>
+      </div>
+      <div class="diagram-caption">
+        <h4>Caption: Request Flow — Variant B High-Level Black Box</h4>
+        <ul>
+          <li><strong>User</strong> — The end user initiating a conversation.</li>
+          <li><strong>WebUI</strong> — The chat frontend receiving the user message.</li>
+          <li><strong>Orchestrator</strong> — The central service coordinating the RAG pipeline.</li>
+          <li><strong>Knowledgebase</strong> — The document retrieval service.</li>
+          <li><strong>Guardrails</strong> — The safety validation service.</li>
+          <li><strong>LLM</strong> — The language model generating answers.</li>
+          <li><strong>Observability</strong> — The tracing and monitoring infrastructure.</li>
+          <li><strong>User → WebUI: Message</strong> — The user sends a message through the chat interface.</li>
+          <li><strong>WebUI → Orchestrator: Request + request ID</strong> — The frontend forwards the message with a unique request identifier.</li>
+          <li><strong>Orchestrator → Guardrails: Input safety check</strong> — The orchestrator validates input safety before processing.</li>
+          <li><strong>Orchestrator → WebUI: Refusal</strong> — If blocked, a refusal is returned to the user.</li>
+          <li><strong>Orchestrator → Knowledgebase: Retrieve context</strong> — If allowed, the orchestrator queries for relevant documents.</li>
+          <li><strong>Knowledgebase → Orchestrator: Results</strong> — Retrieved document chunks are returned.</li>
+          <li><strong>Orchestrator → Guardrails: Generate guarded answer</strong> — The orchestrator requests generation with safety guards.</li>
+          <li><strong>Guardrails → LLM: LLM completion</strong> — Guardrails sends the generation request to the language model.</li>
+          <li><strong>LLM → Guardrails: Answer</strong> — The language model returns a raw answer.</li>
+          <li><strong>Guardrails → Orchestrator: Guarded answer</strong> — Guardrails returns the safety-checked answer.</li>
+          <li><strong>Orchestrator → WebUI: Response with citations</strong> — The final answer with source citations is sent to the user.</li>
+          <li><strong>Orchestrator → Observability: Trace</strong> — The full request trace is recorded.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Orchestrator LangGraph Graph — Detailed Technical</h2>
+      <p>LangGraph state graph with real node names, file paths, ports, and conditional edge labels. Validated against components/orchestrator/src/work_rag_orchestrator/graph.py: nodes validate_input, classify, hybrid_classify, retrieve, build_context, guarded_generate, format_response, format_refusal, generate_clarification; conditional edges should_continue_after_validation, should_route_after_classify, should_clarify. Entry point is validate_input. format_refusal reuses the format_response function. hybrid_classify is reached only when hybrid_classifier_enabled is true.</p>
+      <div class="diagram-wrapper">
+        <pre class="mermaid">
+flowchart TD
+    Start(Start)
+    VI[validate_input nodes/validate_input.py]
+    Cl[classify nodes/classify.py]
+    HC[hybrid_classify nodes/hybrid_classify_node.py]
+    Ret[retrieve nodes/retrieve.py POST /search/api :8000]
+    Dec{should_clarify scattered / threshold}
+    GC[generate_clarification nodes/generate_clarification.py]
+    BC[build_context MAX_CHUNKS=20 MAX_CONTEXT=9000]
+    GG[guarded_generate nodes/guarded_generate.py POST /v1/chat/completions :8200]
+    FR[format_response nodes/format_response.py]
+    RF[format_refusal reuses format_response]
+    End(End)
+
+    Start --> VI
+    VI -->|should_continue_after_validation blocked| RF
+    VI -->|allowed| Cl
+    Cl -->|should_route_after_classify greeting spec| FR
+    Cl -->|question direct retrieve| Ret
+    Cl -->|question hybrid_classify| HC
+    HC --> Ret
+    Ret --> Dec
+    Dec -->|clarify| GC
+    Dec -->|continue| BC
+    GC --> End
+    BC --> GG
+    GG --> FR
+    RF --> End
+    FR --> End
+        </pre>
+      </div>
+      <div class="diagram-caption">
+        <h4>Caption: Orchestrator LangGraph — Variant A Detailed Technical</h4>
+        <ul>
+          <li><strong>Start</strong> — Entry point of the LangGraph state graph when a request arrives.</li>
+          <li><strong>validate_input nodes/validate_input.py</strong> — Validates user input through guardrails; implementation in nodes/validate_input.py.</li>
+          <li><strong>classify nodes/classify.py</strong> — Classifies queries as greeting/spec/question; implementation in nodes/classify.py.</li>
+          <li><strong>hybrid_classify nodes/hybrid_classify_node.py</strong> — Applies SVM-RBF hybrid classification for routing; only reached when hybrid_classifier_enabled is true; implementation in nodes/hybrid_classify_node.py.</li>
+          <li><strong>retrieve nodes/retrieve.py POST /search/api :8000</strong> — Queries the knowledgebase search API; implementation in nodes/retrieve.py.</li>
+          <li><strong>should_clarify scattered / threshold</strong> — Conditional edge deciding whether the query needs clarification based on scattered/ambiguous signals or subspace threshold.</li>
+          <li><strong>generate_clarification nodes/generate_clarification.py</strong> — Generates a clarification question with available subspaces; implementation in nodes/generate_clarification.py.</li>
+          <li><strong>build_context MAX_CHUNKS=20 MAX_CONTEXT=9000</strong> — Assembles retrieved chunks with max 20 chunks and 9000 character context limit.</li>
+          <li><strong>guarded_generate nodes/guarded_generate.py POST /v1/chat/completions :8200</strong> — Requests safety-guarded generation from Guardrails; implementation in nodes/guarded_generate.py.</li>
+          <li><strong>format_response nodes/format_response.py</strong> — Formats the final answer with citations and metadata; implementation in nodes/format_response.py.</li>
+          <li><strong>format_refusal reuses format_response</strong> — Formats refusal messages by reusing the format_response function.</li>
+          <li><strong>End</strong> — Terminal node where the response is returned to the user.</li>
+          <li><strong>Start → VI</strong> — Every request enters the graph at validate_input.</li>
+          <li><strong>VI → blocked → RF</strong> — Blocked inputs short-circuit to format_refusal.</li>
+          <li><strong>VI → allowed → Cl</strong> — Allowed inputs proceed to classification.</li>
+          <li><strong>Cl → greeting spec → FR</strong> — Greetings and specifications bypass retrieval, going to format_response.</li>
+          <li><strong>Cl → question direct retrieve → Ret</strong> — Questions with direct retrieval path go to retrieve.</li>
+          <li><strong>Cl → question hybrid_classify → HC</strong> — Questions routed through hybrid classification go to hybrid_classify.</li>
+          <li><strong>HC → Ret</strong> — Hybrid classification output feeds into retrieve.</li>
+          <li><strong>Ret → Dec</strong> — Retrieved results go to the should_clarify decision.</li>
+          <li><strong>Dec → clarify → GC</strong> — If clarification is needed, go to generate_clarification (which ends).</li>
+          <li><strong>Dec → continue → BC</strong> — If clear, proceed to build_context.</li>
+          <li><strong>GC → End</strong> — After clarification, the flow ends.</li>
+          <li><strong>BC → GG</strong> — Built context goes to guarded generation.</li>
+          <li><strong>GG → FR</strong> — Generated answer goes to format_response.</li>
+          <li><strong>RF → End</strong> — Refusal messages terminate the flow.</li>
+          <li><strong>FR → End</strong> — Formatted responses terminate the flow.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Orchestrator LangGraph Graph — High-Level Black Box</h2>
+      <p>Simplified LangGraph graph. Major nodes are black boxes; only the high-level control flow is shown. No internal implementation details, file paths, or function names.</p>
+      <div class="diagram-wrapper">
+        <pre class="mermaid">
+flowchart TD
+    Start(Start)
+    Validate[Validate input]
+    Classify[Classify query]
+    Retrieve[Retrieve context]
+    Clarify[Clarify if ambiguous]
+    Build[Build context]
+    Generate[Guarded generate]
+    Format[Format response]
+    Refuse[Format refusal]
+    End(End)
+
+    Start --> Validate
+    Validate -->|blocked| Refuse
+    Validate -->|allowed| Classify
+    Classify -->|greeting spec| Format
+    Classify -->|question| Retrieve
+    Retrieve -->|ambiguous| Clarify
+    Retrieve -->|clear| Build
+    Clarify --> End
+    Build --> Generate
+    Generate --> Format
+    Refuse --> End
+    Format --> End
+        </pre>
+      </div>
+      <div class="diagram-caption">
+        <h4>Caption: Orchestrator LangGraph — Variant B High-Level Black Box</h4>
+        <ul>
+          <li><strong>Start</strong> — Entry point of the LangGraph state graph.</li>
+          <li><strong>Validate input</strong> — Checks user input for safety and validity.</li>
+          <li><strong>Classify query</strong> — Determines query type (greeting, specification, or question).</li>
+          <li><strong>Retrieve context</strong> — Fetches relevant documents from the knowledgebase.</li>
+          <li><strong>Clarify if ambiguous</strong> — Requests clarification for unclear queries.</li>
+          <li><strong>Build context</strong> — Assembles retrieved documents into a generation context.</li>
+          <li><strong>Guarded generate</strong> — Generates an answer with safety guardrails.</li>
+          <li><strong>Format response</strong> — Formats the final answer for the user.</li>
+          <li><strong>Format refusal</strong> — Formats refusal messages for blocked inputs.</li>
+          <li><strong>End</strong> — Terminal node returning the response.</li>
+          <li><strong>Start → Validate</strong> — Every request begins with input validation.</li>
+          <li><strong>Validate → blocked → Refuse</strong> — Blocked inputs go to refusal formatting.</li>
+          <li><strong>Validate → allowed → Classify</strong> — Allowed inputs proceed to classification.</li>
+          <li><strong>Classify → greeting/spec → Format</strong> — Greetings and specifications bypass retrieval.</li>
+          <li><strong>Classify → question → Retrieve</strong> — Questions proceed to document retrieval.</li>
+          <li><strong>Retrieve → ambiguous → Clarify</strong> — Unclear queries trigger clarification.</li>
+          <li><strong>Retrieve → clear → Build</strong> — Clear queries proceed to context building.</li>
+          <li><strong>Clarify → End</strong> — After clarification, the flow ends (user re-asks).</li>
+          <li><strong>Build → Generate</strong> — Built context goes to guarded generation.</li>
+          <li><strong>Generate → Format</strong> — The generated answer is formatted.</li>
+          <li><strong>Refuse → End</strong> — Refusals terminate the flow.</li>
+          <li><strong>Format → End</strong> — Formatted responses terminate the flow.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Request Lifecycle</h2>
+      <ol>
+        <li><strong>WebUI filter</strong> (components/openwebui-filters/rag_trace_capture.py) — captures filter_path from scope/[چک] prefix, injects X-Request-ID, records trace start.</li>
+        <li><strong>validate_input</strong> — Guardrails input rails; short-circuits to refusal if blocked.</li>
+        <li><strong>classify + infer_specification</strong> — classifies greeting/spec/question; maps query to applied_subspace via subspace_map; general exempt from clarify gate.</li>
+        <li><strong>should_clarify?</strong> — scattered/ambiguous query with no resolved subspace → generate_clarification returns finish=clarify with available subspaces, no KB call.</li>
+        <li><strong>retrieve</strong> — POST /search/api with rewritten query, top_k=20, filter_path (explicit or sticky). KB returns SearchSteps + injected_entities. Parallel POST /search/supplement (threshold 0.4) for entity lists.</li>
+        <li><strong>build_context</strong> — MAX_CHUNKS=20, MAX_CONTEXT_CHARS=9000; evidence guard per-subspace (cheque 0.05, facilities_person 0.10, facilities_legal 0.15, general 0.15) — below threshold → abstain.</li>
+        <li><strong>guarded_generate</strong> — Guardrails :8200 → Gemma :18000 (enable_thinking:false, --no-mmproj --jinja).</li>
+        <li><strong>format_response</strong> — citations ≤20, rag.supplemental, grounded follow_ups, stage_timing_ms.</li>
+        <li><strong>Observability</strong> — async trace to :3000 (observability.db) + Langfuse :3001; DLQ /tmp/dlq_retrieval.jsonl on empty filtered retrieval.</li>
+      </ol>
+      <p><strong>subspace_map:</strong> cheque → گزارش اعتبارسنجی چک, facilities_person → اشخاص حقیقی/اعتبارسنجی تسهیلات, facilities_legal → اشخاص حقوقی/اعتبارسنجی تسهیلات, general → پایگاه دانش عمومی.</p>
+      <p><strong>filter_path</strong> travels WebUI filter → Orchestrator → KB and sticks via X-Request-ID thread until re-specified (چک re-spec switches subspace).</p>
+    </section>
+
+    <section class="section">
+      <h2>Code Structure</h2>
+      <table>
+        <thead>
+          <tr><th>Layer</th><th>Directory</th><th>Production?</th><th>Purpose</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Entry points</td><td>api/</td><td>Yes</td><td>Thin wrappers → components/ submodules</td></tr>
+          <tr><td>Implementation</td><td>components/</td><td>Yes</td><td>Production code (submodules, pinned commits)</td></tr>
+          <tr><td>Contracts</td><td>contracts/</td><td>Yes</td><td>API request/response JSON schemas</td></tr>
+          <tr><td>Deployment</td><td>deploy/</td><td>Yes</td><td>Start/stop/health scripts per host (Vast/H200/Docker)</td></tr>
+          <tr><td>Testing</td><td>eval/</td><td>Yes</td><td>E2E, guardrails, LLM-judge evaluation</td></tr>
+          <tr><td>Utilities</td><td>scripts/</td><td>Yes</td><td>README TOC generation, system checks</td></tr>
+          <tr><td>Agent context</td><td>agent-state/</td><td>Agent only</td><td>Agent mission, history, skills, standards</td></tr>
+          <tr><td>Development</td><td>dev/</td><td>No</td><td>Patches, ad-hoc tests, investigation scripts</td></tr>
+          <tr><td>Archive</td><td>archive/, deprecated/</td><td>No</td><td>Historical reference, read-only</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <h2>API Contracts</h2>
+      <p>JSON request/response schemas defined in contracts/:</p>
+      <table>
+        <thead>
+          <tr><th>Contract File</th><th>Endpoint</th><th>Purpose</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>orchestrator_chat_response.json</td><td>POST /v1/chat/completions</td><td>Orchestrator chat completion response with rag.citations and audit</td></tr>
+          <tr><td>kb_retrieval_request.json</td><td>POST /search/api</td><td>KB search request with query, top_k, filter_path</td></tr>
+          <tr><td>kb_retrieval_result.json</td><td>POST /search/api response</td><td>KB search result with SearchSteps, final_results, injected_entities</td></tr>
+          <tr><td>rail_check_request.json</td><td>POST /v1/rails/check</td><td>Guardrails input rail check request</td></tr>
+          <tr><td>rail_check_response.json</td><td>POST /v1/rails/check response</td><td>Guardrails rail check response with allowed/action</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <h2>Configuration — Key Environment Variables</h2>
+      <table>
+        <thead>
+          <tr><th>Component</th><th>Variable</th><th>Default</th><th>Production (Vast)</th><th>Notes</th></tr>
+        </thead>
+        <tbody>
+          <tr><td rowspan="12">Orchestrator</td><td>ORCHESTRATOR_PORT</td><td>8100</td><td>8100</td><td>public API</td></tr>
+          <tr><td>KB_BASE_URL</td><td>http://127.0.0.1:8000</td><td>same</td><td>kb_search_url = {KB}/search/api</td></tr>
+          <tr><td>GUARDRAILS_BASE_URL</td><td>http://127.0.0.1:8200</td><td>same</td><td>guarded generate + rails</td></tr>
+          <tr><td>retrieval_top_k</td><td>20</td><td>20</td><td>up from 5 (MVP)</td></tr>
+          <tr><td>subspace_threshold</td><td>0.8</td><td>0.8</td><td>clarify gate</td></tr>
+          <tr><td>evidence_min_score</td><td>0.15</td><td>0.15</td><td>G5 hallucination guard</td></tr>
+          <tr><td>evidence_min_score_cheque</td><td>0.05</td><td>0.05</td><td>per-subspace (T3)</td></tr>
+          <tr><td>evidence_min_score_facilities_person</td><td>0.10</td><td>0.10</td><td>per-subspace (T3)</td></tr>
+          <tr><td>evidence_min_score_facilities_legal</td><td>0.15</td><td>0.15</td><td>per-subspace (T3)</td></tr>
+          <tr><td>evidence_min_score_general</td><td>0.15</td><td>0.15</td><td>per-subspace (T3)</td></tr>
+          <tr><td>MAX_CHUNKS / MAX_CONTEXT</td><td>20 / 9000</td><td>20 / 9000</td><td>up from 5 / 6000</td></tr>
+          <tr><td>hybrid_classifier_enabled</td><td>false</td><td>false</td><td>SVM-RBF + Gemma escalation</td></tr>
+          <tr><td>hybrid_classifier_confidence_threshold</td><td>0.60</td><td>0.60</td><td>escalate to Gemma when <</td></tr>
+          <tr><td rowspan="3"></td><td>sticky_decay_turns</td><td>3</td><td>3</td><td>generic-turn stale subspace</td></tr>
+          <tr><td>response_detail</td><td>production</td><td>production</td><td>hides GT block</td></tr>
+          <tr><td>LANGFUSE_HOST</td><td>http://127.0.0.1:3001</td><td>http://127.0.0.1:3001</td><td>TRACE_ENABLED=true</td></tr>
+          <tr><td rowspan="5">KB</td><td>KB_WEB_PORT</td><td>8000</td><td>8000</td><td></td></tr>
+          <tr><td>KB_DB_URL</td><td>sqlite+aiosqlite:///./data/kb_test.db</td><td>postgresql+asyncpg://...:5432/kb_manager</td><td>mode=pgvector → HNSW</td></tr>
+          <tr><td>KB_EMBED_MODEL</td><td>paraphrase-multilingual-MiniLM-L12-v2</td><td>same</td><td>384-d</td></tr>
+          <tr><td>KB_RERANKER_MODEL</td><td>BAAI/bge-reranker-v2-m3</td><td>same</td><td>or MiniLM fallback</td></tr>
+          <tr><td>KB_RERANK_POOL</td><td>15</td><td>15 CPU / 30 GPU</td><td></td></tr>
+          <tr><td rowspan="3">Guardrails</td><td>GUARDRAILS_PORT</td><td>8200</td><td>8200</td><td></td></tr>
+          <tr><td>UPSTREAM_LLM_BASE_URL</td><td>http://127.0.0.1:9000/v1</td><td>http://127.0.0.1:18000/v1</td><td>Vast bare Gemma</td></tr>
+          <tr><td>UPSTREAM_LLM_MODEL</td><td>gemma-4-31b</td><td>unsloth/gemma-4-31B-it-GGUF:UD-Q4_K_XL</td><td></td></tr>
+          <tr><td rowspan="2">Gemma</td><td>MODEL</td><td>—</td><td>/tmp/hf_clean/...UD-Q4_K_XL.gguf</td><td>H200 uses manager :9000</td></tr>
+          <tr><td>CTX_SIZE</td><td>8192</td><td>8192 (4096 if OOM)</td><td></td></tr>
+          <tr><td rowspan="2">WebUI</td><td>OPENAI_API_BASE_URL</td><td>—</td><td>http://127.0.0.1:8100/v1</td><td>ICS Helper</td></tr>
+          <tr><td>WEBUI_AUTH</td><td>false</td><td>false</td><td>true for per-user user_id</td></tr>
+        </tbody>
+      </table>
+      <p><em>Full reference: AGENTS.md §1–4 and components/orchestrator/src/work_rag_orchestrator/config.py.</em></p>
+    </section>
+
+    <section class="section">
+      <h2>Models &amp; Libraries</h2>
+      <table>
+        <thead>
+          <tr><th>Role</th><th>Model</th><th>Version</th><th>Size</th><th>Key config</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Generation</td><td>Gemma 4 31B Instruct</td><td>unsloth/gemma-4-31B-it-GGUF:UD-Q4_K_XL</td><td>18.8 GiB</td><td>--no-mmproj --jinja --ctx-size 8192 --temp 0.2 + enable_thinking:false</td></tr>
+          <tr><td>Embedding</td><td>paraphrase-multilingual-MiniLM-L12-v2</td><td>sentence-transformers/...</td><td>384-dim</td><td>KB_EMBED_DEVICE=cpu/cuda</td></tr>
+          <tr><td>Reranker</td><td>BGE-m3 BAAI/bge-reranker-v2-m3</td><td>default</td><td>568M</td><td>KB_RERANK_POOL=15 CPU / 30 GPU</td></tr>
+          <tr><td>Reranker fallback</td><td>MiniLM mmarco-mMiniLMv2-L12-H384-v1</td><td>—</td><td>118M</td><td>lightweight fallback</td></tr>
+          <tr><td>Guardrails</td><td>Ghadeer mmBERT</td><td>toxicity/hate/intent</td><td>—</td><td>thresholds: toxicity 0.80, hate 0.80, PII 0.90, injection 0.85</td></tr>
+          <tr><td>Judge (bench)</td><td>gemma-4-31b</td><td>via :9000</td><td>—</td><td>RAGAS LLM-as-judge</td></tr>
+        </tbody>
+      </table>
+      <table>
+        <thead>
+          <tr><th>Library</th><th>Version</th><th>Used by</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Python</td><td>3.11</td><td>all components</td></tr>
+          <tr><td>FastAPI</td><td>>=0.115.0</td><td>orchestrator, guardrails, KB</td></tr>
+          <tr><td>uvicorn[standard]</td><td>>=0.30.0</td><td>orchestrator, guardrails</td></tr>
+          <tr><td>pydantic / pydantic-settings</td><td>>=2.10.0 / >=2.5.0</td><td>orchestrator, guardrails</td></tr>
+          <tr><td>httpx</td><td>>=0.27.0</td><td>orchestrator, guardrails</td></tr>
+          <tr><td>langgraph</td><td>>=0.2.0</td><td>orchestrator</td></tr>
+          <tr><td>langchain-core</td><td>>=0.3.0</td><td>orchestrator</td></tr>
+          <tr><td>langfuse</td><td>>=2.60.0</td><td>orchestrator, guardrails, tracing</td></tr>
+          <tr><td>opentelemetry-*</td><td>>=1.24.0</td><td>orchestrator</td></tr>
+          <tr><td>sentence-transformers</td><td>—</td><td>KB, embed servers</td></tr>
+          <tr><td>scikit-learn</td><td>—</td><td>ambiguity SVM-RBF classifier</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <h2>Observability &amp; Services</h2>
+      <table>
+        <thead>
+          <tr><th>Tool</th><th>URL</th><th>Purpose</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Unified Dashboard</td><td>http://localhost:3000/dashboard/observability</td><td>8-stage chunk cards, subspace badge, export JSONL/CSV</td></tr>
+          <tr><td>Langfuse v2</td><td>http://localhost:3001</td><td>Full trace UI (Postgres+ClickHouse)</td></tr>
+          <tr><td>Fallback Collector</td><td>http://localhost:3000</td><td>POST /api/observability/traces → observability.db + JSONL</td></tr>
+          <tr><td>Local Timeline</td><td>http://localhost:3000/observe</td><td>Request → validate → classify → retrieve → generate → format</td></tr>
+          <tr><td>Graph Debugger / Studio</td><td>http://localhost:3000/studio + :2024</td><td>LangGraph API threads/runs/state</td></tr>
+          <tr><td>KB dashboard &amp; search tester</td><td>http://localhost:8000 + /search</td><td>doc/chunk counts, pipeline transparency (SearchSteps)</td></tr>
+          <tr><td>Guardrails dashboard</td><td>http://localhost:8200/dashboard</td><td>decision counts, block rate, per-category bars</td></tr>
+          <tr><td>LLM Manager</td><td>http://localhost:9000</td><td>11-model registry, health, load/unload (H200)</td></tr>
+        </tbody>
+      </table>
+      <h3>Health Check</h3>
+      <pre><code>for p in 18000 8000 8200 8100 3000 9000 13000; do
+  printf "%s: " "$p"; curl -s --max-time 8 http://127.0.0.1:$p/health | head -c 100; echo
+done
+curl -s --max-time 8 http://127.0.0.1:8100/ready | head -c 300; echo</code></pre>
+    </section>
+
+    <section class="section">
+      <h2>Changelog — Summary by Version</h2>
+      <table>
+        <thead>
+          <tr><th>Version</th><th>Date</th><th>Summary</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>v13</td><td>2026-10-28</td><td>KB 1405-07-06: 18 docs / 1123 chunks · folder_hierarchy + filter_path + supplement tool (cos 0.4/0.6) · pgvector HNSW</td></tr>
+          <tr><td>v13</td><td>2026-10-24</td><td>Orchestrator LangGraph conditional clarify (should_clarify → generate_clarification), sticky MemorySaver (X-Request-ID), MAX_CHUNKS=20/9000, evidence 0.15 G5 guard, grounded follow_ups, DLQ; ambiguity resolver (SVM-RBF, 1000-sample dataset)</td></tr>
+          <tr><td>v12</td><td>2026-10-12</td><td>Guardrails :8200 Persian rails, HurtLex 19 lemmas, enable_thinking:false / --no-mmproj --jinja clean Persian; Generation Gemma 4 31B via :18000 (Vast) / :9000 manager (H200); embed trio :8001-8003</td></tr>
+          <tr><td>v11</td><td>2026-10-12</td><td>WebUI :13000 ICS Helper (Arena OFF) · rag_trace_capture filter + 4 actions (rate/report/view/truth) · WEBUI_AUTH=false</td></tr>
+          <tr><td>v10</td><td>2026-10-12</td><td>Observability :3000/dashboard/observability (unified observability.db, chunk cards, subspace badge, export) + Langfuse :3001 + Studio :2024</td></tr>
+          <tr><td>v9</td><td>2026-10-12</td><td>Benchmark: multi-agent conversational 41 turns · RAGAS per-subspace · docs/benchmark-report-2026-10-12.md</td></tr>
+        </tbody>
+      </table>
+      <p><em>Pins: main d1c9b33 + submodules c3c7476/d040c63/14c5f97/d615f66 (historical); current live pins via git submodule status --recursive.</em></p>
+    </section>
+
+    <section class="section">
+      <h2>Done vs Pending</h2>
+      <div class="card-grid">
+        <div class="card">
+          <h3>Done</h3>
+          <ul>
+            <li>KB v13 with filter_path, supplement tool, pgvector HNSW</li>
+            <li>Orchestrator LangGraph conditional clarify, sticky MemorySaver, evidence guard, grounded follow-ups</li>
+            <li>Guardrails Persian rails, guarded Gemma :8200</li>
+            <li>Generation Gemma 4 31B via :18000/:9000; embed trio :8001-8003</li>
+            <li>WebUI ICS Helper with trace capture + 4 actions</li>
+            <li>Observability unified dashboard + Langfuse + Studio</li>
+            <li>41-turn conversational benchmark with RAGAS per-subspace</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Pending</h3>
+          <ul>
+            <li>Clarify gate: 0/6 scattered failures — lower subspace_threshold / explicit ambiguous classifier</li>
+            <li>Evidence threshold per-subspace tuning (cheque 0.028 starves hits)</li>
+            <li>Sticky carry: generic follow-ups lose applied_subspace</li>
+            <li>Generation faithfulness — citation gate too strict on 2 abstains</li>
+            <li>Latency — generation 5.3s dominates; batch Gemma / reranker on GPU</li>
+            <li>Supervision — llama-server nohup → supervisor</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Verification Commands</h2>
+      <pre><code># Health all services
+for p in 18000 8000 8200 8100 3000 9000 13000; do
+  printf "%s: " "$p"; curl -s --max-time 8 http://127.0.0.1:$p/health | head -c 100; echo
+done
+
+# RAG E2E (sticky + filter_path)
+curl -s http://127.0.0.1:8100/v1/chat/completions -H 'Content-Type: application/json' -H 'X-Request-ID: test-001' \
+  -d '{"model":"ics-helper-agent","messages":[{"role":"user","content":"چک"}],"filter_path":"گزارش اعتباری چک"}' | jq '.audit.applied_subspace'
+curl -s http://127.0.0.1:8100/v1/chat/completions -H 'Content-Type: application/json' \
+  -d '{"model":"ics-helper-agent","messages":[{"role":"user","content":"اعتبارسنجی چیست؟"}]}' | jq -c '{finish:.choices[0].finish_reason, citations:(.rag.citations|length)}'
+
+# KB filtered vs supplement
+curl -s http://127.0.0.1:8000/search/api -H 'Content-Type: application/json' -d '{"query":"سهامداران","top_k":5}' | jq '.injected_entities|length'
+curl -s http://127.0.0.1:8000/search/supplement -H 'Content-Type: application/json' -d '{"query":"سهامداران","threshold":0.4}' | jq '.results|length'</code></pre>
+    </section>
+
+    <section class="section">
+      <h2>Links</h2>
+      <ul>
+        <li>Runbook: <a href="AGENTS.md">AGENTS.md</a> §2–3 + deploy/vast/start.sh + deploy/vast/health.sh</li>
+        <li>Bench report: <a href="docs/benchmark-report-2026-10-12.md">docs/benchmark-report-2026-10-12.md</a> (also evaluation/artifacts/bench_report_latest.html)</li>
+        <li>Compose: <a href="compose.mvp.yml">compose.mvp.yml</a> + deploy/docker/docker-compose.yml</li>
+        <li>Guardrails allowlist: components/guardrails/kb/hurtlex_allowlist.json</li>
+        <li>Evaluation docs: <a href="docs/evaluation.md">docs/evaluation.md</a> · <a href="docs/cross_encoder_benchmark_results.md">docs/cross_encoder_benchmark_results.md</a></li>
+        <li>License: <a href="LICENSE">LICENSE</a></li>
+      </ul>
+    </section>
+  </div>
+
+  <footer class="site-footer">
+    <p><strong class="dana-brand">DANA</strong> — Agent Framework | Work Credit RAG Phase 1</p>
+    <p>Built with Dana · Crimson Theme · GitHub Pages</p>
+  </footer>
+</body>
+</html>
