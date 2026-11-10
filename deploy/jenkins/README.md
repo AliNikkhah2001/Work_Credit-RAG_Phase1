@@ -7,16 +7,22 @@ Detailed operator guide. Parent overview: repo root `README.md` → section **CI
 
 ---
 
-## Environments
+## Environments & controllers (Sprint A)
 
-| Space | Branch | Compose | LLM |
+| Controller | Compose | Env | Multibranch job | Branches | May deploy |
+|---|---|---|---|---|---|
+| **Laptop STAGE** | `docker-compose.yml` | `DANA_ROLE=stage`, `DANA_HOST=laptop` | `dana-rag-stage` (or existing `dana-rag`) | `develop`, `feature/*` | `dana-stage` only (`[ci stage]` / `[ci auto]`) |
+| **GPU PROD** | `docker-compose.yml` + `docker-compose.gpu.yml` | `DANA_ROLE=prod`, `DANA_HOST=gpu` | `dana-rag-prod` | **`main` only** | prod / `compose.gpu` only (`[ci prod]` / `[ci auto]`) |
+
+| Space | Branch | Compose stack | LLM |
 |---|---|---|---|
 | **dev** | `feature/*` / PR | build only (optional) | — |
 | **stage** | `develop` | `compose.base` + `local` + `stage` | OpenRouter via LiteLLM (`LLM_UPSTREAM_MODE=openrouter`) |
-| **prod** (laptop sim) | `main` | `base` + `local` + `prod-sim` | OpenRouter |
-| **prod** (GPU server) | `main` | `base` + `gpu` (or `deploy/vast` / `deploy/docker`) | Self-hosted Gemma / Manager / TRT |
+| **prod** (GPU) | `main` | `base` + `gpu` | Self-hosted Gemma / Manager / TRT |
 
-Flags in env files:
+Laptop **must not** run Deploy prod (`CI_MAY_DEPLOY_PROD=0`). GPU **must not** run Deploy stage. Role resolution: `scripts/ci_controller_role.py`.
+
+Flags in app env files:
 
 - Laptop/test: `DANA_ENV=test`, `LLM_UPSTREAM_MODE=openrouter`, `DANA_HOST=laptop`
 - GPU/prod: `DANA_ENV=prod`, `LLM_UPSTREAM_MODE=self_hosted`, `DANA_HOST=gpu`

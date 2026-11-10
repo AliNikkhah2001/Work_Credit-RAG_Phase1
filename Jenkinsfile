@@ -1,23 +1,27 @@
-// Dana / Work Credit RAG — Multibranch Jenkinsfile (laptop → H200)
+// Dana / Work Credit RAG — Multibranch Jenkinsfile (Sprint A: separate controllers)
 // Poll SCM hourly (no paid webhook). Deploy gates use commit-message keys.
+//
+// Controller role (env from deploy/jenkins/docker-compose*.yml):
+//   DANA_ROLE=stage (laptop)  → job dana-rag-stage; may deploy dana-stage only
+//   DANA_ROLE=prod  (GPU)     → job dana-rag-prod;  may deploy prod/gpu only
+//   If unset: DANA_HOST=gpu → prod, else stage
 //
 // Keys (case-insensitive, anywhere in the commit subject/body):
 //   [ci skip] / [skip ci]  → no build work
 //   [ci build]             → build images (any branch)
-//   [ci stage]             → build + deploy stage (develop)
-//   [ci prod]              → build + deploy prod WITHOUT manual approval (main)
-//   [ci auto]              → same as stage on develop / prod on main (unattended)
+//   [ci stage]             → build + deploy stage (develop) — stage controller only
+//   [ci prod]              → build + deploy prod WITHOUT manual approval (main) — prod controller only
+//   [ci auto]              → stage on develop / prod on main (still role-gated)
 //
 // Cron alone does not deploy: poll only discovers commits; keys still required
 // for stage/prod deploy (except optional path-triggered feature builds).
 
 pipeline {
-    // Same absolute path as the Mac host repo (see deploy/jenkins/docker-compose.yml)
-    // so docker.sock bind mounts resolve. Nested .ci-workspace keeps the clone clean.
+    // Host-identical path (DANA_HOST_REPO) so docker.sock bind mounts resolve.
     agent {
         node {
             label ''
-            customWorkspace '/Users/alinikkhah/Documents/Work/CreditScoring/Chatbot_production_v1/.ci-workspace'
+            customWorkspace "${env.DANA_HOST_REPO ?: '/Users/alinikkhah/Documents/Work/CreditScoring/Chatbot_production_v1'}/.ci-workspace"
         }
     }
 
@@ -55,9 +59,11 @@ pipeline {
                     git diff --name-only HEAD~1...HEAD 2>/dev/null > .ci_changed_files.txt || true
                     if command -v python3 >/dev/null 2>&1; then
                       python3 scripts/ci_message_gate.py --write-env .ci_gate.env
+                      python3 scripts/ci_controller_role.py --write-env .ci_role.env
                     else
                       echo "WARNING: python3 missing on agent — defaulting gate to skip"
                       printf 'CI_SKIP=1\nCI_BUILD=0\nCI_STAGE=0\nCI_PROD=0\nCI_AUTO=0\nCI_HEAVY_PATHS=0\n' > .ci_gate.env
+                      printf 'DANA_ROLE=stage\nCI_MAY_DEPLOY_STAGE=1\nCI_MAY_DEPLOY_PROD=0\n' > .ci_role.env
                     fi
                 '''
                 script {
@@ -68,6 +74,14 @@ pipeline {
                             env."${k}" = v
                         }
                     }
+                    def roleEnv = readFile('.ci_role.env').trim().split('\n') as List
+                    roleEnv.each { line ->
+                        if (line.contains('=')) {
+                            def (k, v) = line.split('=', 2)
+                            env."${k}" = v
+                        }
+                    }
+                    echo "CI controller: ROLE=${env.DANA_ROLE} MAY_STAGE=${env.CI_MAY_DEPLOY_STAGE} MAY_PROD=${env.CI_MAY_DEPLOY_PROD} HOST=${env.DANA_HOST} JOB=${env.JOB_NAME}"
                     echo "CI gate: SKIP=${env.CI_SKIP} BUILD=${env.CI_BUILD} STAGE=${env.CI_STAGE} PROD=${env.CI_PROD} AUTO=${env.CI_AUTO} HEAVY=${env.CI_HEAVY_PATHS} BRANCH=${env.BRANCH_NAME}"
                 }
             }
@@ -101,6 +115,7 @@ pipeline {
                     ruff check components/orchestrator/src components/guardrails/src components/knowledgebase/kb-manager/kb_manager || true
                     python3 scripts/build_keep_graph.py || true
                     python3 scripts/ci_message_gate.py --self-test
+                    python3 scripts/ci_controller_role.py --self-test
                 '''
             }
         }
@@ -130,9 +145,10 @@ pipeline {
                     done
                     test -f ${ENV_FILE} || cp deploy/compose/.env.example ${ENV_FILE}
                     export TAG=${TAG}
-                    # Open WebUI Vite OOMs inside Docker Desktop (~8Gi). Build FE on host,
-                    # then let compose package Dockerfile.local (needs components/webui/build).
-                    if [ -f components/webui/package.json ]; then
+                    # Open WebUI Vite OOMs inside Docker Desktop (~8Gi). Prefer host npm build
+                    # when available; else reuse host-repo build/ or skip webui image build.
+                    BUILD_SERVICES="kb guardrails orchestrator tracing"
+                    if [ -f components/webui/package.json ] && command -v npm >/dev/null 2>&1; then
                       (
                         cd components/webui
                         export NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=8192}"
@@ -140,12 +156,22 @@ pipeline {
                         npm run build
                         find build -type f -name '*.map' -delete || true
                       )
-                    fi
-                    # Laptop/test Multibranch uses OpenRouter local overlay unless DANA_HOST=gpu
-                    if [ "${DANA_HOST:-laptop}" = "gpu" ]; then
-                      docker compose -f ${COMPOSE_BASE} -f ${COMPOSE_GPU} --env-file ${ENV_FILE_PROD:-${ENV_FILE}} build
+                      BUILD_SERVICES="${BUILD_SERVICES} webui"
+                    elif [ ! -d components/webui/build ] && [ -d "${HOST_REPO}/components/webui/build" ]; then
+                      mkdir -p components/webui
+                      cp -a "${HOST_REPO}/components/webui/build" components/webui/build
+                      BUILD_SERVICES="${BUILD_SERVICES} webui"
+                      echo "Using WebUI build/ copied from host repo"
+                    elif [ -d components/webui/build ]; then
+                      BUILD_SERVICES="${BUILD_SERVICES} webui"
                     else
-                      docker compose -f ${COMPOSE_BASE} -f ${COMPOSE_LOCAL} --env-file ${ENV_FILE} build
+                      echo "Skipping rag-webui image build (no npm and no components/webui/build)"
+                    fi
+                    # Laptop stage controller: local overlay. GPU prod: compose.gpu.
+                    if [ "${DANA_HOST:-laptop}" = "gpu" ] || [ "${DANA_ROLE:-stage}" = "prod" ]; then
+                      docker compose -f ${COMPOSE_BASE} -f ${COMPOSE_GPU} --env-file ${ENV_FILE_PROD:-${ENV_FILE}} build ${BUILD_SERVICES}
+                    else
+                      docker compose -f ${COMPOSE_BASE} -f ${COMPOSE_LOCAL} --env-file ${ENV_FILE} build ${BUILD_SERVICES}
                     fi
                     docker tag rag-kb:local ${REGISTRY}rag-kb:${TAG} || true
                     docker tag rag-guardrails:local ${REGISTRY}rag-guardrails:${TAG} || true
@@ -160,6 +186,7 @@ pipeline {
             when {
                 allOf {
                     branch 'develop'
+                    expression { return env.CI_MAY_DEPLOY_STAGE == '1' }
                     expression { return env.CI_SKIP != '1' }
                     anyOf {
                         expression { return env.CI_STAGE == '1' }
@@ -200,6 +227,7 @@ pipeline {
             when {
                 allOf {
                     branch 'develop'
+                    expression { return env.CI_MAY_DEPLOY_STAGE == '1' }
                     expression { return env.CI_SKIP != '1' }
                     anyOf {
                         expression { return env.CI_STAGE == '1' }
@@ -222,6 +250,7 @@ pipeline {
             when {
                 allOf {
                     branch 'main'
+                    expression { return env.CI_MAY_DEPLOY_PROD == '1' }
                     expression { return env.CI_SKIP != '1' }
                     expression { return env.CI_PROD != '1' }
                     expression { return env.CI_AUTO != '1' }
@@ -240,6 +269,7 @@ pipeline {
             when {
                 allOf {
                     branch 'main'
+                    expression { return env.CI_MAY_DEPLOY_PROD == '1' }
                     expression { return env.CI_SKIP != '1' }
                     anyOf {
                         expression { return env.CI_PROD == '1' }
@@ -276,7 +306,7 @@ pipeline {
 
     post {
         always {
-            sh 'docker image prune -f || true; rm -f .ci_commit_msg.txt .ci_changed_files.txt .ci_gate.env || true'
+            sh 'docker image prune -f || true; rm -f .ci_commit_msg.txt .ci_changed_files.txt .ci_gate.env .ci_role.env || true'
         }
         failure {
             echo 'Pipeline failed — inspect Jenkins console + docker compose logs'

@@ -1,0 +1,19 @@
+# GPU / production Jenkins overlay (Sprint A — separate controllers).
+# Usage on the server (after editing host bind path — see README first-boot):
+#   docker compose -f deploy/jenkins/docker-compose.yml \
+#     -f deploy/jenkins/docker-compose.gpu.yml up -d --build
+#
+# Multibranch job name recommendation: dana-rag-prod (discover main only).
+# Do NOT set OpenRouter credentials on this host.
+
+services:
+  jenkins:
+    container_name: dana-jenkins-prod
+    environment:
+      DANA_HOST: gpu
+      DANA_ROLE: prod
+      # Override on the server to the absolute clone path (same inside container):
+      # DANA_HOST_REPO: /path/to/Work_Credit-RAG_Phase1
+    ports:
+      - "127.0.0.1:8085:8080"
+      - "127.0.0.1:50000:50000"
