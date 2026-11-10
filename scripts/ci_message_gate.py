@@ -8,6 +8,7 @@ Keys (case-insensitive):
   [ci auto]
   [ci prod]
   [ci all]              → force full image set (Sprint B)
+  [ci rollback]         → restore last-good prod SHA (Sprint C #10)
 
 Sprint B — CI_SERVICES:
   space-separated compose service names, or "all".
@@ -76,17 +77,22 @@ def parse(msg: str, changed: str) -> dict[str, str]:
     prod = "[ci prod]" in low
     auto = "[ci auto]" in low
     force_all = "[ci all]" in low
+    rollback = "[ci rollback]" in low
     heavy = any(HEAVY.search(line) for line in (changed or "").splitlines())
     services = "none" if skip else services_for_paths(changed, force_all)
     # Deploy keys with no service hit still need a stack refresh → all
-    if not skip and services == "none" and (stage or prod or auto or build):
+    if not skip and services == "none" and (stage or prod or auto or build) and not rollback:
         services = "all"
+    if rollback:
+        # Rollback path: do not rebuild current tip; skip normal deploy keys
+        services = "none"
     return {
         "CI_SKIP": "1" if skip else "0",
         "CI_BUILD": "1" if build else "0",
         "CI_STAGE": "1" if stage else "0",
         "CI_PROD": "1" if prod else "0",
         "CI_AUTO": "1" if auto else "0",
+        "CI_ROLLBACK": "1" if rollback else "0",
         "CI_HEAVY_PATHS": "1" if heavy else "0",
         "CI_SERVICES": services,
     }
@@ -106,6 +112,7 @@ def self_test() -> None:
         ("compose all", "chore: ports [ci stage]", "deploy/compose/compose.stage.yml", {"CI_SERVICES": "all"}),
         ("ci all key", "rebuild [ci all] [ci build]", "README.md", {"CI_SERVICES": "all"}),
         ("prod", "release [ci prod]", "Jenkinsfile", {"CI_PROD": "1", "CI_SERVICES": "all"}),
+        ("rollback", "break glass [ci rollback]", "README.md", {"CI_ROLLBACK": "1", "CI_SERVICES": "none"}),
     ]
     for name, msg, changed, expect in cases:
         got = parse(msg, changed)

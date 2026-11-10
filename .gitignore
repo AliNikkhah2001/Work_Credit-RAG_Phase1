@@ -192,3 +192,8 @@ deploy/docker/.env
 
 # Jenkins customWorkspace (host-visible for docker bind mounts)
 .ci-workspace/
+
+# Sprint C — prod rollback markers (host-local)
+deploy/compose/.last_good_sha
+deploy/compose/.last_good_sha.prev
+.ci-rollback-work/

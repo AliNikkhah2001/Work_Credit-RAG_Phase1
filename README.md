@@ -755,15 +755,15 @@ flowchart TB
 
 Work proceeds **one sprint at a time**: implement → test on laptop Jenkins → **your approval** → next sprint. Do not start the next row until the previous is checked off here (and in chat).
 
-**Completed:** Sprint **A** (#8 separate stage/prod controllers) · Sprint **B** (#1 path/`CI_SERVICES` builds · #2 submodule sync). **Next up:** Sprint **C** (#3 promote · #10 rollback).
+**Completed:** Sprint **A** (#8) · Sprint **B** (#1 · #2) · Sprint **C** (#3 promote · #10 rollback). **Next up:** Sprint **D** (#4 GHCR).
 
 | Sprint | ID | Deliverable | Test / acceptance | Status |
 |--------|-----|-------------|-------------------|--------|
 | **A** | **#8** Separate jobs | Laptop Multibranch = stage (`develop` / `feature/*`); GPU Multibranch = prod (`main` only). Jenkinsfile respects `DANA_HOST` / `DANA_ROLE` so the wrong controller cannot deploy the other space. Docs updated. | Laptop: `[ci stage]` still deploys `dana-stage`. Confirm GPU job config docs say `main` only + no OpenRouter. | ✅ done 2026-11-10 |
 | **B** | **#1** Path / per-service builds | Gate emits which services to build (`kb`, `guardrails`, `orchestrator`, … or `all`). Compose builds/restarts only those (full stack if compose/Jenkinsfile/`all`). | Path→service unit tests; Jenkins shows `SERVICES=…`; `[ci all]` forces full set. | ✅ done 2026-11-10 |
 | **B** | **#2** Submodule-aware checkout | Retries on fetch/submodule update; clear error if gitlink SHA missing on remote. | `ci_submodule_sync` OK on stage builds; loud fail on missing SHA. | ✅ done 2026-11-10 |
-| **C** | **#3** Promote path | `scripts/promote_stage_to_main.sh` and/or PR template: stage green + pin SHAs → `main` + $\textcolor{red}{\textbf{[ci prod]}}$. | Dry-run script prints pins + last stage URL; no silent prod. | ☐ pending |
-| **C** | **#10** Rollback | On successful prod: record last-good SHA. Jenkins parameterized rollback (or $\textcolor{red}{\textbf{[ci rollback]}}$) restores app containers for that SHA. Models (Gemma/TRT) not auto-rolled. | Break-glass: restore previous SHA; `:8100` healthy. | ☐ pending |
+| **C** | **#3** Promote path | `scripts/promote_stage_to_main.sh` + `.github/pull_request_template_promote.md`: stage green + pin SHAs → `main` + $\textcolor{red}{\textbf{[ci prod]}}$. | Dry-run prints pins; `--execute` merges locally (no silent prod without key). | ✅ done 2026-11-10 |
+| **C** | **#10** Rollback | Prod success → `ci_record_last_good.sh` writes `.last_good_sha`. $\textcolor{red}{\textbf{[ci rollback]}}$ on `main` (prod controller) restores apps via `ci_rollback.sh`. Models (Gemma/TRT) not auto-rolled. | Gate self-test; dry-run rollback; record/restore SHA round-trip. | ✅ done 2026-11-10 |
 | **D** | **#4** Registry (GHCR) | Stage builds push `rag-*:gitsha`; GPU prod prefers `pull` + `up`, build only as fallback. | GPU cold deploy with pull works for unchanged services. | ☐ pending |
 | **E** | **Eval module / CI smoke** | Formalize CI entrypoint (e.g. `eval/ci_smoke.py`) over existing `eval/` scripts; fixed exit codes; Jenkins stage after deploy. Optional later: `components/evaluation` submodule — **design approval required before large move**. | Smoke suite fails the build on quality/infra fail; passes on known-good stage. | ☐ pending (design first) |
 | **F** | **#6** Notifications | GitHub commit statuses / Checks (fastest; no SMTP). Statuses for stage and prod. | Commit page shows `dana-stage` / `dana-prod` success/failure. | ☐ pending |
@@ -773,7 +773,7 @@ Work proceeds **one sprint at a time**: implement → test on laptop Jenkins →
 
 1. Update this table’s **Status** when a sprint starts / finishes (`☐ pending` → `… in progress` → `✅ done` + date).
 2. After each sprint: commit on `develop`, PR → `main` when you ask to merge, then wait for approval before the next sprint.
-3. Commit keys stay authoritative for deploy: $\textcolor{red}{\textbf{[ci stage]}}$, $\textcolor{red}{\textbf{[ci prod]}}$, $\textcolor{red}{\textbf{[ci auto]}}$, $\textcolor{red}{\textbf{[ci skip]}}$.
+3. Commit keys stay authoritative for deploy: $\textcolor{red}{\textbf{[ci stage]}}$, $\textcolor{red}{\textbf{[ci prod]}}$, $\textcolor{red}{\textbf{[ci auto]}}$, $\textcolor{red}{\textbf{[ci skip]}}$, $\textcolor{red}{\textbf{[ci rollback]}}$.
 
 Operator detail for Jenkins bring-up remains above and in [`deploy/jenkins/README.md`](deploy/jenkins/README.md).
 
