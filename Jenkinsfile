@@ -186,6 +186,10 @@ pipeline {
                       if [ -f "$src" ]; then cp -f "$src" ${ENV_FILE}; break; fi
                     done
                     test -f ${ENV_FILE} || cp deploy/compose/.env.example ${ENV_FILE}
+                    # Stale host .env pins KB_RERANKER_BACKEND=local; laptop OpenRouter
+                    # mode must still call the OpenRouter rerank API.
+                    chmod +x scripts/ci_laptop_rerank_env.sh
+                    bash scripts/ci_laptop_rerank_env.sh ${ENV_FILE}
                     export TAG=${TAG}
                     # Slow/flaky PyPI under parallel compose builds (common on laptop CI)
                     export PIP_DEFAULT_TIMEOUT="${PIP_DEFAULT_TIMEOUT:-120}"
@@ -314,6 +318,9 @@ pipeline {
                       ../deploy/compose/.env; do
                       if [ -f "$src" ]; then cp -f "$src" ${ENV_FILE}; break; fi
                     done
+                    test -f ${ENV_FILE} || cp deploy/compose/.env.example ${ENV_FILE}
+                    chmod +x scripts/ci_laptop_rerank_env.sh
+                    bash scripts/ci_laptop_rerank_env.sh ${ENV_FILE}
                     SVC="${CI_SERVICES:-all}"
                     COMPOSE="docker compose -p dana-stage -f ${COMPOSE_BASE} -f ${COMPOSE_LOCAL} -f ${COMPOSE_STAGE} --env-file ${ENV_FILE}"
                     # Keep LiteLLM healthy for stage OpenRouter path
