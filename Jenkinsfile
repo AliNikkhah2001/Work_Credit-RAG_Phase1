@@ -1,10 +1,10 @@
-// Dana / Work Credit RAG — Multibranch Jenkinsfile (Sprint A: separate controllers)
+// Dana / Work Credit RAG — Multibranch Jenkinsfile
+// Sprint A: separate controllers (DANA_ROLE). Sprint B: path builds + submodule sync.
 // Poll SCM hourly (no paid webhook). Deploy gates use commit-message keys.
 //
 // Controller role (env from deploy/jenkins/docker-compose*.yml):
 //   DANA_ROLE=stage (laptop)  → job dana-rag-stage; may deploy dana-stage only
 //   DANA_ROLE=prod  (GPU)     → job dana-rag-prod;  may deploy prod/gpu only
-//   If unset: DANA_HOST=gpu → prod, else stage
 //
 // Keys (case-insensitive, anywhere in the commit subject/body):
 //   [ci skip] / [skip ci]  → no build work
@@ -12,9 +12,9 @@
 //   [ci stage]             → build + deploy stage (develop) — stage controller only
 //   [ci prod]              → build + deploy prod WITHOUT manual approval (main) — prod controller only
 //   [ci auto]              → stage on develop / prod on main (still role-gated)
+//   [ci all]               → force full image set (ignore path filter)
 //
-// Cron alone does not deploy: poll only discovers commits; keys still required
-// for stage/prod deploy (except optional path-triggered feature builds).
+// CI_SERVICES from scripts/ci_message_gate.py: "kb", "kb guardrails", "all", or "none".
 
 pipeline {
     // Host-identical path (DANA_HOST_REPO) so docker.sock bind mounts resolve.
@@ -54,7 +54,8 @@ pipeline {
                 checkout scm
                 sh '''
                     set -e
-                    git submodule update --init --recursive || true
+                    chmod +x scripts/ci_submodule_sync.sh scripts/ci_message_gate.py scripts/ci_controller_role.py || true
+                    bash scripts/ci_submodule_sync.sh
                     git log -1 --pretty=%B > .ci_commit_msg.txt
                     git diff --name-only HEAD~1...HEAD 2>/dev/null > .ci_changed_files.txt || true
                     if command -v python3 >/dev/null 2>&1; then
@@ -62,7 +63,7 @@ pipeline {
                       python3 scripts/ci_controller_role.py --write-env .ci_role.env
                     else
                       echo "WARNING: python3 missing on agent — defaulting gate to skip"
-                      printf 'CI_SKIP=1\nCI_BUILD=0\nCI_STAGE=0\nCI_PROD=0\nCI_AUTO=0\nCI_HEAVY_PATHS=0\n' > .ci_gate.env
+                      printf 'CI_SKIP=1\nCI_BUILD=0\nCI_STAGE=0\nCI_PROD=0\nCI_AUTO=0\nCI_HEAVY_PATHS=0\nCI_SERVICES=none\n' > .ci_gate.env
                       printf 'DANA_ROLE=stage\nCI_MAY_DEPLOY_STAGE=1\nCI_MAY_DEPLOY_PROD=0\n' > .ci_role.env
                     fi
                 '''
@@ -82,7 +83,7 @@ pipeline {
                         }
                     }
                     echo "CI controller: ROLE=${env.DANA_ROLE} MAY_STAGE=${env.CI_MAY_DEPLOY_STAGE} MAY_PROD=${env.CI_MAY_DEPLOY_PROD} HOST=${env.DANA_HOST} JOB=${env.JOB_NAME}"
-                    echo "CI gate: SKIP=${env.CI_SKIP} BUILD=${env.CI_BUILD} STAGE=${env.CI_STAGE} PROD=${env.CI_PROD} AUTO=${env.CI_AUTO} HEAVY=${env.CI_HEAVY_PATHS} BRANCH=${env.BRANCH_NAME}"
+                    echo "CI gate: SKIP=${env.CI_SKIP} BUILD=${env.CI_BUILD} STAGE=${env.CI_STAGE} PROD=${env.CI_PROD} AUTO=${env.CI_AUTO} HEAVY=${env.CI_HEAVY_PATHS} SERVICES=${env.CI_SERVICES} BRANCH=${env.BRANCH_NAME}"
                 }
             }
         }
@@ -145,39 +146,59 @@ pipeline {
                     done
                     test -f ${ENV_FILE} || cp deploy/compose/.env.example ${ENV_FILE}
                     export TAG=${TAG}
-                    # Open WebUI Vite OOMs inside Docker Desktop (~8Gi). Prefer host npm build
-                    # when available; else reuse host-repo build/ or skip webui image build.
-                    BUILD_SERVICES="kb guardrails orchestrator tracing"
-                    if [ -f components/webui/package.json ] && command -v npm >/dev/null 2>&1; then
-                      (
-                        cd components/webui
-                        export NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=8192}"
-                        ONNXRUNTIME_NODE_INSTALL_CUDA=skip npm ci --force
-                        npm run build
-                        find build -type f -name '*.map' -delete || true
-                      )
-                      BUILD_SERVICES="${BUILD_SERVICES} webui"
-                    elif [ ! -d components/webui/build ] && [ -d "${HOST_REPO}/components/webui/build" ]; then
-                      mkdir -p components/webui
-                      cp -a "${HOST_REPO}/components/webui/build" components/webui/build
-                      BUILD_SERVICES="${BUILD_SERVICES} webui"
-                      echo "Using WebUI build/ copied from host repo"
-                    elif [ -d components/webui/build ]; then
-                      BUILD_SERVICES="${BUILD_SERVICES} webui"
-                    else
-                      echo "Skipping rag-webui image build (no npm and no components/webui/build)"
+                    SVC="${CI_SERVICES:-all}"
+                    if [ "$SVC" = "none" ]; then
+                      echo "CI_SERVICES=none — skipping image build"
+                      exit 0
                     fi
-                    # Laptop stage controller: local overlay. GPU prod: compose.gpu.
+                    if [ "$SVC" = "all" ]; then
+                      BUILD_SERVICES="kb guardrails orchestrator tracing"
+                    else
+                      BUILD_SERVICES="$SVC"
+                    fi
+                    # WebUI only when requested (all or webui) and assets available
+                    case " $BUILD_SERVICES " in
+                      *" webui "*|*"all"*) NEED_WEBUI=1 ;;
+                      *) NEED_WEBUI=0 ;;
+                    esac
+                    if [ "$SVC" = "all" ]; then NEED_WEBUI=1; fi
+                    if [ "$NEED_WEBUI" = "1" ]; then
+                      if [ -f components/webui/package.json ] && command -v npm >/dev/null 2>&1; then
+                        (
+                          cd components/webui
+                          export NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=8192}"
+                          ONNXRUNTIME_NODE_INSTALL_CUDA=skip npm ci --force
+                          npm run build
+                          find build -type f -name '*.map' -delete || true
+                        )
+                        case " $BUILD_SERVICES " in *" webui "*) ;; *) BUILD_SERVICES="${BUILD_SERVICES} webui" ;; esac
+                      elif [ ! -d components/webui/build ] && [ -d "${HOST_REPO}/components/webui/build" ]; then
+                        mkdir -p components/webui
+                        cp -a "${HOST_REPO}/components/webui/build" components/webui/build
+                        case " $BUILD_SERVICES " in *" webui "*) ;; *) BUILD_SERVICES="${BUILD_SERVICES} webui" ;; esac
+                        echo "Using WebUI build/ copied from host repo"
+                      elif [ -d components/webui/build ]; then
+                        case " $BUILD_SERVICES " in *" webui "*) ;; *) BUILD_SERVICES="${BUILD_SERVICES} webui" ;; esac
+                      else
+                        echo "Skipping rag-webui image build (no npm and no components/webui/build)"
+                        BUILD_SERVICES="$(echo "$BUILD_SERVICES" | tr ' ' '\n' | grep -v '^webui$' | tr '\n' ' ')"
+                      fi
+                    fi
+                    echo "Building compose services: ${BUILD_SERVICES}"
                     if [ "${DANA_HOST:-laptop}" = "gpu" ] || [ "${DANA_ROLE:-stage}" = "prod" ]; then
                       docker compose -f ${COMPOSE_BASE} -f ${COMPOSE_GPU} --env-file ${ENV_FILE_PROD:-${ENV_FILE}} build ${BUILD_SERVICES}
                     else
                       docker compose -f ${COMPOSE_BASE} -f ${COMPOSE_LOCAL} --env-file ${ENV_FILE} build ${BUILD_SERVICES}
                     fi
-                    docker tag rag-kb:local ${REGISTRY}rag-kb:${TAG} || true
-                    docker tag rag-guardrails:local ${REGISTRY}rag-guardrails:${TAG} || true
-                    docker tag rag-orchestrator:local ${REGISTRY}rag-orchestrator:${TAG} || true
-                    docker tag rag-tracing:local ${REGISTRY}rag-tracing:${TAG} || true
-                    docker tag rag-webui:local ${REGISTRY}rag-webui:${TAG} || true
+                    for s in ${BUILD_SERVICES}; do
+                      case "$s" in
+                        kb) docker tag rag-kb:local ${REGISTRY}rag-kb:${TAG} || true ;;
+                        guardrails) docker tag rag-guardrails:local ${REGISTRY}rag-guardrails:${TAG} || true ;;
+                        orchestrator) docker tag rag-orchestrator:local ${REGISTRY}rag-orchestrator:${TAG} || true ;;
+                        tracing) docker tag rag-tracing:local ${REGISTRY}rag-tracing:${TAG} || true ;;
+                        webui) docker tag rag-webui:local ${REGISTRY}rag-webui:${TAG} || true ;;
+                      esac
+                    done
                 '''
             }
         }
@@ -203,9 +224,22 @@ pipeline {
                       ../deploy/compose/.env; do
                       if [ -f "$src" ]; then cp -f "$src" ${ENV_FILE}; break; fi
                     done
-                    docker compose -p dana-stage -f ${COMPOSE_BASE} -f ${COMPOSE_LOCAL} -f ${COMPOSE_STAGE} --env-file ${ENV_FILE} up -d --force-recreate litellm
-                    docker compose -p dana-stage -f ${COMPOSE_BASE} -f ${COMPOSE_LOCAL} -f ${COMPOSE_STAGE} --env-file ${ENV_FILE} up -d
-                    # litellm image can take >25s to become healthy
+                    SVC="${CI_SERVICES:-all}"
+                    COMPOSE="docker compose -p dana-stage -f ${COMPOSE_BASE} -f ${COMPOSE_LOCAL} -f ${COMPOSE_STAGE} --env-file ${ENV_FILE}"
+                    # Keep LiteLLM healthy for stage OpenRouter path
+                    $COMPOSE up -d litellm
+                    if [ "$SVC" = "all" ] || [ "$SVC" = "none" ]; then
+                      $COMPOSE up -d
+                    else
+                      # Targeted recreate of changed app services; ensure deps are up
+                      $COMPOSE up -d postgres redis tracing
+                      for s in $SVC; do
+                        echo "Recreating stage service: $s"
+                        $COMPOSE up -d --no-deps --force-recreate "$s"
+                      done
+                      # Orchestrator/guardrails often need full graph even if not rebuilt
+                      $COMPOSE up -d orchestrator guardrails kb
+                    fi
                     for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
                       if curl -sf --max-time 3 http://127.0.0.1:14000/health/liveliness >/dev/null \
                          && curl -sf --max-time 3 http://127.0.0.1:18100/health >/dev/null; then
