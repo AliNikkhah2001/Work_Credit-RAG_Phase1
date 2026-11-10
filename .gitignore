@@ -189,3 +189,6 @@ docs/benchmark-report/
 deploy/docker/.env
 # AI coding tool configs
 .opencode/
+
+# Jenkins customWorkspace (host-visible for docker bind mounts)
+.ci-workspace/

@@ -12,7 +12,14 @@
 // for stage/prod deploy (except optional path-triggered feature builds).
 
 pipeline {
-    agent any
+    // Host-bind path from deploy/jenkins/docker-compose.yml so `docker compose`
+    // volume mounts resolve on the Docker daemon (not inside jenkins_home).
+    agent {
+        node {
+            label ''
+            customWorkspace '/workspace/Work_Credit-RAG_Phase1/.ci-workspace'
+        }
+    }
 
     options {
         timestamps()
@@ -114,6 +121,12 @@ pipeline {
             steps {
                 sh '''
                     set -e
+                    # Prefer laptop secrets from host clone (gitignored); workspace is .ci-workspace
+                    for src in \
+                      /workspace/Work_Credit-RAG_Phase1/deploy/compose/.env \
+                      ../deploy/compose/.env; do
+                      if [ -f "$src" ]; then cp -f "$src" ${ENV_FILE}; break; fi
+                    done
                     test -f ${ENV_FILE} || cp deploy/compose/.env.example ${ENV_FILE}
                     export TAG=${TAG}
                     # Laptop/test Multibranch uses OpenRouter local overlay unless DANA_HOST=gpu
@@ -144,8 +157,22 @@ pipeline {
             steps {
                 sh '''
                     set -e
+                    for src in \
+                      /workspace/Work_Credit-RAG_Phase1/deploy/compose/.env \
+                      ../deploy/compose/.env; do
+                      if [ -f "$src" ]; then cp -f "$src" ${ENV_FILE}; break; fi
+                    done
+                    docker compose -p dana-stage -f ${COMPOSE_BASE} -f ${COMPOSE_LOCAL} -f ${COMPOSE_STAGE} --env-file ${ENV_FILE} up -d --force-recreate litellm
                     docker compose -p dana-stage -f ${COMPOSE_BASE} -f ${COMPOSE_LOCAL} -f ${COMPOSE_STAGE} --env-file ${ENV_FILE} up -d
-                    sleep 25
+                    # litellm image can take >25s to become healthy
+                    for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
+                      if curl -sf --max-time 3 http://127.0.0.1:14000/health/liveliness >/dev/null \
+                         && curl -sf --max-time 3 http://127.0.0.1:18100/health >/dev/null; then
+                        echo "stage healthy"
+                        break
+                      fi
+                      sleep 10
+                    done
                     for p in 18100 18200 18000 14000; do
                       curl -sf --max-time 5 http://127.0.0.1:$p/health \
                         || curl -sf --max-time 5 http://127.0.0.1:$p/health/liveliness \
