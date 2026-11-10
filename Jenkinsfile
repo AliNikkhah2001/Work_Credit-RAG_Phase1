@@ -13,6 +13,7 @@
 //   [ci prod]              → build + deploy prod WITHOUT manual approval (main) — prod controller only
 //   [ci auto]              → stage on develop / prod on main (still role-gated)
 //   [ci all]               → force full image set (ignore path filter)
+//   [ci rollback]          → restore deploy/compose/.last_good_sha (prod controller)
 //
 // CI_SERVICES from scripts/ci_message_gate.py: "kb", "kb guardrails", "all", or "none".
 
@@ -63,7 +64,7 @@ pipeline {
                       python3 scripts/ci_controller_role.py --write-env .ci_role.env
                     else
                       echo "WARNING: python3 missing on agent — defaulting gate to skip"
-                      printf 'CI_SKIP=1\nCI_BUILD=0\nCI_STAGE=0\nCI_PROD=0\nCI_AUTO=0\nCI_HEAVY_PATHS=0\nCI_SERVICES=none\n' > .ci_gate.env
+                      printf 'CI_SKIP=1\nCI_BUILD=0\nCI_STAGE=0\nCI_PROD=0\nCI_AUTO=0\nCI_ROLLBACK=0\nCI_HEAVY_PATHS=0\nCI_SERVICES=none\n' > .ci_gate.env
                       printf 'DANA_ROLE=stage\nCI_MAY_DEPLOY_STAGE=1\nCI_MAY_DEPLOY_PROD=0\n' > .ci_role.env
                     fi
                 '''
@@ -83,7 +84,7 @@ pipeline {
                         }
                     }
                     echo "CI controller: ROLE=${env.DANA_ROLE} MAY_STAGE=${env.CI_MAY_DEPLOY_STAGE} MAY_PROD=${env.CI_MAY_DEPLOY_PROD} HOST=${env.DANA_HOST} JOB=${env.JOB_NAME}"
-                    echo "CI gate: SKIP=${env.CI_SKIP} BUILD=${env.CI_BUILD} STAGE=${env.CI_STAGE} PROD=${env.CI_PROD} AUTO=${env.CI_AUTO} HEAVY=${env.CI_HEAVY_PATHS} SERVICES=${env.CI_SERVICES} BRANCH=${env.BRANCH_NAME}"
+                    echo "CI gate: SKIP=${env.CI_SKIP} BUILD=${env.CI_BUILD} STAGE=${env.CI_STAGE} PROD=${env.CI_PROD} AUTO=${env.CI_AUTO} ROLLBACK=${env.CI_ROLLBACK} HEAVY=${env.CI_HEAVY_PATHS} SERVICES=${env.CI_SERVICES} BRANCH=${env.BRANCH_NAME}"
                 }
             }
         }
@@ -121,10 +122,29 @@ pipeline {
             }
         }
 
+        stage('Rollback prod') {
+            when {
+                allOf {
+                    branch 'main'
+                    expression { return env.CI_MAY_DEPLOY_PROD == '1' }
+                    expression { return env.CI_SKIP != '1' }
+                    expression { return env.CI_ROLLBACK == '1' }
+                }
+            }
+            steps {
+                sh '''
+                    set -e
+                    chmod +x scripts/ci_rollback.sh
+                    bash scripts/ci_rollback.sh
+                '''
+            }
+        }
+
         stage('Build images') {
             when {
                 allOf {
                     expression { return env.CI_SKIP != '1' }
+                    expression { return env.CI_ROLLBACK != '1' }
                     anyOf {
                         expression { return env.CI_BUILD == '1' }
                         expression { return env.CI_STAGE == '1' }
@@ -209,6 +229,7 @@ pipeline {
                     branch 'develop'
                     expression { return env.CI_MAY_DEPLOY_STAGE == '1' }
                     expression { return env.CI_SKIP != '1' }
+                    expression { return env.CI_ROLLBACK != '1' }
                     anyOf {
                         expression { return env.CI_STAGE == '1' }
                         expression { return env.CI_AUTO == '1' }
@@ -263,6 +284,7 @@ pipeline {
                     branch 'develop'
                     expression { return env.CI_MAY_DEPLOY_STAGE == '1' }
                     expression { return env.CI_SKIP != '1' }
+                    expression { return env.CI_ROLLBACK != '1' }
                     anyOf {
                         expression { return env.CI_STAGE == '1' }
                         expression { return env.CI_AUTO == '1' }
@@ -286,6 +308,7 @@ pipeline {
                     branch 'main'
                     expression { return env.CI_MAY_DEPLOY_PROD == '1' }
                     expression { return env.CI_SKIP != '1' }
+                    expression { return env.CI_ROLLBACK != '1' }
                     expression { return env.CI_PROD != '1' }
                     expression { return env.CI_AUTO != '1' }
                     anyOf {
@@ -305,6 +328,7 @@ pipeline {
                     branch 'main'
                     expression { return env.CI_MAY_DEPLOY_PROD == '1' }
                     expression { return env.CI_SKIP != '1' }
+                    expression { return env.CI_ROLLBACK != '1' }
                     anyOf {
                         expression { return env.CI_PROD == '1' }
                         expression { return env.CI_AUTO == '1' }
@@ -320,6 +344,13 @@ pipeline {
             steps {
                 sh '''
                     set -e
+                    chmod +x scripts/ci_record_last_good.sh
+                    HOST_REPO="${DANA_HOST_REPO:-.}"
+                    # Snapshot current last-good as .prev before this deploy becomes the new tip
+                    if [ -f "${HOST_REPO}/deploy/compose/.last_good_sha" ]; then
+                      cp -f "${HOST_REPO}/deploy/compose/.last_good_sha" \
+                        "${HOST_REPO}/deploy/compose/.last_good_sha.prev" || true
+                    fi
                     if [ "${DANA_HOST:-laptop}" = "gpu" ]; then
                       test -f ${ENV_FILE_PROD} || cp deploy/compose/.env.example ${ENV_FILE_PROD}
                       docker compose -p dana-prod -f ${COMPOSE_BASE} -f ${COMPOSE_GPU} --env-file ${ENV_FILE_PROD} up -d
@@ -333,6 +364,8 @@ pipeline {
                         || curl -sf --max-time 5 http://127.0.0.1:$p/health/liveliness \
                         || echo "port $p warming"
                     done
+                    # Record this commit as last-known-good after health probes
+                    bash scripts/ci_record_last_good.sh "${GIT_COMMIT}"
                 '''
             }
         }

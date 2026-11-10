@@ -39,6 +39,7 @@ GitHub-rendered (bold + red):
 - $\textcolor{red}{\textbf{[ci prod]}}$ — build + **prod** deploy (`main`) — **no approval**
 - $\textcolor{red}{\textbf{[ci auto]}}$ — unattended: stage on `develop`, prod on `main`
 - $\textcolor{red}{\textbf{[ci all]}}$ — force full image set (ignore path filter)
+- $\textcolor{red}{\textbf{[ci rollback]}}$ — prod controller only: restore apps from `deploy/compose/.last_good_sha(.prev)` (Sprint C #10; no model rollback)
 
 **Path → services (Sprint B):** `components/knowledgebase`→`kb`, `guardrails`→`guardrails`, `orchestrator`→`orchestrator`, `tracing`→`tracing`, `webui`→`webui`. Changes under `deploy/compose/`, `Jenkinsfile`, or `.gitmodules` → `all`. Console shows `SERVICES=…` and `Building compose services: …`.
 
@@ -57,6 +58,16 @@ git push origin main             # → prod unattended within ~1h
 
 git commit -m "docs: typo [ci skip]"
 git push origin develop          # → skipped
+
+# Sprint C — promote stage → main (dry-run first)
+bash scripts/promote_stage_to_main.sh
+# then PR develop→main with title containing [ci prod], or:
+# bash scripts/promote_stage_to_main.sh --execute --push
+
+# Break-glass rollback on prod (main + prod controller)
+git commit --allow-empty -m "chore: break glass [ci rollback]"
+git push origin main
+# or locally: bash scripts/ci_rollback.sh --dry-run
 ```
 
 ---
@@ -69,11 +80,13 @@ flowchart TD
   poll --> mb[Multibranch scan]
   mb --> gate[scripts/ci_message_gate.py]
   gate -->|skip| stop[Stop]
+  gate -->|rollback + main/prod| rollback[ci_rollback.sh]
   gate -->|build/stage/prod/auto/PR heavy| lint[Lint + keep-graph]
   lint --> images[docker compose build]
   images -->|develop + stage/auto| stageDeploy[dana-stage compose]
   stageDeploy --> e2e[E2E curl chat]
   images -->|main + prod/auto| prodDeploy[dana-prod compose]
+  prodDeploy --> record[ci_record_last_good.sh]
   images -->|main + build only| ask{Manual input?}
   ask -->|yes| prodDeploy
 ```
