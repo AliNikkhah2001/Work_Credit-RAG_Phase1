@@ -181,6 +181,7 @@ volumes:
   models:
   trace_data:
   webui_data:
+  minio_data:
 
 networks:
   rag:
