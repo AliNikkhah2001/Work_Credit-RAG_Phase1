@@ -41,15 +41,15 @@ services:
     environment:
       KB_EMBED_DEVICE: ${KB_EMBED_DEVICE:-cpu}
       KB_RERANKER_DEVICE: ${KB_RERANKER_DEVICE:-cpu}
-      # Default to local MiniLM/BGE so retrieve matches the existing 384-d pgvector
-      # index. OpenRouter embed (1536-d) needs a rebuilt image AND a full re-ingest;
-      # mixing OpenRouter queries against 384-d rows (or an old image without
-      # OpenRouterEmbedder) looks like a mysterious "code revert".
+      # Embed stays local MiniLM/384 so queries match the existing pgvector index.
+      # OpenRouter embed (1536-d) needs a full re-ingest. Rerank is independent
+      # and must call OpenRouter — a local BGE default is what Jenkins kept
+      # restoring from a stale .env pin.
       KB_EMBED_BACKEND: ${KB_EMBED_BACKEND:-local}
-      KB_RERANKER_BACKEND: ${KB_RERANKER_BACKEND:-local}
+      KB_RERANKER_BACKEND: ${KB_RERANKER_BACKEND:-openrouter}
       KB_EMBED_MODEL: ${KB_EMBED_MODEL:-sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2}
       KB_EMBED_DIM: ${KB_EMBED_DIM:-384}
-      KB_RERANKER_MODEL: ${KB_RERANKER_MODEL:-BAAI/bge-reranker-v2-m3}
+      KB_RERANKER_MODEL: ${KB_RERANKER_MODEL:-cohere/rerank-v3.5}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
       KB_OPENROUTER_API_KEY: ${KB_OPENROUTER_API_KEY:-${OPENROUTER_API_KEY}}
       KB_OPENROUTER_BASE_URL: ${KB_OPENROUTER_BASE_URL:-https://openrouter.ai/api/v1}
