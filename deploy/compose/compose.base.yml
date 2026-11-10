@@ -156,7 +156,7 @@ services:
     image: ${REGISTRY:-}rag-webui:${TAG:-local}
     environment:
       WEBUI_AUTH: "false"
-      WEBUI_NAME: "دانا"
+      WEBUI_NAME: "Dana (local)"
       USE_OLLAMA_DOCKER: "false"
       USE_CUDA_DOCKER: "false"
       OPENAI_API_BASE_URL: http://orchestrator:8100/v1
@@ -181,7 +181,6 @@ volumes:
   models:
   trace_data:
   webui_data:
-  minio_data:
 
 networks:
   rag:
