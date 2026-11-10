@@ -751,6 +751,30 @@ flowchart TB
   models[Manager / TRT / Gemma already up] --> danaProd
 ```
 
+### CI/CD roadmap checklist (next work — gate each sprint)
+
+Work proceeds **one sprint at a time**: implement → test on laptop Jenkins → **your approval** → next sprint. Do not start the next row until the previous is checked off here (and in chat).
+
+| Sprint | ID | Deliverable | Test / acceptance | Status |
+|--------|-----|-------------|-------------------|--------|
+| **A** | **#8** Separate jobs | Laptop Multibranch = stage (`develop` / `feature/*`); GPU Multibranch = prod (`main` only). Jenkinsfile respects `DANA_HOST` / `DANA_ROLE` so the wrong controller cannot deploy the other space. Docs updated. | Laptop: `[ci stage]` still deploys `dana-stage`. Confirm GPU job config docs say `main` only + no OpenRouter. | ☐ pending |
+| **B** | **#1** Path / per-service builds | Gate emits which services to build (`kb`, `guardrails`, `orchestrator`, … or `all`). Compose builds/restarts only those (full stack if compose/Jenkinsfile/`all`). | Dummy change under only `components/knowledgebase` → log shows KB-only build; `[ci stage]` can still force full deploy. | ☐ pending |
+| **B** | **#2** Submodule-aware checkout | Retries on fetch/submodule update; clear error if gitlink SHA missing on remote. | Bad pin → loud fail; good pin → green without `#6`-style `not our ref` flapping. | ☐ pending |
+| **C** | **#3** Promote path | `scripts/promote_stage_to_main.sh` and/or PR template: stage green + pin SHAs → `main` + $\textcolor{red}{\textbf{[ci prod]}}$. | Dry-run script prints pins + last stage URL; no silent prod. | ☐ pending |
+| **C** | **#10** Rollback | On successful prod: record last-good SHA. Jenkins parameterized rollback (or $\textcolor{red}{\textbf{[ci rollback]}}$) restores app containers for that SHA. Models (Gemma/TRT) not auto-rolled. | Break-glass: restore previous SHA; `:8100` healthy. | ☐ pending |
+| **D** | **#4** Registry (GHCR) | Stage builds push `rag-*:gitsha`; GPU prod prefers `pull` + `up`, build only as fallback. | GPU cold deploy with pull works for unchanged services. | ☐ pending |
+| **E** | **Eval module / CI smoke** | Formalize CI entrypoint (e.g. `eval/ci_smoke.py`) over existing `eval/` scripts; fixed exit codes; Jenkins stage after deploy. Optional later: `components/evaluation` submodule — **design approval required before large move**. | Smoke suite fails the build on quality/infra fail; passes on known-good stage. | ☐ pending (design first) |
+| **F** | **#6** Notifications | GitHub commit statuses / Checks (fastest; no SMTP). Statuses for stage and prod. | Commit page shows `dana-stage` / `dana-prod` success/failure. | ☐ pending |
+| **G** | **#9** JCasC | Jenkins Configuration as Code YAML for Multibranch + credential **IDs** (PAT still injected as secret). Reproducible first-boot. | Fresh Jenkins + CasC recreates jobs without click-wizard (PAT via env). | ☐ pending |
+
+**How we run this process**
+
+1. Update this table’s **Status** when a sprint starts / finishes (`☐ pending` → `… in progress` → `✅ done` + date).
+2. After each sprint: commit on `develop`, PR → `main` when you ask to merge, then wait for approval before the next sprint.
+3. Commit keys stay authoritative for deploy: $\textcolor{red}{\textbf{[ci stage]}}$, $\textcolor{red}{\textbf{[ci prod]}}$, $\textcolor{red}{\textbf{[ci auto]}}$, $\textcolor{red}{\textbf{[ci skip]}}$.
+
+Operator detail for Jenkins bring-up remains above and in [`deploy/jenkins/README.md`](deploy/jenkins/README.md).
+
 ---
 
 ## Verification
