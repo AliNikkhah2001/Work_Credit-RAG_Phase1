@@ -38,8 +38,11 @@ GitHub-rendered (bold + red):
 - $\textcolor{red}{\textbf{[ci stage]}}$ — build + **stage** deploy (`develop`) — **no approval**
 - $\textcolor{red}{\textbf{[ci prod]}}$ — build + **prod** deploy (`main`) — **no approval**
 - $\textcolor{red}{\textbf{[ci auto]}}$ — unattended: stage on `develop`, prod on `main`
+- $\textcolor{red}{\textbf{[ci all]}}$ — force full image set (ignore path filter)
 
-Also: **heavy path** changes under `components/`, `deploy/`, `Jenkinsfile`, `Dockerfile*` can enable builds on PRs / interactive prod path.
+**Path → services (Sprint B):** `components/knowledgebase`→`kb`, `guardrails`→`guardrails`, `orchestrator`→`orchestrator`, `tracing`→`tracing`, `webui`→`webui`. Changes under `deploy/compose/`, `Jenkinsfile`, or `.gitmodules` → `all`. Console shows `SERVICES=…` and `Building compose services: …`.
+
+Also: **heavy path** changes under `components/`, `deploy/`, `Jenkinsfile`, `Dockerfile*` can enable builds on PRs / interactive prod path. Submodule sync: `scripts/ci_submodule_sync.sh` (retries; loud fail on missing SHA).
 
 Hourly poll discovers new commits; **stage/prod deploy still require** $\textcolor{red}{\textbf{[ci stage]}}$, $\textcolor{red}{\textbf{[ci prod]}}$, or $\textcolor{red}{\textbf{[ci auto]}}$ (unless you click Deploy on an untagged `main` build).
 

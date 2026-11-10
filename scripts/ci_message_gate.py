@@ -7,11 +7,14 @@ Keys (case-insensitive):
   [ci stage]
   [ci auto]
   [ci prod]
+  [ci all]              → force full image set (Sprint B)
+
+Sprint B — CI_SERVICES:
+  space-separated compose service names, or "all".
 
 Usage:
   python3 scripts/ci_message_gate.py --write-env .ci_gate.env
   python3 scripts/ci_message_gate.py --self-test
-  echo '[ci stage] feat: x' | python3 scripts/ci_message_gate.py --msg-stdin
 """
 from __future__ import annotations
 
@@ -26,6 +29,44 @@ HEAVY = re.compile(
     re.I,
 )
 
+# Path prefix → compose service (order matters for readability only)
+SERVICE_MAP: list[tuple[re.Pattern[str], str]] = [
+    (re.compile(r"(^|/)components/knowledgebase(/|$)", re.I), "kb"),
+    (re.compile(r"(^|/)components/guardrails(/|$)", re.I), "guardrails"),
+    (re.compile(r"(^|/)components/orchestrator(/|$)", re.I), "orchestrator"),
+    (re.compile(r"(^|/)components/tracing(/|$)", re.I), "tracing"),
+    (re.compile(r"(^|/)components/webui(/|$)", re.I), "webui"),
+]
+
+FORCE_ALL = re.compile(
+    r"(^|/)"
+    r"(deploy/compose/|deploy/jenkins/|Jenkinsfile$|\.gitmodules$"
+    r"|Dockerfile$|compose\.[^/]+\.yml)",
+    re.I,
+)
+
+CORE_SERVICES = ("kb", "guardrails", "orchestrator", "tracing")
+
+
+def services_for_paths(changed: str, force_all_key: bool) -> str:
+    lines = [ln.strip() for ln in (changed or "").splitlines() if ln.strip()]
+    if force_all_key:
+        return "all"
+    if not lines:
+        return "all"
+    if any(FORCE_ALL.search(ln) for ln in lines):
+        return "all"
+    found: list[str] = []
+    for ln in lines:
+        for pat, svc in SERVICE_MAP:
+            if pat.search(ln) and svc not in found:
+                found.append(svc)
+    if not found:
+        # docs-only / unrelated → no image build list (caller may still skip build)
+        return "none"
+    # webui alone is fine; if only non-core matched keep as-is
+    return " ".join(found)
+
 
 def parse(msg: str, changed: str) -> dict[str, str]:
     low = (msg or "").lower()
@@ -34,7 +75,12 @@ def parse(msg: str, changed: str) -> dict[str, str]:
     stage = "[ci stage]" in low
     prod = "[ci prod]" in low
     auto = "[ci auto]" in low
+    force_all = "[ci all]" in low
     heavy = any(HEAVY.search(line) for line in (changed or "").splitlines())
+    services = "none" if skip else services_for_paths(changed, force_all)
+    # Deploy keys with no service hit still need a stack refresh → all
+    if not skip and services == "none" and (stage or prod or auto or build):
+        services = "all"
     return {
         "CI_SKIP": "1" if skip else "0",
         "CI_BUILD": "1" if build else "0",
@@ -42,6 +88,7 @@ def parse(msg: str, changed: str) -> dict[str, str]:
         "CI_PROD": "1" if prod else "0",
         "CI_AUTO": "1" if auto else "0",
         "CI_HEAVY_PATHS": "1" if heavy else "0",
+        "CI_SERVICES": services,
     }
 
 
@@ -51,12 +98,14 @@ def write_env(path: Path, data: dict[str, str]) -> None:
 
 def self_test() -> None:
     cases = [
-        ("docs only", "docs: typo", "README.md", {"CI_SKIP": "0", "CI_STAGE": "0", "CI_HEAVY_PATHS": "0"}),
-        ("skip", "chore: x [ci skip]", "deploy/compose/compose.base.yml", {"CI_SKIP": "1"}),
-        ("stage", "feat: y [ci stage]", "docs/a.md", {"CI_STAGE": "1", "CI_SKIP": "0"}),
-        ("prod auto", "release [ci prod]", "Jenkinsfile", {"CI_PROD": "1"}),
-        ("auto", "ship [ci auto]", "components/orchestrator/Dockerfile", {"CI_AUTO": "1", "CI_HEAVY_PATHS": "1"}),
-        ("build", "rebuild [ci build]", "eval/x.md", {"CI_BUILD": "1"}),
+        ("docs only", "docs: typo", "README.md", {"CI_SKIP": "0", "CI_STAGE": "0", "CI_HEAVY_PATHS": "0", "CI_SERVICES": "none"}),
+        ("skip", "chore: x [ci skip]", "deploy/compose/compose.base.yml", {"CI_SKIP": "1", "CI_SERVICES": "none"}),
+        ("stage docs", "feat: y [ci stage]", "docs/a.md", {"CI_STAGE": "1", "CI_SERVICES": "all"}),
+        ("kb only", "fix: denser [ci stage]", "components/knowledgebase/kb-manager/foo.py", {"CI_STAGE": "1", "CI_SERVICES": "kb"}),
+        ("guard+orch", "fix: x [ci build]", "components/guardrails/a.py\ncomponents/orchestrator/b.py", {"CI_SERVICES": "guardrails orchestrator"}),
+        ("compose all", "chore: ports [ci stage]", "deploy/compose/compose.stage.yml", {"CI_SERVICES": "all"}),
+        ("ci all key", "rebuild [ci all] [ci build]", "README.md", {"CI_SERVICES": "all"}),
+        ("prod", "release [ci prod]", "Jenkinsfile", {"CI_PROD": "1", "CI_SERVICES": "all"}),
     ]
     for name, msg, changed, expect in cases:
         got = parse(msg, changed)
