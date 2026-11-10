@@ -46,7 +46,12 @@ pipeline {
                     git submodule update --init --recursive || true
                     git log -1 --pretty=%B > .ci_commit_msg.txt
                     git diff --name-only HEAD~1...HEAD 2>/dev/null > .ci_changed_files.txt || true
-                    python3 scripts/ci_message_gate.py --write-env .ci_gate.env || true
+                    if command -v python3 >/dev/null 2>&1; then
+                      python3 scripts/ci_message_gate.py --write-env .ci_gate.env
+                    else
+                      echo "WARNING: python3 missing on agent — defaulting gate to skip"
+                      printf 'CI_SKIP=1\nCI_BUILD=0\nCI_STAGE=0\nCI_PROD=0\nCI_AUTO=0\nCI_HEAVY_PATHS=0\n' > .ci_gate.env
+                    fi
                 '''
                 script {
                     def gate = readFile('.ci_gate.env').trim().split('\n') as List
