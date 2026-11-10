@@ -32,6 +32,19 @@ docker compose -f deploy/compose/compose.base.yml \
 
 UI: http://127.0.0.1:13000 · API: http://127.0.0.1:8100 · Jenkins: http://127.0.0.1:8085
 
+### Laptop retrieval gotcha (stale image ≠ git tip)
+
+`compose.local.yml` bind-mounts `kb-manager/packs` **and** `kb-manager/kb_manager` so recreate picks up host source. Still rebuild after dependency changes:
+
+```bash
+docker compose -f deploy/compose/compose.base.yml \
+  -f deploy/compose/compose.local.yml \
+  --env-file deploy/compose/.env \
+  up -d --build kb
+```
+
+Default laptop embed/rerank is **local MiniLM 384-d + BGE** (matches a typical existing pgvector index). Switching to OpenRouter `text-embedding-3-small` (1536-d) without rebuilding the image **and** re-ingesting will break `/search/api` (and the search UI used to crash on missing `elapsed_ms`).
+
 ## GPU server (prod)
 
 Prefer existing stacks (`deploy/vast/` or `deploy/docker/`). If using this compose family:
