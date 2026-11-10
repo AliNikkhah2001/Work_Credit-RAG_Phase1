@@ -1,0 +1,78 @@
+% Dense Times New Roman report — narrow margins, compact spacing
+\usepackage{fontspec}
+\usepackage{microtype}
+\usepackage{graphicx}
+\graphicspath{{../}{../assets/}{../assets/diagrams/}{../assets/logo/}{../assets/plots/}{../assets/fonts/}}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{calc}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{setspace}
+\usepackage{enumitem}
+\usepackage{geometry}
+\usepackage{scrlayer-scrpage}
+\usepackage{etoolbox}
+
+\providecommand{\real}[1]{#1}
+\providecommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+
+\geometry{margin=0.55in, top=0.6in, bottom=0.6in}
+
+\definecolor{termcolor}{HTML}{1B4F72}
+\definecolor{emphcolor}{HTML}{0E6655}
+\definecolor{codecolor}{HTML}{4A235A}
+
+\setmainfont{Times New Roman}
+\setsansfont{Times New Roman}
+\setmonofont{Times New Roman}[Scale=0.88]
+\newfontfamily\persianfont{Amiri}[
+  Path=../assets/fonts/,
+  Extension=.ttf,
+  UprightFont=Amiri-Regular,
+  BoldFont=Amiri-Bold,
+  ItalicFont=Amiri-Italic,
+  BoldItalicFont=Amiri-BoldItalic,
+  Script=Arabic,
+  Scale=0.95
+]
+\usepackage{ucharclasses}
+\setTransitionsFor{Arabic}{\persianfont}{\normalfont}
+
+\let\icbold\textbf
+\let\icemph\emph
+\let\ictt\texttt
+\renewcommand{\textbf}[1]{\textcolor{termcolor}{\icbold{#1}}}
+\renewcommand{\emph}[1]{\textcolor{emphcolor}{\icemph{#1}}}
+\renewcommand{\texttt}[1]{\textcolor{codecolor}{\fontsize{8.5}{10}\selectfont\icbold{#1}}}
+
+\KOMAoptions{chapterprefix=false, numbers=noenddot}
+\addtokomafont{disposition}{\rmfamily\bfseries\color{termcolor}}
+\addtokomafont{chapter}{\LARGE}
+\addtokomafont{section}{\large}
+\addtokomafont{subsection}{\normalsize}
+
+\setstretch{1.08}
+\setlength{\parskip}{0.25em}
+\setlength{\parindent}{0pt}
+\setlist[itemize]{topsep=0.15em,itemsep=0.08em,leftmargin=1.1em}
+\setlist[enumerate]{topsep=0.15em,itemsep=0.08em,leftmargin=1.1em}
+
+\captionsetup{font=footnotesize,labelfont={bf,rm,color=termcolor},skip=4pt,justification=raggedright,singlelinecheck=false}
+\hypersetup{colorlinks=false,pdfborder={0 0 0}}
+
+\clearscrheadings
+\clearscrplain
+\cfoot{\pagemark}
+\pagestyle{scrheadings}
+
+\renewcommand*{\chapterheadstartvskip}{\vspace*{0.6\baselineskip}}
+\renewcommand*{\chapterheadendvskip}{\vspace*{0.4\baselineskip}}
+
+% Compact tables
+\AtBeginEnvironment{longtable}{\footnotesize\setlength{\tabcolsep}{3pt}}
+\AtBeginEnvironment{tabular}{\footnotesize\setlength{\tabcolsep}{3pt}}

@@ -1,0 +1,35 @@
+# LiteLLM — laptop/test only (LLM_UPSTREAM_MODE=openrouter).
+# Self-hosted Gemma/TRT configs live in deploy/vast/ and deploy/docker/ — do not remove.
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
+  drop_params: true
+  set_verbose: false
+
+model_list:
+  # Closest match to production self-hosted Gemma 4 31B IT
+  - model_name: chat-primary
+    litellm_params:
+      model: openrouter/google/gemma-4-31b-it
+      api_key: os.environ/OPENROUTER_API_KEY
+    model_info:
+      max_tokens: 8192
+
+  - model_name: gemma-4-31b
+    litellm_params:
+      model: openrouter/google/gemma-4-31b-it
+      api_key: os.environ/OPENROUTER_API_KEY
+
+  - model_name: openrouter-chat
+    litellm_params:
+      model: openrouter/google/gemma-4-31b-it
+      api_key: os.environ/OPENROUTER_API_KEY
+
+litellm_settings:
+  drop_params: true
+  request_timeout: 120
+  num_retries: 2
+
+model_aliases:
+  gemma-4-31b: chat-primary
+  chat: chat-primary

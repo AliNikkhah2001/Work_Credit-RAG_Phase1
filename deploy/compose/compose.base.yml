@@ -1,0 +1,168 @@
+# Shared services for Dana / Work Credit RAG (no LLM backend).
+# Use with compose.local.yml / compose.stage.yml / compose.prod-sim.yml.
+# Run from repo root:
+#   docker compose -f deploy/compose/compose.base.yml -f deploy/compose/compose.local.yml --env-file deploy/compose/.env up -d --build
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: kb_manager
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ../../components/knowledgebase/kb-manager/scripts/init_db.sql:/docker-entrypoint-initdb.d/init_db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks: [rag]
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    networks: [rag]
+    restart: unless-stopped
+
+  kb:
+    build:
+      context: ../../components/knowledgebase/kb-manager
+      dockerfile: Dockerfile
+    image: ${REGISTRY:-}rag-kb:${TAG:-local}
+    environment:
+      KB_DB_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/kb_manager
+      KB_DB_MODE: pgvector
+      KB_WEB_HOST: 0.0.0.0
+      KB_WEB_PORT: 8000
+      KB_REDIS_URL: redis://redis:6379/0
+      KB_EMBED_DEVICE: ${KB_EMBED_DEVICE:-cpu}
+      KB_RERANKER_DEVICE: ${KB_RERANKER_DEVICE:-cpu}
+      # Local/CPU: prefer python BM25 unless tantivy wheel is installed in image
+      KB_USE_TANTIVY: ${KB_USE_TANTIVY:-false}
+      HF_HOME: /models
+      HF_HUB_CACHE: /models
+      HF_HUB_OFFLINE: ${HF_HUB_OFFLINE:-0}
+    volumes:
+      - models:/models
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request, sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health').getcode()==200 else 1)"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 180s
+    networks: [rag]
+    restart: unless-stopped
+
+  guardrails:
+    build:
+      context: ../../components/guardrails
+      dockerfile: Dockerfile
+    image: ${REGISTRY:-}rag-guardrails:${TAG:-local}
+    environment:
+      GUARDRAILS_HOST: 0.0.0.0
+      GUARDRAILS_PORT: 8200
+      # Defaults are overridden by compose.local.yml (openrouter) or compose.gpu.yml (self-hosted).
+      # Set LLM_UPSTREAM_MODE=openrouter only on laptop/test; self_hosted on GPU server.
+      UPSTREAM_LLM_BASE_URL: ${UPSTREAM_LLM_BASE_URL:-http://host.docker.internal:18000/v1}
+      UPSTREAM_LLM_MODEL: ${UPSTREAM_LLM_MODEL:-unsloth/gemma-4-31B-it-GGUF:UD-Q4_K_XL}
+      UPSTREAM_LLM_API_KEY: ${LLM_API_KEY:-sk-local-dev}
+      LLM_BASE_URL: ${UPSTREAM_LLM_BASE_URL:-http://host.docker.internal:18000/v1}
+      LLM_MODEL: ${UPSTREAM_LLM_MODEL:-unsloth/gemma-4-31B-it-GGUF:UD-Q4_K_XL}
+      LLM_UPSTREAM_MODE: ${LLM_UPSTREAM_MODE:-self_hosted}
+      DANA_ENV: ${DANA_ENV:-prod}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; print(urllib.request.urlopen('http://127.0.0.1:8200/health').read())"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+    networks: [rag]
+    restart: unless-stopped
+
+  orchestrator:
+    build:
+      context: ../../components/orchestrator
+      dockerfile: Dockerfile
+    image: ${REGISTRY:-}rag-orchestrator:${TAG:-local}
+    environment:
+      ORCHESTRATOR_HOST: 0.0.0.0
+      ORCHESTRATOR_PORT: 8100
+      KB_BASE_URL: http://kb:8000
+      GUARDRAILS_BASE_URL: http://guardrails:8200
+      UPSTREAM_LLM_MODEL: ${UPSTREAM_LLM_MODEL:-unsloth/gemma-4-31B-it-GGUF:UD-Q4_K_XL}
+      LLM_UPSTREAM_MODE: ${LLM_UPSTREAM_MODE:-self_hosted}
+      DANA_ENV: ${DANA_ENV:-prod}
+      REQUEST_TIMEOUT_SECONDS: ${REQUEST_TIMEOUT_SECONDS:-120}
+      RETRIEVAL_TOP_K: ${RETRIEVAL_TOP_K:-5}
+      TRACE_ENABLED: ${TRACE_ENABLED:-false}
+      LANGFUSE_HOST: ${LANGFUSE_HOST:-http://tracing:3000}
+    depends_on:
+      kb:
+        condition: service_healthy
+      guardrails:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; print(urllib.request.urlopen('http://127.0.0.1:8100/health').read())"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+    networks: [rag]
+    restart: unless-stopped
+
+  tracing:
+    build:
+      context: ../../components/tracing
+      dockerfile: Dockerfile
+    image: ${REGISTRY:-}rag-tracing:${TAG:-local}
+    environment:
+      TRACE_JSONL: /data/langfuse_traces.jsonl
+    volumes:
+      - trace_data:/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; print(urllib.request.urlopen('http://127.0.0.1:3000/api/public/health').read())"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks: [rag]
+    restart: unless-stopped
+
+  webui:
+    image: ghcr.io/open-webui/open-webui:main
+    environment:
+      WEBUI_AUTH: "false"
+      WEBUI_NAME: "Dana (local)"
+      USE_OLLAMA_DOCKER: "false"
+      USE_CUDA_DOCKER: "false"
+      OPENAI_API_BASE_URL: http://orchestrator:8100/v1
+      OPENAI_API_KEY: sk-local-dev
+    depends_on:
+      orchestrator:
+        condition: service_healthy
+    networks: [rag]
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  redis_data:
+  models:
+  trace_data:
+
+networks:
+  rag:
+    driver: bridge

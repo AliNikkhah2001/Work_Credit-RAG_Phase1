@@ -1,0 +1,10 @@
+# Prod-sim on laptop (Jenkins main, manual approval): standard ports, still LiteLLM
+# until H200 cutover swaps UPSTREAM to Manager/Gemma via env only.
+#   docker compose -p dana-prod -f deploy/compose/compose.base.yml -f deploy/compose/compose.local.yml -f deploy/compose/compose.prod-sim.yml --env-file deploy/compose/.env up -d
+
+services:
+  webui:
+    environment:
+      WEBUI_NAME: "Dana (prod-sim)"
+    ports:
+      - "127.0.0.1:13000:8080"

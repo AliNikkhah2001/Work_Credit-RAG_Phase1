@@ -1,0 +1,173 @@
+\chapter{Work Credit RAG --- Technical Summary}\label{work-credit-rag-technical-summary}
+
+\textbf{Organization:} Iranian Credit Scoring Company (ICS)\\
+\textbf{Platform:} Dana / Work Credit RAG Phase 1\\
+\textbf{Date:} 2026-11-10\\
+\textbf{Host:} Self-hosted H200 lab server (2× NVIDIA H200)
+
+This summary describes the \textbf{current} platform structure and technical behavior. Diagrams match the deep-dive report; captions state what each figure shows.
+
+\section{Platform at a glance}\label{platform-at-a-glance}
+
+Persian conversational RAG for credit-reporting questions. Production code lives in Git submodules; the umbrella owns pins, deploy scripts, contracts, and evaluation. Release \texttt{v13\_1405-07-06} indexes \textbf{18 documents / 1,123 chunks}. Guardrails uses a HurtLex allowlist of \textbf{28} lemmas. Subspace ambiguity is computed (\texttt{enabled=true}) and does not route by default (\texttt{route=false}).
+
+\begin{longtable}[]{@{}lll@{}}
+\toprule\noalign{}
+Module & Port & Role \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Open WebUI & 13000 & Browser UI (ICS Helper) \\
+Orchestrator & 8100 & LangGraph chat API \\
+Knowledge base & 8000 & Hybrid retrieval \\
+Guardrails & 8200 & Input/output rails + gated generate \\
+LLM Manager & 9000 & OpenAI gateway to Gemma fleet \\
+Embeds & 8001--8003 & e5 / bge-m3 / MiniLM \\
+TRT / llama.cpp & 8010 / 8080--8084 & Champion + replica pool \\
+Collector / Langfuse / Studio & 3000 / 3001 / 2024 & Observability \\
+\end{longtable}
+
+\section{Architecture and request path}\label{architecture-and-request-path}
+
+Browser → WebUI \texttt{:13000} → Orchestrator \texttt{:8100} → Guardrails input → KB retrieve → \texttt{build\_context} (≤20 chunks, context 9000) → Guardrails generate → Manager \texttt{:9000} → citations back to WebUI. Sticky subspace decays after \textbf{3} generic turns. Evidence floor \textbf{0.15}. Ambiguity margin \textbf{0.08}.
+
+\begin{figure}
+\centering
+\includegraphics[width=0.88\linewidth,height=0.36\textheight,keepaspectratio]{../assets/diagrams/01_system_overview_hl.png}
+\caption{High-level system overview}
+\end{figure}
+
+\emph{Figure --- High-level overview. WebUI talks only to the orchestrator. Guardrails gates both input and generation. The KB supplies evidence. Observability sits beside the user path.}
+
+\begin{figure}
+\centering
+\includegraphics[width=0.88\linewidth,height=0.36\textheight,keepaspectratio]{../assets/diagrams/02_system_overview_detail.png}
+\caption{Detailed system overview}
+\end{figure}
+
+\emph{Figure --- Detailed overview. Orchestrator nodes (validate, classify, retrieve, build\_context, guarded\_generate, format) call KB search/supplement and Guardrails rails/chat. Embeddings for ambiguity use MiniLM \texttt{:8003}. Gemma is reached only through the manager.}
+
+\begin{figure}
+\centering
+\includegraphics[width=0.88\linewidth,height=0.36\textheight,keepaspectratio]{../assets/diagrams/03_request_flow_hl.png}
+\caption{High-level request sequence}
+\end{figure}
+
+\emph{Figure --- Sticky filtered RAG (high level). Input rails may refuse before retrieval. Hybrid search returns chunks and optional entity rows. Guarded generation and output rails produce the cited answer.}
+
+\begin{figure}
+\centering
+\includegraphics[width=0.88\linewidth,height=0.36\textheight,keepaspectratio]{../assets/diagrams/04_request_flow_detail.png}
+\caption{Detailed request sequence}
+\end{figure}
+
+\emph{Figure --- Detailed sequence. Sticky \texttt{filter\_path}, keyword boosts, supplement threshold 0.4, clarify short-circuit on entities, and context budgets are applied inside the orchestrator before generation.}
+
+\begin{figure}
+\centering
+\includegraphics[width=0.88\linewidth,height=0.36\textheight,keepaspectratio]{../assets/diagrams/05_orch_graph_hl.png}
+\caption{Orchestrator graph high level}
+\end{figure}
+
+\emph{Figure --- Graph high level. Validate → classify → retrieve → optional clarify → generate → format, with refusal exits.}
+
+\begin{figure}
+\centering
+\includegraphics[width=0.88\linewidth,height=0.36\textheight,keepaspectratio]{../assets/diagrams/06_orch_graph_detail.png}
+\caption{Orchestrator graph detailed}
+\end{figure}
+
+\emph{Figure --- Graph detailed. Conditional edges after validation, classify, and clarify. Ambiguity score is instrumented; scattered-query clarify remains available.}
+
+\section{Knowledge base}\label{knowledge-base}
+
+Hybrid stack: tantivy BM25 (k1=1.5, b=0.75, keyword boost ×3, synonym beam 5) + MiniLM 384-d HNSW (m=16, ef=64) → RRF k=60 → BGE-m3 rerank (fusion α=0.7) → EntityList inject (≥0.6). Redis cache TTL 600 s. Warm hybrid search \textasciitilde{}\textbf{55 ms}. Published Hit@5 on the prior corpus (v11): \textbf{0.9306}.
+
+\begin{figure}
+\centering
+\includegraphics[width=0.88\linewidth,height=0.36\textheight,keepaspectratio]{../assets/diagrams/07_kb_ingest_hl.png}
+\caption{KB ingest}
+\end{figure}
+
+\emph{Figure --- Ingest. Sources become versioned chunks and entity lists with embeddings in pgvector.}
+
+\begin{figure}
+\centering
+\includegraphics[width=0.88\linewidth,height=0.36\textheight,keepaspectratio]{../assets/diagrams/09_kb_retrieval_hl.png}
+\caption{KB retrieval}
+\end{figure}
+
+\emph{Figure --- Retrieval. Normalize → beam → BM25∥dense → RRF → rerank → fuse → entities → cache.}
+
+\section{Orchestrator}\label{orchestrator}
+
+Never dials Gemma directly. Keyword boosts: cheque 3.5; facilities 3.0; general 2.5. Clients use \texttt{trust\_env=False} so Squid does not capture localhost. Checkpoint sticky scope with \texttt{MemorySaver} / \texttt{request\_id}.
+
+\section{Guardrails}\label{guardrails}
+
+Deterministic signals → policy judge (\texttt{gemma} / \texttt{mizan} / \texttt{hybrid}) → LLM self-check. Fail-closed on errors. PII-IR (mod-11 / mod-97) masks; secrets hard-block. Policy pin \texttt{ics-credit-v1.0.0}. Thresholds published with the stack: toxicity/hate 0.80, PII 0.90, injection 0.85.
+
+\begin{figure}
+\centering
+\includegraphics[width=0.88\linewidth,height=0.36\textheight,keepaspectratio]{../assets/diagrams/security_guard_blackbox.png}
+\caption{Guardrails black-box}
+\end{figure}
+
+\emph{Figure --- Guardrails box. Callers see rails/check and chat/completions; upstream is the H200 manager only.}
+
+\section{Server, serving, and scale}\label{server-serving-and-scale}
+
+\begin{figure}
+\centering
+\includegraphics[width=0.88\linewidth,height=0.36\textheight,keepaspectratio]{../assets/diagrams/13_server_topology_hl.png}
+\caption{Server topology high level}
+\end{figure}
+
+\emph{Figure --- H200 topology (high level). Manager fronts GPU backends; Docker hosts WebUI and data stores.}
+
+\begin{figure}
+\centering
+\includegraphics[width=0.88\linewidth,height=0.36\textheight,keepaspectratio]{../assets/diagrams/14_server_topology_detail.png}
+\caption{Server topology detail}
+\end{figure}
+
+\emph{Figure --- Port map. TRT \texttt{:8010} champion; llama.cpp \texttt{8080–8084}; embeds \texttt{8001–8003}; apps on 8000/8100/8200/13000.}
+
+\begin{figure}
+\centering
+\includegraphics[width=0.88\linewidth,height=0.36\textheight,keepaspectratio]{../assets/diagrams/17_scale_out.png}
+\caption{Scale-out}
+\end{figure}
+
+\emph{Figure --- Scale-out pattern. Ingress + HPA for CPU services; KEDA/queue depth for GPU replicas; dedicated vector tier.}
+
+\begin{figure}
+\centering
+\includegraphics[width=0.88\linewidth,height=0.36\textheight,keepaspectratio]{../assets/diagrams/18_scale_up.png}
+\caption{Scale-up}
+\end{figure}
+
+\emph{Figure --- Scale-up pattern. Saturate 2×H200 on one chassis with dense continuous batching.}
+
+Measured TRT BF16 aggregate \textasciitilde{}\textbf{3874 tok/s} at concurrency 128 versus \textasciitilde58 tok/s flat llama.cpp Q4 single-slot (\textasciitilde67×). Container cutover uses five phases; production ports stay fixed through phase 4.
+
+\section{Telemetry}\label{telemetry}
+
+KB returns \texttt{stage\_ms}; orchestrator \texttt{stage\_timing\_ms} / AuditTrail; Langfuse \texttt{:3001} or collector \texttt{:3000}; Studio \texttt{:2024} requires \texttt{request\_id}. Guard events and manager metrics complement the path. E2E chat p50 \textasciitilde{}\textbf{4872 ms} (generation-dominated); warm search tens of ms.
+
+\begin{figure}
+\centering
+\includegraphics[width=0.88\linewidth,height=0.36\textheight,keepaspectratio]{../assets/diagrams/15_observability.png}
+\caption{Observability wiring}
+\end{figure}
+
+\emph{Figure --- Observability stores and dashboards join on \texttt{request\_id}.}
+
+\section{Benchmarks (published)}\label{benchmarks-published}
+
+41-turn bench (12→14 Oct 2026): finish mismatches 6→0; retrieval hit 0.537→0.780; cheque hit 0.111→0.667; context recall 0.113→0.340; answer relevancy 0.212→0.568; ambiguity 0.854→1.0; sticky 0.610→0.683; p50 8006→4872 ms (−39\%).
+
+\section{Networking (H200)}\label{networking-h200}
+
+Application and Docker publish surfaces as in the deep-dive port tables. Squid \texttt{192.168.203.2:3128}; localhost clients set \texttt{trust\_env=False}. Compose MVP publishes WebUI \texttt{:13000} and Langfuse \texttt{:3000} on the host; other services stay on the Docker network for discovery.

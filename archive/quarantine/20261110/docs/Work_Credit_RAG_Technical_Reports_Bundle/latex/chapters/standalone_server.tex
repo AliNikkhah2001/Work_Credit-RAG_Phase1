@@ -1,0 +1,123 @@
+\chapter{Server Setup, Model Serving, and Scaling}\label{server-setup-model-serving-and-scaling}
+
+\section{Section summary}\label{section-summary}
+
+Work Credit RAG runs on the self-hosted H200 lab server (\texttt{ai-gpu1}, 2× H200 NVL, about 281 GiB of VRAM) under \texttt{/splunk-data/v1/Work\_RAG-Server-Setup}. The LLM Inference Manager on \texttt{:9000} fronts a multi-backend fleet---llama.cpp Gemma replicas on \texttt{8080–8084}, TensorRT-LLM champion traffic on \texttt{:8010}, embedding workers on \texttt{8001–8003}, and a standalone DeepSeek-V4-Flash wrapper on \texttt{:9001} that stays outside \texttt{MODEL\_REGISTRY}. Redis, vector stores, and Open WebUI ride a Docker publish surface (\texttt{13000}, \texttt{15432}, \texttt{16379}, and the monitoring ports beside them). Corporate egress goes through Squid at \texttt{192.168.203.2:3128}, which makes \texttt{httpx} \texttt{trust\_env=False} on localhost calls a hard correctness requirement. Containerization follows a five-phase cutover: phases 1--3 leave production listeners alone, phase 4 swaps each service onto its live port, and phase 5 retires host virtualenvs after a day of stability. Capacity planning follows \texttt{docs/plans/million-user-scale-plan.md}. Measured generation throughput on the H200 (history \texttt{013}) shows TensorRT-LLM BF16 continuous batching reaching \textasciitilde3874 aggregate tok/s at concurrency 128 versus a flat \textasciitilde58 tok/s llama.cpp Q4 single-slot path---about \textbf{67×} aggregate under the same Persian decode workload.
+
+\section{H200 lab server}\label{h200-lab-server}
+
+Docker serves the data plane, Jenkins can act as root, and the two GPUs run concurrent backends. Model control plane is the manager on \texttt{:9000}. Chat backends include five llama.cpp Gemma-4-31B instances (\texttt{gemma\_supervisor.sh}: GPU0 on \texttt{8080}/\texttt{8082}/\texttt{8084}, GPU1 on \texttt{8081}/\texttt{8083}), optional Qwen2.5-7B on \texttt{:8090}, a dynamic llama.cpp band on \texttt{8085–8100} filled by \texttt{POST\ /admin/models/load}, and the TensorRT-LLM champion on GPU1 \texttt{:8010}. Embedding microservices stay off the decode CUDA contexts: multilingual-e5-small (384-d) on \texttt{:8001}, bge-m3 (1024-d) on \texttt{:8002}, and MiniLM (384-d, OpenAI \texttt{/v1/embeddings}) on \texttt{:8003}. DeepSeek-V4-Flash is a standalone wrapper on \texttt{:9001} and stays outside the manager registry, so promoting Gemma keeps chat on the Gemma fleet. Orchestrator and guardrails speak OpenAI JSON; production generation is Manager → champion, with automatic fallback into the llama.cpp pool when \texttt{:8010} is unavailable. Both \texttt{HF\_HOME} and \texttt{HF\_HUB\_CACHE} point at the same cache directory. Figure 13 captures that high-level split---clients to manager to model backends, with Docker handling Redis/Qdrant/pgvector/WebUI---while Figure 14 expands the port map and the orchestrator/guardrails/KB adjacency.
+
+\begin{figure}
+\centering
+\includegraphics[width=0.88\linewidth,height=0.36\textheight,keepaspectratio]{../assets/diagrams/13_server_topology_hl.png}
+\caption{Figure 13. High-level server topology: clients reach the H200 Manager (:9000), which fans out to model backends; a parallel Docker data plane hosts Redis, Qdrant, pgvector, and Open WebUI.}
+\end{figure}
+
+\emph{Figure 13 --- High-level topology. The left/host plane is process-owned inference (manager + GPUs). The Docker plane is stateful infrastructure and the browser UI. Application services (orchestrator, guardrails, KB) sit beside that split. The diagram emphasizes the durable control-plane split.}
+
+\begin{figure}
+\centering
+\includegraphics[width=0.88\linewidth,height=0.36\textheight,keepaspectratio]{../assets/diagrams/14_server_topology_detail.png}
+\caption{Figure 14. Detailed H200 topology: Manager routes to TRT-LLM :8010, llama.cpp Gemma 8080--8084, Qwen :8090, and embeds 8001--8003; WebUI → Orchestrator → Guardrails/Manager; KB uses MiniLM embed :8003 and pgvector.}
+\end{figure}
+
+\emph{Figure 14 --- Detailed port topology. Champion traffic is TRT-LLM on GPU1 \texttt{:8010}; the Gemma pool remains the resilience path. Embedding ports stay separate so retrieval does not share CUDA contexts with decode. WebUI stays on \texttt{:13000} and never talks to Gemma ports directly.}
+
+\subsection{Docker publish surface}\label{docker-publish-surface}
+
+Application ports on the host process plane (\texttt{8000}, \texttt{8100}, \texttt{8200}, \texttt{9000}, \texttt{8001–8003}, \texttt{8080–8084}) are not the same map as the containers Docker publishes. The data-plane and monitoring surface, from the server-setup pages, is:
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.3333}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.3333}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.3333}}@{}}
+\toprule\noalign{}
+Published & Service & Host → container \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+13000 & Open WebUI & 13000 → 8080 \\
+15432 & pgvector & 15432 → 5432 \\
+16333 / 16334 & Qdrant REST / gRPC & 16333 → 6333, 16334 → 6334 \\
+16379 & Redis & 16379 → 6379 \\
+19530 & Milvus & 19530 → 19530 \\
+13001 / 19090 & Grafana / Prometheus & 13001 → 3000, 19090 → 9090 \\
+14317 / 14318 / 19092 & OTel gRPC / HTTP / exporter prom & 14317 → 4317, 14318 → 4318, 19092 → 9091 \\
+9101 & GPU metrics exporter & host process \\
+8088 & nginx gateway & \texttt{/vllm/}, \texttt{/llama/}, \texttt{/embeddings/}, \texttt{/webui/} \\
+\end{longtable}
+
+The pages technical map above is the inventory to operate against. Postgres inside the container is \texttt{5432}; callers on the H200 host use the published \texttt{15432} unless they are on the Docker network.
+
+\section{Manager OpenAI gateway and Squid discipline}\label{manager-openai-gateway-and-squid-discipline}
+
+\texttt{components/server-setup/llm\_inference\_manager/app.py} exposes \texttt{/v1/chat/completions}, \texttt{/v1/completions}, \texttt{/v1/models}, \texttt{/health}, plus admin load/unload and Triton/TRT promote endpoints. Round-robin counters distribute load across replica URLs; SQLite (\texttt{manager.db}) records history and metrics. \texttt{MODEL\_REGISTRY} carries \texttt{gemma-4-31b} and \texttt{gemma-4-31b-triton-trt}. Promotion is an admin action (\texttt{POST\ /admin/triton/promote?backend=trt\&url=http://127.0.0.1:8010}) that flips the gateway mapping without changing orchestrator environment variables. When \texttt{:8010} is unavailable, the manager uses the llama.cpp pool.
+
+Corporate egress is Squid at \texttt{http://192.168.203.2:3128}, persisted by \texttt{proxy\_setup.sh} into the shell, apt, git, and the Docker daemon. The shell exports \texttt{http\_proxy} / \texttt{https\_proxy} and sets \texttt{no\_proxy} / \texttt{NO\_PROXY} to \texttt{localhost,127.0.0.1}. Localhost backends in the manager use their own client: every outbound call constructs \texttt{httpx.AsyncClient(timeout=120,\ trust\_env=False)} (\texttt{llm\_inference\_manager/app.py} \texttt{proxy\_chat}: line 301 for the promoted backend, line 333 for the llama.cpp pool). That flag keeps loopback requests to \texttt{:8010} and \texttt{:8080} on the host. Manual probes use \texttt{curl\ -\/-noproxy\ \textquotesingle{}*\textquotesingle{}} (including the nginx gateway on \texttt{:8088}). The same \texttt{trust\_env=False} rule belongs on guardrails and observability clients.
+
+The champion itself is TensorRT-LLM \textbf{1.3.0rc29} (\texttt{trtllm-serve}, PyTorch backend, \texttt{tp\_size=1}), BF16, \texttt{max\_batch\_size=128}, GPU1 \texttt{:8010}, launched from an isolated \texttt{offline-prep/venv-trtllm} so the shared live virtualenv's torch, numpy, and transformers stay untouched. \texttt{scripts/serve\_trtllm.sh} launches through \texttt{mpirun\ -n\ 1\ trtllm-llmapi-launch} and sets \texttt{attn\_backend:\ FLASHINFER} for Gemma-4 \texttt{global\_head\_dim=512}. The five GGUF replicas use bartowski \texttt{google\_gemma-4-31B-it} Q4\_K\_M with \texttt{n\_ctx} 4096 under an auto-reviving supervisor.
+
+\section{Containerization and cutover}\label{containerization-and-cutover}
+
+The H200 data plane runs from container images. Parent \texttt{deploy/docker/} holds compose variants (\texttt{docker-compose.yml}, GPU and Qdrant overlays, nginx) for the NVIDIA runtime. \texttt{components/server-setup/docs/migration/containerization-report.md} records a five-phase, side-by-side cutover:
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.5000}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.5000}}@{}}
+\toprule\noalign{}
+Phase & What changes for live traffic \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+\textbf{1} & Build images and validate each service on alternate ports only: KB \texttt{8100}, guardrails \texttt{8201}, orchestrator \texttt{8101}, tracing \texttt{3001}, manager \texttt{9001}, Gemma \texttt{8085–8089}, embeds \texttt{8004–8006}. Production listeners stay up. \\
+\textbf{2} & End-to-end on those alternates: Open WebUI → orchestrator \texttt{:8101} → guardrails \texttt{:8201} → KB \texttt{:8100} → Gemma \texttt{:8085}. \\
+\textbf{3} & Jenkins pipeline (checkout → lint → test → build → push → deploy-dev → e2e). Still no production port swap. \\
+\textbf{4} & Per-service cutover onto the \textbf{same} production ports, in order: tracing → embeds → KB → guardrails → orchestrator → manager → Gemma ×5. Rollback is restarting the host virtualenv. \\
+\textbf{5} & After 24 hours of stability, decommission the host virtualenvs. \\
+\end{longtable}
+
+Phases 1--3 leave production traffic on its current listeners; phase 4 is the step that changes them. Production ports in the map are \texttt{8000}, \texttt{8001–8003}, \texttt{8080–8084}, \texttt{8100}, \texttt{8200}, \texttt{9000}, \texttt{13000}, \texttt{16379}, postgres \texttt{5432}, and tracing \texttt{3000}. Two alternate numbers in the phase-1 map already name live services: KB's alternate \texttt{8100} is the orchestrator port, and the alternate manager \texttt{9001} is the DeepSeek wrapper. Confirm the host is free before binding those alternates.
+
+\section{Scaling: million-user plan and measured decode throughput}\label{scaling-million-user-plan-and-measured-decode-throughput}
+
+\texttt{docs/plans/million-user-scale-plan.md} separates \textbf{scale-out} from \textbf{scale-up}. Scale-out places stateless FastAPI/orchestrator pods behind Kubernetes Ingress with HPA on CPU, GPU inference behind Triton/TensorRT replicas scaled by queue depth (KEDA), and a dedicated vector cluster (Qdrant) with read replicas---trading operational complexity for elastic concurrency (Figure 17). Scale-up keeps a single 2×H200 machine saturated: large in-RAM indexes, many Triton instance groups per GPU, and Gunicorn worker counts near core count, minimizing cross-node latency at the cost of vertical coupling (Figure 18). For Work Credit RAG's Persian chat path, generation---not retrieval---dominates wall time, so inference batching efficiency dominates capacity math.
+
+\begin{figure}
+\centering
+\includegraphics[width=0.88\linewidth,height=0.36\textheight,keepaspectratio]{../assets/diagrams/17_scale_out.png}
+\caption{Figure 17. Scale-out: million users → K8s Ingress → HPA'd orchestrator pods → guardrails/KB pods → Qdrant cluster and Triton/TRT-LLM GPU replicas.}
+\end{figure}
+
+\emph{Figure 17 --- Cloud-native scale-out. CPU tiers (orchestrator, guardrails, KB) scale independently of GPU inference tiers behind Ingress and HPA/KEDA. Semantic cache and hybrid vector search sit beside autoscaled Triton/TRT replicas so decode GPUs are not wasted on duplicate retrieval work. This is the elasticity path when concurrent Persian chat outgrows a single chassis.}
+
+\begin{figure}
+\centering
+\includegraphics[width=0.88\linewidth,height=0.36\textheight,keepaspectratio]{../assets/diagrams/18_scale_up.png}
+\caption{Figure 18. Scale-up: users → Nginx → Gunicorn workers → FastAPI apps → Triton on 2×H200 saturating VRAM with model replicas.}
+\end{figure}
+
+\emph{Figure 18 --- Bare-metal scale-up. One chassis, two H200s, shared-memory friendly batching. Prefer this when the model footprint fits and operational ownership stays on \texttt{ai-gpu1}.}
+
+History \texttt{013} (\texttt{components/server-setup/docs/history/013\_2026-10-13\_trtllm\_champion\_concurrency.md}) recorded a like-for-like Persian prompt (\texttt{max\_tokens=256}) across concurrency. llama.cpp Q4 on the single-slot placeholder stayed \textasciitilde58--59 aggregate tok/s at every concurrency (no continuous batching). TensorRT-LLM BF16 on \texttt{:8010} scaled roughly linearly with in-flight requests: \textasciitilde50 tok/s at conc 1, \textasciitilde386 at 8, \textasciitilde1385 at 32, and \textbf{3874.2} aggregate tok/s at conc 128 (\textasciitilde{}\textbf{67.3×} versus the flat Q4 baseline). Single-stream favors Q4 slightly (memory traffic); multi-user traffic favors TRT. An FP8 KV-cache experiment (\texttt{TRTLLM\_KV\_DTYPE=fp8}) landed near 0.95× at low concurrency and about +15\% at concurrency 128. Operators should size on sustained \textasciitilde2.9k tok/s under power capping, not the first-burst 3.8k peak, and keep CUDA-graph batch sizes dense up to 128 so intermediate concurrencies do not fall off the graph cliff into eager decode.
+
+\section{Tooling}\label{tooling}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule\noalign{}
+Tool & Role in this stack \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+llama.cpp & GGUF Gemma/Qwen servers; H200 pool \texttt{8080–8084} \\
+TensorRT-LLM & Champion BF16 continuous batching on \texttt{:8010} \\
+LiteLLM & Optional embed/chat adapter path from the manager \\
+Docker & H200 data plane and image cutover \\
+vLLM & Alternate OpenAI-compatible serving on H200 offline prep \\
+PyTorch & TRT export/serve stack, embeds, offline CUDA wheels \\
+\end{longtable}
+
+Together these pieces keep a single OpenAI-shaped contract from WebUI through orchestrator and guardrails, with generation served by the H200 champion and the llama.cpp pool behind the manager on \texttt{:9000}.

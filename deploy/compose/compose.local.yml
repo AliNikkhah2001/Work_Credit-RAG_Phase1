@@ -1,0 +1,65 @@
+# Laptop/test overlay: LiteLLM → OpenRouter; CPU retrieval; loopback debug ports.
+# REQUIRES in .env: DANA_ENV=test and LLM_UPSTREAM_MODE=openrouter
+# Do NOT use this overlay on the GPU server (use compose.gpu.yml / deploy/vast / deploy/docker).
+#
+#   docker compose -f deploy/compose/compose.base.yml -f deploy/compose/compose.local.yml --env-file deploy/compose/.env up -d --build
+
+services:
+  litellm:
+    image: ghcr.io/berriai/litellm:main-latest
+    command: ["--config", "/app/config.yaml", "--port", "4000", "--host", "0.0.0.0"]
+    environment:
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-litellm-local-dev-change-me}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+    volumes:
+      - ./litellm.local.yaml:/app/config.yaml:ro
+    ports:
+      - "127.0.0.1:4000:4000"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:4000/health/liveliness')\" || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 12
+      start_period: 40s
+    networks: [rag]
+    restart: unless-stopped
+
+  guardrails:
+    environment:
+      UPSTREAM_LLM_BASE_URL: http://litellm:4000/v1
+      UPSTREAM_LLM_MODEL: ${UPSTREAM_LLM_MODEL:-chat-primary}
+      UPSTREAM_LLM_API_KEY: ${LITELLM_MASTER_KEY:-sk-litellm-local-dev-change-me}
+      LLM_BASE_URL: http://litellm:4000/v1
+      LLM_MODEL: ${UPSTREAM_LLM_MODEL:-chat-primary}
+    depends_on:
+      litellm:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8200:8200"
+
+  kb:
+    environment:
+      KB_EMBED_DEVICE: ${KB_EMBED_DEVICE:-cpu}
+      KB_RERANKER_DEVICE: ${KB_RERANKER_DEVICE:-cpu}
+    ports:
+      - "127.0.0.1:8000:8000"
+
+  orchestrator:
+    ports:
+      - "127.0.0.1:8100:8100"
+
+  postgres:
+    ports:
+      - "127.0.0.1:15432:5432"
+
+  redis:
+    ports:
+      - "127.0.0.1:16379:6379"
+
+  tracing:
+    ports:
+      - "127.0.0.1:13002:3000"
+
+  webui:
+    ports:
+      - "127.0.0.1:13000:8080"
