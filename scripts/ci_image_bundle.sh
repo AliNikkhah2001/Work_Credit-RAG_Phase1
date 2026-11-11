@@ -24,19 +24,6 @@ IMAGES=(
   rag-tracing:local
 )
 
-existing_images() {
-  local out=()
-  local img
-  for img in "${IMAGES[@]}"; do
-    if docker image inspect "$img" >/dev/null 2>&1; then
-      out+=("$img")
-    else
-      echo "skip missing: $img" >&2
-    fi
-  done
-  printf '%s\n' "${out[@]}"
-}
-
 case "$CMD" in
   list)
     for img in "${IMAGES[@]}"; do
@@ -48,7 +35,14 @@ case "$CMD" in
     done
     ;;
   save)
-    mapfile -t HAVE < <(existing_images)
+    HAVE=()
+    for img in "${IMAGES[@]}"; do
+      if docker image inspect "$img" >/dev/null 2>&1; then
+        HAVE+=("$img")
+      else
+        echo "skip missing: $img" >&2
+      fi
+    done
     if [ "${#HAVE[@]}" -eq 0 ]; then
       echo "no images to save" >&2
       exit 1
