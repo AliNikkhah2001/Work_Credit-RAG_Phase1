@@ -24,7 +24,7 @@ Umbrella repo; implementation lives in submodules. Do NOT duplicate component co
 | Implementation | `components/` | ✅ Yes | Production code (submodules, pinned commits) |
 | Contracts | `contracts/` | ✅ Yes | API request/response JSON schemas |
 | Deployment | `deploy/` | ✅ Yes | Start/stop/health scripts per host |
-| Testing | `eval/` | ✅ Yes | E2E and guardrails evaluation |
+| Testing | `components/evaluation` | ✅ Yes | Multi-turn subspace + Hit@k (Work_RAG-Evaluation_Suite) |
 | Utilities | `scripts/` | ✅ Yes | README TOC generation, system checks |
 | Agent context | `agent-state/` | ⚠️ Agent only | Agent mission, history, skills, standards |
 | Development | `dev/` | ❌ No | Patches, ad-hoc tests, investigation scripts |
