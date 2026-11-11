@@ -22,6 +22,9 @@ services:
       - "host.docker.internal:host-gateway"
 
   kb:
+    build:
+      args:
+        TORCH_CHANNEL: ${KB_TORCH_CHANNEL:-cuda}
     environment:
       KB_EMBED_DEVICE: ${KB_EMBED_DEVICE:-cuda}
       KB_RERANKER_DEVICE: ${KB_RERANKER_DEVICE:-cuda}
