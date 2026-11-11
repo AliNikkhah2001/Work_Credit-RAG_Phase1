@@ -218,18 +218,23 @@ pipeline {
                         (
                           cd components/webui
                           export NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=8192}"
+                          # Always rebuild frontend — leftover build/ from a prior SHA caused
+                          # stage to ship stale Dana themes while reporting "webui Built".
+                          rm -rf build .svelte-kit
                           ONNXRUNTIME_NODE_INSTALL_CUDA=skip npm ci --force
                           npm run build
                           find build -type f -name '*.map' -delete || true
                         )
                         case " $BUILD_SERVICES " in *" webui "*) ;; *) BUILD_SERVICES="${BUILD_SERVICES} webui" ;; esac
-                      elif [ ! -d components/webui/build ] && [ -d "${HOST_REPO}/components/webui/build" ]; then
+                      elif [ -d "${HOST_REPO}/components/webui/build" ]; then
                         mkdir -p components/webui
+                        rm -rf components/webui/build
                         cp -a "${HOST_REPO}/components/webui/build" components/webui/build
                         case " $BUILD_SERVICES " in *" webui "*) ;; *) BUILD_SERVICES="${BUILD_SERVICES} webui" ;; esac
-                        echo "Using WebUI build/ copied from host repo"
+                        echo "Using WebUI build/ copied from host repo (npm unavailable in agent)"
                       elif [ -d components/webui/build ]; then
                         case " $BUILD_SERVICES " in *" webui "*) ;; *) BUILD_SERVICES="${BUILD_SERVICES} webui" ;; esac
+                        echo "WARNING: reusing existing components/webui/build without npm rebuild"
                       else
                         echo "Skipping rag-webui image build (no npm and no components/webui/build)"
                         BUILD_SERVICES="$(echo "$BUILD_SERVICES" | tr ' ' '\n' | grep -v '^webui$' | tr '\n' ' ')"
