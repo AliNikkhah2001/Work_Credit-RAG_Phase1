@@ -864,3 +864,180 @@ See [LICENSE](LICENSE). Each submodule may also declare its own license and depe
 - Guardrails allowlist: `components/guardrails/kb/hurtlex_allowlist.json`
 - Evaluation docs: [docs/evaluation.md](docs/evaluation.md) · [docs/cross_encoder_benchmark_results.md](docs/cross_encoder_benchmark_results.md)
 
+<!-- docs-toc:start -->
+## Documentation Index
+
+> Auto-generated from this repository's tracked Markdown notes (**129** files). Refresh with `python scripts/gen_readme_toc.py` — the `docs-toc` workflow does this automatically on push.
+
+### Repository root
+
+- [AGENTS.md — Agent Operating Manual (umbrella repo)](AGENTS.md) — Umbrella repo; implementation lives in submodules. Do NOT duplicate component code in parent.
+- [DevOps & Deployment Research Plan — Work Credit RAG Phase 1](DEVOPS_RESEARCH_PLAN.md) — 1. Multi-service Docker Compose for privileged hosts (H200, local dev)
+
+### `.opencode/`
+
+- [Plan: Fix 142 Code Audit Errors (2026-09-27)](.opencode/plans/audit-fix-2026-09-27.md) — 1. git switch -c chore/fix-critical-kb in components/knowledgebase
+
+### `archive/`
+
+- [Archive — Non-code artifacts](archive/README.md) — This directory holds artifacts moved off main during chore/cleanup-consolidated.
+- [Documentation Audit — Work Credit RAG Phase 1](archive/audit-2026-09-12/documentation_audit.md) — Generated: 2026-09-12 | Auditor: Agent 1 (Repository Documentation Explorer)
+- [Documentation Changes Summary](archive/audit-2026-09-12/documentation_changes.md) — Generated: 2026-09-12 | Agents 1-8 Documentation Upgrade
+- [Final Documentation Review Checklist](archive/audit-2026-09-12/final_review_checklist.md) — Generated: 2026-09-12 | Agent 8 — Final Review
+- [Archived Benchmark Scripts](archive/benchmark-scripts/README.md) — Two near-duplicate reranker benchmark scripts archived from scripts/ — canonical is scripts/cross_encoder_benchmark.py.
+- [Opencode session export](archive/handoff-sessions/SESSION_WAVE1_HANDOFF.md) — Session: ses_f6b058c02ffej8lpFUThWHsld0
+- [Session index](archive/handoff-sessions/sessions/INDEX.md)
+- [Commit + push all repos (@general subagent)](archive/handoff-sessions/sessions/ses_f662eaa09ffek59tAqzqgrzmk3_commit-push-all-repos-general-subagent.md) — Session: ses_f662eaa09ffek59tAqzqgrzmk3
+- [Validate stack + E2E smoke (@general subagent)](archive/handoff-sessions/sessions/ses_f662eaa2cffeqIf44RU7HD6lr5_validate-stack-e2e-smoke-general-subagen.md) — Session: ses_f662eaa2cffeqIf44RU7HD6lr5
+- [Finish wave-1 bench + aggregate (@general subagent)](archive/handoff-sessions/sessions/ses_f662eaa64ffeVRZClGRfuksXF6_finish-wave-1-bench-aggregate-general-su.md) — Session: ses_f662eaa64ffeVRZClGRfuksXF6
+- [Fact-check guardrails+setup (@general subagent)](archive/handoff-sessions/sessions/ses_f69bd0067ffeYkQj7BGbueJNdi_fact-check-guardrails-setup-general-suba.md) — Session: ses_f69bd0067ffeYkQj7BGbueJNdi
+- [Fact-check KB submodule (@general subagent)](archive/handoff-sessions/sessions/ses_f69bd00e1ffeZpMuACZP7ACDqh_fact-check-kb-submodule-general-subagent.md) — Session: ses_f69bd00e1ffeZpMuACZP7ACDqh
+- [Fact-check orchestrator (@general subagent)](archive/handoff-sessions/sessions/ses_f69bd0132ffe2p2YKzUyAoAX4g_fact-check-orchestrator-general-subagent.md) — Session: ses_f69bd0132ffe2p2YKzUyAoAX4g
+- [Fact-check root+deploy (@general subagent)](archive/handoff-sessions/sessions/ses_f69bd0148ffeo0kdaWGrhDa6gn_fact-check-root-deploy-general-subagent.md) — Session: ses_f69bd0148ffeo0kdaWGrhDa6gn
+- [Doc explorer inventory (@general subagent)](archive/handoff-sessions/sessions/ses_f69bd019cffe7w8mbt1Nvf53kO_doc-explorer-inventory-general-subagent.md) — Session: ses_f69bd019cffe7w8mbt1Nvf53kO
+- [Audit mystery observe code (@general subagent)](archive/handoff-sessions/sessions/ses_f69fe249effefURDV1vv5x7Ttk_audit-mystery-observe-code-general-subag.md) — Session: ses_f69fe249effefURDV1vv5x7Ttk
+- [Find observability tooling (@explore subagent)](archive/handoff-sessions/sessions/ses_f6a50d043ffe5vMowwTpZc2eul_find-observability-tooling-explore-subag.md) — Session: ses_f6a50d043ffe5vMowwTpZc2eul
+- [Find conversation history (@explore subagent)](archive/handoff-sessions/sessions/ses_f6a50d05cffef0ThivrPDUeYeI_find-conversation-history-explore-subage.md) — Session: ses_f6a50d05cffef0ThivrPDUeYeI
+- [RAG agent history location and observability](archive/handoff-sessions/sessions/ses_f6a50ebb5ffeHsJtLNMo7LEtg5_rag-agent-history-location-and-observabi.md) — Session: ses_f6a50ebb5ffeHsJtLNMo7LEtg5
+- [FlagEmbedding big-model loaders (@general subagent)](archive/handoff-sessions/sessions/ses_f6a52d486ffeKuQPQG2ppRetTT_flagembedding-big-model-loaders-general.md) — Session: ses_f6a52d486ffeKuQPQG2ppRetTT
+- [Orchestrator memory code (@general subagent)](archive/handoff-sessions/sessions/ses_f6a575eeaffeM2uwbOgHGye6ef_orchestrator-memory-code-general-subagen.md) — Session: ses_f6a575eeaffeM2uwbOgHGye6ef
+- [KB reranker registry code (@general subagent)](archive/handoff-sessions/sessions/ses_f6a575ef9ffenaUjaoyJIMHrEG_kb-reranker-registry-code-general-subage.md) — Session: ses_f6a575ef9ffenaUjaoyJIMHrEG
+- [Download rerankers set B (@general subagent)](archive/handoff-sessions/sessions/ses_f6a575f11fferEABLFMd57wGM6_download-rerankers-set-b-general-subagen.md) — Session: ses_f6a575f11fferEABLFMd57wGM6
+- [Download 9B reranker (@general subagent)](archive/handoff-sessions/sessions/ses_f6a575f29ffecMT5puzXMjSxCv_download-9b-reranker-general-subagent.md) — Session: ses_f6a575f29ffecMT5puzXMjSxCv
+- [Download rerankers set A (@general subagent)](archive/handoff-sessions/sessions/ses_f6a575f42ffe8YMbPSYvlfdqbA_download-rerankers-set-a-general-subagen.md) — Session: ses_f6a575f42ffe8YMbPSYvlfdqbA
+- [Map reranker and memory code (@explore subagent)](archive/handoff-sessions/sessions/ses_f6a5ca448ffe8q908qHWfK4yfS_map-reranker-and-memory-code-explore-sub.md) — Session: ses_f6a5ca448ffe8q908qHWfK4yfS
+- [Write docker stack files (@general subagent)](archive/handoff-sessions/sessions/ses_f6a7738f9ffe6RAZA5rnjuvxBe_write-docker-stack-files-general-subagen.md) — Session: ses_f6a7738f9ffe6RAZA5rnjuvxBe
+- [Write AGENTS.md + commands (@general subagent)](archive/handoff-sessions/sessions/ses_f6a773916ffeTskweHocLEiRAC_write-agents-md-commands-general-subagen.md) — Session: ses_f6a773916ffeTskweHocLEiRAC
+- [Build real Langfuse v2 UI (@general subagent)](archive/handoff-sessions/sessions/ses_f6a97a23affe977umsOKmNDWKm_build-real-langfuse-v2-ui-general-subage.md) — Session: ses_f6a97a23affe977umsOKmNDWKm
+- [Setup LangGraph Studio (@general subagent)](archive/handoff-sessions/sessions/ses_f6a97a260ffeNWjOmUVpgAKRNd_setup-langgraph-studio-general-subagent.md) — Session: ses_f6a97a260ffeNWjOmUVpgAKRNd
+- [Create py venvs install deps (@general subagent)](archive/handoff-sessions/sessions/ses_f6ad8e88effer0fXVBgn30KyXr_create-py-venvs-install-deps-general-sub.md) — Session: ses_f6ad8e88effer0fXVBgn30KyXr
+- [Setup postgres pgvector DB (@general subagent)](archive/handoff-sessions/sessions/ses_f6ad8e89dffegpnjRGd8kSSLW1_setup-postgres-pgvector-db-general-subag.md) — Session: ses_f6ad8e89dffegpnjRGd8kSSLW1
+- [Build llama.cpp CUDA (@general subagent)](archive/handoff-sessions/sessions/ses_f6ad8e8c3ffeKEoTAsrQxIu6Ya_build-llama-cpp-cuda-general-subagent.md) — Session: ses_f6ad8e8c3ffeKEoTAsrQxIu6Ya
+- [Explore llama-server build/run docs (@explore subagent)](archive/handoff-sessions/sessions/ses_f6ae9b92dffeCirKJEEjVK2fdE_explore-llama-server-build-run-docs-expl.md) — Session: ses_f6ae9b92dffeCirKJEEjVK2fdE
+- [Explore orchestrator+guardrails run (@explore subagent)](archive/handoff-sessions/sessions/ses_f6ae9f317ffeSmRPrDg6hREnnA_explore-orchestrator-guardrails-run-expl.md) — Session: ses_f6ae9f317ffeSmRPrDg6hREnnA
+- [Explore KB pgvector setup (@explore subagent)](archive/handoff-sessions/sessions/ses_f6aea1199ffe0EIUQ3IBkDuBL2_explore-kb-pgvector-setup-explore-subage.md) — Session: ses_f6aea1199ffe0EIUQ3IBkDuBL2
+- [Sync orchestrator git (@general subagent)](archive/handoff-sessions/sessions/ses_f6af2b3a1ffeqp0RpKmQCp9t0g_sync-orchestrator-git-general-subagent.md) — Session: ses_f6af2b3a1ffeqp0RpKmQCp9t0g
+- [Sync guardrails git (@general subagent)](archive/handoff-sessions/sessions/ses_f6af2c18effebM96RGD21aMR6h_sync-guardrails-git-general-subagent.md) — Session: ses_f6af2c18effebM96RGD21aMR6h
+- [Sync knowledgebase git (@general subagent)](archive/handoff-sessions/sessions/ses_f6af2da53ffeZAu3vFPZU39v3C_sync-knowledgebase-git-general-subagent.md) — Session: ses_f6af2da53ffeZAu3vFPZU39v3C
+- [Sync server-setup git (@general subagent)](archive/handoff-sessions/sessions/ses_f6af303aaffe5bPJzZj0L31OED_sync-server-setup-git-general-subagent.md) — Session: ses_f6af303aaffe5bPJzZj0L31OED
+- [Sync parent repo git (@general subagent)](archive/handoff-sessions/sessions/ses_f6af32e65ffe85ebRy2z0t20qB_sync-parent-repo-git-general-subagent.md) — Session: ses_f6af32e65ffe85ebRy2z0t20qB
+- [Find chat history for RAG agent project](archive/handoff-sessions/sessions/ses_f6b058c02ffej8lpFUThWHsld0_find-chat-history-for-rag-agent-project.md) — Session: ses_f6b058c02ffej8lpFUThWHsld0
+- [Handoff Archive](archive/handoff/README.md) — Raw evaluation artifacts moved from handoff/ on chore/cleanup-phase2.
+- [Vast.ai Gemma-4 Migration — Execution Log](archive/migration-history/VAST_GEMMA4_MIGRATION.md) — Discovery report (architecture map, 14 inspection items, H/I/J/K/L findings) approved before this log.
+- [Wave-2 GPU Runbook — heavy reranker shootout on a bigger machine](archive/migration-history/WAVE2_GPU_RUNBOOK.md) — Date: 2026-09-13. Wave 1 (CPU, 800 remapped queries) is done for
+- [Guardrails v2 Plan — Risk Scoring + Semantic + Observability](archive/plans/GUARDRAILS_V2_PLAN.md) — Every POST /v1/rails/check and POST /v1/chat/completions will expose (in logs and optional response header X-Guardrails-Observability):
+- [Task: reranker benchmark + conversation memory (branch feat/reranker-memory)](archive/plans/RERANKER_MEMORY_TASK.md) — 1. Compare cross-encoder rerankers (incl. biggest SOTA) on our Persian credit KB and pick the winner.
+- [Vast.ai Runbook — Work Credit RAG Phase 1 (Public)](archive/plans/RUNBOOK_VAST.md) — Existing Gemma is external http://127.0.0.1:18000/v1 (unsloth/gemma-4-31B-it-GGUF:UD-Q4_K_XL, llama-server pid 676). Do NOT launch gemma-manager, do…
+- [System Architecture — Work Credit RAG Phase 1](archive/plans/architecture.md)
+- [Model Cards — Work Credit RAG Phase 1](archive/plans/models.md)
+- [Training & Pipeline — Work Credit RAG Phase 1](archive/plans/training.md) — 1. Fresh corpus from kb-source/1405-05-31/ (legal/individual/other/technical)
+- [Quarantine](archive/quarantine/20261110/README.md) — Trees moved here pending confirmation E2E stays green, then safe-delete from main/develop history via archive branch.
+- [Deprecated Files — Reconstruction Guide](archive/quarantine/20261110/deprecated/README.md) — These files were moved here on 2026-09-27 during a repository cleanup.
+- [AGENTS — Fix Plan for 142 Audit Errors (2026-09-27)](archive/quarantine/20261110/deprecated/audits/AGENTS_FIX_PLAN.md) — This file is the agent operating manual for fixing the audit. Use with AGENTS.md (repo map, ports, workflows) and README.md (architecture). For how t…
+- [Plan: Fix 142 Code Audit Errors (2026-09-27)](archive/quarantine/20261110/deprecated/audits/opencode_audit-fix-2026-09-27.md) — 1. git switch -c chore/fix-critical-kb in components/knowledgebase
+- [GUARDRAILS_V2_PLAN — Archived](archive/quarantine/20261110/deprecated/plans/GUARDRAILS_V2_PLAN.md) — Historical content archived at archive/plans/GUARDRAILS_V2_PLAN.md (2026-09-27, chore/cleanup-phase2).
+- [Work Credit RAG Integration Plan](archive/quarantine/20261110/deprecated/plans/MVP_INTEGRATION_PLAN.md) — This plan converts Work_Credit-RAG_Phase1 from a monolithic prototype into the composition and release repository for four independently maintained c…
+- [Work Credit RAG — Full Project Hierarchy](archive/quarantine/20261110/deprecated/plans/PROJECT_HIERARCHY.md) — Generated: 2026-09-27 | Root: /splunk-data/v1/Work_Credit-RAG_Phase1 | Branch: main @ f402517
+- [RERANKER_MEMORY_TASK — Archived](archive/quarantine/20261110/deprecated/plans/RERANKER_MEMORY_TASK.md) — Historical content archived at archive/plans/RERANKER_MEMORY_TASK.md (2026-09-27, chore/cleanup-phase2).
+- [RUNBOOK_VAST — Archived](archive/quarantine/20261110/deprecated/plans/RUNBOOK_VAST.md) — Historical content archived at archive/plans/RUNBOOK_VAST.md (2026-09-27, chore/cleanup-phase2).
+- [architecture — Archived](archive/quarantine/20261110/deprecated/plans/architecture.md) — Historical content archived at archive/plans/architecture.md (2026-09-27, chore/cleanup-phase2).
+- [models — Archived](archive/quarantine/20261110/deprecated/plans/models.md) — Historical content archived at archive/plans/models.md (2026-09-27, chore/cleanup-phase2).
+- [training — Archived](archive/quarantine/20261110/deprecated/plans/training.md) — Historical content archived at archive/plans/training.md (2026-09-27, chore/cleanup-phase2).
+- [Continuation prompt — paste into a new opencode session on the bigger GPU machine](archive/quarantine/20261110/deprecated/session-artifacts/handoff_CONTINUE.md) — You are continuing the Persian Credit RAG Phase-1 project. Context files (read first):
+- [Handoff — Archived](archive/quarantine/20261110/deprecated/session-artifacts/handoff_README.md)
+- [COMMANDS.md — Vast.ai command reference (instance 50713720, 2026-09-12, 1x RTX 3090)](archive/quarantine/20261110/deprecated/session-artifacts/vast_COMMANDS.md) — Copy-pasteable. Root = /workspace/Work_Credit-RAG_Phase1. All RAG services bind 0.0.0.0 except Gemma (127.0.0.1:18000 by design).
+- [Opencode session export](archive/quarantine/20261110/deprecated/session-artifacts/vast_SESSION_WAVE1_HANDOFF.md) — Session: ses_f6b058c02ffej8lpFUThWHsld0
+- [Quarantined report materials](archive/quarantine/20261110/docs/README.md) — Large PDF/zip outputs were not committed (GitHub push size limits).
+- [Work Credit RAG — Technical Report](archive/quarantine/20261110/docs/Work_Credit_RAG_Technical_Reports_Bundle/README.md) — Classic KOMA-Script (scrreprt) documentation for شرکت اعتبارسنجی ایران / Work Credit RAG Phase 1.
+- [نامهٔ فنی — معرفی سامانهٔ دانا و نیازمندی‌های زیر‌ساخت](archive/quarantine/20261110/docs/Work_Credit_RAG_Technical_Reports_Bundle/docs/letters/dana_infra_needs_letter_fa.md) — با سلام و احترام،
+- [Eval: 04_dive_kb.md](archive/quarantine/20261110/docs/Work_Credit_RAG_Technical_Reports_Bundle/eval/04_dive_kb_eval.md)
+- [Eval: 05_dive_orch.md](archive/quarantine/20261110/docs/Work_Credit_RAG_Technical_Reports_Bundle/eval/05_dive_orch_eval.md)
+- [Eval: 06_dive_server.md](archive/quarantine/20261110/docs/Work_Credit_RAG_Technical_Reports_Bundle/eval/06_dive_server_eval.md)
+- [Eval: 07_dive_guard.md](archive/quarantine/20261110/docs/Work_Credit_RAG_Technical_Reports_Bundle/eval/07_dive_guard_eval.md)
+- [Eval: 08_dive_telemetry.md](archive/quarantine/20261110/docs/Work_Credit_RAG_Technical_Reports_Bundle/eval/08_dive_telemetry_eval.md)
+- [Final coherence evaluation](archive/quarantine/20261110/docs/Work_Credit_RAG_Technical_Reports_Bundle/eval/FINAL.md) — Date: 2026-11-09
+- [Technical report dive sections — quality eval summary](archive/quarantine/20261110/docs/Work_Credit_RAG_Technical_Reports_Bundle/eval/SUMMARY.md) — All five sections now meet the rubric after the above minimal edits.
+- [Edit instructions — Dual report polish (from user prompt 2026-11-10)](archive/quarantine/20261110/docs/Work_Credit_RAG_Technical_Reports_Bundle/eval/edit_instructions_2026-11-10.md) — Apply to both PDFs (full technical report + security/networking brief). Rebuild after all edits. Do not edit the Cursor plan file.
+- [Final PDF Reviewer — 2026-11-10](archive/quarantine/20261110/docs/Work_Credit_RAG_Technical_Reports_Bundle/eval/final_pdf_review_2026-11-10.md)
+- [Front / architecture / benchmarks eval](archive/quarantine/20261110/docs/Work_Credit_RAG_Technical_Reports_Bundle/eval/front_arch_eval.md) — Verdict: PASS
+- [Technical report reviewer — 2026-11-10](archive/quarantine/20261110/docs/Work_Credit_RAG_Technical_Reports_Bundle/eval/reviewer_pass_2026-11-10.md)
+- [Work Credit RAG — Technical Documentation Report](archive/quarantine/20261110/docs/Work_Credit_RAG_Technical_Reports_Bundle/sections/01_front_matter.md)
+- [Executive summary and module overview](archive/quarantine/20261110/docs/Work_Credit_RAG_Technical_Reports_Bundle/sections/02_executive_and_modules.md) — Work Credit RAG is a Persian-first, self-hosted conversational system that answers credit-reporting questions from a versioned ICS knowledge base. A…
+- [System architecture and request-to-response](archive/quarantine/20261110/docs/Work_Credit_RAG_Technical_Reports_Bundle/sections/03_architecture_and_request.md) — Retrieval, policy, orchestration, and generation are separate processes with stable ports. The high-level figures show the boxes a new engineer needs…
+- [Knowledge base](archive/quarantine/20261110/docs/Work_Credit_RAG_Technical_Reports_Bundle/sections/04_dive_kb.md) — The knowledge base (components/knowledgebase, kb-manager) is the retrieval substrate for Persian credit-scoring questions. It turns source files into…
+- [Orchestrator](archive/quarantine/20261110/docs/Work_Credit_RAG_Technical_Reports_Bundle/sections/05_dive_orch.md) — The orchestrator is the public OpenAI-compatible face of the platform (:8100). It does not embed the corpus and it does not serve Gemma. A compiled L…
+- [6. Deep Dive: Server Setup & Model Serving](archive/quarantine/20261110/docs/Work_Credit_RAG_Technical_Reports_Bundle/sections/06_dive_server.md) — Work Credit RAG runs on the self-hosted H200 lab server (ai-gpu1, 2× H200 NVL, about 281 GiB of VRAM) under /splunk-data/v1/Work_RAG-Server-Setup. Th…
+- [Deep Dive: Guardrails & Security](archive/quarantine/20261110/docs/Work_Credit_RAG_Technical_Reports_Bundle/sections/07_dive_guard.md) — Guardrails (Work_RAG-Guardrails, port :8200) is the mandatory safety boundary between the LangGraph orchestrator and the Gemma inference plane. Every…
+- [8. Logging, Telemetry, Documentation & Latency](archive/quarantine/20261110/docs/Work_Credit_RAG_Technical_Reports_Bundle/sections/08_dive_telemetry.md) — Every successful POST /search/api response includes a stage_ms object written in kb_manager/web/routes/search.py as each leg finishes: BM25 (tantivy…
+- [Benchmarks and latency appendix](archive/quarantine/20261110/docs/Work_Credit_RAG_Technical_Reports_Bundle/sections/09_benchmarks.md) — Observed numbers frame how the stack performs. The headline comparison is the 41-turn multi-agent bench (12 October 2026 → 14 October 2026): finish-r…
+- [Appendix](archive/quarantine/20261110/docs/Work_Credit_RAG_Technical_Reports_Bundle/sections/10_appendix.md) — This appendix indexes libraries by role, lists primary source files, and records the published defaults for the H200 lab server.
+- [Security and Networking](archive/quarantine/20261110/docs/Work_Credit_RAG_Technical_Reports_Bundle/sections/11_security_networking.md) — Work Credit RAG separates safety into three planes that stay distinct in design reviews. Content safety decides whether a Persian turn may be answere…
+- [Server Setup, Model Serving, and Scaling](archive/quarantine/20261110/docs/Work_Credit_RAG_Technical_Reports_Bundle/sections/standalone_server.md) — Work Credit RAG runs on the self-hosted H200 lab server (ai-gpu1, 2× H200 NVL, about 281 GiB of VRAM) under /splunk-data/v1/Work_RAG-Server-Setup. Th…
+- [Work Credit RAG — Technical Summary](archive/quarantine/20261110/docs/Work_Credit_RAG_Technical_Reports_Bundle/sections/standalone_summary.md) — This summary describes the current platform structure and technical behavior. Diagrams match the deep-dive report; captions state what each figure sh…
+- [Logging, Telemetry, and Monitoring](archive/quarantine/20261110/docs/Work_Credit_RAG_Technical_Reports_Bundle/sections/standalone_telemetry.md) — Every successful POST /search/api response includes a stage_ms object written in kb_manager/web/routes/search.py as each leg finishes: BM25 (tantivy…
+- [Agent State — GitHub Pages extract (short)](archive/quarantine/20261110/docs/Work_Credit_RAG_Technical_Reports_Bundle/sources/pages_extracts/agent_state.md) — Sources: agent-state/docs/{index,high-level,technical}.html.
+- [Guardrails — GitHub Pages extract](archive/quarantine/20261110/docs/Work_Credit_RAG_Technical_Reports_Bundle/sources/pages_extracts/guardrails.md) — Sources: components/guardrails/docs/{index,technical,high-level}.html.
+- [Knowledgebase GitHub Pages — report extracts](archive/quarantine/20261110/docs/Work_Credit_RAG_Technical_Reports_Bundle/sources/pages_extracts/kb.md) — Sources: components/knowledgebase/docs/index.html, technical.html, high-level.html.
+- [Orchestrator — GitHub Pages extract](archive/quarantine/20261110/docs/Work_Credit_RAG_Technical_Reports_Bundle/sources/pages_extracts/orchestrator.md) — Sources: components/orchestrator/docs/{index,technical,high-level}.html, SUBSPACE_AMBIGUITY.md.
+- [Parent GitHub Pages — report extracts](archive/quarantine/20261110/docs/Work_Credit_RAG_Technical_Reports_Bundle/sources/pages_extracts/parent.md) — Sources: docs/index.html, docs/technical.html, docs/high-level.html, docs/papers/benchmarks.html (+ titles skim from docs/papers/index.html).
+- [Server Setup — GitHub Pages extract](archive/quarantine/20261110/docs/Work_Credit_RAG_Technical_Reports_Bundle/sources/pages_extracts/server_setup.md) — Sources: components/server-setup/docs/{index,technical,high-level}.html, guides/03-services-and-endpoints.md, gemma_endpoints.md, migration/container…
+- [Archived Scripts](archive/scripts/README.md) — Utilities moved from scripts/ — not in deploy/vast/start.sh hot path.
+- [Windows Launchers (archived)](archive/windows-launchers/README.md) — Linux host uses deploy/vast/start.sh + scripts/run_mvp.sh. Windows artifacts archived:
+
+### `components/`
+
+- [Work Credit RAG — Benchmark Report](components/evaluation/artifacts/bench_report_latest.md) — Artifacts: bench_results_latest.json + ragas_results_latest.json → bench_report_latest.html / .md
+- [OpenWebUI RAG Filters & Actions — Agent Testing UI (Phase 2 & 4)](components/openwebui-filters/README.md) — Three OpenWebUI Functions that connect the chat UI to the Work Credit RAG
+- [Work RAG Tracing](components/tracing/README.md) — Fallback trace collector and local observation UI for the Work Credit RAG platform.
+
+### `contracts/`
+
+- [Cross-Component Contracts](contracts/README.md) — This directory contains versioned JSON Schema contracts for the MVP integration.
+
+### `datasets/`
+
+- [datasets](datasets/README.md) — Non-runtime assets relocated here during cleanup keep-graph pass.
+
+### `deploy/`
+
+- [Dana compose stack (laptop test ↔ GPU prod)](deploy/compose/README.md) — Self-hosted Gemma/TRT paths are unchanged:
+- [Work Credit RAG — Docker deployment (privileged CUDA host)](deploy/docker/README.md) — Full-stack docker compose version of the platform. Mirrors
+- [Jenkins CI/CD — Dana / Work Credit RAG](deploy/jenkins/README.md) — Laptop Jenkins (:8085) and the same pipeline on the H200 GPU server.
+
+### `dev/`
+
+- [Tester Credentials — ICS RAG Evaluation](dev/tests/tester-credentials.md) — 1. Open http://127.0.0.1:13000.
+
+### `diagrams/`
+
+- [diagrams](diagrams/README.md) — Non-runtime assets relocated here during cleanup keep-graph pass.
+
+### `docs/`
+
+- [Documentation Index](docs/README.md) — This directory contains project-wide documentation.
+- [Benchmark Report — Multi-Agent Conversational RAG Evaluation (2026-10-12)](docs/benchmark-report-2026-10-12.md) — filter_path maps to components/knowledgebase/kb-manager doc_metadata.folder_hierarchy (گزارش اعتباری چک | اشخاص حقیقی/اعتبارسنجی تسهیلات | اشخاص حقوق…
+- [Keep-graph summary](docs/cleanup/keep-graph-summary.md) — Generated: 2026-11-10T00:31:05.759190+00:00
+- [Stale branch inventory](docs/cleanup/stale-branch-inventory.md) — Generated: 2026-11-10T00:25:47.364914Z
+- [Cross-Encoder Reranker Benchmark Results](docs/cross_encoder_benchmark_results.md) — Tested 7 cross-encoder reranker models on the Work Credit RAG KB (v8 pgvector, 6593 chunks, 103 docs) using 20 diverse Persian credit queries.
+- [Evaluation — Work Credit RAG Phase 1](docs/evaluation.md) — Historical per-version tables (v5 baseline, v7 IVA 15, v8 HNSW) were moved to archive/migration-history/ and eval/results/. See README.md#evaluation…
+- [History — Code Audit 2026-09-27: 142 Errors & Anti-Patterns Found](docs/history/CODE_AUDIT_2026-09-27.md) — 1. components/knowledgebase/kb-manager — 7 Critical + 10 High (path traversal, unauth DB, unbounded disk, silent failures, ilike wildcard DoS, Vector…
+- [Comprehensive Million-User Scaling Architecture Plan](docs/plans/million-user-scale-plan.md) — This document serves as the master architectural blueprint for scaling the Knowledge Base Retrieval system to support 1,000,000+ concurrent users.
+
+### `eval/`
+
+- [Wrong Samples Findings — Detailed Analysis (2026-09-02)](eval/FINDINGS.md) — This document details every RAG response that was wrong (blocked, fallback, English, or missing citations) when evaluated against KB ground truth, ho…
+- [KB RAG Evaluation — 2026-09-02](eval/README.md) — This directory contains end-to-end evaluation of the RAG agent against KB ground truth on Vast VM.
+
+### `evaluation/`
+
+- [Work Credit RAG — Benchmark Report](evaluation/artifacts/bench_report_latest.md) — Artifacts: bench_results_latest.json + ragas_results_latest.json → bench_report_latest.html / .md
+
+### `plots/`
+
+- [plots](plots/README.md) — Non-runtime assets relocated here during cleanup keep-graph pass.
+
+### `research/`
+
+- [research](research/README.md) — Non-runtime assets relocated here during cleanup keep-graph pass.
+
+<!-- docs-toc:end -->
