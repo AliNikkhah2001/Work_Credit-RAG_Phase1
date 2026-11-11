@@ -37,12 +37,16 @@ services:
     build:
       context: ../../components/knowledgebase/kb-manager
       dockerfile: Dockerfile
+      args:
+        # Overridden by compose.local (cpu) / compose.gpu (cuda)
+        TORCH_CHANNEL: ${KB_TORCH_CHANNEL:-cpu}
     image: ${REGISTRY:-}rag-kb:${TAG:-local}
     environment:
       KB_DB_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/kb_manager
       KB_DB_MODE: pgvector
       KB_WEB_HOST: 0.0.0.0
       KB_WEB_PORT: 8000
+      EVAL_SUITE_URL: ${EVAL_SUITE_URL:-http://host.docker.internal:8300}
       KB_REDIS_URL: redis://redis:6379/0
       KB_EMBED_DEVICE: ${KB_EMBED_DEVICE:-cpu}
       KB_RERANKER_DEVICE: ${KB_RERANKER_DEVICE:-cpu}

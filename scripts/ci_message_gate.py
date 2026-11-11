@@ -11,7 +11,12 @@ Keys (case-insensitive):
   [ci rollback]         → restore last-good prod SHA (Sprint C #10)
 
 Sprint B — CI_SERVICES:
-  space-separated compose service names, or "all".
+  space-separated compose service names, or "all", or "none".
+
+Efficiency rules (laptop CI history develop #34–#42):
+  - Jenkinsfile / scripts-only changes → CI_SERVICES=none (deploy uses existing images)
+  - Component Dockerfile → that service only (not all)
+  - [ci stage] with no image paths → none (not all) so we do not rebuild KB/torch
 
 Usage:
   python3 scripts/ci_message_gate.py --write-env .ci_gate.env
@@ -30,7 +35,7 @@ HEAVY = re.compile(
     re.I,
 )
 
-# Path prefix → compose service (order matters for readability only)
+# Path prefix → compose service
 SERVICE_MAP: list[tuple[re.Pattern[str], str]] = [
     (re.compile(r"(^|/)components/knowledgebase(/|$)", re.I), "kb"),
     (re.compile(r"(^|/)components/guardrails(/|$)", re.I), "guardrails"),
@@ -39,12 +44,16 @@ SERVICE_MAP: list[tuple[re.Pattern[str], str]] = [
     (re.compile(r"(^|/)components/webui(/|$)", re.I), "webui"),
 ]
 
+# Only these force a full image matrix (not Jenkinsfile / scripts alone).
 FORCE_ALL = re.compile(
     r"(^|/)"
-    r"(deploy/compose/|deploy/jenkins/|Jenkinsfile$|\.gitmodules$"
-    r"|Dockerfile$|compose\.[^/]+\.yml)",
+    r"(deploy/compose/|deploy/jenkins/|\.gitmodules$"
+    r"|compose\.[^/]+\.yml)",
     re.I,
 )
+
+# Standalone Dockerfiles outside a mapped component still force all
+ROOT_DOCKERFILE = re.compile(r"(^|/)Dockerfile$", re.I)
 
 CORE_SERVICES = ("kb", "guardrails", "orchestrator", "tracing")
 
@@ -57,15 +66,17 @@ def services_for_paths(changed: str, force_all_key: bool) -> str:
         return "all"
     if any(FORCE_ALL.search(ln) for ln in lines):
         return "all"
+    # Root/unmapped Dockerfile → all; component Dockerfiles fall through to SERVICE_MAP
+    if any(ROOT_DOCKERFILE.search(ln) and not any(p.search(ln) for p, _ in SERVICE_MAP) for ln in lines):
+        return "all"
     found: list[str] = []
     for ln in lines:
         for pat, svc in SERVICE_MAP:
             if pat.search(ln) and svc not in found:
                 found.append(svc)
     if not found:
-        # docs-only / unrelated → no image build list (caller may still skip build)
+        # docs / Jenkinsfile / scripts only → no image rebuild
         return "none"
-    # webui alone is fine; if only non-core matched keep as-is
     return " ".join(found)
 
 
@@ -80,11 +91,10 @@ def parse(msg: str, changed: str) -> dict[str, str]:
     rollback = "[ci rollback]" in low
     heavy = any(HEAVY.search(line) for line in (changed or "").splitlines())
     services = "none" if skip else services_for_paths(changed, force_all)
-    # Deploy keys with no service hit still need a stack refresh → all
-    if not skip and services == "none" and (stage or prod or auto or build) and not rollback:
-        services = "all"
+    # Deploy keys with no service hit: keep none so Build skips; Deploy still
+    # recreates/restarts from existing :local tags (--no-build).
+    # Explicit [ci all] already forced "all" above.
     if rollback:
-        # Rollback path: do not rebuild current tip; skip normal deploy keys
         services = "none"
     return {
         "CI_SKIP": "1" if skip else "0",
@@ -106,12 +116,15 @@ def self_test() -> None:
     cases = [
         ("docs only", "docs: typo", "README.md", {"CI_SKIP": "0", "CI_STAGE": "0", "CI_HEAVY_PATHS": "0", "CI_SERVICES": "none"}),
         ("skip", "chore: x [ci skip]", "deploy/compose/compose.base.yml", {"CI_SKIP": "1", "CI_SERVICES": "none"}),
-        ("stage docs", "feat: y [ci stage]", "docs/a.md", {"CI_STAGE": "1", "CI_SERVICES": "all"}),
+        ("stage docs", "feat: y [ci stage]", "docs/a.md", {"CI_STAGE": "1", "CI_SERVICES": "none"}),
+        ("jenkinsfile only", "fix(ci): gate [ci stage]", "Jenkinsfile", {"CI_STAGE": "1", "CI_SERVICES": "none"}),
+        ("scripts only", "fix(ci): gate [ci stage]", "scripts/ci_message_gate.py", {"CI_STAGE": "1", "CI_SERVICES": "none"}),
         ("kb only", "fix: denser [ci stage]", "components/knowledgebase/kb-manager/foo.py", {"CI_STAGE": "1", "CI_SERVICES": "kb"}),
+        ("kb dockerfile", "fix: cpu torch [ci stage]", "components/knowledgebase/kb-manager/Dockerfile", {"CI_SERVICES": "kb"}),
         ("guard+orch", "fix: x [ci build]", "components/guardrails/a.py\ncomponents/orchestrator/b.py", {"CI_SERVICES": "guardrails orchestrator"}),
         ("compose all", "chore: ports [ci stage]", "deploy/compose/compose.stage.yml", {"CI_SERVICES": "all"}),
         ("ci all key", "rebuild [ci all] [ci build]", "README.md", {"CI_SERVICES": "all"}),
-        ("prod", "release [ci prod]", "Jenkinsfile", {"CI_PROD": "1", "CI_SERVICES": "all"}),
+        ("prod jenkinsfile", "release [ci prod]", "Jenkinsfile", {"CI_PROD": "1", "CI_SERVICES": "none"}),
         ("rollback", "break glass [ci rollback]", "README.md", {"CI_ROLLBACK": "1", "CI_SERVICES": "none"}),
     ]
     for name, msg, changed, expect in cases:

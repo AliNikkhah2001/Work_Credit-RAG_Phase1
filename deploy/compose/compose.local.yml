@@ -38,7 +38,14 @@ services:
       - "127.0.0.1:8200:8200"
 
   kb:
+    # Evaluation Suite is the sole Hit@k/multiturn backend
+    build:
+      args:
+        TORCH_CHANNEL: cpu
     environment:
+      # Compose `evaluation` service on rag network (not host.docker.internal —
+      # Docker Desktop Mac often refuses host-published ports from containers).
+      EVAL_SUITE_URL: ${EVAL_SUITE_URL:-http://evaluation:8300}
       KB_EMBED_DEVICE: ${KB_EMBED_DEVICE:-cpu}
       KB_RERANKER_DEVICE: ${KB_RERANKER_DEVICE:-cpu}
       # Embed stays local MiniLM/384 so queries match the existing pgvector index.
@@ -82,3 +89,29 @@ services:
   webui:
     ports:
       - "127.0.0.1:13000:8080"
+
+
+  evaluation:
+    image: ${REGISTRY:-}python:3.11-slim
+    working_dir: /app
+    volumes:
+      - ../../components/evaluation:/app
+    environment:
+      EVAL_HOST: 0.0.0.0
+      EVAL_PORT: 8300
+      # Suite → host-mapped KB / orchestrator (published on loopback of the VM via ports)
+      KB_BASE_URL: ${KB_BASE_URL:-http://kb:8000}
+      ORCH_BASE_URL: ${ORCH_BASE_URL:-http://orchestrator:8100}
+    ports:
+      - "127.0.0.1:8300:8300"
+    networks: [rag]
+    depends_on:
+      - kb
+    command:
+      [
+        "bash",
+        "-lc",
+        "pip install -q httpx PyYAML fastapi 'uvicorn[standard]' pydantic && PYTHONPATH=src python scripts/serve.py",
+      ]
+    profiles: ["eval"]
+    restart: unless-stopped
