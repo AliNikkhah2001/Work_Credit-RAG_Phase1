@@ -215,3 +215,9 @@ In Jenkins → `dana-rag` → branch → **Build Now**, or **Scan Multibranch Pi
 python3 scripts/ci_message_gate.py --self-test
 echo 'feat: x [ci stage]' | python3 scripts/ci_message_gate.py --msg-stdin
 ```
+
+## Laptop build efficiency (torch / path skips)
+
+- **CPU torch on laptop:** `compose.local.yml` + Jenkins `KB_TORCH_CHANNEL=cpu` install PyTorch from the CPU index so develop builds do not pull `nvidia_*` / cudnn wheels (common hang on `files.pythonhosted.org`). GPU prod uses `compose.gpu.yml` → `TORCH_CHANNEL=cuda`.
+- **Path-aware `CI_SERVICES`:** Jenkinsfile / scripts / docs alone → `none` (deploy `--no-build` with existing `:local` tags). A component path rebuilds only that service. `[ci all]` or `deploy/compose/` changes still force `all`.
+- **Do not** put `[ci all]` on routine `[ci stage]` commits unless images must be rebuilt.

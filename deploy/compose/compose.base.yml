@@ -37,6 +37,9 @@ services:
     build:
       context: ../../components/knowledgebase/kb-manager
       dockerfile: Dockerfile
+      args:
+        # Overridden by compose.local (cpu) / compose.gpu (cuda)
+        TORCH_CHANNEL: ${KB_TORCH_CHANNEL:-cpu}
     image: ${REGISTRY:-}rag-kb:${TAG:-local}
     environment:
       KB_DB_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/kb_manager

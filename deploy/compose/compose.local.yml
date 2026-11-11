@@ -38,6 +38,9 @@ services:
       - "127.0.0.1:8200:8200"
 
   kb:
+    build:
+      args:
+        TORCH_CHANNEL: cpu
     environment:
       KB_EMBED_DEVICE: ${KB_EMBED_DEVICE:-cpu}
       KB_RERANKER_DEVICE: ${KB_RERANKER_DEVICE:-cpu}

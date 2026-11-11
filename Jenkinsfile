@@ -197,9 +197,17 @@ pipeline {
                     # Persist pip wheels via Dockerfile RUN --mount=type=cache
                     export DOCKER_BUILDKIT=1
                     export COMPOSE_DOCKER_CLI_BUILD=1
+                    # Laptop OpenRouter CI: CPU torch only (no nvidia_* / cudnn wheels).
+                    # GPU prod uses compose.gpu → TORCH_CHANNEL=cuda.
+                    if [ "${DANA_HOST:-laptop}" = "gpu" ] || [ "${DANA_ROLE:-stage}" = "prod" ]; then
+                      export KB_TORCH_CHANNEL="${KB_TORCH_CHANNEL:-cuda}"
+                    else
+                      export KB_TORCH_CHANNEL="${KB_TORCH_CHANNEL:-cpu}"
+                    fi
+                    echo "KB_TORCH_CHANNEL=${KB_TORCH_CHANNEL}"
                     SVC="${CI_SERVICES:-all}"
                     if [ "$SVC" = "none" ]; then
-                      echo "CI_SERVICES=none — skipping image build"
+                      echo "CI_SERVICES=none — skipping image build (deploy will use existing :local tags)"
                       exit 0
                     fi
                     if [ "$SVC" = "all" ]; then
