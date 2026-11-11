@@ -41,11 +41,14 @@ services:
     environment:
       KB_EMBED_DEVICE: ${KB_EMBED_DEVICE:-cpu}
       KB_RERANKER_DEVICE: ${KB_RERANKER_DEVICE:-cpu}
-      # No local Gemma / MiniLM / BGE on laptop — call OpenRouter embed+rerank APIs.
-      KB_EMBED_BACKEND: ${KB_EMBED_BACKEND:-openrouter}
+      # Embed stays local MiniLM/384 so queries match the existing pgvector index.
+      # OpenRouter embed (1536-d) needs a full re-ingest. Rerank is independent
+      # and must call OpenRouter — a local BGE default is what Jenkins kept
+      # restoring from a stale .env pin.
+      KB_EMBED_BACKEND: ${KB_EMBED_BACKEND:-local}
       KB_RERANKER_BACKEND: ${KB_RERANKER_BACKEND:-openrouter}
-      KB_EMBED_MODEL: ${KB_EMBED_MODEL:-openai/text-embedding-3-small}
-      KB_EMBED_DIM: ${KB_EMBED_DIM:-1536}
+      KB_EMBED_MODEL: ${KB_EMBED_MODEL:-sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2}
+      KB_EMBED_DIM: ${KB_EMBED_DIM:-384}
       KB_RERANKER_MODEL: ${KB_RERANKER_MODEL:-cohere/rerank-v3.5}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
       KB_OPENROUTER_API_KEY: ${KB_OPENROUTER_API_KEY:-${OPENROUTER_API_KEY}}
@@ -53,6 +56,10 @@ services:
     volumes:
       # Persist registry pack edits from the UI onto the host tree
       - ../../components/knowledgebase/kb-manager/packs:/app/packs
+      # Bind-mount source so `compose up --force-recreate` does not drop back to a
+      # stale rag-kb:local image (only packs were mounted before — docker cp fixes
+      # vanished on recreate, which felt like a git revert).
+      - ../../components/knowledgebase/kb-manager/kb_manager:/app/kb_manager
     ports:
       - "127.0.0.1:8000:8000"
 

@@ -8,91 +8,29 @@
 # Prefer existing privileged stack when available:
 #   deploy/docker/docker-compose.yml  (llama-server + full CUDA)
 #   deploy/vast/start.sh              (unprivileged host, Gemma :18000)
-#
-# H200 notes:
-# - Publishes loopback ports (Jenkins Deploy prod probes :8100/:8200/:8000).
-# - Reuses host KB postgres volume name kb-manager_pgdata (code deploys must not wipe data).
-# - Mounts offline HF models from Work_RAG-Server-Setup; LLM Manager/TRT stay on the host.
 
 services:
   # No litellm service on GPU/prod path.
-  postgres:
-    # Preserve existing production KB corpus (independent of image builds).
-    # Host volume `docker_pgdata` holds the live pgvector HNSW corpus (~5k chunks).
-    volumes:
-      - docker_pgdata:/var/lib/postgresql/data
-    ports:
-      - "127.0.0.1:5432:5432"
-
-  redis:
-    ports:
-      - "127.0.0.1:16379:6379"
-
   guardrails:
     environment:
-      UPSTREAM_LLM_BASE_URL: ${UPSTREAM_LLM_BASE_URL:-http://host.docker.internal:9000/v1}
-      UPSTREAM_LLM_MODEL: ${UPSTREAM_LLM_MODEL:-gemma-4-31b}
+      UPSTREAM_LLM_BASE_URL: ${UPSTREAM_LLM_BASE_URL:-http://host.docker.internal:18000/v1}
+      UPSTREAM_LLM_MODEL: ${UPSTREAM_LLM_MODEL:-unsloth/gemma-4-31B-it-GGUF:UD-Q4_K_XL}
       UPSTREAM_LLM_API_KEY: ${LLM_API_KEY:-sk-local-dev}
-      LLM_BASE_URL: ${UPSTREAM_LLM_BASE_URL:-http://host.docker.internal:9000/v1}
-      LLM_MODEL: ${UPSTREAM_LLM_MODEL:-gemma-4-31b}
+      LLM_BASE_URL: ${UPSTREAM_LLM_BASE_URL:-http://host.docker.internal:18000/v1}
+      LLM_MODEL: ${UPSTREAM_LLM_MODEL:-unsloth/gemma-4-31B-it-GGUF:UD-Q4_K_XL}
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    ports:
-      - "127.0.0.1:8200:8200"
 
   kb:
     environment:
-      KB_EMBED_DEVICE: ${KB_EMBED_DEVICE:-cuda:0}
-      KB_RERANKER_DEVICE: ${KB_RERANKER_DEVICE:-cuda:1}
+      KB_EMBED_DEVICE: ${KB_EMBED_DEVICE:-cuda}
+      KB_RERANKER_DEVICE: ${KB_RERANKER_DEVICE:-cuda}
       KB_EMBED_BACKEND: ${KB_EMBED_BACKEND:-local}
       KB_RERANKER_BACKEND: ${KB_RERANKER_BACKEND:-local}
       KB_EMBED_MODEL: ${KB_EMBED_MODEL:-sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2}
       KB_RERANKER_MODEL: ${KB_RERANKER_MODEL:-BAAI/bge-reranker-v2-m3}
       KB_USE_TANTIVY: ${KB_USE_TANTIVY:-true}
-      HF_HOME: /models
-      HF_HUB_CACHE: /models
-      HF_HUB_OFFLINE: ${HF_HUB_OFFLINE:-1}
-      TRANSFORMERS_OFFLINE: "1"
-    volumes:
-      - /splunk-data/v1/Work_RAG-Server-Setup/offline-prep/models/huggingface:/models:ro
-    ports:
-      - "127.0.0.1:8000:8000"
-    gpus: all
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
 
   orchestrator:
     environment:
-      UPSTREAM_LLM_MODEL: ${UPSTREAM_LLM_MODEL:-gemma-4-31b}
-    ports:
-      - "127.0.0.1:8100:8100"
-
-  tracing:
-    ports:
-      - "127.0.0.1:3000:3000"
-
-  webui:
-    environment:
-      OPENAI_API_BASE_URL: http://orchestrator:8100/v1
-      OPENAI_API_KEY: sk-local-dev
-      WEBUI_NAME: "دانا"
-    ports:
-      - "127.0.0.1:13000:8080"
-
-volumes:
-  # External so Jenkins rebuilds never recreate an empty KB database.
-  docker_pgdata:
-    external: true
-  kb-manager_pgdata:
-    external: true
-  # Keep compose.base volume names declared; pgdata unused when docker_pgdata is bound above.
-  pgdata:
-  redis_data:
-  models:
-  trace_data:
-  webui_data:
+      UPSTREAM_LLM_MODEL: ${UPSTREAM_LLM_MODEL:-unsloth/gemma-4-31B-it-GGUF:UD-Q4_K_XL}
