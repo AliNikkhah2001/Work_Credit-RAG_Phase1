@@ -300,14 +300,19 @@ pipeline {
                       fi
                       [ "$ok" = "1" ] || exit 1
                     ) 9>"$LOCK"
-                    for s in ${BUILD_SERVICES}; do
+                    # Always publish :local → :${TAG} for the whole app matrix so path-filtered
+                    # builds (SERVICES=kb) still satisfy compose image: rag-*:${TAG} on deploy.
+                    for s in kb guardrails orchestrator tracing webui; do
                       case "$s" in
-                        kb) docker tag rag-kb:local ${REGISTRY}rag-kb:${TAG} || true ;;
-                        guardrails) docker tag rag-guardrails:local ${REGISTRY}rag-guardrails:${TAG} || true ;;
-                        orchestrator) docker tag rag-orchestrator:local ${REGISTRY}rag-orchestrator:${TAG} || true ;;
-                        tracing) docker tag rag-tracing:local ${REGISTRY}rag-tracing:${TAG} || true ;;
-                        webui) docker tag rag-webui:local ${REGISTRY}rag-webui:${TAG} || true ;;
+                        kb) src=rag-kb:local; dst=${REGISTRY}rag-kb:${TAG} ;;
+                        guardrails) src=rag-guardrails:local; dst=${REGISTRY}rag-guardrails:${TAG} ;;
+                        orchestrator) src=rag-orchestrator:local; dst=${REGISTRY}rag-orchestrator:${TAG} ;;
+                        tracing) src=rag-tracing:local; dst=${REGISTRY}rag-tracing:${TAG} ;;
+                        webui) src=rag-webui:local; dst=${REGISTRY}rag-webui:${TAG} ;;
                       esac
+                      if docker image inspect "$src" >/dev/null 2>&1; then
+                        docker tag "$src" "$dst" || true
+                      fi
                     done
                 '''
             }
@@ -339,6 +344,19 @@ pipeline {
                     chmod +x scripts/ci_laptop_rerank_env.sh
                     bash scripts/ci_laptop_rerank_env.sh ${ENV_FILE}
                     SVC="${CI_SERVICES:-all}"
+                    # Path-filtered / skip-build runs: compose still wants rag-*:${TAG}
+                    for s in kb guardrails orchestrator tracing webui; do
+                      case "$s" in
+                        kb) src=rag-kb:local; dst=${REGISTRY}rag-kb:${TAG} ;;
+                        guardrails) src=rag-guardrails:local; dst=${REGISTRY}rag-guardrails:${TAG} ;;
+                        orchestrator) src=rag-orchestrator:local; dst=${REGISTRY}rag-orchestrator:${TAG} ;;
+                        tracing) src=rag-tracing:local; dst=${REGISTRY}rag-tracing:${TAG} ;;
+                        webui) src=rag-webui:local; dst=${REGISTRY}rag-webui:${TAG} ;;
+                      esac
+                      if docker image inspect "$src" >/dev/null 2>&1; then
+                        docker tag "$src" "$dst" || true
+                      fi
+                    done
                     COMPOSE="docker compose -p dana-stage -f ${COMPOSE_BASE} -f ${COMPOSE_LOCAL} -f ${COMPOSE_STAGE} --env-file ${ENV_FILE}"
                     # Never rebuild images during deploy — Build stage already produced :local tags.
                     # Without --no-build, `up kb` re-downloads torch (~500MB) on every orch-only change.
