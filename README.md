@@ -803,7 +803,7 @@ Work proceeds **one sprint at a time**: implement → test on laptop Jenkins →
 | **C** | **#3** Promote path | `scripts/promote_stage_to_main.sh` + `.github/pull_request_template_promote.md`: stage green + pin SHAs → `main` + $\textcolor{red}{\textbf{[ci prod]}}$. | Dry-run prints pins; `--execute` merges locally (no silent prod without key). | ✅ done 2026-11-10 |
 | **C** | **#10** Rollback | Prod success → `ci_record_last_good.sh` writes `.last_good_sha`. $\textcolor{red}{\textbf{[ci rollback]}}$ on `main` (prod controller) restores apps via `ci_rollback.sh`. Models (Gemma/TRT) not auto-rolled. | Gate self-test; dry-run rollback; record/restore SHA round-trip. | ✅ done 2026-11-10 |
 | **D** | **#4** Registry (GHCR) | Stage builds push `rag-*:gitsha`; GPU prod prefers `pull` + `up`, build only as fallback. | GPU cold deploy with pull works for unchanged services. | ☐ pending |
-| **E** | **Eval module / CI smoke** | Formalize CI entrypoint (e.g. `eval/ci_smoke.py`) over existing `eval/` scripts; fixed exit codes; Jenkins stage after deploy. Optional later: `components/evaluation` submodule — **design approval required before large move**. | Smoke suite fails the build on quality/infra fail; passes on known-good stage. | ☐ pending (design first) |
+| **E** | **Eval module / CI smoke** | Formalize CI entrypoint (e.g. `eval/ci_smoke.py`) over existing `eval/` scripts; fixed exit codes; Jenkins stage after deploy. **Done:** `components/evaluation` → Work_RAG-Evaluation_Suite. | Smoke suite fails the build on quality/infra fail; passes on known-good stage. | ☑ done (2026-11-11) |
 | **F** | **#6** Notifications | GitHub commit statuses / Checks (fastest; no SMTP). Statuses for stage and prod. | Commit page shows `dana-stage` / `dana-prod` success/failure. | ☐ pending |
 | **G** | **#9** JCasC | Jenkins Configuration as Code YAML for Multibranch + credential **IDs** (PAT still injected as secret). Reproducible first-boot. | Fresh Jenkins + CasC recreates jobs without click-wizard (PAT via env). | ☐ pending |
 
@@ -847,7 +847,7 @@ git add components/orchestrator
 git commit -m "chore: advance orchestrator submodule"
 ```
 
-Always run health + `python3 -m evaluation.bench_runner --dry-run` before advancing a production pin.
+Always run health + `python components/evaluation/scripts/run_multiturn.py --only conv_cheque_02` before advancing a production pin.
 
 ---
 
