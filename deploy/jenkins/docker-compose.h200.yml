@@ -1,0 +1,37 @@
+# H200 host overlay — bind the production clone at the same absolute path
+# inside the Jenkins container (required for docker.sock + compose mounts).
+# Uses stock jenkins/jenkins:lts (custom Dockerfile apt often fails behind Squid
+# unless build-args are set); mounts host docker + compose plugins.
+#
+# Usage:
+#   docker compose -f deploy/jenkins/docker-compose.yml \
+#     -f deploy/jenkins/docker-compose.gpu.yml \
+#     -f deploy/jenkins/docker-compose.h200.yml up -d
+
+services:
+  jenkins:
+    image: jenkins/jenkins:lts-jdk17
+    build: !reset null
+    container_name: dana-jenkins-prod
+    user: root
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /usr/bin/docker:/usr/bin/docker:ro
+      - /usr/libexec/docker/cli-plugins:/usr/libexec/docker/cli-plugins:ro
+      - /splunk-data/production/Work_Credit-RAG_Phase1:/splunk-data/production/Work_Credit-RAG_Phase1:rw
+    environment:
+      JAVA_OPTS: "-Djenkins.install.runSetupWizard=false"
+      DOCKER_HOST: unix:///var/run/docker.sock
+      DANA_HOST_REPO: /splunk-data/production/Work_Credit-RAG_Phase1
+      DANA_HOST: gpu
+      DANA_ROLE: prod
+      HTTP_PROXY: http://192.168.203.2:3128
+      HTTPS_PROXY: http://192.168.203.2:3128
+      NO_PROXY: localhost,127.0.0.1,192.168.96.82
+    ports:
+      - "127.0.0.1:8085:8080"
+      - "127.0.0.1:50000:50000"
+
+volumes:
+  jenkins_home:

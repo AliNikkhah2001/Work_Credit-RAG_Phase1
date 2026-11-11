@@ -270,24 +270,40 @@ pipeline {
                         sleep 20
                       done
                       if [ "$ok" != "1" ]; then
-                        # Laptop CI: files.pythonhosted.org often stalls via Docker Desktop proxy.
-                        # Reuse existing :local images so stage deploy/E2E can still run.
-                        if [ "${DANA_HOST:-laptop}" = "laptop" ] && [ "${CI_FORCE_BUILD:-0}" != "1" ] && have_all_images; then
+                        # Laptop CI only: files.pythonhosted.org often stalls via Docker Desktop proxy.
+                        # NEVER reuse cached :local images on the GPU/prod controller — that can
+                        # silently redeploy stale app code after a failed rebuild.
+                        if [ "${DANA_HOST:-laptop}" = "laptop" ] && [ "${DANA_ROLE:-stage}" != "prod" ] \
+                           && [ "${CI_FORCE_BUILD:-0}" != "1" ] && have_all_images; then
                           echo "WARNING: compose build failed after retries, but all required :local images exist — continuing with cached images (set CI_FORCE_BUILD=1 to fail hard)."
                           ok=1
+                        else
+                          echo "ERROR: compose build failed on DANA_HOST=${DANA_HOST:-?} DANA_ROLE=${DANA_ROLE:-?} — refusing stale :local image reuse."
                         fi
                       fi
                       [ "$ok" = "1" ] || exit 1
                     ) 9>"$LOCK"
+                    # Retag freshly built :local images to the commit SHA so Deploy never
+                    # confuses an older :local with the tip under test.
                     for s in ${BUILD_SERVICES}; do
                       case "$s" in
-                        kb) docker tag rag-kb:local ${REGISTRY}rag-kb:${TAG} || true ;;
-                        guardrails) docker tag rag-guardrails:local ${REGISTRY}rag-guardrails:${TAG} || true ;;
-                        orchestrator) docker tag rag-orchestrator:local ${REGISTRY}rag-orchestrator:${TAG} || true ;;
-                        tracing) docker tag rag-tracing:local ${REGISTRY}rag-tracing:${TAG} || true ;;
-                        webui) docker tag rag-webui:local ${REGISTRY}rag-webui:${TAG} || true ;;
+                        kb) docker tag rag-kb:local ${REGISTRY}rag-kb:${TAG} ;;
+                        guardrails) docker tag rag-guardrails:local ${REGISTRY}rag-guardrails:${TAG} ;;
+                        orchestrator) docker tag rag-orchestrator:local ${REGISTRY}rag-orchestrator:${TAG} ;;
+                        tracing) docker tag rag-tracing:local ${REGISTRY}rag-tracing:${TAG} ;;
+                        webui) docker tag rag-webui:local ${REGISTRY}rag-webui:${TAG} ;;
                       esac
                     done
+                    # On prod/gpu, also stamp images with a build id label for audit.
+                    if [ "${DANA_HOST:-laptop}" = "gpu" ] || [ "${DANA_ROLE:-stage}" = "prod" ]; then
+                      echo "Built images tagged :${TAG} for services: ${BUILD_SERVICES}"
+                      for s in ${BUILD_SERVICES}; do
+                        img="$(image_for "$s")"
+                        [ -n "$img" ] || continue
+                        Created=$(docker image inspect "$img" --format '{{.Created}}' 2>/dev/null || echo missing)
+                        echo "  $img created=$Created"
+                      done
+                    fi
                 '''
             }
         }
@@ -420,6 +436,10 @@ pipeline {
                       cp -f "${HOST_REPO}/deploy/compose/.last_good_sha" \
                         "${HOST_REPO}/deploy/compose/.last_good_sha.prev" || true
                     fi
+                    # Always pin compose image tags to this commit (TAG=7-char SHA).
+                    # Without export TAG, compose falls back to :local and can redeploy stale images.
+                    export TAG="${TAG:-${GIT_COMMIT:0:7}}"
+                    echo "Deploy prod using image TAG=${TAG} DANA_HOST=${DANA_HOST:-laptop}"
                     if [ "${DANA_HOST:-laptop}" = "gpu" ]; then
                       test -f ${ENV_FILE_PROD} || cp deploy/compose/.env.example ${ENV_FILE_PROD}
                       docker compose -p dana-prod -f ${COMPOSE_BASE} -f ${COMPOSE_GPU} --env-file ${ENV_FILE_PROD} up -d
