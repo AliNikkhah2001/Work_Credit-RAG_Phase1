@@ -194,6 +194,9 @@ pipeline {
                     # Slow/flaky PyPI under parallel compose builds (common on laptop CI)
                     export PIP_DEFAULT_TIMEOUT="${PIP_DEFAULT_TIMEOUT:-120}"
                     export COMPOSE_PARALLEL_LIMIT="${COMPOSE_PARALLEL_LIMIT:-1}"
+                    # Persist pip wheels via Dockerfile RUN --mount=type=cache
+                    export DOCKER_BUILDKIT=1
+                    export COMPOSE_DOCKER_CLI_BUILD=1
                     SVC="${CI_SERVICES:-all}"
                     if [ "$SVC" = "none" ]; then
                       echo "CI_SERVICES=none — skipping image build"
@@ -260,6 +263,7 @@ pipeline {
                     (
                       flock -w 2400 9
                       build_once() {
+                        export DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1
                         if [ "${DANA_HOST:-laptop}" = "gpu" ] || [ "${DANA_ROLE:-stage}" = "prod" ]; then
                           docker compose -f ${COMPOSE_BASE} -f ${COMPOSE_GPU} --env-file ${ENV_FILE_PROD:-${ENV_FILE}} build ${BUILD_SERVICES}
                         else
@@ -323,19 +327,21 @@ pipeline {
                     bash scripts/ci_laptop_rerank_env.sh ${ENV_FILE}
                     SVC="${CI_SERVICES:-all}"
                     COMPOSE="docker compose -p dana-stage -f ${COMPOSE_BASE} -f ${COMPOSE_LOCAL} -f ${COMPOSE_STAGE} --env-file ${ENV_FILE}"
+                    # Never rebuild images during deploy — Build stage already produced :local tags.
+                    # Without --no-build, `up kb` re-downloads torch (~500MB) on every orch-only change.
                     # Keep LiteLLM healthy for stage OpenRouter path
-                    $COMPOSE up -d litellm
+                    $COMPOSE up -d --no-build litellm
                     if [ "$SVC" = "all" ] || [ "$SVC" = "none" ]; then
-                      $COMPOSE up -d
+                      $COMPOSE up -d --no-build
                     else
                       # Targeted recreate of changed app services; ensure deps are up
-                      $COMPOSE up -d postgres redis tracing
+                      $COMPOSE up -d --no-build postgres redis tracing
                       for s in $SVC; do
                         echo "Recreating stage service: $s"
-                        $COMPOSE up -d --no-deps --force-recreate "$s"
+                        $COMPOSE up -d --no-build --no-deps --force-recreate "$s"
                       done
                       # Orchestrator/guardrails often need full graph even if not rebuilt
-                      $COMPOSE up -d orchestrator guardrails kb
+                      $COMPOSE up -d --no-build orchestrator guardrails kb
                     fi
                     for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
                       if curl -sf --max-time 3 http://127.0.0.1:14000/health/liveliness >/dev/null \
