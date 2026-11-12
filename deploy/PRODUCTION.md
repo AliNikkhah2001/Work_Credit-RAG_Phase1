@@ -6,7 +6,7 @@ Machine-readable twin: [`PRODUCTION_PIN.json`](PRODUCTION_PIN.json).
 | Field | Value |
 |-------|-------|
 | Version | **`v1.3.0`** |
-| Git tags | `v1.3.0`, `production`, `production/2026-11-12` |
+| Git tags | `v1.3.0`, `production`, `production-2026-11-12` |
 | Image alias tags | `production`, `working`, `prod-2026-11-12` |
 | Topology | Hybrid: host uvicorn for KB/orch/guard + Docker for WebUI/Jenkins/Postgres/Redis/embed |
 

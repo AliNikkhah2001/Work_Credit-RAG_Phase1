@@ -20,7 +20,13 @@
       "agent-state": "31be58fe5596009cb811268d056ffa10940a9507"
     },
     "kb_source": "eb9ad934b3979384bb03bf6deda4e912462fb41d",
-    "parent_base": "de7fa3bc75e72cc489f58eb8d5b0375440d2cf18"
+    "parent_base": "de7fa3bc75e72cc489f58eb8d5b0375440d2cf18",
+    "parent_v1_3_0": "4f1db786ad8873e283c362b611dbe57afac6a2d6",
+    "tags": [
+      "v1.3.0",
+      "production",
+      "production-2026-11-12"
+    ]
   },
   "images": {
     "rag-webui": {
