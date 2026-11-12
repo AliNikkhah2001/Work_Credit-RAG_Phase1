@@ -6,7 +6,7 @@
 
 Self-hosted, Persian-capable conversational RAG platform. Production code lives in independently maintained Git submodules (orchestrator, knowledgebase, guardrails, server-setup) pinned to exact commits; the parent repo owns pins, integrated startup (`deploy/vast/`), and E2E evaluation.
 
-> **Status:** Active on `main`. Deployed on Vast.ai (RTX 3090) and H200 host via `Work_RAG-Server-Setup` LLM manager `:9000`. Current KB `v13` — 18 docs / 1123 chunks · pgvector HNSW · `MAX_CHUNKS=20`.
+> **Status:** Active on `main`. **Production pin `v1.3.0`** on H200 (`production` / `production/2026-11-12` tags). Hybrid topology: host uvicorn KB `:8000` / orch `:8100` / guard `:8200` + LLM manager `:9000`; Docker WebUI `:13000`, Jenkins, pgvector, Redis, embed `:8001-8003`. Exact image digests: [`deploy/PRODUCTION.md`](deploy/PRODUCTION.md) · [`deploy/PRODUCTION_PIN.json`](deploy/PRODUCTION_PIN.json). KB corpus `1405-08-20` (~21 docs).
 
 <details>
 <summary>Repository composition &amp; layers</summary>

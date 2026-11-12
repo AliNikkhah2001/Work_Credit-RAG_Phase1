@@ -3,6 +3,8 @@
 Laptop Jenkins (`:8085`) and the same pipeline on the H200 GPU server.  
 **No paid webhook / Cloudflare** — Jenkins uses **hourly `pollSCM`** against GitHub.
 
+**Pinned prod Jenkins image:** `dana-jenkins:production` → `sha256:46b04ab41fa71b05f2bb6a939a9b50f4c99b5ffe6799b42c798ea0178bdb674c` (see [`../PRODUCTION.md`](../PRODUCTION.md)).
+
 Detailed operator guide. Parent overview: repo root `README.md` → section **CI/CD & Jenkins**.
 
 ---

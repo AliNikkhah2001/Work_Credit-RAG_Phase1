@@ -40,6 +40,13 @@ services:
       args:
         # Overridden by compose.local (cpu) / compose.gpu (cuda)
         TORCH_CHANNEL: ${KB_TORCH_CHANNEL:-cpu}
+        # Squid / corporate proxy for apt+pip inside BuildKit RUN (BuildKit ignores daemon proxy)
+        HTTP_PROXY: ${HTTP_PROXY:-}
+        HTTPS_PROXY: ${HTTPS_PROXY:-}
+        http_proxy: ${HTTP_PROXY:-}
+        https_proxy: ${HTTPS_PROXY:-}
+        NO_PROXY: ${NO_PROXY:-localhost,127.0.0.1}
+        no_proxy: ${NO_PROXY:-localhost,127.0.0.1}
     image: ${REGISTRY:-}rag-kb:${TAG:-local}
     environment:
       KB_DB_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/kb_manager
@@ -87,6 +94,13 @@ services:
     build:
       context: ../../components/guardrails
       dockerfile: Dockerfile
+      args:
+        HTTP_PROXY: ${HTTP_PROXY:-}
+        HTTPS_PROXY: ${HTTPS_PROXY:-}
+        http_proxy: ${HTTP_PROXY:-}
+        https_proxy: ${HTTPS_PROXY:-}
+        NO_PROXY: ${NO_PROXY:-localhost,127.0.0.1}
+        no_proxy: ${NO_PROXY:-localhost,127.0.0.1}
     image: ${REGISTRY:-}rag-guardrails:${TAG:-local}
     environment:
       GUARDRAILS_HOST: 0.0.0.0
@@ -113,6 +127,13 @@ services:
     build:
       context: ../../components/orchestrator
       dockerfile: Dockerfile
+      args:
+        HTTP_PROXY: ${HTTP_PROXY:-}
+        HTTPS_PROXY: ${HTTPS_PROXY:-}
+        http_proxy: ${HTTP_PROXY:-}
+        https_proxy: ${HTTPS_PROXY:-}
+        NO_PROXY: ${NO_PROXY:-localhost,127.0.0.1}
+        no_proxy: ${NO_PROXY:-localhost,127.0.0.1}
     image: ${REGISTRY:-}rag-orchestrator:${TAG:-local}
     environment:
       ORCHESTRATOR_HOST: 0.0.0.0
@@ -144,6 +165,13 @@ services:
     build:
       context: ../../components/tracing
       dockerfile: Dockerfile
+      args:
+        HTTP_PROXY: ${HTTP_PROXY:-}
+        HTTPS_PROXY: ${HTTPS_PROXY:-}
+        http_proxy: ${HTTP_PROXY:-}
+        https_proxy: ${HTTPS_PROXY:-}
+        NO_PROXY: ${NO_PROXY:-localhost,127.0.0.1}
+        no_proxy: ${NO_PROXY:-localhost,127.0.0.1}
     image: ${REGISTRY:-}rag-tracing:${TAG:-local}
     environment:
       TRACE_JSONL: /data/langfuse_traces.jsonl
@@ -169,11 +197,17 @@ services:
         USE_SLIM: "true"
         USE_CUDA: "false"
         USE_OLLAMA: "false"
+        HTTP_PROXY: ${HTTP_PROXY:-}
+        HTTPS_PROXY: ${HTTPS_PROXY:-}
+        http_proxy: ${HTTP_PROXY:-}
+        https_proxy: ${HTTPS_PROXY:-}
+        NO_PROXY: ${NO_PROXY:-localhost,127.0.0.1}
+        no_proxy: ${NO_PROXY:-localhost,127.0.0.1}
     image: ${REGISTRY:-}rag-webui:${TAG:-local}
     environment:
       WEBUI_AUTH: "false"
       WEBUI_NAME: "دانا"
-      DEFAULT_INTERFACE_SETTINGS: '{"dana_theme_id":"ics-dark","params":{"stream_response":true}}'
+      DEFAULT_INTERFACE_SETTINGS: '{"dana_theme_id":"ics-mono","params":{"stream_response":true}}'
       USE_OLLAMA_DOCKER: "false"
       USE_CUDA_DOCKER: "false"
       OPENAI_API_BASE_URL: http://orchestrator:8100/v1

@@ -1,5 +1,7 @@
 # Dana compose stack (laptop test ↔ GPU prod)
 
+**H200 production pin:** see [`../PRODUCTION.md`](../PRODUCTION.md) and [`../PRODUCTION_PIN.json`](../PRODUCTION_PIN.json) for the exact working image digests tagged `production` / `working` / `prod-2026-11-12` (`v1.3.0`). Prefer those digests over rebuilding when restoring prod.
+
 ## LLM upstream flag (required mental model)
 
 | `DANA_ENV` | `LLM_UPSTREAM_MODE` | Overlay | Generation backend |

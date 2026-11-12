@@ -205,6 +205,13 @@ pipeline {
                       export KB_TORCH_CHANNEL="${KB_TORCH_CHANNEL:-cpu}"
                     fi
                     echo "KB_TORCH_CHANNEL=${KB_TORCH_CHANNEL}"
+                    # BuildKit RUN (apt/pip) needs client proxy config or build-args; export for compose.
+                    export HTTP_PROXY="${HTTP_PROXY:-http://192.168.203.2:3128}"
+                    export HTTPS_PROXY="${HTTPS_PROXY:-http://192.168.203.2:3128}"
+                    export http_proxy="${HTTP_PROXY}"
+                    export https_proxy="${HTTPS_PROXY}"
+                    export NO_PROXY="${NO_PROXY:-localhost,127.0.0.1,192.168.96.82,.local}"
+                    export no_proxy="${NO_PROXY}"
                     SVC="${CI_SERVICES:-all}"
                     if [ "$SVC" = "none" ]; then
                       echo "CI_SERVICES=none — skipping image build (deploy will use existing :local tags)"
@@ -221,6 +228,10 @@ pipeline {
                       *) NEED_WEBUI=0 ;;
                     esac
                     if [ "$SVC" = "all" ]; then NEED_WEBUI=1; fi
+                    # Prod/GPU controllers always rebuild WebUI — path filters often omit it while chat stays stale.
+                    if [ "${DANA_HOST:-laptop}" = "gpu" ] || [ "${DANA_ROLE:-stage}" = "prod" ]; then
+                      NEED_WEBUI=1
+                    fi
                     if [ "$NEED_WEBUI" = "1" ]; then
                       if [ -f components/webui/package.json ] && command -v npm >/dev/null 2>&1; then
                         (
@@ -466,17 +477,32 @@ pipeline {
                     fi
                     if [ "${DANA_HOST:-laptop}" = "gpu" ]; then
                       test -f ${ENV_FILE_PROD} || cp deploy/compose/.env.example ${ENV_FILE_PROD}
-                      docker compose -p dana-prod -f ${COMPOSE_BASE} -f ${COMPOSE_GPU} --env-file ${ENV_FILE_PROD} up -d
+                      # Verify compose images actually installed (broken tags had only pip).
+                      for img in rag-kb:${TAG} rag-guardrails:${TAG} rag-orchestrator:${TAG}; do
+                        if docker image inspect "$img" >/dev/null 2>&1; then
+                          docker run --rm --entrypoint python "$img" -c "import uvicorn" \
+                            || { echo "ERROR: $img missing uvicorn — refusing dana-prod up"; exit 1; }
+                        fi
+                      done
+                      # H200 hybrid: host uvicorn owns :8000/:8100/:8200. Only refresh WebUI
+                      # container; do not compose-up dana-prod (binds the same ports / bad images).
+                      if [ -x components/server-setup/deploy/recreate_dana_webui.sh ]; then
+                        docker tag "rag-webui:${TAG}" rag-webui:dana 2>/dev/null || true
+                        docker tag rag-webui:local rag-webui:dana 2>/dev/null || true
+                        bash components/server-setup/deploy/recreate_dana_webui.sh
+                      else
+                        echo "WARNING: recreate_dana_webui.sh missing — skipping webui refresh"
+                      fi
                     else
                       # Laptop prod-sim still uses OpenRouter local overlay
                       docker compose -p dana-prod -f ${COMPOSE_BASE} -f ${COMPOSE_LOCAL} -f ${COMPOSE_PROD} --env-file ${ENV_FILE} up -d
+                      sleep 25
+                      for p in 8100 8200 8000 4000; do
+                        curl -sf --max-time 5 http://127.0.0.1:$p/health \
+                          || curl -sf --max-time 5 http://127.0.0.1:$p/health/liveliness \
+                          || echo "port $p warming"
+                      done
                     fi
-                    sleep 25
-                    for p in 8100 8200 8000 4000; do
-                      curl -sf --max-time 5 http://127.0.0.1:$p/health \
-                        || curl -sf --max-time 5 http://127.0.0.1:$p/health/liveliness \
-                        || echo "port $p warming"
-                    done
                     # Record this commit as last-known-good after health probes
                     bash scripts/ci_record_last_good.sh "${GIT_COMMIT}"
                 '''
