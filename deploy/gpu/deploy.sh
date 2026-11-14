@@ -207,7 +207,17 @@ rollout() {
     printf '%s\n' "$services_in_profile" | grep -qx "$svc" || { log "skip $svc (not in this profile)"; continue; }
 
     log "up $svc"
-    docker compose "${DANA_COMPOSE_ARGS[@]}" up -d --no-build "$svc" >>"$RUN_LOG" 2>&1
+    # Clear any stale container holding this service's name before recreating.
+    #
+    # `compose up` refuses to proceed when a container with the expected name
+    # exists but compose does not consider it part of this project's current
+    # config — e.g. a container created earlier from a DIFFERENT file set
+    # (base-only restart, changed overlay, or a rollback pin). Docker then fails
+    # with "container name is already in use" and the rollout dies mid-order,
+    # leaving a partially-upgraded stack. Removing the stale container first makes
+    # the deploy idempotent and rerunnable.
+    dana_remove_stale_container "$svc" "$PROJECT" >>"$RUN_LOG" 2>&1 || true
+    docker compose "${DANA_COMPOSE_ARGS[@]}" up -d --no-build --remove-orphans "$svc" >>"$RUN_LOG" 2>&1
     local rc=$?
     if [ "$rc" -ne 0 ]; then
       if dana_is_optional "$svc"; then

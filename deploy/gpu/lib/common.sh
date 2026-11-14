@@ -300,6 +300,43 @@ dana_ensure_log_dir() {
   fi
 }
 
+# Remove a container that occupies the name compose wants for $1 but is NOT a
+# member of this project (or is orphaned by a different file set/label).
+#
+# Why this is needed: `docker compose up` keys off its own project labels. A
+# container created from a DIFFERENT file set (base-only restart, edited overlay,
+# generated rollback pin) can hold the name while being invisible to the current
+# invocation, so compose aborts with
+#   Conflict. The container name "..." is already in use by container "..."
+# and the rollout dies half-way, leaving a partially upgraded stack. Removing the
+# stale container first makes deploys idempotent and safe to re-run.
+#
+# Safety: only ever touches a container whose compose PROJECT label matches the
+# project we are deploying (or has no compose label at all AND matches the exact
+# expected container name for this project). Never matches other stacks.
+dana_remove_stale_container() {
+  local svc="$1" project="$2"
+  local cid proj expected
+  expected="${project}-${svc}-1"
+
+  cid="$(docker ps -aq --filter "name=^/${expected}$" 2>/dev/null | head -1)"
+  [ -n "$cid" ] || return 0
+
+  proj="$(docker inspect --format '{{index .Config.Labels "com.docker.compose.project"}}' "$cid" 2>/dev/null)"
+
+  # Only reclaim when it really is our own project's leftover, or when the name
+  # is exactly the one this project would create and it carries no other
+  # project's ownership.
+  if [ -n "$proj" ] && [ "$proj" != "$project" ]; then
+    printf 'stale-check: %s owned by project %s (not %s) — leaving it alone\n' "$expected" "$proj" "$project"
+    return 0
+  fi
+
+  printf 'stale-check: removing leftover container %s (%s) so compose can recreate it\n' "$expected" "${cid:0:12}"
+  docker rm -f "$cid" >/dev/null 2>&1 || true
+  return 0
+}
+
 # Guard against a leaked override pointing a production operation at a disposable
 # stack. Environment overrides are legitimate (tests, alternate hosts), but they
 # must be explicit: if an override is active and the caller is operating on a real

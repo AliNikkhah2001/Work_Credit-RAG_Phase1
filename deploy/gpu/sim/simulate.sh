@@ -30,6 +30,39 @@ GPU_DIR="$(cd "$HERE/.." && pwd)"
 . "$GPU_DIR/lib/common.sh"
 
 SIM_PROJECT="${SIM_PROJECT:-dana-sim}"
+
+# --- single-instance lock -----------------------------------------------------
+# The sim binds fixed host ports (19300-19302). Two concurrent runs would fight
+# over them and produce phantom failures. Serialise instead of racing.
+#
+# There is exactly ONE EXIT trap in this script: sim_exit(), defined after the
+# cleanup helpers. It releases the lock and tears the sim project down, so the
+# two responsibilities can never overwrite each other's trap.
+LOCK_FILE="${TMPDIR:-/tmp}/dana-sim.lock"
+LOCK_HELD=0
+
+sim_acquire_lock() {
+  if mkdir "$LOCK_FILE" 2>/dev/null; then
+    printf '%s\n' "$$" > "$LOCK_FILE/pid"
+    LOCK_HELD=1
+    return 0
+  fi
+  local holder
+  holder="$(cat "$LOCK_FILE/pid" 2>/dev/null || true)"
+  # A lock with no readable pid, or whose pid is dead, is stale — reclaim it.
+  if [ -z "$holder" ] || ! kill -0 "$holder" 2>/dev/null; then
+    rm -rf "$LOCK_FILE"
+    if mkdir "$LOCK_FILE" 2>/dev/null; then
+      printf '%s\n' "$$" > "$LOCK_FILE/pid"
+      LOCK_HELD=1
+      echo "reclaimed stale sim lock (previous holder: ${holder:-unknown})" >&2
+      return 0
+    fi
+  fi
+  echo "another simulation is already running (pid ${holder:-unknown}); refusing to race on ports 193xx" >&2
+  echo "  if you are sure it is dead: rm -rf $LOCK_FILE" >&2
+  return 3
+}
 SIM_DIR="$HERE/stack"
 SIM_STATE_DIR="$HERE/.state-$SIM_PROJECT"
 KEEP=0
@@ -128,7 +161,19 @@ cleanup() {
   fi
   sim_teardown
 }
-trap cleanup EXIT
+
+# Single EXIT trap: release the lock first (cheap, must always happen), then tear
+# down the throwaway project. Never touches dana-local / dana-stage.
+sim_exit() {
+  local rc=$?
+  if [ "$LOCK_HELD" = "1" ]; then
+    rm -rf "$LOCK_FILE"
+    LOCK_HELD=0
+  fi
+  cleanup
+  exit "$rc"
+}
+trap sim_exit EXIT
 
 sim_up() { # $1..=compose files
   local files=() f
@@ -141,6 +186,8 @@ sim_down() {
     -f "$SIM_DIR/compose.base.yml" -f "$SIM_DIR/compose.override.yml" \
     --env-file "$SIM_DIR/sim.env" down -v --remove-orphans >/dev/null 2>&1 || true
 }
+
+sim_acquire_lock || exit 3
 
 banner "simulation: $SIM_PROJECT  (scenarios: ${SCENARIOS[*]})"
 log "sim dir    : $SIM_DIR"
@@ -269,9 +316,19 @@ print("\n".join("%s=%s" % (i["service"], (i.get("image_id") or "")[:19]) for i i
   [ "$RC_C2" -eq 0 ] && record "(c2) reconcile.sh heals a broken stack (exit 0)" 1 \
     || record "(c2) reconcile.sh heals a broken stack (exit 0)" 0 "exit=$RC_C2"
 
-  bash "$FROZEN/health.sh" --profile gpu --quiet; RC_C3=$?
+  # Re-verify. rollback.sh already waited for green, but give it a short bounded
+  # window here: a concurrent docker event (or a lingering socket) can make the
+  # very next probe flap. Retry for up to 30s before declaring failure.
+  RC_C3=1
+  for _try in 1 2 3 4 5 6; do
+    bash "$FROZEN/health.sh" --profile gpu --quiet 2>/tmp/sim_c3.err
+    RC_C3=$?
+    [ "$RC_C3" -eq 0 ] && break
+    [ "$RC_C3" -eq 2 ] && { echo "health.sh refused to run (exit 2):"; sed 's/^/  /' /tmp/sim_c3.err; break; }
+    sleep 5
+  done
   [ "$RC_C3" -eq 0 ] && record "(c3) re-verification green after rollback" 1 \
-    || record "(c3) re-verification green after rollback" 0 "exit=$RC_C3"
+    || record "(c3) re-verification green after rollback" 0 "exit=$RC_C3$( [ -s /tmp/sim_c3.err ] && echo " $(tr '\n' ' ' </tmp/sim_c3.err)" )"
 
   # Ports must be back, and the container must be on the recorded image.
   LIVE_PORTS="$(docker compose -p "$SIM_PROJECT" -f "$SIM_DIR/compose.base.yml" -f "$SIM_DIR/compose.override.yml" --env-file "$SIM_DIR/sim.env" ps --format '{{.Service}}={{.Publishers}}' 2>/dev/null)"
