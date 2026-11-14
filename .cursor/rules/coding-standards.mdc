@@ -1,0 +1,39 @@
+---
+description: Python/FastAPI/Persian coding standards for Work Credit RAG
+globs: "**/*.{py,yml,yaml}"
+alwaysApply: false
+---
+
+# Coding standards (from agent-state)
+
+Full detail: `agent-state/coding-standards.md`.
+
+## Python
+
+- Type hints on all public functions; docstrings with Args/Returns
+- `async def` for I/O; never hop asyncpg via `asyncio.to_thread`
+- Wrap HTTP/DB/model calls in `try/except`; log with `logging.getLogger(__name__)`
+- Comments only for *why*, not *what*; no wildcard imports
+
+## FastAPI
+
+- Pydantic `BaseModel` for bodies; factory apps (`create_app --factory`)
+- Localhost HTTP: `httpx.AsyncClient(timeout=120, trust_env=False)` (Squid proxy hangs otherwise)
+- Guardrails upstream overflow → `finish_reason="length"` (not `"error"`)
+
+## DB / retrieval
+
+- `async with db.session() as session:`
+- Dense index: use `_ensure_model()` / `_dense_encode()`, never assume `dense.model`
+- Entity lists: embed via `SentenceTransformerEmbedder.embed_texts(title + desc)`
+- Context budget: Triton Gemma 8192 tokens — trim supplements (top-3 × 4KB); keep prompts ~20K chars
+
+## Persian
+
+- Normalize via `preprocessor/persian.py` / `regex_persian.py`
+- Synonym map in `query_expansion.py`; BM25 = tantivy Persian word + 3-gram
+- Embed: `paraphrase-multilingual-MiniLM-L12-v2` (384d)
+
+## Gemma serving
+
+- `chat_template_kwargs:{"enable_thinking":false}` + `--no-mmproj --jinja`

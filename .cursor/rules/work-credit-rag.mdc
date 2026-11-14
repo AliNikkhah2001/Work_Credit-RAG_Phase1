@@ -1,0 +1,51 @@
+---
+description: Work Credit RAG platform map, ownership, ports, and hard never-dos
+alwaysApply: true
+---
+
+# Work Credit RAG — always-on context
+
+Umbrella repo: `Work_Credit-RAG_Phase1`. Production code lives in **submodules**; parent owns pins, `deploy/`, `eval/`, contracts.
+
+## Ownership (edit in the owning repo)
+
+| Path | Repo | Owns |
+|---|---|---|
+| `components/knowledgebase` | Work_RAG-KB `master` | ingest, hybrid retrieval, entity lists |
+| `components/orchestrator` | Work_RAG-Orchestrator `main` | LangGraph graph, OpenAI chat API `:8100` |
+| `components/guardrails` | Work_RAG-Guardrails `main` | Persian rails + guarded Gemma `:8200` |
+| `components/server-setup` | Work_RAG-Server-Setup `main` | H200/Vast infra, manager `:9000`, embeds |
+| `components/tracing` | parent | fallback collector `:3000` |
+| `agent-state/` | ICS_ChatBot_agent-state | agent mission, todos, history, standards |
+
+Do **not** duplicate component implementation in the parent. Component fix → commit in submodule → advance parent gitlink.
+
+## MVP request path
+
+`WebUI :13000` → `Orchestrator :8100` → `Guardrails :8200` (input) → `KB :8000` → `build_context` → `Guardrails` (guarded_generate → Gemma `:18000` / Manager `:9000`) → citations → WebUI.
+
+## Agent memory (read first on resume)
+
+1. `agent-state/context/context.md` + `agent-state/context/todo.md`
+2. `agent-state/architecture.md` + `agent-state/coding-standards.md`
+3. `agent-state/insights.md` + `AGENTS.md`
+4. Archived OpenCode sessions: `agent-state/history/archive/`
+5. Skills: `.cursor/skills/work-credit-rag`, `rag-kb`, `rag-orchestrator`, `rag-guardrails`
+
+## Known tip gap (do not “rediscover”)
+
+KB EntityList path for ضمیمه `1405-08-20` is live: `entity_lists.py` builders, `/search/supplement`, subspace score-table force-inject, orch `trim_supplemental` relevance ranking + `format_response` Entity Data recovery. Re-check `hasattr(dense, "model")` only if dense inject silently no-ops on a fresh tip.
+
+## Never do
+
+- `pkill python` — use `bash deploy/vast/stop.sh`
+- Force-push; commit `.env` / secrets / `*.npz` / logs / venvs
+- Expose Gemma `:18000`, postgres, or redis publicly
+- Set only one of `HF_HOME` / `HF_HUB_CACHE`
+- Omit `request_id` in Studio run inputs
+- Mix `asyncio.to_thread` with asyncpg (breaks pool)
+
+## Git
+
+- `main`/`master` = production; `develop` = integration; work on `feature/*` → PR → develop
+- Conventional commits: `feat:`, `fix:`, `docs:`, `chore:`
