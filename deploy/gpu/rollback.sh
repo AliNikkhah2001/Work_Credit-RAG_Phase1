@@ -288,6 +288,27 @@ bash "$HERE/health.sh" --profile "$PROFILE" --json "$HEALTH_JSON" || RC=$?
 
 if [ "$RC" -eq 0 ]; then
   ok "ROLLBACK VERIFIED: stack restored to last-known-good and healthy"
+
+  # Pin files are kept on purpose: the running project still has the pin mounted
+  # as its last compose layer, so deleting the newest one would break the next
+  # `compose ps/up` for this project. Only old pins are pruned, and never the
+  # one this run just created.
+  if [ -n "${DANA_KEEP_PINS:-}" ]; then
+    KEEP="$DANA_KEEP_PINS"
+  else
+    KEEP=5
+  fi
+  if [ "${KEEP:-0}" -gt 0 ] 2>/dev/null; then
+    # shellcheck disable=SC2012
+    ls -1t "$DANA_STATE_DIR"/rollback-*.pin.yml 2>/dev/null \
+      | grep -vxF "$PIN_FILE" \
+      | tail -n "+$((KEEP + 1))" \
+      | while IFS= read -r old; do
+          [ -n "$old" ] || continue
+          rm -f "$old" && log "pruned old rollback pin $(basename "$old")"
+        done
+  fi
+
   # Keep last_good.json authoritative: do not overwrite it with the rollback
   # (it already describes precisely these images/config). Just annotate history.
   python3 - "$DANA_STATE_FILE" "$REASON" "$RUN_ID" <<'PY' 2>/dev/null || true
