@@ -428,8 +428,11 @@ pipeline {
                     bash scripts/ci_stage_evidence.sh mark stage-deploy || true
                 '''
             }
+            post {
+                success { ghStatus('stage-deploy', 'success', 'stage deploy + health gate passed') }
+                failure { ghStatus('stage-deploy', 'failure', 'stage deploy or health gate failed') }
+            }
         }
-
         stage('E2E stage') {
             when {
                 allOf {
@@ -452,6 +455,10 @@ pipeline {
                       -d '{"model":"chat-primary","messages":[{"role":"user","content":"سلام"}]}' | head -c 500; echo
                     bash scripts/ci_stage_evidence.sh mark stage-e2e || true
                 '''
+            }
+            post {
+                success { ghStatus('stage-e2e', 'success', 'stage E2E chat probe passed') }
+                failure { ghStatus('stage-e2e', 'failure', 'stage E2E chat probe failed') }
             }
         }
 
@@ -528,6 +535,10 @@ pipeline {
                     bash scripts/ci_record_last_good.sh --if-gate-passes "${GIT_COMMIT}"
                     bash scripts/ci_stage_evidence.sh mark prod-deploy || true
                 '''
+            }
+            post {
+                success { ghStatus('prod-deploy', 'success', 'prod deploy + health gate passed') }
+                failure { ghStatus('prod-deploy', 'failure', 'prod deploy or health gate failed') }
             }
         }
     }
