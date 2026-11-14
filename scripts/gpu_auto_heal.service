@@ -1,0 +1,23 @@
+[Unit]
+Description=Dana RAG proactive GPU auto-heal (production)
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+# Edit WorkingDirectory / DANA_HOST_REPO to this host's clone path
+WorkingDirectory=/workspace/Work_Credit-RAG_Phase1
+Environment=DANA_HOST_REPO=/workspace/Work_Credit-RAG_Phase1
+Environment=DANA_HOST=gpu
+Environment=DANA_ROLE=prod
+Environment=DANA_HEAL_INTERVAL=60
+ExecStart=/bin/bash /workspace/Work_Credit-RAG_Phase1/scripts/gpu_auto_heal.sh
+Restart=always
+RestartSec=30
+Nice=10
+StandardOutput=append:/var/log/dana-rag/auto-heal.stdout.log
+StandardError=append:/var/log/dana-rag/auto-heal.stderr.log
+
+[Install]
+WantedBy=multi-user.target
