@@ -16,35 +16,63 @@ and a static dashboard served by GitHub Pages renders the whole history.
 ## 1. Setup on the GPU host (tonight, ~2 minutes)
 
 ```bash
-# 1) clone / update the umbrella repo (submodules matter for the KB probe)
+# 1) clone / update the umbrella repo (submodules matter for the KB probe).
+#    Everything below lives on main — no feature branch required.
 cd /workspace/Work_Credit-RAG_Phase1        # or wherever the repo lives
-git fetch origin && git checkout feature/health-dashboard-pages
+git fetch origin && git checkout main && git pull --ff-only origin main
 git submodule update --init components/knowledgebase
 
-# 2) install the systemd timer (daily 16:00 UTC + retry every 3h on failure)
+# 2) validate the plan first — read-only, needs no root, changes nothing
+bash deploy/monitor/install.sh --check
+
+# 3) install the systemd timer (daily 16:00 UTC + retry every 3h on failure)
 sudo bash deploy/monitor/install.sh --machine-name gpu-prod
 
-# 3) verify it is armed
+# 4) verify it is armed (two timers, both enabled)
 systemctl list-timers 'gpu-health-report*'
-tail -f /var/log/dana-rag/health-report.log
 
-# 4) force one run right now (do not wait for 16:00)
+# 5) force one run right now (do not wait for 16:00)
 sudo systemctl start gpu-health-report.service
+tail -f /var/log/dana-rag/health-report.log
 ```
 
 Then open the Pages URL above: the new run appears as a row in the heatmap, in
 the run log, and in the "last 24h failures" table if anything was down.
+
+### Where to look after the forced run
+
+| What | Where |
+|---|---|
+| Did it run and what exit code? | `systemctl status gpu-health-report.service` (or `journalctl -u gpu-health-report.service -n 80`) |
+| Full transcript | `tail -f /var/log/dana-rag/health-report.log` (errors in `…err.log`) |
+| Local report + dashboard | the run prints `Output dir:` / `Report:` / `Dashboard:` paths — typically `<repo>/components/server-setup/docs/ops/gpu-recover-reports/<RUN_ID>/REPORT.md` |
+| Published record | `https://github.com/AliNikkah2001/Work_RAG_HealthCheck/tree/main/runs` → `<RUN_ID>.json` |
+| Dashboard row | <https://alinikkhah2001.github.io/Work_RAG_HealthCheck/> |
+| Retry state | `cat /var/lib/dana-health/{last-success,failing,refused} 2>/dev/null` |
+
+If `last-success` has today's timestamp the daily run is done; if `failing`
+exists the retry timer will re-run within `--retry-hours`. If `refused` exists
+nothing will retry — fix `GPU_HEALTH_REPO` first.
 
 ### Install options
 
 ```bash
 sudo bash deploy/monitor/install.sh                      # defaults: 16:00 UTC, retry 3h
 sudo bash deploy/monitor/install.sh --daily-time 04:30   # different UTC time
+sudo bash deploy/monitor/install.sh --retry-hours 1      # retry more aggressively
 sudo bash deploy/monitor/install.sh --machine-name h200-1
 sudo bash deploy/monitor/install.sh --no-push            # collect locally, publish nothing
-sudo bash deploy/monitor/install.sh --dry-run            # print the units, change nothing
+sudo bash deploy/monitor/install.sh --health-repo <url>  # non-default publish target
 sudo bash deploy/monitor/install.sh --health-repo-dir /srv/healthcheck
+sudo bash deploy/monitor/install.sh --check              # validate the plan, change nothing
+sudo bash deploy/monitor/install.sh --dry-run            # print the units, change nothing
 ```
+
+Both flags are validated before anything is written: `--daily-time` must be
+`HH:MM` 24-hour and `--retry-hours` a positive integer, otherwise the installer
+exits `2`. `--check` and `--dry-run` are safe on any host (including macOS) —
+they never need root and never write a unit file. `--check` exits `0` when the
+plan is coherent, `1` when a check fails.
 
 Uninstall (never deletes published data or the repo clone):
 
@@ -62,15 +90,36 @@ sudo bash deploy/monitor/uninstall.sh --purge-state    # also drop /var/lib/dana
 | `gpu-health-report-retry.service` | same run, but gated by `ExecCondition` |
 | `gpu-health-report-retry.timer` | every `--retry-hours` (default 3h); the gate makes it a no-op once today succeeded |
 
-The retry gate is a pair of marker files rather than a transient unit result, so
-a reboot cannot silently swallow a failed day:
+The retry decision comes from **marker files** rather than a transient unit
+result, so a reboot cannot silently swallow a failed day. Three markers, all
+under `/var/lib/dana-health`:
 
-- `/var/lib/dana-health/failing` — written by `ExecStopPost` when the run exits non-zero
-- `/var/lib/dana-health/last-success` — UTC timestamp of the last successful run
+| Marker | Written when the run exits | Effect on the retry timer |
+|---|---|---|
+| `last-success` | `0` | clears `failing` and `refused` |
+| `failing` | `1` (unhealthy stack, or publish failed) | **arms** — the retry re-runs |
+| `refused` | `64` (bad `GPU_HEALTH_REPO` or bad arguments) | **disarms** — nothing re-runs |
 
-The retry fires when `failing` exists **or** `last-success` is from an earlier
-UTC day. Each retry also re-checks the services, so a host that came back up at
-02:00 logs a healthy run at 03:00 without waiting for 16:00.
+Bookkeeping is split into two small scripts so the logic is readable and
+testable instead of buried in quoted `sh -c` one-liners inside the unit:
+
+- `deploy/monitor/mark-result.sh` — `ExecStopPost`, maps exit code → markers
+- `deploy/monitor/should-retry.sh` — `ExecCondition`, decides run (`0`) vs skip (`1`)
+
+`should-retry.sh` runs the report when **any** of these is true:
+
+- `failing` exists, i.e. the last attempt genuinely failed
+- no successful run has ever been recorded
+- the last success was on an earlier UTC day (the daily run was missed — e.g.
+  the host was down at 16:00)
+
+It skips when the last attempt was **refused** (`64`) and nothing has run since.
+Retrying a configuration error every 3h produces 8 identical failures a day and
+buries the one line an operator needs; the refusal is visible on the dashboard
+and in `systemctl status`, and a human fixes `GPU_HEALTH_REPO`.
+
+Each retry also re-checks the services, so a host that came back up at 02:00
+logs a healthy run at 03:00 without waiting for 16:00.
 
 Logs: `/var/log/dana-rag/health-report.log`, `…err.log`. One oneshot run per
 invocation, `TimeoutStartSec=3600`, `StartLimitIntervalSec=0` so a bad hour can
@@ -78,12 +127,38 @@ never block the next attempt.
 
 ### MacOS / dev laptop
 
-The systemd installer refuses to run on macOS (it targets a Linux GPU host) but
-`--dry-run` still prints the units. For a laptop-side manual publish:
+The systemd installer refuses to run on macOS (it targets a Linux GPU host) and
+exits `3` with a pointer to the launchd path. `--check` and `--dry-run` are the
+exceptions: they are read-only previews, so they work on any host and are the
+right way to validate a change before touching the GPU box.
+
+```bash
+bash deploy/monitor/install.sh --check     # validate the plan (exit 1 if incoherent)
+bash deploy/monitor/install.sh --dry-run   # print the four unit files
+```
+
+For a one-off laptop run that produces a report without pushing:
 
 ```bash
 DANA_HOST_REPO=$(pwd) bash scripts/gpu_full_recover_report.sh \
-  --no-restart --machine-name laptop
+  --no-restart --no-push --machine-name laptop
+```
+
+To arm a **daily** run on the laptop, use launchd instead of systemd:
+
+```bash
+bash scripts/install_daemon_macos.sh                  # daily at 16:00
+DAILY_TIME=09:30 bash scripts/install_daemon_macos.sh # different local time
+launchctl list | grep gpu-recovery                    # verify loaded
+```
+
+It writes `~/Library/LaunchAgents/com.dana.gpu-recovery-report.plist` and logs
+to `~/Library/Logs/com.dana.gpu-recovery-report.{out,err}.log`. The launchd
+agent schedules in **local** time, whereas the systemd timer is UTC. To revert:
+
+```bash
+launchctl unload ~/Library/LaunchAgents/com.dana.gpu-recovery-report.plist
+rm -f ~/Library/LaunchAgents/com.dana.gpu-recovery-report.plist
 ```
 
 ---
