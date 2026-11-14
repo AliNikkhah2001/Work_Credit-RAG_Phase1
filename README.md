@@ -1024,7 +1024,7 @@ See [LICENSE](LICENSE). Each submodule may also declare its own license and depe
 
 ### `deploy/`
 
-- [Dana compose stack (laptop test ↔ GPU prod)](deploy/compose/README.md) — Self-hosted Gemma/TRT paths:
+- [Dana compose stack (laptop test ↔ GPU prod)](deploy/compose/README.md) — Self-hosted Gemma/TRT paths are unchanged:
 - [Work Credit RAG — Docker deployment (privileged CUDA host)](deploy/docker/README.md) — Full-stack docker compose version of the platform. Mirrors
 - [GPU / production deploy layer](deploy/gpu/README.md) — Everything that makes the GPU production stack stay up or come back by itself.
 - [Jenkins CI/CD — Dana / Work Credit RAG](deploy/jenkins/README.md) — Laptop Jenkins (:8085) and the same pipeline on the H200 GPU server.
