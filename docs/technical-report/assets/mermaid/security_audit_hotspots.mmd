@@ -1,0 +1,28 @@
+flowchart TB
+  NOTE["Audit 2026-09-27 residual: re-verify at tip"]
+
+  subgraph KB["Knowledgebase"]
+    KC1["K-C1 path traversal Critical"]
+    KC2["K-C2 unauth admin Critical"]
+    KC4["K-C4 zip bomb Critical"]
+    KC7["K-C7 stored XSS Critical"]
+  end
+  subgraph TS["Tracing and Manager"]
+    TC2["T-C2 unauth admin Critical"]
+    TC3["T-C3 CORS plus credentials Critical"]
+    TC45["T-C4 and T-C5 shell injection Critical"]
+    TH3["T-H3 SSRF High"]
+  end
+  subgraph GRD["Guardrails"]
+    GC4["G-C4 YAML injection Critical"]
+    GC3["G-C3 Persian PII bypass Critical"]
+    GH["G-H4 G-H6 G-H9 G-H10 High"]
+  end
+  subgraph OR["Orchestrator"]
+    OC2["O-C2 streaming race Critical"]
+  end
+
+  NOTE --> KB
+  NOTE --> TS
+  NOTE --> GRD
+  NOTE --> OR

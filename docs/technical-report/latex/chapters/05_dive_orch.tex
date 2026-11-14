@@ -1,0 +1,198 @@
+\chapter{Orchestrator}\label{orchestrator}
+
+\section{Section summary}\label{section-summary}
+
+The orchestrator is the public OpenAI-compatible face of the platform (\texttt{:8100}). It does not embed the corpus and it does not serve Gemma. A compiled LangGraph validates and classifies each turn, retrieves from the knowledge base with sticky subspace memory, optionally clarifies a scattered credit question, packs a bounded prompt, and always generates through guardrails. This chapter anchors every graph node to a file, lists keyword boosts and the evidence floors, and records the \texttt{AmbiguityResult} defaults: enabled, instrument-only, margin 0.08. Query embeddings for that score come from MiniLM on \texttt{:8003}, fetched with \texttt{trust\_env=False}.
+
+\section{Role in the request path}\label{role-in-the-request-path}
+
+Open WebUI, or any OpenAI client, posts to \texttt{create\_app} in \texttt{components/orchestrator/src/work\_rag\_orchestrator/api.py}. The API allocates a \texttt{request\_id}, restores \texttt{sticky\_subspace} from the LangGraph checkpointer when the conversation continues, and invokes the compiled graph. Downstream dependencies are the knowledge base (\texttt{KB\_BASE\_URL}, default \texttt{http://127.0.0.1:8000}) and guardrails (\texttt{GUARDRAILS\_BASE\_URL}, default \texttt{http://127.0.0.1:8200}). Thresholds, keyword boosts, and the context budget live in \texttt{config.py}. The typed carry bag for every node is \texttt{RAGState} in \texttt{state.py}.
+
+The user-facing path has one hard invariant: \textbf{the orchestrator never opens an HTTP session to Gemma.} \texttt{guarded\_generate} posts \texttt{prompt\_messages} to guardrails \texttt{POST\ /v1/chat/completions}. Guardrails alone dials the H200 LLM Inference Manager on \texttt{:9000}. Input rails run in \texttt{validate\_input} via \texttt{/v1/rails/check}. The published upstream model name is \texttt{UPSTREAM\_LLM\_MODEL=gemma-4-31b-triton-trt}. \texttt{HYBRID\_CLASSIFIER\_ENABLED} defaults to \textbf{false}.
+
+The graph is compiled with \texttt{MemorySaver} and exports \texttt{rag\_graph}. Studio loads the same object as \texttt{graph} (\texttt{langgraph.json} → \texttt{studio\_graph.py:graph}). Studio run inputs must include \texttt{request\_id}.
+
+\section{Graph node file anchors}\label{graph-node-file-anchors}
+
+Pages technical notes anchor the production nodes as follows. Line numbers are the anchors published with those notes.
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.3333}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.3333}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.3333}}@{}}
+\toprule\noalign{}
+Node & File / line & External call \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+\texttt{validate\_input} & \texttt{nodes/validate\_input.py:13} & Guardrails \texttt{POST\ /v1/rails/check} (\texttt{clients/guardrails.py:91}) \\
+\texttt{classify} & \texttt{nodes/classify.py:67} & Guardrails \texttt{/v1/chat/completions} (\texttt{clients/guardrails.py:135}) \\
+\texttt{hybrid\_classify} & \texttt{nodes/hybrid\_classify.py:67} & Guardrails \texttt{/v1/chat/completions} (SVM, then Gemma if the SVM is unsure) \\
+\texttt{retrieve} & \texttt{nodes/retrieve.py:851} & KB \texttt{POST\ /search/api} (\texttt{clients/knowledgebase.py:61}) \\
+\texttt{generate\_clarification} & \texttt{nodes/generate\_clarification.py:24} & Guardrails \texttt{/v1/chat/completions} \\
+\texttt{build\_context} & \texttt{nodes/build\_context.py:53} & None (numbered sources and the system prompt) \\
+\texttt{guarded\_generate} & \texttt{nodes/guarded\_generate.py:16} & Guardrails \texttt{/v1/chat/completions}, which calls Gemma \\
+\texttt{format\_response} & \texttt{nodes/format\_response.py:492} & None (citations and \texttt{finish\_reason}) \\
+\texttt{format\_refusal} & \texttt{graph.py:109} & Alias of \texttt{format\_response} \\
+\end{longtable}
+
+Conditional edges sit in \texttt{graph.py}: \texttt{should\_continue\_after\_validation} at line 24, \texttt{should\_route\_after\_classify} at line 31, and \texttt{should\_clarify} at line 45. An entity supplement short-circuits clarify. \texttt{should\_clarify} also reads \texttt{subspace\_ambiguity\_route} and \texttt{ambiguity\_ambiguous}, then falls back to the scattered-query check \texttt{is\_scattered\_ambiguous}. While the route flag stays false, the ambiguity score is present on the state and does not flip that edge by itself.
+
+The node order operators should memorize:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  \textbf{\texttt{validate\_input}} extracts the latest user query and calls input rails. If \texttt{blocked}, the graph goes to \texttt{format\_refusal} and ends.
+\item
+  \textbf{\texttt{classify}} buckets the turn as \texttt{greeting}, \texttt{specification}, or \texttt{question}. Greetings and product-spec answers go straight to \texttt{format\_response} and skip retrieval.
+\item
+  \textbf{\texttt{hybrid\_classify}} runs only when the hybrid classifier is enabled. The default is off, so the edge goes from classify to retrieve.
+\item
+  \textbf{\texttt{retrieve}} rewrites coreference when needed, calls KB hybrid search and the entity supplement, applies sticky or inferred \texttt{filter\_path}, and scores evidence.
+\item
+  \textbf{\texttt{should\_clarify}} continues when supplemental or injected entities exist. Otherwise a scattered ambiguous query with no \texttt{applied\_subspace} branches to \textbf{\texttt{generate\_clarification}} and ends.
+\item
+  \textbf{\texttt{build\_context}} numbers sources and enforces \texttt{MAX\_CHUNKS} and \texttt{MAX\_CONTEXT}.
+\item
+  \textbf{\texttt{guarded\_generate}} asks guardrails for the answer, or receives a content-filter refusal.
+\item
+  \textbf{\texttt{format\_response}} shapes the OpenAI payload, RAG citations, and audit fields.
+\end{enumerate}
+
+\begin{figure}
+\centering
+\includegraphics[width=0.88\linewidth,height=0.36\textheight,keepaspectratio]{../assets/diagrams/05_orch_graph_hl.png}
+\caption{High-level orchestrator LangGraph}
+\end{figure}
+
+\textbf{Figure --- High-level orchestrator graph.} Validation and classify sit on the left, retrieval in the center, and a clarify-versus-generate fork reunites at formatting. The picture maps to the node names registered in \texttt{graph.py} and leaves out sticky-decay bookkeeping, the whole-KB retry inside \texttt{retrieve}, and Langfuse span wiring so the branching contract stays readable. Most of the 4.9 s median bench time accumulates on the generate side of this fork, which is why the clarify exit matters: a scattered question should not pay for a full Gemma decode.
+
+\begin{figure}
+\centering
+\includegraphics[width=0.88\linewidth,height=0.36\textheight,keepaspectratio]{../assets/diagrams/06_orch_graph_detail.png}
+\caption{Detailed orchestrator LangGraph}
+\end{figure}
+
+\textbf{Figure --- Detailed orchestrator graph.} The expanded view shows the refusal path when input rails block, the greeting and specification bypass that skips the KB, the optional \texttt{hybrid\_classify} hop, the entity short-circuit around clarification, and the chain \texttt{build\_context} → \texttt{guarded\_generate} → \texttt{format\_response}. Conditional helpers are the three functions in the anchor table. Retrieval and trim logic live in \texttt{nodes/retrieve.py}; prompt assembly lives in \texttt{nodes/build\_context.py}; KB HTTP lives in \texttt{clients/knowledgebase.py}. Studio runs this same compiled object. Every Studio input includes \texttt{request\_id} so the checkpoint matches the conversation.
+
+\section{Keyword boosts and evidence floors}\label{keyword-boosts-and-evidence-floors}
+
+\texttt{SUBSPACE\_KEYWORD\_BOOST} is a per-subspace BM25 bias applied on scoped KB calls. Cheque questions, which lean on short codes and fixed phrases, get the strongest boost.
+
+\begin{longtable}[]{@{}lr@{}}
+\toprule\noalign{}
+Subspace & Keyword boost \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+\texttt{cheque} & 3.5 \\
+\texttt{facilities\_person} & 3.0 \\
+\texttt{facilities\_legal} & 3.0 \\
+\texttt{general} & 2.5 \\
+\end{longtable}
+
+Per-subspace evidence thresholds (the T3 floors in \texttt{config.get\_evidence\_threshold}) sit under the global abstain:
+
+\begin{longtable}[]{@{}lr@{}}
+\toprule\noalign{}
+Subspace & Evidence floor \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+\texttt{cheque} & 0.05 \\
+\texttt{facilities\_person} & 0.10 \\
+\texttt{facilities\_legal} & 0.15 \\
+\texttt{general} & 0.15 \\
+Global \texttt{EVIDENCE\_MIN\_SCORE} & \textbf{0.15} \\
+\end{longtable}
+
+\texttt{filter\_path} on the request is authoritative. When it is present, \texttt{retrieve} scopes \texttt{KnowledgebaseClient.retrieve(...,\ filter\_path=...)} and maps the path back to a subspace label for badges and for the floor above. \texttt{sticky\_subspace} persists across turns in checkpointed state and is kept distinct from \texttt{applied\_subspace} in \texttt{state.py}, so the scorer can keep or switch. The API re-injects sticky scope for generic follow-ups (pronouns, short confirmations). \textbf{\texttt{STICKY\_DECAY\_TURNS} defaults to 3}: after three consecutive generic turns the sticky subspace is dropped. When Open WebUI sends no \texttt{X-Request-ID}, sticky scope is mined from user-only history; interrogatives are skipped and declarations set scope. T4 injection applies the sticky \texttt{filter\_path} on those generic follow-ups.
+
+A filtered retrieval that misses the floor can retry once with \texttt{filter\_path=None}. That retry is audited as \texttt{fallback\_used}. \texttt{RETRIEVAL\_TOP\_K} is \textbf{20}, formed as a union of 10 RRF hits and 10 cross-encoder hits.
+
+Entity dictionaries (reason codes, shareholders, loan titles) arrive as \texttt{injected\_entities} or \texttt{supplemental}. \texttt{trim\_supplemental} keeps at most the top three lists and about 4 KB of serialized JSON each, ranks rows by query-token overlap, and doubles the weight of code-like tokens (Latin letters or digits such as \texttt{sbd1}) so an exact code outranks a row that only shares the word «کد». That trim holds a reason-code sheet inside the 9000 context budget and the 8192-token Gemma window.
+
+\section{AmbiguityResult defaults}\label{ambiguityresult-defaults}
+
+The frozen interface is \texttt{AmbiguityResult} in \texttt{src/work\_rag\_orchestrator/subspaces.py}. The four subspaces are \texttt{cheque}, \texttt{facilities\_person}, \texttt{facilities\_legal}, and \texttt{general}.
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.5000}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.5000}}@{}}
+\toprule\noalign{}
+Setting & Default \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+\texttt{subspace\_ambiguity\_enabled} & \textbf{True} (compute the score and keep it for audit) \\
+\texttt{subspace\_ambiguity\_route} & \textbf{False} (instrument only; the score does not route or clarify) \\
+\texttt{subspace\_ambiguity\_margin} & \textbf{0.08} \\
+\texttt{subspace\_ambiguity\_min\_top1} & \textbf{0.30} \\
+\texttt{subspace\_ambiguity\_entropy\_max} & \textbf{0.85} \\
+\texttt{subspace\_softmax\_temp} & 0.05 \\
+\texttt{subspace\_score\_cache\_size} & 512 \\
+\texttt{subspace\_protos\_path} & \texttt{data/subspace\_protos.npz} \\
+\texttt{subspace\_clf\_path} & \texttt{data/subspace\_clf.joblib} \\
+\end{longtable}
+
+A turn is marked ambiguous when the top class is below \texttt{min\_top1}, or the margin between the top two classes is below \textbf{0.08}, or the entropy of the distribution exceeds \texttt{entropy\_max}. The score lies in {[}0, 1{]}; a higher score means a more ambiguous subspace assignment. The \texttt{source} field records where the score came from: \texttt{protos}, \texttt{classifier}, \texttt{fallback}, or \texttt{disabled}. Because \texttt{subspace\_ambiguity\_route} is false, \texttt{should\_clarify} does not treat that boolean as a routing order. The scattered-query fallback and the entity short-circuit still apply. Turning the route flag on is a product change, not the default this report describes.
+
+The head was trained as an SVM-RBF on a \textbf{1,000-sample} set (parent changelog, orchestrator v13, 2026-10-24). The same release landed conditional clarify, sticky \texttt{MemorySaver} keyed by \texttt{X-Request-ID}, \texttt{MAX\_CHUNKS=20}, context budget \textbf{9000}, the \textbf{0.15} evidence guard, grounded follow-ups, and a dead-letter path.
+
+\section{Embeddings on :8003}\label{embeddings-on-8003}
+
+\texttt{embed\_base\_url} defaults to \textbf{\texttt{http://127.0.0.1:8003}}. \texttt{embed\_model} is \texttt{paraphrase-multilingual-MiniLM-L12-v2} (384 dimensions), the same family the KB uses for dense search. The orchestrator uses an injected embedder when one is provided. Otherwise it posts to \texttt{\{embed\_base\_url\}/v1/embeddings} with httpx and \textbf{\texttt{trust\_env=False}}. When the embed server is unreachable, the result is \texttt{source="fallback"} and \texttt{ambiguous=False}, so the turn continues on the scattered-query check.
+
+Both the knowledge-base client and the guardrails client construct \texttt{httpx.AsyncClient(trust\_env=False)}. On the H200 host the shell exports a corporate Squid proxy. Inheriting \texttt{HTTP\_PROXY} would send \texttt{127.0.0.1:8000}, \texttt{:8003}, and \texttt{:8200} to the proxy, and the turn would hang. The flag is what keeps those localhost calls on the loopback interface. The same pattern is required in the LLM manager; chapter 6 covers the proxy address.
+
+\section{Context packing}\label{context-packing}
+
+\texttt{build\_context.py} caps retrieval evidence at \textbf{\texttt{MAX\_CHUNKS} = 20} and the packed context at \textbf{\texttt{MAX\_CONTEXT} = 9000}. Lexical matches are preferred when the list must be truncated. Twenty chunks inside that budget, plus the trimmed entity JSON, are what the 8192-token Gemma window is sized to accept together with the answer. History compaction stays available when the running transcript would crowd that budget: older turns collapse to a rolling summary and recent turns stay verbatim, and earlier refusals that reported no evidence are stripped so a later retrieval stands on its own.
+
+\section{Tooling}\label{tooling}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.5000}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.5000}}@{}}
+\toprule\noalign{}
+Component & Role in the orchestrator \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+LangGraph & Stateful graph, conditional edges, \texttt{MemorySaver} checkpoint \\
+FastAPI & OpenAI-shaped HTTP API, health and ready, Studio entry \\
+httpx & Async clients to KB, guardrails, and \texttt{:8003} (\texttt{trust\_env=False}) \\
+Langfuse & Trace export; JSONL collector on \texttt{:3000} is the fallback \\
+\end{longtable}
+
+\section{Bench note}\label{bench-note}
+
+The 41-turn multi-agent bench dated \textbf{2026-10-14} (after the 2026-10-12 baseline) reports retrieval hit \textbf{0.780} (was 0.537), ambiguity resolution \textbf{1.000} (was 0.854), sticky persistence \textbf{0.683} (was 0.610), and p50 latency \textbf{4872 ms} (was 8006 ms, about 39\% lower). Generation through guardrails accounts for most of the wall time. On that after-cut, cheque p50 is about 10.3 s with hit 0.667. These figures are observed artifacts from \texttt{bench\_report\_latest}. They are the comparison point when changing sticky decay, the chunk cap, or the ambiguity route flag.
+
+\section{Code map}\label{code-map}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.5000}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.5000}}@{}}
+\toprule\noalign{}
+Concern & Path \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Graph wiring and edges & \texttt{orchestrator/graph.py} \\
+\texttt{RAGState}, sticky versus applied & \texttt{orchestrator/state.py} \\
+Thresholds, boosts, budget & \texttt{orchestrator/config.py} \\
+\texttt{AmbiguityResult} & \texttt{orchestrator/subspaces.py} \\
+Retrieve, sticky decay, trim, fallback & \texttt{orchestrator/nodes/retrieve.py} \\
+Prompt pack & \texttt{orchestrator/nodes/build\_context.py} \\
+KB \texttt{POST\ /search/api} client & \texttt{orchestrator/clients/knowledgebase.py} \\
+Guardrails client & \texttt{orchestrator/clients/guardrails.py} \\
+Chat API and sticky inject & \texttt{orchestrator/api.py} \\
+\end{longtable}

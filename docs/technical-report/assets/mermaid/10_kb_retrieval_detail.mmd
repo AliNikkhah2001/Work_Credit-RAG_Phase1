@@ -1,0 +1,11 @@
+flowchart TD
+  Q[Query] --> NORM[Persian_normalize]
+  NORM --> BEAM[Synonym_beam]
+  BEAM --> BM25[BM25_tantivy]
+  BEAM --> DENSE[Dense_MiniLM_HNSW]
+  BM25 --> RRF[RRF_k60]
+  DENSE --> RRF
+  RRF --> CE[BGE_m3_rerank]
+  CE --> FINAL[final_results]
+  BEAM --> ENT[Entity_inject_step8]
+  ENT --> FINAL

@@ -1,0 +1,15 @@
+flowchart TD
+  Start((Start)) --> VI[validate_input]
+  VI -->|blocked| Rf[format_refusal]
+  VI -->|allowed| Cl[classify]
+  Cl -->|greeting_or_specification| Fr[format_response]
+  Cl -->|question_hybrid_on| Hc[hybrid_classify]
+  Cl -->|question_hybrid_off| Ret[retrieve]
+  Hc --> Ret
+  Ret -->|clarify| Gc[generate_clarification]
+  Ret -->|continue| Bc[build_context]
+  Bc --> Gg[guarded_generate]
+  Gg --> Fr
+  Rf --> EndNode((End))
+  Fr --> EndNode
+  Gc --> EndNode

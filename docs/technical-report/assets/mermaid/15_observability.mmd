@@ -1,0 +1,8 @@
+flowchart LR
+  Orch[Orchestrator] -->|stage_timing_ms_AuditTrail| ObsDB[observability_db]
+  Orch -->|trace_create_spans| Langfuse[Langfuse_v2_3001]
+  Orch -->|fallback| JSONL[langfuse_traces_jsonl]
+  KB[KB_search] -->|stage_ms| RedisCache[Redis_TTL_600s]
+  KB -->|stage_ms| SearchUI[KB_Search_UI]
+  Guard[Guardrails] -->|guard_events_jsonl| GDash[Guard_dashboard]
+  Manager[Manager_9000] -->|manager_db_metrics| Prom[Prometheus_Grafana]

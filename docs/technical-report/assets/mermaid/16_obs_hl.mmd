@@ -1,0 +1,4 @@
+flowchart LR
+  Services[RAG_services] --> Traces[Traces_and_timings]
+  Traces --> Stores[SQLite_JSONL_Langfuse]
+  Stores --> Dashboards[Dashboards]

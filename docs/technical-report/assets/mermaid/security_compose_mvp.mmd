@@ -1,0 +1,22 @@
+flowchart TB
+  subgraph PUB["Published host ports"]
+    UI["0.0.0.0:13000 to WebUI :8080"]
+    LF["0.0.0.0:3000 Langfuse"]
+  end
+  subgraph INT["Docker DNS expose only"]
+    ORCH["orchestrator :8100"]
+    KB["kb-manager :8000"]
+    GD["guardrails :8200"]
+    RD["redis :6379"]
+    PG["postgres :5432"]
+  end
+  subgraph HOST["Host process outside compose"]
+    GEM["llama-server 127.0.0.1:18000"]
+  end
+  UI --> ORCH
+  LF -.-> ORCH
+  ORCH --> KB
+  ORCH --> GD
+  KB --> PG
+  KB --> RD
+  GD -->|"host.docker.internal"| GEM

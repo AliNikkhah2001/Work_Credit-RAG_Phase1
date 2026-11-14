@@ -1,0 +1,19 @@
+sequenceDiagram
+  autonumber
+  participant U as User
+  participant W as WebUI
+  participant O as Orchestrator
+  participant K as Knowledgebase
+  participant G as Guardrails
+  participant M as Model
+  U->>W: Ask Persian question
+  W->>O: POST /v1/chat/completions
+  O->>G: Input rails check
+  G-->>O: allow or refuse
+  O->>K: Hybrid search
+  K-->>O: chunks plus entities
+  O->>G: Guarded generate
+  G->>M: Upstream chat
+  M-->>G: completion
+  G-->>O: output rails
+  O-->>W: answer with citations

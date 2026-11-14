@@ -1,0 +1,10 @@
+flowchart TB
+  subgraph HOST["H200_host_processes"]
+    MG[Manager_9000]
+    LLM[Model_backends]
+  end
+  subgraph DOCKER["Docker_data_plane"]
+    DP[Redis_Qdrant_pgvector_WebUI]
+  end
+  Clients[Clients] --> MG --> LLM
+  Clients --> DP

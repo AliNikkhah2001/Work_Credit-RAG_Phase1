@@ -1,0 +1,35 @@
+flowchart TB
+  subgraph Client["Client layer"]
+    Browser[Browser]
+    WebUI[OpenWebUI_13000]
+  end
+  subgraph Orch["Orchestration_8100"]
+    API[api_create_app]
+    GRAPH[rag_graph_MemorySaver]
+    VI[validate_input]
+    CL[classify]
+    RET[retrieve]
+    BC[build_context]
+    GG[guarded_generate]
+    FR[format_response]
+  end
+  subgraph KB["Knowledgebase_8000"]
+    KBAPI[search_api]
+    SEARCH[BM25_Dense_RRF_Rerank]
+  end
+  subgraph GR["Guardrails_8200"]
+    GRAPI[rails_check_and_chat]
+    JUDGE[signals_plus_LLM_judge]
+  end
+  subgraph LLM["Generation"]
+    Gemma[Gemma_18000_or_Manager_9000]
+  end
+  Browser --> WebUI --> API --> GRAPH
+  GRAPH --> VI
+  VI -->|blocked| FR
+  VI -->|allowed| CL
+  CL -->|greeting_or_spec| FR
+  CL -->|question| RET
+  RET --> KBAPI --> SEARCH
+  RET --> BC --> GG --> GRAPI --> JUDGE --> Gemma
+  GG --> FR

@@ -1,0 +1,5 @@
+flowchart TD
+  Users[Users] --> Nginx[Nginx]
+  Nginx --> Gunicorn[Gunicorn_workers]
+  Gunicorn --> App[FastAPI_apps]
+  App --> Triton[Triton_on_2xH200]

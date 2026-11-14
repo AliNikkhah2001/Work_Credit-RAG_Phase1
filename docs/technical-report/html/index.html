@@ -1,0 +1,2412 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Iranian Credit Scoring Company (ICS)" />
+  <meta name="dcterms.date" content="2026-11-09" />
+  <title>Work Credit RAG Technical Report</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="style.css" />
+  
+  
+  
+  
+  
+  
+  
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">Work Credit RAG Technical Report</h1>
+<p class="author">Iranian Credit Scoring Company (ICS)</p>
+<p class="date">2026-11-09</p>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#work-credit-rag-technical-documentation-report"
+id="toc-work-credit-rag-technical-documentation-report">Work Credit RAG
+— Technical Documentation Report</a>
+<ul>
+<li><a href="#document-purpose" id="toc-document-purpose">Document
+purpose</a></li>
+<li><a href="#scope-and-version-pins"
+id="toc-scope-and-version-pins">Scope and version pins</a></li>
+<li><a href="#audience" id="toc-audience">Audience</a></li>
+</ul></li>
+<li><a href="#executive-summary-and-module-overview"
+id="toc-executive-summary-and-module-overview">Executive summary and
+module overview</a>
+<ul>
+<li><a href="#section-summary" id="toc-section-summary">Section
+summary</a></li>
+<li><a href="#why-the-platform-exists"
+id="toc-why-the-platform-exists">Why the platform exists</a></li>
+<li><a href="#hosts-in-production-practice"
+id="toc-hosts-in-production-practice">Hosts in production
+practice</a></li>
+<li><a href="#module-ownership" id="toc-module-ownership">Module
+ownership</a></li>
+<li><a href="#design-principles-inferred-from-code"
+id="toc-design-principles-inferred-from-code">Design principles inferred
+from code</a></li>
+</ul></li>
+<li><a href="#system-architecture-and-request-to-response"
+id="toc-system-architecture-and-request-to-response">System architecture
+and request-to-response</a>
+<ul>
+<li><a href="#section-summary-1" id="toc-section-summary-1">Section
+summary</a></li>
+<li><a href="#high-level-system-overview"
+id="toc-high-level-system-overview">High-level system overview</a></li>
+<li><a href="#detailed-system-overview"
+id="toc-detailed-system-overview">Detailed system overview</a></li>
+<li><a href="#request-flow-high-level"
+id="toc-request-flow-high-level">Request flow (high level)</a></li>
+<li><a href="#request-flow-detailed"
+id="toc-request-flow-detailed">Request flow (detailed)</a></li>
+<li><a href="#end-to-end-walkthrough-with-code-anchors"
+id="toc-end-to-end-walkthrough-with-code-anchors">End-to-end walkthrough
+with code anchors</a></li>
+<li><a href="#orchestrator-graph-figures"
+id="toc-orchestrator-graph-figures">Orchestrator graph figures</a></li>
+<li><a href="#knowledge-base-deep-dive"
+id="toc-knowledge-base-deep-dive">Knowledge Base deep dive</a>
+<ul>
+<li><a href="#purpose-in-the-platform"
+id="toc-purpose-in-the-platform">Purpose in the platform</a></li>
+<li><a href="#ingest-pipeline" id="toc-ingest-pipeline">Ingest
+pipeline</a></li>
+<li><a href="#retrieval-pipeline" id="toc-retrieval-pipeline">Retrieval
+pipeline</a></li>
+<li><a href="#observed-quality-and-latency"
+id="toc-observed-quality-and-latency">Observed quality and
+latency</a></li>
+<li><a href="#tooling" id="toc-tooling">Tooling</a></li>
+<li><a href="#known-tip-gaps" id="toc-known-tip-gaps">Known tip
+gaps</a></li>
+</ul></li>
+<li><a href="#deep-dive-orchestrator"
+id="toc-deep-dive-orchestrator">Deep dive: Orchestrator</a>
+<ul>
+<li><a href="#role-in-the-request-path"
+id="toc-role-in-the-request-path">Role in the request path</a></li>
+<li><a href="#langgraph-topology" id="toc-langgraph-topology">LangGraph
+topology</a></li>
+<li><a href="#sticky-subspace-filters-and-evidence"
+id="toc-sticky-subspace-filters-and-evidence">Sticky subspace, filters,
+and evidence</a></li>
+<li><a href="#context-packing-and-compaction"
+id="toc-context-packing-and-compaction">Context packing and
+compaction</a></li>
+<li><a href="#tooling-1" id="toc-tooling-1">Tooling</a></li>
+<li><a href="#bench-note" id="toc-bench-note">Bench note</a></li>
+<li><a href="#code-map" id="toc-code-map">Code map</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#deep-dive-server-setup-model-serving"
+id="toc-deep-dive-server-setup-model-serving">6. Deep Dive: Server Setup
+&amp; Model Serving</a>
+<ul>
+<li><a href="#section-summary-2" id="toc-section-summary-2">Section
+summary</a></li>
+<li><a href="#dual-hosts-vast-mvp-versus-h200-production"
+id="toc-dual-hosts-vast-mvp-versus-h200-production">Dual hosts: Vast MVP
+versus H200 production</a></li>
+<li><a href="#manager-openai-gateway-and-squid-discipline"
+id="toc-manager-openai-gateway-and-squid-discipline">Manager OpenAI
+gateway and Squid discipline</a></li>
+<li><a href="#containerization-and-cutover"
+id="toc-containerization-and-cutover">Containerization and
+cutover</a></li>
+<li><a href="#scaling-million-user-plan-and-measured-decode-throughput"
+id="toc-scaling-million-user-plan-and-measured-decode-throughput">Scaling:
+million-user plan and measured decode throughput</a></li>
+<li><a href="#tooling-2" id="toc-tooling-2">Tooling</a></li>
+</ul></li>
+<li><a href="#deep-dive-guardrails-security"
+id="toc-deep-dive-guardrails-security">Deep Dive: Guardrails &amp;
+Security</a>
+<ul>
+<li><a href="#section-summary-3" id="toc-section-summary-3">Section
+summary</a></li>
+<li><a href="#position-in-the-request-path"
+id="toc-position-in-the-request-path">Position in the request
+path</a></li>
+<li><a href="#after-nemo-signals-judge-fail-closed"
+id="toc-after-nemo-signals-judge-fail-closed">After NeMo: signals,
+judge, fail-closed</a></li>
+<li><a href="#endpoints-and-user-facing-policy"
+id="toc-endpoints-and-user-facing-policy">Endpoints and user-facing
+policy</a></li>
+<li><a href="#upstream-contract-details"
+id="toc-upstream-contract-details">Upstream contract details</a></li>
+<li><a href="#known-gaps" id="toc-known-gaps">Known gaps</a></li>
+<li><a href="#tooling-3" id="toc-tooling-3">Tooling</a></li>
+<li><a href="#logging-telemetry-documentation-latency"
+id="toc-logging-telemetry-documentation-latency">8. Logging, Telemetry,
+Documentation &amp; Latency</a>
+<ul>
+<li><a href="#multi-layer-telemetry-map"
+id="toc-multi-layer-telemetry-map">8.1 Multi-layer telemetry
+map</a></li>
+<li><a href="#knowledge-base-stage_ms-and-redis"
+id="toc-knowledge-base-stage_ms-and-redis">8.2 Knowledge-base
+<code>stage_ms</code> and Redis</a></li>
+<li><a href="#orchestrator-timings-audittrail-and-orch_debug"
+id="toc-orchestrator-timings-audittrail-and-orch_debug">8.3 Orchestrator
+timings, AuditTrail, and <code>ORCH_DEBUG</code></a></li>
+<li><a href="#langfuse-v2-http-and-host-fallbacks"
+id="toc-langfuse-v2-http-and-host-fallbacks">8.4 Langfuse v2 HTTP and
+host fallbacks</a></li>
+<li><a href="#guard-events-manager-metrics-and-retrieval-dlq"
+id="toc-guard-events-manager-metrics-and-retrieval-dlq">8.5 Guard
+events, manager metrics, and retrieval DLQ</a></li>
+<li><a href="#known-gaps-1" id="toc-known-gaps-1">8.6 Known
+gaps</a></li>
+<li><a href="#latency-evidence" id="toc-latency-evidence">8.7 Latency
+evidence</a></li>
+<li><a href="#optimizations-that-moved-the-numbers"
+id="toc-optimizations-that-moved-the-numbers">8.8 Optimizations that
+moved the numbers</a></li>
+<li><a href="#tooling-4" id="toc-tooling-4">8.9 Tooling</a></li>
+<li><a href="#documentation-tooling-note"
+id="toc-documentation-tooling-note">8.10 Documentation tooling
+note</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#benchmarks-and-latency-appendix"
+id="toc-benchmarks-and-latency-appendix">Benchmarks and latency
+appendix</a>
+<ul>
+<li><a href="#section-summary-4" id="toc-section-summary-4">Section
+summary</a></li>
+<li><a href="#knowledge-base-ir-quality"
+id="toc-knowledge-base-ir-quality">Knowledge-base IR quality</a></li>
+<li><a href="#knowledge-base-stage-latency-ms"
+id="toc-knowledge-base-stage-latency-ms">Knowledge-base stage latency
+(ms)</a></li>
+<li><a href="#end-to-end-orchestrator-bench-2026-10-14"
+id="toc-end-to-end-orchestrator-bench-2026-10-14">End-to-end
+orchestrator bench (2026-10-14)</a></li>
+<li><a href="#model-serving-concurrency-h200"
+id="toc-model-serving-concurrency-h200">Model serving concurrency
+(H200)</a></li>
+</ul></li>
+<li><a href="#appendix" id="toc-appendix">Appendix</a>
+<ul>
+<li><a href="#section-summary-5" id="toc-section-summary-5">Section
+summary</a></li>
+<li><a href="#library-and-tooling-index"
+id="toc-library-and-tooling-index">Library and tooling index</a></li>
+<li><a href="#primary-source-map" id="toc-primary-source-map">Primary
+source map</a></li>
+<li><a href="#known-gaps-on-documented-tips"
+id="toc-known-gaps-on-documented-tips">Known gaps on documented
+tips</a></li>
+<li><a href="#build-notes" id="toc-build-notes">Build notes</a></li>
+</ul></li>
+</ul>
+</nav>
+<figure>
+<img src="assets/logo/ics-logo.png" style="width:2.2cm"
+alt="ICS logo" />
+<figcaption aria-hidden="true">ICS logo</figcaption>
+</figure>
+<p><strong>شرکت اعتبارسنجی ایران</strong> — Technical platform
+documentation (English). Classic template; diagrams recreated from
+repository architecture sources and validated against code.</p>
+<h1 id="work-credit-rag-technical-documentation-report">Work Credit RAG
+— Technical Documentation Report</h1>
+<p><strong>Organization:</strong> شرکت اعتبارسنجی ایران (Iranian Credit
+Scoring Company)<br />
+<strong>Platform:</strong> Work Credit RAG Phase 1<br />
+<strong>Document date:</strong> 2026-11-09<br />
+<strong>Language:</strong> English (technical)<br />
+<strong>Repository:</strong>
+<code>AliNikkhah2001/Work_Credit-RAG_Phase1</code> (umbrella) with
+submodules Work_RAG-KB, Work_RAG-Orchestrator, Work_RAG-Guardrails,
+Work_RAG-Server-Setup, ICS_ChatBot_agent-state</p>
+<h2 id="document-purpose">Document purpose</h2>
+<p>This report explains how the self-hosted Persian conversational RAG
+platform is structured, how a user request becomes a grounded answer,
+and how each major module contributes to retrieval, orchestration, model
+serving, safety, and observability. The prose is synthesized from the
+cloned codebase and measured artifacts; it is not a paste of repository
+READMEs.</p>
+<h2 id="scope-and-version-pins">Scope and version pins</h2>
+<p>The narrative reflects the November 2026 laptop clone of
+<code>main</code> tips (parent <code>9688549</code>, KB
+<code>1af9772</code>, orchestrator <code>a3fb01e</code>, guardrails
+<code>bad5c84</code>, server-setup <code>f737c3d</code>). Known tip
+gaps—such as KB dense encode via <code>hasattr(dense, "model")</code>
+and a missing <code>/search/supplement</code> route—are called out where
+they affect behavior.</p>
+<h2 id="audience">Audience</h2>
+<p>Platform engineers, MLOps operators, and technical reviewers who need
+an end-to-end map before changing a submodule or deploying on Vast.ai /
+H200.</p>
+<hr />
+<h1 id="executive-summary-and-module-overview">Executive summary and
+module overview</h1>
+<h2 id="section-summary">Section summary</h2>
+<p>Work Credit RAG is a <em>Persian-first</em>, self-hosted
+conversational system that answers credit-reporting questions using
+hybrid retrieval over an ICS knowledge base, a LangGraph orchestrator,
+and a fail-closed guardrails gateway in front of Gemma. Production code
+lives in Git submodules; the umbrella repository owns pins, contracts,
+evaluation, and host startup scripts.</p>
+<h2 id="why-the-platform-exists">Why the platform exists</h2>
+<p>Customers of <strong>شرکت اعتبارسنجی ایران</strong> ask about credit
+reports, cheque history, facilities for natural and legal persons, and
+related company knowledge. The product goal is to answer in natural
+Persian, stay inside policy, cite retrieved evidence, and run on owned
+GPU hosts without depending on a public LLM API for generation.</p>
+<p>The MVP path is deliberately narrow: Open WebUI (<code>:13000</code>)
+talks to the orchestrator OpenAI-compatible API (<code>:8100</code>).
+The orchestrator validates input through guardrails
+(<code>:8200</code>), retrieves from the knowledge base
+(<code>:8000</code>), builds a bounded prompt, generates through the
+same guardrails service against Gemma (<code>:18000</code> on Vast, or
+Manager <code>:9000</code> on H200), and returns citations. Traces land
+in Langfuse (<code>:3001</code>) or a JSONL fallback collector
+(<code>:3000</code>).</p>
+<h2 id="hosts-in-production-practice">Hosts in production practice</h2>
+<p>Two deployment shapes coexist. On <strong>Vast.ai</strong>
+(documented RTX 3090 instance), the stack runs as host
+virtualenvs—Docker is unavailable in the unprivileged container—and
+Gemma is a local <code>llama-server</code> bound to loopback
+<code>:18000</code>. On the <strong>H200</strong> lab host, an LLM
+inference manager on <code>:9000</code> load-balances llama.cpp backends
+and an optional TensorRT-LLM champion, while Redis, pgvector, and WebUI
+often sit in a Docker data plane. Both shapes share the same application
+modules; only process supervision and model gateway differ.</p>
+<h2 id="module-ownership">Module ownership</h2>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Module</th>
+<th>Path / repo</th>
+<th>Port</th>
+<th>Responsibility</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Knowledge base</td>
+<td><code>components/knowledgebase</code> → Work_RAG-KB</td>
+<td>8000</td>
+<td>Ingest, hybrid search, EntityList supplements, KB UI</td>
+</tr>
+<tr class="even">
+<td>Orchestrator</td>
+<td><code>components/orchestrator</code> → Work_RAG-Orchestrator</td>
+<td>8100</td>
+<td>LangGraph RAG graph, chat API, sticky subspaces</td>
+</tr>
+<tr class="odd">
+<td>Guardrails</td>
+<td><code>components/guardrails</code> → Work_RAG-Guardrails</td>
+<td>8200</td>
+<td>Input/output rails, guarded generate</td>
+</tr>
+<tr class="even">
+<td>Server setup</td>
+<td><code>components/server-setup</code> → Work_RAG-Server-Setup</td>
+<td>9000 (+ backends)</td>
+<td>Model lifecycle, embeds, H200 infra</td>
+</tr>
+<tr class="odd">
+<td>Tracing</td>
+<td><code>components/tracing</code> (parent)</td>
+<td>3000</td>
+<td>Fallback collector, observability DB/UI</td>
+</tr>
+<tr class="even">
+<td>Parent ops</td>
+<td><code>deploy/</code>, <code>eval/</code>, <code>contracts/</code>,
+<code>api/</code></td>
+<td>—</td>
+<td>Startup, E2E, schemas, thin entry wrappers</td>
+</tr>
+</tbody>
+</table>
+<p>Thin wrappers under <code>api/</code> only adjust
+<code>PYTHONPATH</code> and re-export factory apps.
+<strong>Implementation changes belong in the owning submodule</strong>,
+then the parent gitlink advances.</p>
+<h2 id="design-principles-inferred-from-code">Design principles inferred
+from code</h2>
+<ol type="1">
+<li><strong>Deterministic routing before generation</strong> — greetings
+and subspace specifications short-circuit; questions retrieve.<br />
+</li>
+<li><strong>Fail closed on safety errors</strong> — timeouts and empty
+judge outcomes refuse rather than pass through.<br />
+</li>
+<li><strong>Context is a hard budget</strong> — Triton/llama windows of
+8192 tokens force chunk and entity trimming.<br />
+</li>
+<li><strong>Localhost HTTP bypasses corporate proxy</strong> —
+<code>httpx</code> uses <code>trust_env=False</code> throughout.<br />
+</li>
+<li><strong>Observability is multi-store</strong> — timings in
+responses, Langfuse spans, SQLite/JSONL for dashboards.</li>
+</ol>
+<hr />
+<h1 id="system-architecture-and-request-to-response">System architecture
+and request-to-response</h1>
+<h2 id="section-summary-1">Section summary</h2>
+<p>The architecture separates <em>retrieval</em>, <em>policy</em>,
+<em>orchestration</em>, and <em>generation</em> into independently
+deployable services. High-level diagrams show the black-box flow a new
+engineer needs; detailed diagrams map those boxes onto concrete modules
+and ports. The request walkthrough below follows one chat completion
+from WebUI to citations with references into the orchestrator graph and
+clients.</p>
+<h2 id="high-level-system-overview">High-level system overview</h2>
+<figure>
+<img src="assets/diagrams/01_system_overview_hl.png"
+alt="High-level system overview" />
+<figcaption aria-hidden="true">High-level system overview</figcaption>
+</figure>
+<p><strong>Figure 1. High-level system overview.</strong> The browser
+reaches Open WebUI, which forwards OpenAI-shaped chat calls to the
+orchestrator. The orchestrator coordinates the knowledge base for
+evidence and guardrails for both input adjudication and generation.
+Observability collectors sit beside the path rather than on the critical
+user loop. This view intentionally hides internal LangGraph node names
+so executives and new team members can see ownership boundaries without
+reading Python modules.</p>
+<h2 id="detailed-system-overview">Detailed system overview</h2>
+<figure>
+<img src="assets/diagrams/02_system_overview_detail.png"
+alt="Detailed system overview" />
+<figcaption aria-hidden="true">Detailed system overview</figcaption>
+</figure>
+<p><strong>Figure 2. Detailed system overview.</strong> Expanding the
+orchestrator box reveals the LangGraph stages
+<code>validate_input</code>, <code>classify</code>,
+<code>retrieve</code>, <code>build_context</code>,
+<code>guarded_generate</code>, and <code>format_response</code> as
+implemented in
+<code>components/orchestrator/src/work_rag_orchestrator/graph.py</code>.
+The knowledge base exposes <code>POST /search/api</code> with BM25,
+dense retrieval, RRF fusion, and cross-encoder rerank. Guardrails
+exposes <code>POST /v1/rails/check</code> and
+<code>POST /v1/chat/completions</code>, proxying upstream Gemma when
+generation is allowed. This diagram is a recreation of the parent README
+“Variant A” technical overview, redrawn for this report’s neutral
+template.</p>
+<h2 id="request-flow-high-level">Request flow (high level)</h2>
+<figure>
+<img src="assets/diagrams/03_request_flow_hl.png"
+alt="High-level request sequence" />
+<figcaption aria-hidden="true">High-level request sequence</figcaption>
+</figure>
+<p><strong>Figure 3. Sticky filtered RAG — high-level sequence.</strong>
+A user question becomes a chat completion. Input rails may refuse early.
+Otherwise hybrid search returns chunks (and optionally entity lists).
+Guarded generation calls the model and returns through output rails.
+Citations are assembled before the answer reaches WebUI. Sticky subspace
+and filter-path details are omitted here; they appear in the detailed
+sequence and orchestrator deep dive.</p>
+<h2 id="request-flow-detailed">Request flow (detailed)</h2>
+<figure>
+<img src="assets/diagrams/04_request_flow_detail.png"
+alt="Detailed request sequence" />
+<figcaption aria-hidden="true">Detailed request sequence</figcaption>
+</figure>
+<p><strong>Figure 4. Sticky filtered RAG — detailed sequence.</strong>
+After <code>start_trace</code>, the orchestrator calls guardrails input
+check. Classification routes greetings and specifications away from
+retrieval. Questions call <code>KnowledgebaseClient.retrieve</code>
+(<code>clients/knowledgebase.py</code>) which posts to
+<code>/search/api</code> with optional <code>filter_path</code> and
+<code>keyword_boost</code>. When entity keywords match,
+<code>supplementary_search</code> probes <code>/search/supplement</code>
+(desired tool path). <code>should_clarify</code> in
+<code>graph.py</code> short-circuits clarification when
+<code>supplemental</code> or <code>injected_entities</code> are present.
+Continuing turns run <code>build_context</code> (chunk and entity
+budgets), then guarded generate against Gemma, then
+<code>format_response</code> with evidence thresholds from
+<code>config.py</code>. Trace updates and observability persistence
+close the loop for non-streaming responses.</p>
+<h2 id="end-to-end-walkthrough-with-code-anchors">End-to-end walkthrough
+with code anchors</h2>
+<ol type="1">
+<li><strong>Ingress</strong> — WebUI uses
+<code>OPENAI_API_BASE_URL=http://127.0.0.1:8100/v1</code>. Sticky
+threads rely on <code>X-Request-ID</code> / <code>request_id</code>
+(required in LangGraph Studio runs).<br />
+</li>
+<li><strong>Validate</strong> — <code>nodes/validate_input.py</code>
+calls Guardrails <code>POST /v1/rails/check</code> with
+<code>stage=input</code>. Blocks set <code>blocked</code> and route to
+<code>format_refusal</code>.<br />
+</li>
+<li><strong>Classify</strong> — <code>nodes/classify.py</code> labels
+greeting, specification, or question. Specifications lock subspace
+language for later <code>filter_path</code>.<br />
+</li>
+<li><strong>Retrieve</strong> — <code>nodes/retrieve.py</code> may
+rewrite coreference, apply sticky subspace decay, search KB, merge
+RRF/CE sets, fire entity tools, and evaluate evidence scores. Low
+evidence can refuse or broaden.<br />
+</li>
+<li><strong>Clarify or build</strong> — Ambiguous multi-subspace queries
+may ask a clarifying question via <code>generate_clarification</code>.
+Otherwise <code>build_context.py</code> assembles Persian system
+instructions, up to 20 chunks (<code>MAX_CHUNKS</code>), history
+(possibly compacted), and trimmed entity JSON.<br />
+</li>
+<li><strong>Generate</strong> — <code>guarded_generate</code> never
+talks to Gemma directly; Guardrails proxies upstream with cleanup of
+leaked special tokens.<br />
+</li>
+<li><strong>Format</strong> — Citations and finish reasons are shaped
+for the OpenAI response schema; audit/timing attach for non-stream
+responses.</li>
+</ol>
+<h2 id="orchestrator-graph-figures">Orchestrator graph figures</h2>
+<figure>
+<img src="assets/diagrams/05_orch_graph_hl.png"
+alt="Orchestrator graph high level" />
+<figcaption aria-hidden="true">Orchestrator graph high
+level</figcaption>
+</figure>
+<p><strong>Figure 5. Orchestrator graph — high level.</strong> Validate,
+classify, retrieve, optional clarify, generate, and format form a single
+directed path with refusal and clarification exits. This black-box view
+matches how operators reason about latency: most wall time sits in
+retrieve-plus-generate, not in classify.</p>
+<figure>
+<img src="assets/diagrams/06_orch_graph_detail.png"
+alt="Orchestrator graph detailed" />
+<figcaption aria-hidden="true">Orchestrator graph detailed</figcaption>
+</figure>
+<p><strong>Figure 6. Orchestrator graph — detailed.</strong> Node names
+match <code>create_graph()</code> in <code>graph.py</code>. Conditional
+edges <code>should_continue_after_validation</code>,
+<code>should_route_after_classify</code>, and
+<code>should_clarify</code> encode policy that must stay aligned with
+product behavior (especially entity short-circuit of clarification).</p>
+<hr />
+<h2 id="knowledge-base-deep-dive">Knowledge Base deep dive</h2>
+<p><strong>Section summary.</strong> The Work Credit RAG Knowledge Base
+(<code>components/knowledgebase</code>, kb-manager) is the retrieval
+substrate for Persian credit-scoring Q&amp;A: it turns heterogeneous
+source files into versioned chunks and entity supplements, then answers
+hybrid search requests with measurable stage latency. This section walks
+the ingest path (parsers → Persian preprocess → semantic chunking →
+<code>EntityList</code>), the live retrieval stack (tantivy BM25 +
+MiniLM dense + RRF <em>k</em>=60 + BGE-m3 rerank), Redis caching,
+subspace filters, observed IR quality, and the tip gaps that still
+affect orchestrator integration.</p>
+<h3 id="purpose-in-the-platform">Purpose in the platform</h3>
+<p>The KB is neither a chat model nor a policy layer. Its contract is
+stricter: <em>given a Persian (or mixed) query and optional subspace
+hint, return ranked chunk evidence with timing and citation
+metadata</em>. The orchestrator (<code>:8100</code>) calls
+<code>POST /search/api</code> after input rails;
+<code>build_context</code> then packs hits for guarded generation. The
+service listens on <strong><code>:8000</code></strong>, persists via
+SQLAlchemy into Postgres + <strong>pgvector</strong> (SQLite fallback),
+and exposes FastAPI routes for search, pipeline, and metrics.
+Correctness is IR-first—Hit@<em>k</em>, MRR, nDCG—plus <em>stage_ms</em>
+so regressions surface as a quality cliff or a named-stage latency
+spike.</p>
+<h3 id="ingest-pipeline">Ingest pipeline</h3>
+<figure>
+<img src="assets/diagrams/07_kb_ingest_hl.png"
+alt="High-level KB ingest" />
+<figcaption aria-hidden="true">High-level KB ingest</figcaption>
+</figure>
+<p><em>Figure — High-level ingest.</em> Source trees under
+<code>kb-source</code> enter one pipeline orchestrator that fans into
+durable stores: document/chunk tables (with dense embeddings) and a
+parallel <code>EntityList</code> table for structured supplements that
+must not be flattened into ordinary prose chunks. Ingest is a write-path
+concern separate from hybrid read; rebuilds or incremental updates
+produce a coherent snapshot for search consumers.</p>
+<p>Coordination lives in
+<code>components/knowledgebase/kb-manager/kb_manager/pipeline/orchestrator.py</code>.
+<code>PipelineOrchestrator</code> selects a parser by extension
+(<code>parsers/registry</code>), runs <code>PreprocessingPipeline</code>
+for Persian hygiene (digit/character normalization, punctuation
+cleanup), then chunks with <code>SemanticChunker</code> and embeds via
+the sentence-transformer embedder. Folder hierarchy under
+<code>kb-source</code> becomes <code>domain</code> /
+<code>category</code> metadata—the later substrate for
+<code>filter_path</code> and sticky subspaces.</p>
+<figure>
+<img src="assets/diagrams/08_kb_ingest_detail.png"
+alt="Detailed KB ingest" />
+<figcaption aria-hidden="true">Detailed KB ingest</figcaption>
+</figure>
+<p><em>Figure — Ingest detail.</em> The per-file loop is parse →
+preprocess → content-hash skip/update → semantic chunk → embed → store,
+with an early branch for supplementary Excel lists. Annex/list paths
+bypass normal chunking into <code>EntityList</code> rows;
+synonym/glossary annexes feed BM25 synonym resources instead of
+polluting the chunk corpus. Embedder wiring on that branch fills
+<code>description_embedding</code> for semantic routing—if the
+orchestrator is built <em>without</em> an embedder, those vectors stay
+empty and entity injection silently degrades.</p>
+<p><code>SemanticChunker</code>
+(<code>kb_manager/chunker/semantic.py</code>) prefers meaning-preserving
+units: tabular schemas become row-aware chunks with Persian field
+labels; narrative docs split on structure and normalized question text.
+Near-duplicate normalized questions are deduped so BM25 is not rewarded
+for FAQ clones.</p>
+<h4 id="entitylist-model">EntityList model</h4>
+<p>Structured supplements are first-class in
+<code>components/knowledgebase/kb-manager/kb_manager/models/database.py</code>:</p>
+<ul>
+<li><code>EntityList.list_name</code> — human title used as the
+retrieval key surface<br />
+</li>
+<li><code>description</code> / <code>description_embedding</code> —
+short Persian description plus JSON embedding for cosine matching<br />
+</li>
+<li><code>content_json</code> — sheet/row payload kept intact for later
+injection into context</li>
+</ul>
+<p>This design keeps bank-name tables, code maps, and similar annexes
+<em>queryable as units</em> instead of scattering cells across MiniLM
+space where short keys underperform.</p>
+<h3 id="retrieval-pipeline">Retrieval pipeline</h3>
+<figure>
+<img src="assets/diagrams/09_kb_retrieval_hl.png"
+alt="High-level KB retrieval" />
+<figcaption aria-hidden="true">High-level KB retrieval</figcaption>
+</figure>
+<p><em>Figure — High-level retrieval.</em> A request hits Redis first
+(keyed on normalized query, <code>top_k</code>, optional keyword boost,
+and <code>filter_path</code>). Hits short-circuit the heavy path; misses
+run hybrid retrieve and write back with TTL <strong>600 s</strong>. The
+coarse view explains why warm production traffic can look far faster
+than a cold micro-benchmark even when the ranker code path is
+unchanged.</p>
+<p>The authoritative implementation is
+<code>components/knowledgebase/kb-manager/kb_manager/web/routes/search.py</code>.
+<code>search_knowledge_base</code> builds (or reuses) in-memory indexes
+and runs:</p>
+<ol type="1">
+<li><strong>Sparse leg</strong> — Rust <strong>tantivy</strong> BM25
+(<code>tantivy_bm25.py</code>), Persian-aware tokenization with
+character 3-grams so short keyword queries still overlap.<br />
+</li>
+<li><strong>Dense leg</strong> — <code>DenseSemanticIndex</code> in
+<code>dense.py</code> over
+<strong>paraphrase-multilingual-MiniLM-L12-v2</strong> (384-d), with
+vectors served from pgvector HNSW when configured. Encoding goes through
+<code>_encode</code> / <code>_ensure_model</code>; the private
+<code>_model</code> is not a public attribute.<br />
+</li>
+<li><strong>Optional HyDE</strong> — when enabled, an extra dense leg
+contributes another ranked list.<br />
+</li>
+<li><strong>Fusion</strong> — Reciprocal Rank Fusion with constant
+<strong><em>k</em> = 60</strong>
+(<code>rrf_score = 1 / (k + rank + 1)</code>), merging sparse and dense
+ranks into a hybrid candidate pool.<br />
+</li>
+<li><strong>Rerank</strong> — cross-encoder
+<strong><code>BAAI/bge-reranker-v2-m3</code></strong> over a large
+candidate pool (env <code>KB_RERANKER_TOP_K</code>, default 100), with
+optional RRF↔︎rerank score interpolation and BM25-leg guards so
+dense-only dominance cannot bury a strong keyword hit.</li>
+</ol>
+<figure>
+<img src="assets/diagrams/10_kb_retrieval_detail.png"
+alt="Detailed KB retrieval" />
+<figcaption aria-hidden="true">Detailed KB retrieval</figcaption>
+</figure>
+<p><em>Figure — Retrieval detail.</em> Stages that populate
+<code>SearchSteps.stage_ms</code> are named explicitly:
+<code>bm25</code>, <code>dense</code>, <code>hyde</code>,
+<code>rrf</code>, <code>rerank</code>, <code>build_context</code>, and
+<code>total</code>. The same timings feed
+<code>metrics.record_stage_ms</code>, so a 20 ms regression can be
+blamed on rerank GPU contention versus a BM25 rebuild.
+<code>filter_path</code> prunes <code>chunk_data</code> before ranking
+for a subspace token or slash-separated path, matching ingest
+folder-hierarchy tags—how sticky product/domain subspaces work without
+re-embedding the query.</p>
+<h4 id="redis-cache-and-filters">Redis cache and filters</h4>
+<p><code>KB_REDIS_TTL</code> defaults to <strong>600</strong> seconds.
+Keys are SHA-256 digests of the normalized query plus
+<code>top_k</code>, keyword boost, and <code>filter_path</code>, so
+subspace answers do not leak across domains. If Redis is down, an
+in-process memory cache with the same TTL keeps single-worker use
+viable; production still prefers Redis for shared warm results across
+workers.</p>
+<h3 id="observed-quality-and-latency">Observed quality and latency</h3>
+<p>Benchmark artifacts under kb-manager report strong hybrid quality on
+the frozen IR set (<code>data/ir_metrics.json</code>):</p>
+<table>
+<colgroup>
+<col style="width: 30%" />
+<col style="width: 40%" />
+<col style="width: 30%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Metric</th>
+<th style="text-align: right;">Value</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Hit@5</td>
+<td style="text-align: right;">0.9083</td>
+<td><code>ir_metrics.json</code></td>
+</tr>
+<tr class="even">
+<td>MRR</td>
+<td style="text-align: right;">0.8411</td>
+<td><code>ir_metrics.json</code></td>
+</tr>
+<tr class="odd">
+<td>nDCG@5</td>
+<td style="text-align: right;">0.8567</td>
+<td><code>ir_metrics.json</code></td>
+</tr>
+<tr class="even">
+<td>Training Hit@5</td>
+<td style="text-align: right;">0.9306</td>
+<td><code>artifacts/retrieval_training/report_metrics</code></td>
+</tr>
+<tr class="odd">
+<td>Tuned total latency</td>
+<td style="text-align: right;">39.6 ms</td>
+<td>post-tune stage sum (bm25 2.6 + dense 13.5 + rerank 22.0)</td>
+</tr>
+<tr class="even">
+<td>README warm reference</td>
+<td style="text-align: right;">~55 ms</td>
+<td>published warm end-to-end on RAM-first stack</td>
+</tr>
+</tbody>
+</table>
+<figure>
+<img src="assets/plots/latency_breakdown_ram_tantivy.png"
+alt="Latency breakdown after RAM/tantivy tune" />
+<figcaption aria-hidden="true">Latency breakdown after RAM/tantivy
+tune</figcaption>
+</figure>
+<p><em>Figure — Stage latency after RAM-first and tantivy work.</em>
+Warm hybrid search splits into sparse, dense, and rerank. With BM25 in
+an in-RAM tantivy heap and pgvector/HNSW kept hot via
+<code>shared_buffers</code> / prewarm, sparse work collapses to
+<strong>~2.6 ms</strong>, dense sits near <strong>~13.5 ms</strong>, and
+BGE still dominates at <strong>~22.0 ms</strong>—a tuned total near
+<strong>39.6 ms</strong>. The README ~55 ms warm figure is higher
+because it includes request overhead, cache-miss variance, and API
+serialization; the stage sum isolates the ranked-retrieval core.</p>
+<figure>
+<img src="assets/plots/p_latency_v13_1.png"
+alt="Latency distribution v13.1" />
+<figcaption aria-hidden="true">Latency distribution v13.1</figcaption>
+</figure>
+<p><em>Figure — Latency distribution for the v13.1 configuration.</em>
+This plot complements the mean stage breakdown: once indexes and GPU
+models are resident, warm hybrid queries cluster tightly. Tails still
+matter for capacity planning—rerank batching, first GPU warmup, and
+Redis miss storms can stretch individuals even when the median stays in
+the tuned tens of milliseconds. Together the plots separate
+<em>algorithmic</em> cost (RRF is cheap; cross-encoder is not) from
+<em>operational</em> cost (cold start, contention, TTL expiry).</p>
+<h3 id="tooling">Tooling</h3>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Role</th>
+<th>GitHub</th>
+<th>Logo</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>FastAPI</td>
+<td>HTTP API surface for search, pipeline, metrics</td>
+<td>https://github.com/fastapi/fastapi</td>
+<td><img src="assets/logos/fastapi.svg" /></td>
+</tr>
+<tr class="even">
+<td>SQLAlchemy</td>
+<td>ORM / async session layer over Postgres or SQLite</td>
+<td>https://github.com/sqlalchemy/sqlalchemy</td>
+<td><img src="assets/logos/sqlalchemy.svg" /></td>
+</tr>
+<tr class="odd">
+<td>pgvector</td>
+<td>Vector column type + HNSW for dense ANN</td>
+<td>https://github.com/pgvector/pgvector</td>
+<td><img src="assets/logos/pgvector.svg" /></td>
+</tr>
+<tr class="even">
+<td>tantivy-py</td>
+<td>Python bindings for Rust BM25 index used on the sparse leg</td>
+<td>https://github.com/quickwit-oss/tantivy-py</td>
+<td><img src="assets/logos/tantivy.svg" /></td>
+</tr>
+<tr class="odd">
+<td>sentence-transformers</td>
+<td>MiniLM embedder runtime for <code>DenseSemanticIndex</code></td>
+<td>https://github.com/UKPLab/sentence-transformers</td>
+<td><img src="assets/logos/sentence_transformers.svg" /></td>
+</tr>
+<tr class="even">
+<td>BGE (FlagEmbedding)</td>
+<td><code>bge-reranker-v2-m3</code> cross-encoder rerank</td>
+<td>https://github.com/FlagOpen/FlagEmbedding</td>
+<td><img src="assets/logos/bge.svg" /></td>
+</tr>
+<tr class="odd">
+<td>Redis</td>
+<td>Shared result cache, TTL 600 s</td>
+<td>https://github.com/redis/redis</td>
+<td><img src="assets/logos/redis.svg" /></td>
+</tr>
+</tbody>
+</table>
+<h3 id="known-tip-gaps">Known tip gaps</h3>
+<p>Two tip hazards remain and should not be rediscovered during
+orchestrator work.</p>
+<p>First, several <code>search.py</code> sites still gate entity
+encoding with
+<code>hasattr(dense, "model") and dense.model is not None</code>.
+<code>DenseSemanticIndex</code> keeps the SentenceTransformer on
+<strong><code>_model</code></strong>, so the check is <em>always
+false</em>: entity inject becomes a <strong>silent no-op</strong> even
+when dense search is healthy. Use <code>dense._encode([...])</code> (or
+a helper that calls <code>_ensure_model</code>).</p>
+<p>Second, the orchestrator expects
+<strong><code>POST /search/supplement</code></strong>
+(<code>{query, threshold}</code>, default ~0.4) to rank
+<code>EntityList</code> rows by embedding over <em>list_name +
+description</em>. That route is <strong>missing on tip</strong>; only an
+in-<code>/search/api</code> step-8 inject remains, and it is compromised
+by the same <code>hasattr</code> bug. Restoring the route and wiring
+embeddings through <code>_encode</code> is required for reliable entity
+supplements in production chat turns.</p>
+<hr />
+<h2 id="deep-dive-orchestrator">Deep dive: Orchestrator</h2>
+<p><strong>Section summary.</strong> The Work Credit RAG orchestrator is
+the public OpenAI-compatible face of the platform (<code>:8100</code>).
+It does not embed documents or serve Gemma itself: a compiled LangGraph
+(<code>RAGState</code>) validates and classifies each turn, retrieves
+from the knowledge base with sticky subspace memory, optionally
+clarifies ambiguous credit domains, packs a char-budgeted prompt, and
+<em>always</em> generates through Guardrails. Sticky
+<code>filter_path</code>, per-subspace evidence floors, entity-list
+trimming, and history compaction keep Persian multi-turn chats inside
+the 8192-token upstream window while preserving citations for the
+WebUI.</p>
+<h3 id="role-in-the-request-path">Role in the request path</h3>
+<p>Upstream of the graph, Open WebUI (or any OpenAI client) posts to
+FastAPI <code>create_app</code> in
+<code>components/orchestrator/src/work_rag_orchestrator/api.py</code>.
+The API allocates a <code>request_id</code>, restores prior
+<code>sticky_subspace</code> from the LangGraph checkpointer when the
+conversation continues, and invokes the compiled graph. Downstream
+dependencies are only KB (<code>KB_BASE_URL</code>, default
+<code>:8000</code>) and Guardrails (<code>GUARDRAILS_BASE_URL</code>,
+default <code>:8200</code>). Configuration for thresholds, keyword
+boosts, and compaction lives in <code>config.py</code>; the typed carry
+bag for every node is <code>RAGState</code> in
+<code>state.py</code>.</p>
+<p>A deliberate invariant of the user-facing path: <strong>the
+orchestrator never opens an HTTP session to Gemma.</strong>
+<code>guarded_generate</code> posts <code>prompt_messages</code> to
+Guardrails <code>POST /v1/chat/completions</code>; Guardrails alone
+dials the loopback LLM (llama-server or the H200 manager). Input rails
+also run during <code>validate_input</code> via
+<code>/v1/rails/check</code>. Utility compaction may call an internal
+OpenAI-compatible summarizer for rolling history, but that path is
+system-generated and separate from answer generation.</p>
+<h3 id="langgraph-topology">LangGraph topology</h3>
+<p>The deterministic graph is assembled in <code>graph.py</code>
+(<code>create_graph</code> / <code>compile_graph</code> with
+<code>MemorySaver</code> for MVP checkpointing):</p>
+<ol type="1">
+<li><strong><code>validate_input</code></strong> — extract the latest
+user query; call Guardrails input rails. If <code>blocked</code>, route
+to <code>format_refusal</code> and end.</li>
+<li><strong><code>classify</code></strong> — bucket the turn as
+<code>greeting</code>, <code>specification</code>, or
+<code>question</code>. Greetings and product-spec answers short-circuit
+straight to <code>format_response</code> (no retrieval).</li>
+<li><strong>Optional <code>hybrid_classify</code></strong> — when
+<code>hybrid_classifier_enabled</code> is true, an SVM-first classifier
+may escalate low-confidence labels before retrieval; otherwise edges go
+directly to <code>retrieve</code>.</li>
+<li><strong><code>retrieve</code></strong> — rewrite/coreference as
+needed, call KB hybrid search (and optional supplement), apply sticky or
+inferred subspace filters, entity inject, and evidence gates.</li>
+<li><strong><code>should_clarify</code></strong> — conditional edge: if
+supplemental/injected entities exist, <em>continue</em> (dictionary hits
+short-circuit clarification). Else if <code>needs_clarification</code>,
+embedding ambiguity (when routed), or scattered ambiguous queries with
+no <code>applied_subspace</code>, branch to
+<strong><code>generate_clarification</code></strong> and end. Otherwise
+continue.</li>
+<li><strong><code>build_context</code></strong> — number sources,
+compact history, enforce <code>prompt_char_budget</code> and
+<code>MAX_CHUNKS</code>.</li>
+<li><strong><code>guarded_generate</code></strong> — Guardrails chat
+completion → answer (or content-filter refusal).</li>
+<li><strong><code>format_response</code></strong> — OpenAI-shaped
+payload plus RAG citations and audit fields.</li>
+</ol>
+<figure>
+<img src="assets/diagrams/05_orch_graph_hl.png"
+alt="High-level orchestrator LangGraph" />
+<figcaption aria-hidden="true">High-level orchestrator
+LangGraph</figcaption>
+</figure>
+<p><em>Figure — High-level orchestrator graph.</em> This diagram
+collapses the production control flow into the spine a reader needs
+first: validation and classify on the left, retrieval in the center,
+then a clarify-versus-generate fork that reunites at formatting. It maps
+1:1 to node names registered in <code>graph.py</code> and intentionally
+omits sticky-decay bookkeeping, T1 whole-KB fallback retries inside
+<code>retrieve</code>, and Langfuse span wiring so the branching
+contract stays readable.</p>
+<figure>
+<img src="assets/diagrams/06_orch_graph_detail.png"
+alt="Detailed orchestrator LangGraph" />
+<figcaption aria-hidden="true">Detailed orchestrator
+LangGraph</figcaption>
+</figure>
+<p><em>Figure — Detailed orchestrator graph.</em> The expanded view
+shows the refusal path after failed input rails, the
+greeting/specification bypass that skips KB entirely, the optional
+<code>hybrid_classify</code> hop, entity-driven short-circuit of
+clarification, and the strict
+<code>build_context → guarded_generate → format_response</code> chain.
+Code anchors: conditional helpers
+<code>should_continue_after_validation</code>,
+<code>should_route_after_classify</code>, and
+<code>should_clarify</code> in <code>graph.py</code>; retrieval and trim
+logic in <code>nodes/retrieve.py</code>; prompt assembly in
+<code>nodes/build_context.py</code>; KB HTTP in
+<code>clients/knowledgebase.py</code>. Studio exposes the same compiled
+object as <code>graph</code> for LangGraph Studio runs (inputs must
+include <code>request_id</code>).</p>
+<h3 id="sticky-subspace-filters-and-evidence">Sticky subspace, filters,
+and evidence</h3>
+<p>Credit knowledge is partitioned into Persian path labels (cheque
+report, facilities for natural/legal persons, general KB).
+<code>filter_path</code> on the request is authoritative: when present,
+<code>retrieve</code> scopes
+<code>KnowledgebaseClient.retrieve(..., filter_path=...)</code> and maps
+the path back to a subspace label for badges and thresholds. Separately,
+<strong><code>sticky_subspace</code></strong> persists across turns in
+checkpointed state <em>without</em> always forcing this turn’s
+filter—<code>state.py</code> keeps it distinct from
+<code>applied_subspace</code> so the scorer can decide keep versus
+switch. The API layer may re-inject sticky scope for generic follow-ups
+(pronouns, short “بله/بیشتر”) while <code>sticky_decay_turns</code>
+(default 3) drops stale stickiness after consecutive generic turns.</p>
+<p>Per-subspace <strong>evidence floors</strong>
+(<code>config.get_evidence_threshold</code>) refuse hallucination when
+top hybrid/rerank scores are too weak: cheque is lenient
+(<code>0.05</code>), facilities_person <code>0.10</code>,
+facilities_legal and general <code>0.15</code> (global fallback
+<code>evidence_min_score=0.15</code>). Keyword boosts on filtered KB
+calls bias BM25 harder for cheque Q&amp;A (<code>3.5</code>) than
+narrative general prose (<code>2.5</code>). Weak filtered hits can
+trigger a single whole-KB retry (<code>filter_path=None</code>) audited
+as <code>fallback_used</code>.</p>
+<p>Entity dictionaries (reason codes, shareholders, loan titles) arrive
+as <code>injected_entities</code> / <code>supplemental</code>.
+<code>trim_supplemental</code> keeps at most <strong>top-3 lists ×
+4 KB</strong> serialized JSON each, ranks rows by query-token hit count,
+and <strong>doubles weight for code-like tokens</strong> (Latin letters
+or digits such as <code>sbd1</code>) so exact codes outrank rows that
+only share the word «کد». Without this trim, a single reason-code sheet
+can exceed 100 KB and overflow the upstream context.</p>
+<h3 id="context-packing-and-compaction">Context packing and
+compaction</h3>
+<p><code>build_context.py</code> caps retrieval evidence at
+<strong><code>MAX_CHUNKS = 20</code></strong>, prefers lexical matches
+when truncating, and respects
+<strong><code>prompt_char_budget = 20000</code></strong> characters for
+the full generation prompt (system + context + history + question +
+entity reserve). Persian can tokenize near ~3 chars/token; twenty
+thousand characters leave headroom inside an 8192-token Gemma window for
+the answer. When estimated tokens exceed
+<code>compact_threshold_tokens</code> (4500), rolling-summary compaction
+replaces older turns while keeping the newest
+<code>compact_recent_turns</code> verbatim; prior “not found” refusals
+are stripped so they do not poison a later successful retrieval.</p>
+<h3 id="tooling-1">Tooling</h3>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Component</th>
+<th>Role in orchestrator</th>
+<th>Source</th>
+<th>Logo</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>LangGraph</td>
+<td>Stateful graph, conditional edges, MemorySaver checkpoint</td>
+<td><a
+href="https://github.com/langchain-ai/langgraph">langchain-ai/langgraph</a></td>
+<td><img src="assets/logos/langgraph.svg" alt="LangGraph" /></td>
+</tr>
+<tr class="even">
+<td>FastAPI</td>
+<td>OpenAI-shaped HTTP API, health/ready, Studio entry</td>
+<td><a
+href="https://github.com/tiangolo/fastapi">tiangolo/fastapi</a></td>
+<td><img src="assets/logos/fastapi.svg" alt="FastAPI" /></td>
+</tr>
+<tr class="odd">
+<td>httpx</td>
+<td>Async clients to KB and Guardrails
+(<code>trust_env=False</code>)</td>
+<td><a href="https://github.com/encode/httpx">encode/httpx</a></td>
+<td><img src="assets/logos/httpx.svg" alt="httpx" /></td>
+</tr>
+<tr class="even">
+<td>Langfuse</td>
+<td>Trace/span export via orchestrator HTTP tracing path</td>
+<td><a
+href="https://github.com/langfuse/langfuse">langfuse/langfuse</a></td>
+<td><img src="assets/logos/langfuse.svg" alt="Langfuse" /></td>
+</tr>
+</tbody>
+</table>
+<h3 id="bench-note">Bench note</h3>
+<p>End-to-end orchestrator benches in <code>bench_report_latest</code>
+(dated <strong>2026-10-14</strong>) report an overall <strong>p50
+latency of 4872 ms</strong> with <strong>retrieval_hit 0.780</strong>.
+Generation through Guardrails dominates wall time; retrieval and
+classify are comparatively small once the KB is warm. Those figures are
+observed artifacts, not targets—use them as a regression baseline when
+changing sticky logic, chunk caps, or Guardrails upstream settings.</p>
+<h3 id="code-map">Code map</h3>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Concern</th>
+<th>Path</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Graph wiring &amp; edges</td>
+<td><code>components/orchestrator/src/work_rag_orchestrator/graph.py</code></td>
+</tr>
+<tr class="even">
+<td><code>RAGState</code>, sticky vs applied</td>
+<td><code>.../state.py</code></td>
+</tr>
+<tr class="odd">
+<td>Thresholds, boosts, budget</td>
+<td><code>.../config.py</code></td>
+</tr>
+<tr class="even">
+<td>Retrieve, sticky, trim, fallback</td>
+<td><code>.../nodes/retrieve.py</code></td>
+</tr>
+<tr class="odd">
+<td>Prompt pack &amp; compaction hooks</td>
+<td><code>.../nodes/build_context.py</code></td>
+</tr>
+<tr class="even">
+<td>KB <code>POST /search/api</code> client</td>
+<td><code>.../clients/knowledgebase.py</code></td>
+</tr>
+<tr class="odd">
+<td>Chat API, sticky inject</td>
+<td><code>.../api.py</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h1 id="deep-dive-server-setup-model-serving">6. Deep Dive: Server Setup
+&amp; Model Serving</h1>
+<h2 id="section-summary-2">Section summary</h2>
+<p>Work Credit RAG runs on two deliberately different hosts: an
+unprivileged Vast.ai RTX 3090 used for integrated MVP bring-up, and a
+corporate H200 box (<code>ai-gpu1</code>) that owns production model
+serving. The Vast path boots application services from host virtualenvs
+via <code>deploy/vast/start.sh</code> and treats Gemma as an external
+<code>llama-server</code> on loopback <code>:18000</code>. The H200 path
+introduces the LLM Inference Manager on <code>:9000</code> as an
+OpenAI-compatible gateway in front of a multi-backend fleet—llama.cpp
+Gemma replicas on <code>8080–8084</code>, TensorRT-LLM champion traffic
+on <code>:8010</code>, and embedding workers on
+<code>8001–8003</code>—while Redis, vector stores, and Open WebUI ride a
+Docker data plane. Corporate egress goes through Squid at
+<code>192.168.203.2:3128</code>, which makes <code>httpx</code>
+<code>trust_env=False</code> on localhost calls a hard correctness
+requirement. Containerization is staged (<code>compose.mvp.yml</code>
+for privileged compose hosts; parent <code>deploy/docker</code> plus the
+server-setup cutover plan for H200). Capacity planning follows
+<code>docs/plans/million-user-scale-plan.md</code>: Kubernetes
+horizontal scale-out versus saturating 2×H200 scale-up. Measured
+generation throughput on H200 (history <code>013</code>) shows
+TensorRT-LLM BF16 continuous batching reaching ~3874 aggregate tok/s at
+concurrency 128 versus a flat ~58 tok/s llama.cpp Q4 single-slot
+path—about <strong>67×</strong> aggregate under the same Persian decode
+workload.</p>
+<h2 id="dual-hosts-vast-mvp-versus-h200-production">Dual hosts: Vast MVP
+versus H200 production</h2>
+<p>The Vast instance (documented against instance <code>50713720</code>,
+1× RTX 3090, ~24 GB VRAM) cannot run Docker: the container is
+unprivileged, so <code>unshare</code>/iptables fail and
+<code>compose.mvp.yml</code> is reserved for privileged or local compose
+hosts. Startup order is postgres → Gemma → KB <code>:8000</code> →
+guardrails <code>:8200</code> → tracing collector <code>:3000</code> →
+orchestrator <code>:8100</code> → Open WebUI <code>:13000</code>, driven
+by <code>bash deploy/vast/start.sh</code> and torn down with port-scoped
+<code>deploy/vast/stop.sh</code> (never <code>pkill python</code>).
+Gemma stays bound to <code>127.0.0.1:18000</code> with
+<code>--ctx-size 8192</code>, <code>--no-mmproj</code>,
+<code>--jinja</code>, and <code>chat_template_kwargs</code> that disable
+thinking tokens; guardrails point <code>UPSTREAM_LLM_BASE_URL</code> at
+that loopback OpenAI surface. HF caches must set both
+<code>HF_HOME</code> and <code>HF_HUB_CACHE</code> (typically
+<code>/tmp/hf_clean</code>) or hub 1.x resolves an empty phantom tree.
+Public reachability is SSH tunnels only; NAT port remapping after
+creation is unavailable.</p>
+<p>The H200 host is the opposite operational model: Docker is available
+for the data plane, Jenkins can act as root, and GPU memory (2× H200
+NVL) supports concurrent backends. Model control plane is the manager on
+<code>:9000</code>. Chat backends include five llama.cpp Gemma instances
+(<code>8080–8084</code>), optional Qwen on <code>:8090</code>, and the
+TensorRT-LLM champion on <code>:8010</code>. Embedding microservices
+expose e5 / BGE / MiniLM-style endpoints on <code>8001–8003</code> for
+KB and offline tooling. Orchestrator and guardrails still speak OpenAI
+JSON, but production generation is intended to go Manager → champion
+(with automatic fallback into the llama.cpp pool if <code>:8010</code>
+is unhealthy). Figure 13 captures that high-level split—clients to
+manager to model backends, with Docker handling
+Redis/Qdrant/pgvector/WebUI—while Figure 14 expands the port map and the
+orchestrator/guardrails/KB adjacency.</p>
+<figure>
+<img src="assets/diagrams/13_server_topology_hl.png"
+alt="Figure 13. High-level server topology: clients reach the H200 Manager (:9000), which fans out to model backends; a parallel Docker data plane hosts Redis, Qdrant, pgvector, and Open WebUI." />
+<figcaption aria-hidden="true">Figure 13. High-level server topology:
+clients reach the H200 Manager (:9000), which fans out to model
+backends; a parallel Docker data plane hosts Redis, Qdrant, pgvector,
+and Open WebUI.</figcaption>
+</figure>
+<p><em>Figure 13 — High-level topology. The left/host plane is
+process-owned inference (manager + GPUs). The Docker plane is stateful
+infrastructure and the browser UI. Application services (orchestrator,
+guardrails, KB) may run as host venvs today and as containers after
+cutover; the diagram emphasizes the durable control-plane
+split.</em></p>
+<figure>
+<img src="assets/diagrams/14_server_topology_detail.png"
+alt="Figure 14. Detailed H200 topology: Manager routes to TRT-LLM :8010, llama.cpp Gemma 8080–8084, Qwen :8090, and embeds 8001–8003; WebUI → Orchestrator → Guardrails/Manager; KB uses MiniLM embed :8003 and pgvector." />
+<figcaption aria-hidden="true">Figure 14. Detailed H200 topology:
+Manager routes to TRT-LLM :8010, llama.cpp Gemma 8080–8084, Qwen :8090,
+and embeds 8001–8003; WebUI → Orchestrator → Guardrails/Manager; KB uses
+MiniLM embed :8003 and pgvector.</figcaption>
+</figure>
+<p><em>Figure 14 — Detailed port topology. Champion traffic is TRT-LLM
+on GPU1 <code>:8010</code>; the Gemma pool remains the resilience path.
+Embedding ports stay separate so retrieval does not share CUDA contexts
+with decode. WebUI stays on <code>:13000</code> and never talks to Gemma
+ports directly.</em></p>
+<h2 id="manager-openai-gateway-and-squid-discipline">Manager OpenAI
+gateway and Squid discipline</h2>
+<p><code>components/server-setup/llm_inference_manager/app.py</code>
+exposes <code>/v1/chat/completions</code>, <code>/v1/completions</code>,
+<code>/v1/models</code>, <code>/health</code>, plus admin load/unload
+and Triton/TRT promote endpoints. Round-robin counters distribute load
+across replica URLs; SQLite (<code>manager.db</code>) records history
+and metrics. Every outbound call to localhost backends constructs
+<code>httpx.AsyncClient(..., trust_env=False)</code>. That flag is not
+stylistic: the host shell exports
+<code>HTTP_PROXY</code>/<code>HTTPS_PROXY</code> toward Squid
+<code>http://192.168.203.2:3128</code> for apt, pip, git, and Hugging
+Face. If httpx inherits those variables, loopback requests to
+<code>:8010</code> or <code>:8080</code> are sent to Squid, which cannot
+hairpin them, and health checks hang or fail opaque timeouts. The same
+rule appears in guardrails and observability clients; operators still
+need <code>no_proxy</code>/<code>curl --noproxy '*'</code> for manual
+probes. Promotion of <code>gemma-4-31b</code> to TRT is an admin action
+(<code>POST /admin/triton/promote?...</code>) that flips the gateway
+mapping without changing orchestrator env vars.</p>
+<h2 id="containerization-and-cutover">Containerization and cutover</h2>
+<p>Three layers coexist. Root <code>compose.mvp.yml</code> describes a
+privileged MVP: containerized postgres/pgvector, Redis, KB, guardrails,
+orchestrator, and WebUI, with Gemma remaining <em>external</em> on the
+host (<code>host.docker.internal:18000</code>). Parent
+<code>deploy/docker/</code> holds compose variants
+(<code>docker-compose.yml</code>, GPU and Qdrant overlays, nginx) for
+hosts that can run the NVIDIA runtime. On H200,
+<code>components/server-setup/docs/migration/containerization-report.md</code>
+defines a zero-downtime cutover: build images first, validate each
+service on alternate ports, run E2E through WebUI against alt backends,
+then per-service swap host process → container on the <em>same</em>
+production port, with host venvs retained for rollback. Final port
+identity is frozen (<code>8000</code>, <code>8001–8003</code>,
+<code>8080–8084</code>, <code>8100</code>, <code>8200</code>,
+<code>9000</code>, <code>13000</code>, Redis <code>16379</code>,
+postgres <code>5432</code>, tracing <code>3000</code>). Phases 1–3 never
+stop production traffic; only Phase 4 cutover changes listeners.</p>
+<h2
+id="scaling-million-user-plan-and-measured-decode-throughput">Scaling:
+million-user plan and measured decode throughput</h2>
+<p><code>docs/plans/million-user-scale-plan.md</code> separates
+<strong>scale-out</strong> from <strong>scale-up</strong>. Scale-out
+places stateless FastAPI/orchestrator pods behind Kubernetes Ingress
+with HPA on CPU, GPU inference behind Triton/TensorRT replicas scaled by
+queue depth (KEDA), and a dedicated vector cluster (Qdrant) with read
+replicas—trading operational complexity for elastic concurrency (Figure
+17). Scale-up keeps a single 2×H200 machine saturated: large in-RAM
+indexes, many Triton instance groups per GPU, and Gunicorn worker counts
+near core count, minimizing cross-node latency at the cost of vertical
+coupling (Figure 18). For Work Credit RAG’s Persian chat path,
+generation—not retrieval—dominates wall time, so inference batching
+efficiency dominates capacity math.</p>
+<figure>
+<img src="assets/diagrams/17_scale_out.png"
+alt="Figure 17. Scale-out: million users → K8s Ingress → HPA’d orchestrator pods → guardrails/KB pods → Qdrant cluster and Triton/TRT-LLM GPU replicas." />
+<figcaption aria-hidden="true">Figure 17. Scale-out: million users → K8s
+Ingress → HPA’d orchestrator pods → guardrails/KB pods → Qdrant cluster
+and Triton/TRT-LLM GPU replicas.</figcaption>
+</figure>
+<p><em>Figure 17 — Cloud-native scale-out. CPU tiers (orchestrator,
+guardrails, KB) scale independently of GPU inference tiers behind
+Ingress and HPA/KEDA. Semantic cache and hybrid vector search sit beside
+autoscaled Triton/TRT replicas so decode GPUs are not wasted on
+duplicate retrieval work. This is the elasticity path when concurrent
+Persian chat outgrows a single chassis.</em></p>
+<figure>
+<img src="assets/diagrams/18_scale_up.png"
+alt="Figure 18. Scale-up: users → Nginx → Gunicorn workers → FastAPI apps → Triton on 2×H200 saturating VRAM with model replicas." />
+<figcaption aria-hidden="true">Figure 18. Scale-up: users → Nginx →
+Gunicorn workers → FastAPI apps → Triton on 2×H200 saturating VRAM with
+model replicas.</figcaption>
+</figure>
+<p><em>Figure 18 — Bare-metal scale-up. One chassis, two H200s,
+shared-memory friendly batching. Prefer this when the model footprint
+fits and operational ownership stays on <code>ai-gpu1</code>.</em></p>
+<p>History <code>013</code>
+(<code>components/server-setup/docs/history/013_2026-10-13_trtllm_champion_concurrency.md</code>)
+recorded a like-for-like Persian prompt (<code>max_tokens=256</code>)
+across concurrency. llama.cpp Q4 on the single-slot placeholder stayed
+~58–59 aggregate tok/s at every concurrency (no continuous batching).
+TensorRT-LLM BF16 on <code>:8010</code> scaled roughly linearly with
+in-flight requests: ~50 tok/s at conc 1, ~386 at 8, ~1385 at 32, and
+<strong>3874.2</strong> aggregate tok/s at conc 128
+(~<strong>67.3×</strong> versus the flat Q4 baseline). Single-stream
+favors Q4 slightly (memory traffic); multi-user traffic favors TRT.
+Operators should size on sustained ~2.9k tok/s under power capping, not
+the first-burst 3.8k peak, and keep CUDA-graph batch sizes dense up to
+128 so intermediate concurrencies do not fall off the graph cliff into
+eager decode.</p>
+<h2 id="tooling-2">Tooling</h2>
+<table>
+<colgroup>
+<col style="width: 14%" />
+<col style="width: 47%" />
+<col style="width: 23%" />
+<col style="width: 14%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Tool</th>
+<th>Role in this stack</th>
+<th>Upstream</th>
+<th>Logo</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>llama.cpp</td>
+<td>GGUF Gemma/Qwen servers; Vast <code>:18000</code>; H200 pool
+<code>8080–8084</code></td>
+<td><a
+href="https://github.com/ggml-org/llama.cpp">github.com/ggml-org/llama.cpp</a></td>
+<td><img src="assets/logos/llamacpp.svg" alt="llama.cpp" /></td>
+</tr>
+<tr class="even">
+<td>TensorRT-LLM</td>
+<td>Champion BF16 continuous batching on <code>:8010</code></td>
+<td><a
+href="https://github.com/NVIDIA/TensorRT-LLM">github.com/NVIDIA/TensorRT-LLM</a></td>
+<td><img src="assets/logos/trtllm.svg" alt="TensorRT-LLM" /></td>
+</tr>
+<tr class="odd">
+<td>LiteLLM</td>
+<td>Optional embed/chat adapter path from the manager</td>
+<td><a
+href="https://github.com/BerriAI/litellm">github.com/BerriAI/litellm</a></td>
+<td><img src="assets/logos/litellm.svg" alt="LiteLLM" /></td>
+</tr>
+<tr class="even">
+<td>Docker</td>
+<td>H200 data plane; compose MVP; image cutover</td>
+<td><a href="https://github.com/moby/moby">github.com/moby/moby</a></td>
+<td><img src="assets/logos/docker.svg" alt="Docker" /></td>
+</tr>
+<tr class="odd">
+<td>vLLM</td>
+<td>Alternate OpenAI-compatible serving on H200 offline prep</td>
+<td><a
+href="https://github.com/vllm-project/vllm">github.com/vllm-project/vllm</a></td>
+<td><img src="assets/logos/vllm.svg" alt="vLLM" /></td>
+</tr>
+<tr class="even">
+<td>PyTorch</td>
+<td>TRT export/serve stack, embeds, offline CUDA wheels</td>
+<td><a
+href="https://github.com/pytorch/pytorch">github.com/pytorch/pytorch</a></td>
+<td><img src="assets/logos/pytorch.svg" alt="PyTorch" /></td>
+</tr>
+</tbody>
+</table>
+<p>Together these pieces keep a single OpenAI-shaped contract from WebUI
+through orchestrator and guardrails while allowing the serving backend
+to move from a lone 3090 GGUF process to a batched H200 champion without
+rewriting the LangGraph request path.</p>
+<hr />
+<h1 id="deep-dive-guardrails-security">Deep Dive: Guardrails &amp;
+Security</h1>
+<h2 id="section-summary-3">Section summary</h2>
+<p>Guardrails (<code>Work_RAG-Guardrails</code>, port
+<code>:8200</code>) is the mandatory safety boundary between the
+LangGraph orchestrator and the Gemma inference plane. Every user turn is
+checked on the <em>input</em> stage before retrieval context is
+answered; every completed assistant reply is checked again on the
+<em>output</em> stage before it returns to WebUI. The service no longer
+embeds NVIDIA NeMo Guardrails. Runtime policy is a two-layer stack: fast
+deterministic detectors that emit <em>evidence signals</em>, then an
+adjudicating judge (<code>gemma</code>, <code>mizan</code>, or
+<code>hybrid</code>) that must allow or refuse. Judge timeout, empty
+verdict, or transport error fails <em>closed</em>—the request is refused
+rather than passed through. Production refusals are premade Persian
+category messages that never leak detector internals; Iranian PII in
+allowed answers is masked; secret markers hard-block.</p>
+<h2 id="position-in-the-request-path">Position in the request path</h2>
+<p>Figure 11 places Guardrails between Orchestrator <code>:8100</code>
+and Gemma (<code>:18000</code> on Vast llama-server, or Manager
+<code>:9000</code> on H200). The orchestrator never calls the LLM
+directly: it posts <code>rails/check</code> for input and output stages,
+then <code>chat/completions</code> for guarded generation. The reply
+that reaches the user is either a masked safe completion or a
+category-scoped refusal.</p>
+<figure>
+<img src="assets/diagrams/11_guard_position_hl.png"
+alt="Figure 11. Guardrails between orchestrator and Gemma." />
+<figcaption aria-hidden="true">Figure 11. Guardrails between
+orchestrator and Gemma.</figcaption>
+</figure>
+<p><em>Figure 11 — High-level placement. The orchestrator never dials
+Gemma directly: it posts <code>rails/check</code> for input and output
+stages, then <code>chat/completions</code> for guarded generation.
+Guardrails alone proxies to llama-server <code>:18000</code> (Vast) or
+Manager <code>:9000</code> (H200) and returns either a PII-masked safe
+completion or a category-scoped Persian refusal. The diagram is the
+safety contract for the rest of this section.</em></p>
+<p>Broader platform wiring also appears in
+<code>assets/diagrams/architecture-platform.svg</code>. The internal
+signal→judge→output path is drawn in
+<code>assets/diagrams/internal-pipeline.svg</code> (also vendored under
+the guardrails component docs).</p>
+<h2 id="after-nemo-signals-judge-fail-closed">After NeMo: signals,
+judge, fail-closed</h2>
+<p><code>nemoguardrails</code> was removed because its LangChain pin
+conflicted with the installed stack and initialization failed on every
+start. The replacement lives in
+<code>components/guardrails/src/work_rag_guardrails/</code>:</p>
+<table>
+<colgroup>
+<col style="width: 57%" />
+<col style="width: 42%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Module</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>service.py</code></td>
+<td>FastAPI app, <code>/v1/rails/check</code>,
+<code>/v1/chat/completions</code>, premade refusals, upstream proxy,
+history trim</td>
+</tr>
+<tr class="even">
+<td><code>signals.py</code></td>
+<td>Deterministic detectors → evidence list (injection, jailbreak,
+HurtLex hate, profanity, scope, PII)</td>
+</tr>
+<tr class="odd">
+<td><code>judge.py</code></td>
+<td><code>adjudicate()</code> — secret hard-block, policy judge
+backends, direct-LLM self-check, fail-closed</td>
+</tr>
+<tr class="even">
+<td><code>events.py</code></td>
+<td>JSONL decision log with PII/secret masking
+(<code>/tmp/guard_events.jsonl</code>)</td>
+</tr>
+<tr class="odd">
+<td><code>dashboard.py</code></td>
+<td>Zero-dependency RTL dashboard on the same <code>:8200</code>
+process</td>
+</tr>
+</tbody>
+</table>
+<p><code>collect_signals</code> normalizes Persian text and runs
+pattern/list detectors. Those hits are <em>helpers for the judge</em>,
+not automatic blocks—except <code>secret</code> (<code>sk-…</code>,
+<code>api_key</code>, <code>database_url</code>, <code>Bearer …</code>),
+which <code>adjudicate</code> short-circuits to refuse. Domain keywords
+from the active policy feed a fast out-of-domain pre-check; missing
+policy or empty keyword lists fail closed into review.</p>
+<p>Judge backend is selected with <code>GUARD_JUDGE_BACKEND</code>:</p>
+<ul>
+<li><strong><code>gemma</code></strong> — pinned-policy categories
+judged by Gemma; parse <code>VERDICT</code> / <code>CATEGORY</code>;
+empty or unparseable → refuse.</li>
+<li><strong><code>mizan</code></strong> — Mizan System-1 via Manager
+(<code>/systemone</code>) with calibrated safety / scope / severity
+questions.</li>
+<li><strong><code>hybrid</code></strong> — Mizan first; escalate to
+Gemma when confidence is low, severity is high, or hard signals fire
+(injection, jailbreak, secret, PII, hate, offense).</li>
+</ul>
+<p><code>GUARD_JUDGE_MODE=on-signal</code> (default) skips the LLM judge
+when the text is clean; <code>always</code> forces adjudication. A
+second-opinion direct-LLM yes/no self-check (env still named
+<code>GUARD_NEMO_SELFCHECK</code> for compatibility) remains fail-closed
+on error.</p>
+<figure>
+<img src="assets/diagrams/12_guard_adjudicate_detail.png"
+alt="Figure 12. Adjudication pipeline." />
+<figcaption aria-hidden="true">Figure 12. Adjudication
+pipeline.</figcaption>
+</figure>
+<p><em>Figure 12 — Normalize → collect signals → domain scope → policy
+judge (Gemma / Mizan / hybrid) → direct-LLM self-check → allow or
+premade Persian refuse. Errors route to fail-closed refusal.</em></p>
+<h2 id="endpoints-and-user-facing-policy">Endpoints and user-facing
+policy</h2>
+<p><strong><code>POST /v1/rails/check</code></strong> accepts
+<code>{stage, text, request_id}</code> for <code>input</code> or
+<code>output</code>. The response carries <code>allowed</code>,
+<code>action</code>, category ids, and a <code>reason</code> string. In
+production mode (<code>GUARD_RESPONSE_MODE</code>), <code>reason</code>
+is a premade Persian message keyed by category—prompt injection,
+jailbreak, hate, offense, out-of-scope, PII, secret, policy—without
+exposing regex matches or judge traces. Output-stage hate/profanity
+refusals blame the <em>answer</em> (“پاسخ حاوی محتوای نامناسب است…”)
+rather than the user.</p>
+<p><strong><code>POST /v1/chat/completions</code></strong> is the
+OpenAI-compatible guarded gateway used by the orchestrator’s
+<code>guarded_generate</code> node. Flow:</p>
+<ol type="1">
+<li>Extract the question slice from an augmented user message
+(<code>Question:</code> / <code>سوال:</code>), cap to the rails text
+limit.</li>
+<li>Input rails → refuse with
+<code>finish_reason="content_filter"</code> if blocked.</li>
+<li>Trim chat history to a Persian-aware char budget so upstream context
+(8192 tokens) is not overflowed.</li>
+<li>Call Gemma with
+<code>chat_template_kwargs: {"enable_thinking": false}</code> and strip
+leaked control tokens.</li>
+<li>Output rails → refuse or continue.</li>
+<li>If Iranian PII validators still match an <em>allowed</em> answer,
+<code>events.mask_text</code> replaces national-id / Sheba / mobile
+digit runs (and API-key-like spans) before return.</li>
+</ol>
+<p>Health and readiness expose upstream reachability and policy version;
+the interactive dashboard aggregates masked JSONL events (block rate,
+categories, 24h timeline, sample viewer).</p>
+<h2 id="upstream-contract-details">Upstream contract details</h2>
+<p>All outbound <code>httpx.AsyncClient</code> calls to
+<code>:18000</code> / <code>:9000</code> set
+<strong><code>trust_env=False</code></strong>. Without that flag, a host
+Squid <code>HTTP_PROXY</code> can hang loopback traffic and stall
+generation.</p>
+<p>Upstream context overflow and other Gemma failures used to surface as
+pydantic validation crashes when the code emitted
+<code>finish_reason="error"</code> (not in the OpenAI-compatible
+literal). The gateway now maps timeout and overflow paths to
+<strong><code>finish_reason="length"</code></strong> with a short
+Persian retry hint—never an internal 500 and never a leaked token-budget
+body. Successful rails refusals use <code>content_filter</code>; clean
+answers use <code>stop</code>.</p>
+<h2 id="known-gaps">Known gaps</h2>
+<p><strong>Streaming.</strong> When <code>stream=true</code>, input
+rails still run, then tokens are forwarded from upstream SSE (or chunked
+from a buffered JSON body). The live stream path does <em>not</em>
+reassemble the full assistant text for output rails or append a complete
+output-stage JSONL event the way non-streaming
+<code>guarded_completion</code> does. Operators should treat streaming
+as latency-first and keep production WebUI on buffered completions until
+output rails are applied post-stream.</p>
+<p><strong><code>Observability</code> class unwired.</strong>
+<code>observability.py</code> defines a Phase-4 helper that would attach
+<code>request_id</code>, triggered rules, risk scores, and latency to
+responses, but nothing in <code>service.py</code> or
+<code>judge.py</code> imports it. Live telemetry today is the masked
+<code>events</code> JSONL plus the dashboard—not the richer risk-scorer
+envelope.</p>
+<h2 id="tooling-3">Tooling</h2>
+<table>
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 50%" />
+<col style="width: 35%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Tool</th>
+<th>Role in Guardrails</th>
+<th>Link / asset</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>FastAPI</td>
+<td>HTTP API factory (<code>create_app</code>), rails + chat routes,
+dashboard</td>
+<td><a
+href="https://github.com/fastapi/fastapi">github.com/fastapi/fastapi</a>
+· <code>assets/logos/fastapi.svg</code></td>
+</tr>
+<tr class="even">
+<td>httpx</td>
+<td>Async upstream / Mizan / health clients
+(<code>trust_env=False</code>)</td>
+<td><a
+href="https://github.com/encode/httpx">github.com/encode/httpx</a> ·
+<code>assets/logos/httpx.svg</code></td>
+</tr>
+<tr class="odd">
+<td>HurtLex</td>
+<td>Persian hate lexicon evidence for the judge; credit-domain allowlist
+in <code>kb/hurtlex_allowlist.json</code></td>
+<td><a
+href="https://github.com/valeriobasile/hurtlex">github.com/valeriobasile/hurtlex</a></td>
+</tr>
+<tr class="even">
+<td>Pydantic</td>
+<td>Request/response models including <code>finish_reason</code>
+literals</td>
+<td><a
+href="https://github.com/pydantic/pydantic">github.com/pydantic/pydantic</a></td>
+</tr>
+<tr class="odd">
+<td>uvicorn</td>
+<td>ASGI server for the <code>:8200</code> factory app</td>
+<td><a
+href="https://github.com/encode/uvicorn">github.com/encode/uvicorn</a></td>
+</tr>
+</tbody>
+</table>
+<p>Together these pieces keep Guardrails a thin, fail-closed Persian
+safety shell: deterministic evidence in, adjudicated allow/refuse out,
+secrets never returned, and Gemma reachable only through a controlled
+proxy that refuses when unsure.</p>
+<hr />
+<h2 id="logging-telemetry-documentation-latency">8. Logging, Telemetry,
+Documentation &amp; Latency</h2>
+<p><strong>Section summary.</strong> Work Credit RAG treats
+observability as a <em>layered</em> contract: KB returns per-stage
+<code>stage_ms</code> (also Redis-cached); the orchestrator rolls node
+timings into <code>stage_timing_ms</code> and an optional
+<code>AuditTrail</code>; Langfuse v2 (or host JSONL) records spans;
+<code>components/tracing</code> persists SQLite + JSONL pipeline cards;
+guardrails and the inference manager keep their own stores. E2E latency
+is dominated by <strong>generation</strong>, not retrieval—warm KB
+search is tens of milliseconds while chat turns sit near five seconds—so
+optimizations favor RAM-first retrieval, context trim, and TRT-LLM
+serving over further BM25 micro-cuts.</p>
+<h3 id="multi-layer-telemetry-map">8.1 Multi-layer telemetry map</h3>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Layer</th>
+<th>What is recorded</th>
+<th>Primary sink</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>KB search</td>
+<td><code>bm25</code> / <code>dense</code> / <code>rrf</code> /
+<code>rerank</code> / <code>total</code> (+ <code>hyde</code>,
+<code>build_context</code>)</td>
+<td>Response JSON + Redis TTL 600s</td>
+</tr>
+<tr class="even">
+<td>Orchestrator</td>
+<td>Node wall times → <code>stage_timing_ms</code></td>
+<td><code>AuditTrail</code> on non-streaming chat</td>
+</tr>
+<tr class="odd">
+<td>Distributed traces</td>
+<td>Trace + span envelopes (Langfuse v2 HTTP)</td>
+<td>Langfuse UI <code>:3001</code> or collector <code>:3000</code></td>
+</tr>
+<tr class="even">
+<td>Pipeline store</td>
+<td>Enriched request/response cards</td>
+<td><code>/tmp/observability.db</code> +
+<code>/tmp/pipeline_traces.jsonl</code></td>
+</tr>
+<tr class="odd">
+<td>Guardrails</td>
+<td>Decision events (PII-masked)</td>
+<td><code>/tmp/guard_events.jsonl</code> + dashboard
+<code>:8200</code></td>
+</tr>
+<tr class="even">
+<td>Manager</td>
+<td>Session / latency / backend metrics</td>
+<td><code>manager.db</code> (SQLite)</td>
+</tr>
+<tr class="odd">
+<td>Retrieval failures</td>
+<td>Empty filtered retrieval</td>
+<td><code>/tmp/dlq_retrieval.jsonl</code></td>
+</tr>
+</tbody>
+</table>
+<figure>
+<img src="assets/diagrams/15_observability.png"
+alt="Figure 15 — Observability wiring" />
+<figcaption aria-hidden="true">Figure 15 — Observability
+wiring</figcaption>
+</figure>
+<p><em>Figure 15. Observability wiring for the MVP stack. The
+orchestrator emits <code>stage_timing_ms</code> into AuditTrail and
+posts Langfuse v2 <code>trace-create</code> / <code>span-create</code>
+envelopes (fire-and-forget HTTP also feeds
+<code>/tmp/langfuse_traces.jsonl</code> when <code>:3001</code> is
+down). KB returns <code>stage_ms</code> to callers and Redis (TTL 600s)
+so Search UI can replay timing. Guardrails append masked decisions to
+<code>guard_events.jsonl</code> for the <code>:8200</code> dashboard;
+the manager plane keeps <code>manager.db</code> metrics for
+Prometheus/Grafana. “Where did the time go?” requires joining these
+stores, not a single APM.</em></p>
+<figure>
+<img src="assets/diagrams/16_obs_hl.png"
+alt="Figure 16 — Observability high-level" />
+<figcaption aria-hidden="true">Figure 16 — Observability
+high-level</figcaption>
+</figure>
+<p><em>Figure 16. High-level view: RAG services emit traces and timings
+into SQLite, JSONL, and Langfuse; operators read them via
+<code>:3000</code> observe/observability, <code>:8200</code> guard,
+Langfuse <code>:3001</code>, and manager/Prometheus. Collapses detail so
+incidents start from </em>Stores → Dashboards* rather than code
+paths.*</p>
+<h3 id="knowledge-base-stage_ms-and-redis">8.2 Knowledge-base
+<code>stage_ms</code> and Redis</h3>
+<p>Every successful <code>POST /search/api</code> response includes a
+<code>stage_ms</code> object written in
+<code>kb_manager/web/routes/search.py</code> as each leg finishes: BM25
+(tantivy RAM index), dense MiniLM encode + HNSW/pgvector lookup,
+Reciprocal Rank Fusion (<code>k=60</code>), BGE-m3 cross-encoder rerank,
+and <code>total</code>. The same object is stored with the cached
+SearchSteps payload under Redis (<code>KB_REDIS_TTL</code>, default
+<strong>600s</strong>) or an in-memory fallback when Redis is down;
+exact-cache hits typically return in <strong>2–7 ms</strong> and never
+cache error responses. Operators can therefore diagnose “dense vs
+rerank” without attaching a profiler—<code>jq '.stage_ms'</code> on a
+warm curl is the day-to-day tool.</p>
+<h3 id="orchestrator-timings-audittrail-and-orch_debug">8.3 Orchestrator
+timings, AuditTrail, and <code>ORCH_DEBUG</code></h3>
+<p>Graph nodes call <code>record_timing(state, stage, elapsed_ms)</code>
+(<code>state.py</code>) so retrieve, clarify,
+<code>build_context</code>, <code>guarded_generate</code>, format, and
+retry/broaden paths accumulate into
+<code>state["stage_timing_ms"]</code>. On the
+<strong>non-streaming</strong> OpenAI chat path, <code>api.py</code>
+builds a Pydantic <code>AuditTrail</code> that copies those timings
+together with retrieved chunks, guard signals, context preview, subspace
+ambiguity fields, and wall <code>latency_ms</code>. Setting
+<code>ORCH_DEBUG=1</code> turns on app-level INFO logging (uvicorn alone
+would otherwise silence the package logger) and enables opt-in context
+diagnostics inside <code>build_context</code> so engineers can verify
+what actually reached Gemma without redeploying.</p>
+<p><strong>Streaming caveat.</strong> The SSE branch streams tokens from
+Guardrails → Gemma and finalizes citations/metadata, but it does
+<strong>not</strong> assemble the full <code>AuditTrail</code> save path
+used by the buffered branch. Traces still update, yet operators relying
+on audit-complete JSON for offline review will under-collect streaming
+traffic.</p>
+<h3 id="langfuse-v2-http-and-host-fallbacks">8.4 Langfuse v2 HTTP and
+host fallbacks</h3>
+<p><code>work_rag_orchestrator/tracing.py</code> prefers direct HTTP to
+Langfuse v2: envelopes carry top-level <code>id</code> + ISO
+<code>timestamp</code>, and updates re-<code>trace-create</code> the
+same id (v2 has no <code>trace-update</code>). Posts are submitted on a
+small thread pool with short timeouts so tracing never blocks the
+request loop. When the real UI at <code>:3001</code> is unavailable, the
+same path targets the parent <code>components/tracing</code> collector
+on <code>:3000</code>, which appends to
+<code>/tmp/langfuse_traces.jsonl</code> and exposes a minimal
+Langfuse-compatible ingestion + <code>/observe</code> timeline UI.</p>
+<p>Separately, <code>eval_store.py</code> persists enriched pipeline
+cards to <strong><code>/tmp/observability.db</code></strong> (WAL
+SQLite, <code>EVAL_DB_PATH</code>) and mirrors them to
+<strong><code>/tmp/pipeline_traces.jsonl</code></strong>
+(<code>TRACE_JSONL</code>). The observability dashboard router under
+<code>/api/observability</code> is how Studio/WebUI-side tooling can
+push ratings and stage cards into that store.</p>
+<h3 id="guard-events-manager-metrics-and-retrieval-dlq">8.5 Guard
+events, manager metrics, and retrieval DLQ</h3>
+<p>Guardrails write terminated/allowed decisions to
+<code>/tmp/guard_events.jsonl</code> (<code>GUARD_EVENTS_FILE</code>)
+with digit-run PII masking, and serve aggregates on the Persian
+dashboard at <code>http://127.0.0.1:8200/dashboard</code>. On the model
+plane, <code>llm_inference_manager</code> keeps session, message, and
+latency rows in <code>manager.db</code> and surfaces KB
+<code>stage_ms</code> breakdowns when a manager-side search probe is
+used. When filtered retrieval returns empty (or fails after fallbacks),
+orchestrator <code>retrieve.py</code> appends a record to
+<code>/tmp/dlq_retrieval.jsonl</code> so empty-hit regressions remain
+greppable after the fact.</p>
+<h3 id="known-gaps-1">8.6 Known gaps</h3>
+<p>Three instrumentation holes still matter in production tips:</p>
+<ol type="1">
+<li><strong>KB Prometheus <code>record_*</code> unwired.</strong>
+<code>kb_manager/web/routes/metrics.py</code> defines
+<code>record_stage_ms</code>, <code>record_request_outcome</code>,
+<code>record_result_count</code>, and <code>record_cache_hit</code>
+behind <code>GET /metrics</code>, but the live search pipeline never
+calls them—histograms stay empty while <code>stage_ms</code> in JSON
+remains the ground truth.</li>
+<li><strong><code>retrieval_logs</code> table has no writers.</strong>
+SQLAlchemy declares <code>retrieval_logs</code> in
+<code>models/database.py</code>, yet no ingest/search path inserts rows;
+historical analysis must use JSONL/bench artifacts instead.</li>
+<li><strong>Streaming skips full audit save</strong> (see §8.3)—WebUI
+streaming users get citations without the rich AuditTrail payload
+non-streaming clients receive.</li>
+</ol>
+<h3 id="latency-evidence">8.7 Latency evidence</h3>
+<p>Warm KB retrieval (v13.1 optimization pass, 30 fresh queries,
+<code>top_k=5</code>) sits well under a tenth of a second:</p>
+<table>
+<thead>
+<tr class="header">
+<th>Config</th>
+<th style="text-align: right;">BM25</th>
+<th style="text-align: right;">Dense</th>
+<th style="text-align: right;">Rerank</th>
+<th style="text-align: right;">Total (p50)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>v13 README (2026-10-07)</td>
+<td style="text-align: right;">4.0</td>
+<td style="text-align: right;">24.0</td>
+<td style="text-align: right;">24.0</td>
+<td style="text-align: right;"><strong>55.0 ms</strong></td>
+</tr>
+<tr class="even">
+<td>Pre-opt (2026-10-13)</td>
+<td style="text-align: right;">3.8</td>
+<td style="text-align: right;">20.5</td>
+<td style="text-align: right;">20.9</td>
+<td style="text-align: right;">44.4 ms</td>
+</tr>
+<tr class="odd">
+<td>Post-opt (2026-10-13)</td>
+<td style="text-align: right;">2.6</td>
+<td style="text-align: right;">13.5</td>
+<td style="text-align: right;">22.0</td>
+<td style="text-align: right;"><strong>39.6 ms</strong></td>
+</tr>
+</tbody>
+</table>
+<p>End-to-end chat from <code>bench_report_latest</code> (41 turns,
+model <code>ics-helper-agent</code>, 2026-10-14) reports <strong>p50
+4872 ms</strong> and <strong>average 4938 ms</strong> at 0% transport
+error rate. Stage narrative is unambiguous: after GPU MiniLM/BGE and
+RAM-first indexes, <strong><code>guarded_generate</code>
+dominates</strong> wall time—classify/retrieve/build_context are tens to
+low hundreds of milliseconds, while Gemma decode at context 8192
+accounts for the multi-second remainder. Greeting and specification
+shortcuts that skip the LLM drop to ~0.8–1.1 s, confirming
+generation—not hybrid search—is the E2E bottleneck.</p>
+<figure>
+<img src="assets/plots/latency_breakdown.png"
+alt="Latency breakdown bars" />
+<figcaption aria-hidden="true">Latency breakdown bars</figcaption>
+</figure>
+<p><em>Figure — Latency breakdown (bars). Stacked/grouped stage bars
+contrast historical CPU-bound dense encode (~2.3 s) against the
+post-GPU, RAM-first profile where BM25, dense, RRF, and rerank together
+fit inside a ~40–70 ms envelope. The visual is the operator’s companion
+to <code>stage_ms</code>: it shows why Redis hits and warm indexes
+matter for retrieval SLOs, yet cannot move E2E chat p50 without
+addressing generation.</em></p>
+<figure>
+<img src="assets/plots/latency_breakdown_pie_after.png"
+alt="Latency breakdown pie (after)" />
+<figcaption aria-hidden="true">Latency breakdown pie
+(after)</figcaption>
+</figure>
+<p><em>Figure — Latency breakdown pie (after optimizations). The
+post-fix pie makes the same point compositionally: once dense leaves the
+CPU, rerank and residual orchestration slices are visible but still
+small relative to the outsized generate slice on full RAG turns. Use
+this figure when arguing for serving upgrades (TRT champion, context
+budgeting) rather than further BM25 micro-optimizations.</em></p>
+<h3 id="optimizations-that-moved-the-numbers">8.8 Optimizations that
+moved the numbers</h3>
+<ul>
+<li><strong>RAM-first tantivy + HNSW.</strong> Rust tantivy BM25 (≈50 MB
+heap, RAMDirectory) and RAM-pinned dense/pgvector HNSW remove cold disk
+seeks from the hot path; startup pre-warm loads indexes and CUDA kernels
+before the first user query.</li>
+<li><strong>RRF then selective rerank.</strong> Fusion at
+<code>k=60</code> keeps candidate quality high while the cross-encoder
+scores a bounded pool (GPU, pool 30)—cheap legs stay cheap.</li>
+<li><strong>Entity / context trim.</strong> Orchestrator supplemental
+injection is capped (top-3 × ~4 KB) and
+<code>prompt_char_budget≈20k</code> / <code>MAX_CHUNKS=20</code> protect
+the Gemma <strong>8192</strong> context window from overflow (upstream
+overflow is surfaced as <code>finish_reason=length</code>, not a hard
+500).</li>
+<li><strong>TRT champion serving.</strong> On H200, TensorRT-LLM Gemma
+remains the throughput champion versus llama.cpp Q4 for concurrent
+decode; Vast MVP still pin llama-server <code>:18000</code> for the
+single-GPU box, but latency planning assumes generate cost scales with
+tokens and concurrency, not with KB <code>stage_ms</code>.</li>
+</ul>
+<h3 id="tooling-4">8.9 Tooling</h3>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Tool</th>
+<th>Role in telemetry / docs</th>
+<th>GitHub</th>
+<th>Logo</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Langfuse</td>
+<td>v2 trace/span UI (<code>:3001</code>); orchestrator posts envelopes
+via direct HTTP</td>
+<td>https://github.com/langfuse/langfuse</td>
+<td><img src="assets/logos/langfuse.svg" /></td>
+</tr>
+<tr class="even">
+<td>Prometheus</td>
+<td>Manager/infra metrics scrape target referenced beside
+<code>manager.db</code></td>
+<td>https://github.com/prometheus/prometheus</td>
+<td><img src="assets/logos/prometheus.svg" /></td>
+</tr>
+<tr class="odd">
+<td>FastAPI</td>
+<td>Tracing collector + observability dashboard routers</td>
+<td>https://github.com/fastapi/fastapi</td>
+<td><img src="assets/logos/fastapi.svg" /></td>
+</tr>
+<tr class="even">
+<td>httpx</td>
+<td>Fire-and-forget Langfuse/collector posts from
+<code>tracing.py</code></td>
+<td>https://github.com/encode/httpx</td>
+<td><img src="assets/logos/httpx.svg" /></td>
+</tr>
+</tbody>
+</table>
+<h3 id="documentation-tooling-note">8.10 Documentation tooling note</h3>
+<p>Human-facing docs stay discoverable via the <strong>docs-toc</strong>
+generator: <code>scripts/gen_readme_toc.py</code> (vendored in the
+parent and every submodule) rebuilds the README
+<code>&lt;!-- docs-toc:start --&gt;</code> …
+<code>&lt;!-- docs-toc:end --&gt;</code> block from tracked
+<code>*.md</code> files using <code>scripts/docs_manifest.json</code>.
+Idempotent <code>--dry-run</code> / <code>--check</code> modes plus the
+<code>docs-toc</code> CI workflow keep indexes current without
+hand-editing TOC sections—telemetry for <em>documentation drift</em>
+rather than request latency.</p>
+<hr />
+<p><em>Primary code pointers:</em>
+<code>components/knowledgebase/kb-manager/kb_manager/web/routes/search.py</code>,
+<code>.../metrics.py</code>;
+<code>components/orchestrator/src/work_rag_orchestrator/{api.py,tracing.py,schemas.py,state.py,nodes/retrieve.py}</code>;
+<code>components/tracing/{app.py,eval_store.py,dashboard_api.py}</code>;
+<code>components/guardrails/src/work_rag_guardrails/{events.py,dashboard.py}</code>;
+<code>scripts/gen_readme_toc.py</code>.</p>
+<hr />
+<h1 id="benchmarks-and-latency-appendix">Benchmarks and latency
+appendix</h1>
+<h2 id="section-summary-4">Section summary</h2>
+<p>Observed numbers—not targets—frame how the stack performs today.
+Knowledge-base warm retrieval sits in tens of milliseconds after
+RAM-first tuning, while end-to-end chat latency is dominated by guarded
+generation on Gemma. Tables below cite on-disk artifacts checked into
+the clone.</p>
+<h2 id="knowledge-base-ir-quality">Knowledge-base IR quality</h2>
+<p><strong>Source:</strong>
+<code>components/knowledgebase/kb-manager/data/ir_metrics.json</code></p>
+<table>
+<thead>
+<tr class="header">
+<th>Metric</th>
+<th style="text-align: right;">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Hit@5 (hit_rate@5)</td>
+<td style="text-align: right;">0.9083</td>
+</tr>
+<tr class="even">
+<td>MRR</td>
+<td style="text-align: right;">0.8411</td>
+</tr>
+<tr class="odd">
+<td>nDCG@5</td>
+<td style="text-align: right;">0.8567</td>
+</tr>
+<tr class="even">
+<td>MAP@5</td>
+<td style="text-align: right;">0.8389</td>
+</tr>
+<tr class="odd">
+<td>Precision@5</td>
+<td style="text-align: right;">0.1817</td>
+</tr>
+<tr class="even">
+<td>Recall@5</td>
+<td style="text-align: right;">0.9083</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Source:</strong>
+<code>artifacts/retrieval_training/report_metrics.json</code>
+(training-era freeze)</p>
+<table>
+<thead>
+<tr class="header">
+<th>Metric</th>
+<th style="text-align: right;">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>N queries</td>
+<td style="text-align: right;">663</td>
+</tr>
+<tr class="even">
+<td>Hit@5 rate</td>
+<td style="text-align: right;">0.9306</td>
+</tr>
+<tr class="odd">
+<td>MRR</td>
+<td style="text-align: right;">0.8281</td>
+</tr>
+</tbody>
+</table>
+<h2 id="knowledge-base-stage-latency-ms">Knowledge-base stage latency
+(ms)</h2>
+<p><strong>Source:</strong>
+<code>artifacts/retrieval_training/latency_v13_1.json</code></p>
+<table>
+<colgroup>
+<col style="width: 20%" />
+<col style="width: 26%" />
+<col style="width: 26%" />
+<col style="width: 26%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Stage</th>
+<th style="text-align: right;">README v13 (10-07)</th>
+<th style="text-align: right;">Before tune (10-13)</th>
+<th style="text-align: right;">After tune (10-13)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>BM25</td>
+<td style="text-align: right;">4.0</td>
+<td style="text-align: right;">3.8</td>
+<td style="text-align: right;">2.6</td>
+</tr>
+<tr class="even">
+<td>Dense</td>
+<td style="text-align: right;">24.0</td>
+<td style="text-align: right;">20.5</td>
+<td style="text-align: right;">13.5</td>
+</tr>
+<tr class="odd">
+<td>Rerank</td>
+<td style="text-align: right;">24.0</td>
+<td style="text-align: right;">20.9</td>
+<td style="text-align: right;">22.0</td>
+</tr>
+<tr class="even">
+<td><strong>Total</strong></td>
+<td style="text-align: right;"><strong>55.0</strong></td>
+<td style="text-align: right;"><strong>44.4</strong></td>
+<td style="text-align: right;"><strong>39.6</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Cold starts remain multi-second when models and indexes load; Redis
+cache hits for identical queries are documented in the low single-digit
+milliseconds range once warm.</p>
+<figure>
+<img src="assets/plots/latency_breakdown_ram_tantivy.png"
+alt="KB latency RAM/tantivy plot" />
+<figcaption aria-hidden="true">KB latency RAM/tantivy plot</figcaption>
+</figure>
+<p><strong>Figure B1. KB latency breakdown (RAM / tantivy era).</strong>
+The plot visualizes how lexical and dense legs plus rerank compose wall
+time after memory-resident indexes replaced slower disk-bound paths. Use
+it together with the numeric table above: the engineering story is
+<em>sub-50 ms warm retrieval</em>, not generation speed.</p>
+<h2 id="end-to-end-orchestrator-bench-2026-10-14">End-to-end
+orchestrator bench (2026-10-14)</h2>
+<p><strong>Source:</strong>
+<code>evaluation/artifacts/bench_report_latest.md</code></p>
+<table>
+<thead>
+<tr class="header">
+<th>Metric</th>
+<th style="text-align: right;">Score / value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Turns</td>
+<td style="text-align: right;">41</td>
+</tr>
+<tr class="even">
+<td>Conversations</td>
+<td style="text-align: right;">12</td>
+</tr>
+<tr class="odd">
+<td>Avg latency</td>
+<td style="text-align: right;">4938 ms</td>
+</tr>
+<tr class="even">
+<td>Overall p50 latency</td>
+<td style="text-align: right;">4872 ms</td>
+</tr>
+<tr class="odd">
+<td>Error rate</td>
+<td style="text-align: right;">0.0%</td>
+</tr>
+<tr class="even">
+<td>Faithfulness</td>
+<td style="text-align: right;">0.461</td>
+</tr>
+<tr class="odd">
+<td>Answer relevancy</td>
+<td style="text-align: right;">0.568</td>
+</tr>
+<tr class="even">
+<td>Context relevancy</td>
+<td style="text-align: right;">0.283</td>
+</tr>
+<tr class="odd">
+<td>Context recall</td>
+<td style="text-align: right;">0.340</td>
+</tr>
+<tr class="even">
+<td>Hallucination inverted</td>
+<td style="text-align: right;">0.746</td>
+</tr>
+<tr class="odd">
+<td>Retrieval hit</td>
+<td style="text-align: right;">0.780</td>
+</tr>
+<tr class="even">
+<td>Sticky persistence</td>
+<td style="text-align: right;">0.683</td>
+</tr>
+<tr class="odd">
+<td>Ambiguity resolution</td>
+<td style="text-align: right;">1.000</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr class="header">
+<th>Subspace</th>
+<th style="text-align: right;">Count</th>
+<th style="text-align: right;">Faith</th>
+<th style="text-align: right;">Hit</th>
+<th style="text-align: right;">p50 latency</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>cheque</td>
+<td style="text-align: right;">9</td>
+<td style="text-align: right;">0.422</td>
+<td style="text-align: right;">0.667</td>
+<td style="text-align: right;">5420 ms</td>
+</tr>
+<tr class="even">
+<td>facilities_person</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">0.967</td>
+<td style="text-align: right;">0.500</td>
+<td style="text-align: right;">9376 ms</td>
+</tr>
+<tr class="odd">
+<td>facilities_legal</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">0.917</td>
+<td style="text-align: right;">0.667</td>
+<td style="text-align: right;">7402 ms</td>
+</tr>
+<tr class="even">
+<td>general</td>
+<td style="text-align: right;">10</td>
+<td style="text-align: right;">0.655</td>
+<td style="text-align: right;">0.800</td>
+<td style="text-align: right;">6981 ms</td>
+</tr>
+</tbody>
+</table>
+<p>Generation through guardrails accounts for most of the multi-second
+p50; KB warm retrieval is two orders of magnitude smaller. Optimizations
+that matter for UX are therefore model throughput (TRT-LLM on H200),
+prompt/entity trimming, and avoiding unnecessary clarification loops—not
+further micro-optimizing BM25 alone.</p>
+<h2 id="model-serving-concurrency-h200">Model serving concurrency
+(H200)</h2>
+<p><strong>Source:</strong>
+<code>components/server-setup/docs/history/013_2026-10-13_trtllm_champion_concurrency.md</code>
+(as summarized in ops notes)</p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Backend</th>
+<th>Approx. aggregate throughput</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>llama.cpp Q4 Gemma pool</td>
+<td>~58 tok/s class</td>
+<td>Multi-process supervisor</td>
+</tr>
+<tr class="even">
+<td>TRT-LLM BF16 champion</td>
+<td>~3874 tok/s @ concurrency 128</td>
+<td>Large aggregate gain vs llama.cpp</td>
+</tr>
+</tbody>
+</table>
+<p>Exact reproduction depends on engine build and GPU partitioning;
+treat the ratio (~67× aggregate in that experiment) as historical
+evidence that <strong>scale-up on H200 prefers TRT-LLM for
+generation</strong>, while Vast remains llama.cpp GGUF constrained by a
+single 3090.</p>
+<hr />
+<h1 id="appendix">Appendix</h1>
+<h2 id="section-summary-5">Section summary</h2>
+<p>This appendix indexes libraries with repository links, lists primary
+source files, and records known gaps on the documented tips so future
+work does not rediscover them.</p>
+<h2 id="library-and-tooling-index">Library and tooling index</h2>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Library</th>
+<th>Role</th>
+<th>GitHub</th>
+<th>Logo asset</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>FastAPI</td>
+<td>HTTP services</td>
+<td>https://github.com/fastapi/fastapi</td>
+<td><code>assets/logos/fastapi.svg</code></td>
+</tr>
+<tr class="even">
+<td>LangGraph</td>
+<td>Orchestrator graph</td>
+<td>https://github.com/langchain-ai/langgraph</td>
+<td><code>assets/logos/langgraph.svg</code></td>
+</tr>
+<tr class="odd">
+<td>SQLAlchemy</td>
+<td>Async ORM</td>
+<td>https://github.com/sqlalchemy/sqlalchemy</td>
+<td><code>assets/logos/sqlalchemy.svg</code></td>
+</tr>
+<tr class="even">
+<td>pgvector</td>
+<td>Vector storage/index</td>
+<td>https://github.com/pgvector/pgvector</td>
+<td><code>assets/logos/pgvector.svg</code></td>
+</tr>
+<tr class="odd">
+<td>tantivy</td>
+<td>BM25 engine</td>
+<td>https://github.com/quickwit-oss/tantivy</td>
+<td><code>assets/logos/tantivy.svg</code></td>
+</tr>
+<tr class="even">
+<td>sentence-transformers</td>
+<td>Embeddings</td>
+<td>https://github.com/UKPLab/sentence-transformers</td>
+<td><code>assets/logos/sentence_transformers.svg</code></td>
+</tr>
+<tr class="odd">
+<td>FlagEmbedding / BGE</td>
+<td>Reranker family</td>
+<td>https://github.com/FlagOpen/FlagEmbedding</td>
+<td><code>assets/logos/bge.svg</code></td>
+</tr>
+<tr class="even">
+<td>Redis</td>
+<td>Result cache</td>
+<td>https://github.com/redis/redis</td>
+<td><code>assets/logos/redis.svg</code></td>
+</tr>
+<tr class="odd">
+<td>httpx</td>
+<td>Async HTTP client</td>
+<td>https://github.com/encode/httpx</td>
+<td><code>assets/logos/httpx.svg</code></td>
+</tr>
+<tr class="even">
+<td>Langfuse</td>
+<td>Tracing UI/API</td>
+<td>https://github.com/langfuse/langfuse</td>
+<td><code>assets/logos/langfuse.svg</code></td>
+</tr>
+<tr class="odd">
+<td>llama.cpp</td>
+<td>GGUF serving</td>
+<td>https://github.com/ggml-org/llama.cpp</td>
+<td><code>assets/logos/llamacpp.svg</code></td>
+</tr>
+<tr class="even">
+<td>TensorRT-LLM</td>
+<td>High-throughput serve</td>
+<td>https://github.com/NVIDIA/TensorRT-LLM</td>
+<td><code>assets/logos/trtllm.svg</code></td>
+</tr>
+<tr class="odd">
+<td>LiteLLM</td>
+<td>Optional gateway</td>
+<td>https://github.com/BerriAI/litellm</td>
+<td><code>assets/logos/litellm.svg</code></td>
+</tr>
+<tr class="even">
+<td>Docker</td>
+<td>Containers</td>
+<td>https://github.com/docker/docker-ce</td>
+<td><code>assets/logos/docker.svg</code></td>
+</tr>
+<tr class="odd">
+<td>PyTorch</td>
+<td>Training/inference deps</td>
+<td>https://github.com/pytorch/pytorch</td>
+<td><code>assets/logos/pytorch.svg</code></td>
+</tr>
+<tr class="even">
+<td>Prometheus</td>
+<td>Metrics</td>
+<td>https://github.com/prometheus/prometheus</td>
+<td><code>assets/logos/prometheus.svg</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="primary-source-map">Primary source map</h2>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Concern</th>
+<th>Path</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Graph wiring</td>
+<td><code>components/orchestrator/src/work_rag_orchestrator/graph.py</code></td>
+</tr>
+<tr class="even">
+<td>Retrieve + trim</td>
+<td><code>.../nodes/retrieve.py</code></td>
+</tr>
+<tr class="odd">
+<td>Context budgets</td>
+<td><code>.../nodes/build_context.py</code></td>
+</tr>
+<tr class="even">
+<td>Orch settings</td>
+<td><code>.../config.py</code></td>
+</tr>
+<tr class="odd">
+<td>KB search</td>
+<td><code>components/knowledgebase/kb-manager/kb_manager/web/routes/search.py</code></td>
+</tr>
+<tr class="even">
+<td>Dense index</td>
+<td><code>.../dense.py</code></td>
+</tr>
+<tr class="odd">
+<td>EntityList model</td>
+<td><code>.../models/database.py</code></td>
+</tr>
+<tr class="even">
+<td>Guard service</td>
+<td><code>components/guardrails/src/work_rag_guardrails/service.py</code></td>
+</tr>
+<tr class="odd">
+<td>Judge</td>
+<td><code>.../judge.py</code></td>
+</tr>
+<tr class="even">
+<td>Signals</td>
+<td><code>.../signals.py</code></td>
+</tr>
+<tr class="odd">
+<td>Manager</td>
+<td><code>components/server-setup/llm_inference_manager/app.py</code></td>
+</tr>
+<tr class="even">
+<td>Vast start</td>
+<td><code>deploy/vast/start.sh</code></td>
+</tr>
+<tr class="odd">
+<td>Trace collector</td>
+<td><code>components/tracing/app.py</code></td>
+</tr>
+<tr class="even">
+<td>Eval store</td>
+<td><code>components/tracing/eval_store.py</code></td>
+</tr>
+<tr class="odd">
+<td>Orch tracing</td>
+<td><code>components/orchestrator/src/work_rag_orchestrator/tracing.py</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="known-gaps-on-documented-tips">Known gaps on documented
+tips</h2>
+<ol type="1">
+<li>KB <code>search.py</code> still uses
+<code>hasattr(dense, "model")</code> in places;
+<code>DenseSemanticIndex</code> expects <code>_ensure_model</code> /
+<code>_encode</code>.<br />
+</li>
+<li><code>POST /search/supplement</code> is absent on current routes
+though orchestrator clients still probe it.<br />
+</li>
+<li>KB Prometheus helpers and <code>retrieval_logs</code> writers are
+largely unwired.<br />
+</li>
+<li>Streaming chat completions skip full observability audit
+persistence.<br />
+</li>
+<li>Parent gitlinks may lag tip SHAs (<code>+</code> in
+<code>git submodule status</code>).</li>
+</ol>
+<h2 id="build-notes">Build notes</h2>
+<p>Render diagrams:
+<code>bash docs/technical-report/scripts/render_diagrams.sh</code><br />
+Build PDF:
+<code>bash docs/technical-report/scripts/build_pdf.sh</code><br />
+Sync HTML:
+<code>bash docs/technical-report/scripts/build_html.sh</code></p>
+<hr />
+</body>
+</html>

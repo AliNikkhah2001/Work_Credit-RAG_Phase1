@@ -1,0 +1,4 @@
+flowchart LR
+  SRC[Source_docs] --> PIPE[Ingest_pipeline]
+  PIPE --> STORE[(pgvector_or_SQLite)]
+  PIPE --> ENT[(EntityList)]

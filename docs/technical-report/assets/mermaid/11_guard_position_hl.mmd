@@ -1,0 +1,5 @@
+flowchart LR
+  ORCH[Orchestrator_8100] -->|rails_check| GR[Guardrails_8200]
+  GR -->|guarded_generate| GE[Gemma_18000_or_9000]
+  GE --> GR
+  GR -->|masked_or_refused| ORCH

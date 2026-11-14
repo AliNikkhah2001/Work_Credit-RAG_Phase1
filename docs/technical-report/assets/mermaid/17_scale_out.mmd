@@ -1,0 +1,7 @@
+flowchart TD
+  Users[Million_users] --> Ingress[K8s_Ingress]
+  Ingress --> OrchPods[Orchestrator_pods_HPA]
+  OrchPods --> GuardPods[Guardrails_pods]
+  OrchPods --> KBPods[KB_pods]
+  KBPods --> Qdrant[Qdrant_cluster]
+  GuardPods --> Triton[Triton_TRTLLM_replicas]
