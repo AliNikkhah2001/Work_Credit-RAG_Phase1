@@ -41,6 +41,13 @@ services:
       UPSTREAM_LLM_API_KEY: ${LITELLM_MASTER_KEY:-sk-litellm-local-dev-change-me}
       LLM_BASE_URL: http://litellm:4000/v1
       LLM_MODEL: ${UPSTREAM_LLM_MODEL:-chat-primary}
+      # The guardrails judge defaults to gemma-4-31b-triton-trt (a GPU-only model).
+      # Laptop LiteLLM does not serve it, every judge call 400s, and the judge
+      # fails closed -> user answers come back as content_filter/hate. Point the
+      # judge at the same model the laptop actually serves.
+      # NOTE: judge.py reuses UPSTREAM_LLM_BASE_URL / UPSTREAM_LLM_API_KEY above
+      # for transport, so GUARD_JUDGE_MODEL is the only knob needed here.
+      GUARD_JUDGE_MODEL: ${GUARD_JUDGE_MODEL:-chat-primary}
     depends_on:
       litellm:
         condition: service_healthy
