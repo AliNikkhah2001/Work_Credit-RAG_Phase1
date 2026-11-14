@@ -16,6 +16,24 @@
 //   [ci rollback]          → restore deploy/compose/.last_good_sha (prod controller)
 //
 // CI_SERVICES from scripts/ci_message_gate.py: "kb", "kb guardrails", "all", or "none".
+//
+// Verification proof (no more false green):
+//   A stage-only controller sets CI_MAY_DEPLOY_PROD=0, so every prod stage is
+//   dropped by its `when` guard. Before the coverage gate, such a `main` build
+//   finished SUCCESS having run only Lint, while GitHub showed the commit green
+//   (dana-rag/main #20, #21). Each stage now leaves an evidence marker
+//   (scripts/ci_stage_evidence.sh) and the final `post` block asks
+//   scripts/ci_verify_coverage.py what that evidence actually proves, publishes
+//   it as `dana/validate`, and downgrades the build when proof is missing.
+//
+//   CI_MAIN_PROOF_POLICY=unstable|fail|allow  (default unstable)
+//     unstable — main without a prod controller is UNSTABLE (never green)
+//     fail     — same, but hard FAILURE (what the GPU prod host should use)
+//     allow    — keep SUCCESS on the Jenkins side (the `dana/validate`
+//                commit status still reports failure, so GitHub stays honest)
+//
+//   CI_REQUIRE_PROD_CONTROLLER=1 — this host is supposed to verify prod
+//     (set on the GPU daemon); turns a missing prod proof into a hard failure.
 
 pipeline {
     // Host-identical path (DANA_HOST_REPO) so docker.sock bind mounts resolve.
@@ -113,6 +131,7 @@ pipeline {
             steps {
                 sh '''
                     set -e
+                    echo lint >> .ci_ran_stages.txt
                     # Ruff is advisory: install may fail on hosts with an
                     # externally-managed Python (Debian/Ubuntu system python),
                     # which is what produced build #52's visible
@@ -129,6 +148,8 @@ pipeline {
                     # build/deploy, so a failure here is a real failure.
                     python3 scripts/ci_message_gate.py --self-test
                     python3 scripts/ci_controller_role.py --self-test
+                    python3 scripts/ci_verify_coverage.py --self-test
+                    bash scripts/ci_stage_evidence.sh mark lint
                 '''
             }
         }
@@ -327,6 +348,7 @@ pipeline {
                         docker tag "$src" "$dst" || true
                       fi
                     done
+                    echo build >> .ci_ran_stages.txt
                 '''
             }
         }
@@ -404,6 +426,7 @@ pipeline {
                       --compose "docker compose -p dana-stage -f ${COMPOSE_BASE} -f ${COMPOSE_LOCAL} -f ${COMPOSE_STAGE} --env-file ${ENV_FILE}" \
                       || { echo "stage deploy gate FAILED — not recording last-good for stage"; exit 1; }
                     echo "stage deploy gate passed"
+                    echo stage-deploy >> .ci_ran_stages.txt
                 '''
             }
         }
@@ -428,6 +451,7 @@ pipeline {
                     curl -sf --max-time 90 http://127.0.0.1:18100/v1/chat/completions \
                       -H 'Content-Type: application/json' \
                       -d '{"model":"chat-primary","messages":[{"role":"user","content":"سلام"}]}' | head -c 500; echo
+                    echo stage-e2e >> .ci_ran_stages.txt
                 '''
             }
         }
@@ -503,6 +527,7 @@ pipeline {
                     fi
                     # Record the manifest ONLY after the gate proved the deploy.
                     bash scripts/ci_record_last_good.sh --if-gate-passes "${GIT_COMMIT}"
+                    echo prod-deploy >> .ci_ran_stages.txt
                 '''
             }
         }
@@ -510,10 +535,76 @@ pipeline {
 
     post {
         always {
-            sh 'docker image prune -f || true; rm -f .ci_commit_msg.txt .ci_changed_files.txt .ci_gate.env .ci_role.env || true'
+            sh '''
+                docker image prune -f || true
+                # True-green guard: a build that only ran Lint is not a verified
+                # build. dana-rag/main #20/#21 went SUCCESS on the stage-only
+                # laptop controller with every build/deploy/prod stage dropped by
+                # its `when` guard, which put a green GitHub check on a commit
+                # nothing had ever exercised. Compute an explicit verdict from
+                # the stages that actually ran.
+                : > .ci_coverage.guard
+                if [ -f scripts/ci_verify_coverage.py ]; then
+                  RAN="$(tr '\n' ' ' < .ci_ran_stages.txt 2>/dev/null || true)"
+                  chmod +x scripts/ci_verify_coverage.py 2>/dev/null || true
+                  python3 scripts/ci_verify_coverage.py \
+                    --branch "${BRANCH_NAME:-}" \
+                    --executed "$RAN" \
+                    --write-env .ci_coverage.env 2>/dev/null || true
+                  cat .ci_coverage.env 2>/dev/null || true
+                  sed -n 's/^COVERAGE_GUARD=//p' .ci_coverage.env 2>/dev/null > .ci_coverage.guard || true
+                fi
+                rm -f .ci_commit_msg.txt .ci_changed_files.txt .ci_gate.env .ci_role.env .ci_ran_stages.txt || true
+            '''
+            script {
+                def guard = ''
+                if (fileExists('.ci_coverage.guard')) {
+                    guard = readFile('.ci_coverage.guard').trim()
+                }
+                if (guard == 'fail') {
+                    currentBuild.result = 'FAILURE'
+                    echo 'COVERAGE GUARD: FAIL — this build did not verify what it claims'
+                } else if (guard == 'unstable') {
+                    // Truthful, not destructive: the laptop stage controller
+                    // cannot verify prod, so it must not paint main green.
+                    currentBuild.result = 'UNSTABLE'
+                    echo 'COVERAGE GUARD: UNSTABLE — build ran but did not cover this branch'
+                }
+            }
         }
         failure {
             echo 'Pipeline failed — inspect Jenkins console + docker compose logs'
         }
     }
+}
+
+// Post one named commit status. Observability only: never fails the build.
+// Credential `github-pat` (username + PAT, `repo:status`); no secret in-repo.
+def ghStatus(String stage, String state, String description) {
+    try {
+        withCredentials([usernamePassword(
+                credentialsId: 'github-pat',
+                usernameVariable: 'GITHUB_USER',
+                passwordVariable: 'GITHUB_TOKEN')]) {
+            sh """
+                set +e
+                bash scripts/ci_github_status.sh \\
+                  --sha "\${GIT_COMMIT}" \\
+                  --state "${state}" \\
+                  --context "dana/${stage}" \\
+                  --description "${description}" \\
+                  --target-url "\${BUILD_URL}" || true
+            """
+        }
+    } catch (Exception e) {
+        echo "WARN: GitHub status dana/${stage} not reported — ${e.message}"
+    }
+}
+
+// Record that a verification stage really executed (read back by the gate).
+def markStage(String stage) {
+    sh """
+        set +e
+        bash scripts/ci_stage_evidence.sh mark ${stage} || true
+    """
 }

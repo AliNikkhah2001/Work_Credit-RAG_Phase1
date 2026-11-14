@@ -1,0 +1,48 @@
+# =============================================================================
+# dana-gpu-reconcile.service — one reconcile pass for the GPU production stack.
+#
+# Type=oneshot: each timer tick runs reconcile.sh once and exits. The script is
+# idempotent and bounded, so an overlapping tick cannot stack damage (Docker
+# serialises on the project, and reconcile only ever heals towards the recorded
+# last-known-good).
+#
+# Install (as root on the GPU host):
+#   cp deploy/gpu/systemd/dana-gpu-reconcile.service /etc/systemd/system/
+#   cp deploy/gpu/systemd/dana-gpu-reconcile.timer   /etc/systemd/system/
+#   systemctl daemon-reload
+#   systemctl enable --now dana-gpu-reconcile.timer
+#
+# Verify:
+#   systemctl list-timers dana-gpu-reconcile.timer
+#   journalctl -u dana-gpu-reconcile.service -n 100 --no-pager
+# =============================================================================
+[Unit]
+Description=Dana GPU RAG reconcile (verify published ports, heal to last-known-good)
+Documentation=file:///workspace/Work_Credit-RAG_Phase1/deploy/gpu/README.md
+After=docker.service network-online.target
+Wants=network-online.target docker.service
+# Never run twice at once; a second trigger waits rather than racing compose.
+RefuseManualStart=no
+
+[Service]
+Type=oneshot
+User=root
+# --- EDIT for this host -----------------------------------------------------
+WorkingDirectory=/workspace/Work_Credit-RAG_Phase1
+Environment=DANA_HOST_REPO=/workspace/Work_Credit-RAG_Phase1
+Environment=DANA_HOST=gpu
+Environment=DANA_ROLE=prod
+Environment=DANA_PROFILE=gpu
+Environment=DANA_RETRY_HOURS=3
+# ---------------------------------------------------------------------------
+ExecStart=/bin/bash /workspace/Work_Credit-RAG_Phase1/deploy/gpu/reconcile.sh --profile gpu
+# A failed reconcile must not be masked by systemd's restart policy: the exit code
+# is the signal this unit exists to emit (journal + any monitoring on the unit).
+SuccessExitStatus=0
+TimeoutStartSec=1800
+Nice=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

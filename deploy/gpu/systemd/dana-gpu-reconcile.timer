@@ -1,0 +1,40 @@
+# =============================================================================
+# dana-gpu-reconcile.timer — the keep-alive cadence.
+#
+# Two schedules, one unit:
+#   * Hourly wake-up. reconcile.sh decides whether it is actually DUE using
+#     schedule.next_retry_at in deploy/gpu/state/last_good.json:
+#       - healthy last run  -> next_retry_at is null -> hourly ticks are no-ops
+#                             except the daily deep check below.
+#       - unhealthy         -> next_retry_at = now + 3h -> retries every 3 hours.
+#   * A daily full check at 04:10 host-local (quiet hours) to catch silent drift
+#     even when nothing looks wrong. Persistent=true replays a missed run after
+#     downtime — which is exactly the "host rebooted and nobody noticed" case.
+#
+# Keeping the cadence in the state file (not only in the timer) means
+#   * the retry interval is inspectable:  state.py get --field schedule
+#   * a manual `--force` run does not desynchronise the schedule
+#   * the same logic works under cron/launchd where no systemd timers exist
+#
+# Install:
+#   cp deploy/gpu/systemd/dana-gpu-reconcile.{service,timer} /etc/systemd/system/
+#   systemctl daemon-reload && systemctl enable --now dana-gpu-reconcile.timer
+# =============================================================================
+[Unit]
+Description=Dana GPU RAG reconcile: hourly wake + daily full check, 3h retry on failure
+Documentation=file:///workspace/Work_Credit-RAG_Phase1/deploy/gpu/README.md
+
+[Timer]
+# Hourly wake-up; the script itself gates on schedule.next_retry_at.
+OnCalendar=hourly
+# Daily full check (host local time) even when everything looks healthy.
+OnCalendar=*-*-* 04:10:00
+# Replay a missed run after reboot/downtime instead of silently skipping it.
+Persistent=true
+# Spread the wake-up so it does not collide with Jenkins pollSCM on the hour.
+RandomizedDelaySec=300
+AccuracySec=1min
+Unit=dana-gpu-reconcile.service
+
+[Install]
+WantedBy=timers.target

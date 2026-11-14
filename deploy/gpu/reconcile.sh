@@ -42,8 +42,11 @@ PROFILE="gpu"
 FORCE=0
 DRY_RUN=0
 REPORT_ONLY=0
+# Cadence: a healthy stack is re-verified once a day; a failing one retries every
+# 3h. Both intervals live in the state file (schedule.next_retry_at), so the
+# timer can stay dumb and the schedule survives reboots and manual runs.
 RETRY_INTERVAL_HOURS="${DANA_RETRY_HOURS:-3}"
-DAILY_WHEN=""   # informational
+DAILY_INTERVAL_HOURS="${DANA_DAILY_HOURS:-24}"
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -53,6 +56,7 @@ while [ $# -gt 0 ]; do
     --dry-run|-n) DRY_RUN=1; shift ;;
     --report-only) REPORT_ONLY=1; shift ;;
     --retry-hours) RETRY_INTERVAL_HOURS="$2"; shift 2 ;;
+    --daily-hours) DAILY_INTERVAL_HOURS="$2"; shift 2 ;;
     -h|--help) sed -n '1,40p' "$0"; exit 0 ;;
     *) die "reconcile.sh: unknown arg: $1" ;;
   esac
@@ -69,7 +73,11 @@ say() { log "$*" | tee -a "$RUN_LOG" >/dev/null; printf '%s\n' "$*"; }
 say "=== reconcile $RUN_ID profile=$PROFILE (force=$FORCE dry_run=$DRY_RUN) ==="
 
 # ---------------------------------------------------------------------------
-# Cadence gate: honour schedule.next_retry_at unless --force
+# Cadence gate
+#   schedule.next_retry_at is the single scheduling source of truth:
+#     - healthy run  -> now + DAILY_INTERVAL_HOURS (daily re-verify)
+#     - failing run  -> now + RETRY_INTERVAL_HOURS (3h retry)
+#   --force bypasses the gate (manual operator check / post-deploy verification).
 # ---------------------------------------------------------------------------
 NEXT="$(dana_state_field schedule.next_retry_at "")"
 if [ "$FORCE" != "1" ] && [ -n "$NEXT" ]; then
@@ -88,16 +96,18 @@ HEALTH_RC=${PIPESTATUS[0]}
 
 if [ "$HEALTH_RC" -eq 0 ]; then
   say "healthy (exit 0)"
+  NEXT_DAILY="$(dana_iso_plus_seconds $((DAILY_INTERVAL_HOURS * 3600)))"
+  say "next check scheduled: $NEXT_DAILY (daily re-verify, ${DAILY_INTERVAL_HOURS}h)"
   if [ "$DRY_RUN" != "1" ] && [ -f "$DANA_STATE_FILE" ]; then
-    python3 - "$DANA_STATE_FILE" <<'PY' 2>/dev/null || true
+    python3 - "$DANA_STATE_FILE" "$NEXT_DAILY" <<'PY' 2>/dev/null || true
 import json, sys, datetime, os
-state = sys.argv[1]
+state, next_daily = sys.argv[1], sys.argv[2]
 data = json.load(open(state))
 now = datetime.datetime.now(datetime.timezone.utc)
 sched = data.setdefault("schedule", {})
 sched["last_check_at"] = now.strftime("%Y-%m-%dT%H:%M:%SZ")
 sched["last_success_at"] = now.strftime("%Y-%m-%dT%H:%M:%SZ")
-sched["next_retry_at"] = None
+sched["next_retry_at"] = next_daily
 sched["consecutive_failures"] = 0
 tmp = state + ".tmp"
 with open(tmp, "w") as fh:
@@ -137,6 +147,22 @@ if [ "$HAVE_LKG" = "1" ]; then
   RB_RC=${PIPESTATUS[0]}
   if [ "$RB_RC" -eq 0 ]; then
     say "HEALED via rollback to last-known-good"
+    NEXT_DAILY="$(dana_iso_plus_seconds $((DAILY_INTERVAL_HOURS * 3600)))"
+    python3 - "$DANA_STATE_FILE" "$NEXT_DAILY" <<'PY' 2>/dev/null || true
+import json, sys, datetime, os
+state, next_daily = sys.argv[1], sys.argv[2]
+data = json.load(open(state))
+sched = data.setdefault("schedule", {})
+sched["last_check_at"] = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+sched["last_success_at"] = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+sched["next_retry_at"] = next_daily
+sched["consecutive_failures"] = 0
+tmp = state + ".tmp"
+with open(tmp, "w") as fh:
+    json.dump(data, fh, indent=2, sort_keys=True); fh.write("\n")
+os.replace(tmp, state)
+PY
+    say "next check scheduled: $NEXT_DAILY (daily re-verify)"
     exit 0
   fi
   say "rollback did not reach healthy (exit $RB_RC)"
