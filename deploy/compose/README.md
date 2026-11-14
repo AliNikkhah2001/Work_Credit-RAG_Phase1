@@ -81,6 +81,82 @@ docker compose -p dana-local \
 
 Default laptop embed/rerank is **local MiniLM 384-d + BGE** (matches a typical existing pgvector index). Switching to OpenRouter `text-embedding-3-small` (1536-d) without rebuilding the image **and** re-ingesting will break `/search/api` (and the search UI used to crash on missing `elapsed_ms`).
 
+### Building images when Docker Hub is blocked
+
+On some networks (observed on the Iranian dev laptop, Nov 2026) Docker Hub is
+DNS-sinkholed: `registry-1.docker.io`, `auth.docker.io`, and
+`production.cloudflare.docker.com` all resolve to the same ISP IP and the TLS
+handshake dies. `docker pull` then fails with a bare EOF, and every rebuild
+fails too — not because of the component, but because BuildKit cannot fetch
+anything from the registry.
+
+Use the wrapper instead of raw `docker build`:
+
+```bash
+# one component at a time; same context / dockerfile / args as the compose build: block
+bash scripts/docker_build_offline.sh \
+  --image rag-guardrails:local --context components/guardrails
+
+bash scripts/docker_build_offline.sh \
+  --image rag-kb:local --context components/knowledgebase/kb-manager \
+  --build-arg TORCH_CHANNEL=cpu          # compose.local.yml pins cpu; compose.gpu.yml uses cuda
+
+bash scripts/docker_build_offline.sh \
+  --image rag-tracing:local --context components/tracing
+```
+
+Flags: `--image`, `--context`, `--dockerfile`, `--build-arg K=V` (repeatable),
+`--no-cache`, `--dry-run`, `--self-test`. `--self-test` exercises the
+reachability probe, the directive strip, and the `FROM` parser with no network
+and no build, so it is safe to run in CI.
+
+**Why the `# syntax=` directive must be stripped.** Every component Dockerfile
+starts with `# syntax=docker/dockerfile:1`. That line makes BuildKit pull the
+`docker/dockerfile:1` frontend image *before* parsing the file, which is exactly
+what a blocked Hub kills. Once `docker/dockerfile:1` is unavailable, that line
+has to go for the build to start. Nothing else depends on it: classic Dockerfile
+syntax plus `RUN --mount=type=cache,target=/root/.cache/pip` is handled by the
+frontend built into BuildKit. The helper copies the Dockerfile to a temp file,
+removes only that one line, and keeps the original build context — **the
+submodule Dockerfile is never modified**.
+
+**Base images still have to be present locally.** Offline, a missing `FROM`
+image can only fail; the helper resolves and `docker image inspect`s every base
+first, then exits `2` naming the exact missing image:
+
+| Component | Context | Required base image(s) | Cached on the laptop? |
+|---|---|---|---|
+| guardrails | `components/guardrails` | `python:3.11-slim` | yes |
+| orchestrator | `components/orchestrator` | `python:3.11-slim` | yes |
+| kb | `components/knowledgebase/kb-manager` | `python:3.11-slim` | yes |
+| tracing | `components/tracing` | `python:3.11-slim` | yes |
+| webui | `components/webui` (`Dockerfile.local`) | `python:3.12-slim-trixie`, plus `node:22-alpine3.20` / `nginx:alpine` on other stages | **no** |
+
+So `guardrails`, `orchestrator`, `kb`, and `tracing` rebuild offline; **`webui`
+cannot** — it needs Hub access (or a `docker load` of the base images from a
+machine that has it). The same applies to `postgres:16-alpine` if it is ever
+evicted from the local cache.
+
+**The GPU server should use the normal path.** It has Hub access, so
+`docker compose ... build` works with the Dockerfiles untouched and the syntax
+directive preserved. The strip is an offline-only workaround; the helper only
+does it when the 5-second probe of `registry-1.docker.io/v2/` fails.
+
+Before overwriting `:local`, retag the current image so rollback stays possible:
+
+```bash
+docker tag rag-guardrails:local rag-guardrails:stale-$(date +%Y%m%d)
+```
+
+Then recreate only the services that changed:
+
+```bash
+docker compose -p dana-local \
+  -f deploy/compose/compose.base.yml -f deploy/compose/compose.local.yml \
+  --env-file deploy/compose/.env \
+  up -d --no-deps --force-recreate guardrails orchestrator kb tracing
+```
+
 ## GPU server (prod)
 
 Prefer existing stacks (`deploy/docker/`). If using this compose family:
