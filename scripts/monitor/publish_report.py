@@ -68,6 +68,10 @@ SERVICE_PORTS: dict[str, str] = {
 # 80xx placeholders) must not flip a run to DEGRADED.
 CORE_SERVICES = ("kb", "guardrails", "orchestrator", "webui")
 
+# Run statuses the dashboard template understands. Compared literally, in upper
+# case, by scripts/monitor/site/index.html — keep the two in sync.
+KNOWN_STATUSES = ("HEALTHY", "DEGRADED", "DOWN")
+
 
 # --------------------------------------------------------------------------- #
 # small helpers
@@ -248,6 +252,15 @@ def build_run_record(
             status = "DEGRADED"
         else:
             status = "HEALTHY"
+    else:
+        # Normalise the caller's spelling. `--status` is free-form and the
+        # checked-in template compares against "HEALTHY"/"DOWN" literally, so a
+        # lowercase `--status healthy` used to render as a red stack: the uptime
+        # card computed "0.0 % · 0 healthy / N runs" on an all-healthy fleet.
+        # That is a fabricated downtime number, which must never be possible.
+        status = status.strip().upper()
+        if status not in KNOWN_STATUSES:
+            status = "DEGRADED"
 
     kb_compact: dict[str, Any] | None = None
     if kb_version:
