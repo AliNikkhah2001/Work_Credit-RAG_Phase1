@@ -30,12 +30,17 @@
 set -uo pipefail
 
 # --- Colors ------------------------------------------------------------------
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-NC='\033[0m' # No Color
+# ANSI-C quoting ($'\033...') so the variables hold real escape bytes. They are
+# consumed two different ways in this script: `printf '%b'` interprets the
+# backslash form, but plain `echo` (all of the `===` banners and the --help
+# heredoc) does NOT — with the quoted form every banner printed a literal
+# "\033[0;36m" and the help text was unreadable.
+RED=$'\033[0;31m'
+GREEN=$'\033[0;32m'
+YELLOW=$'\033[1;33m'
+BLUE=$'\033[0;34m'
+CYAN=$'\033[0;36m'
+NC=$'\033[0m' # No Color
 
 # --- State -------------------------------------------------------------------
 VERBOSE=0
@@ -98,8 +103,13 @@ ${CYAN}EXAMPLE:${NC}
   DANA_HOST_REPO=$(pwd) bash scripts/gpu_full_recover_report.sh
 
 ${CYAN}DAEMON EXAMPLE:${NC}
-  # Install systemd timer for daily 4 PM run with 3h retry on failure:
-  sudo bash scripts/install_daemon.sh
+  # Install a daily run (default 16:00 UTC) that retries every 3h while the day
+  # is still failing. Linux/systemd GPU host:
+  sudo bash deploy/monitor/install.sh
+  # macOS dev laptop (launchd instead of systemd):
+  bash scripts/install_daemon_macos.sh
+  # Preview either one without changing anything:
+  bash deploy/monitor/install.sh --check
 
 ${CYAN}PREREQUISITES:${NC}
   - docker (for container logs and restart)
