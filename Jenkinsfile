@@ -350,6 +350,10 @@ pipeline {
                     bash scripts/ci_stage_evidence.sh mark build || true
                 '''
             }
+            post {
+                success { ghStatus('build', 'success', 'app images built') }
+                failure { ghStatus('build', 'failure', 'image build failed') }
+            }
         }
 
         stage('Deploy stage') {
