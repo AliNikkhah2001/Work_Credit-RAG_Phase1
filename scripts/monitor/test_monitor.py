@@ -121,7 +121,7 @@ KB_FIXTURE = {
 # --------------------------------------------------------------------------- #
 # checks
 # --------------------------------------------------------------------------- #
-def test_record_schema(tmp: Path) -> dict:
+def _run_record_schema(tmp: Path) -> dict:
     section("run record schema (health-run/v1)")
     out = make_fixture(tmp, "20261114T160000Z-test-host", down=("manager",))
     rec = pr.build_run_record(
@@ -161,7 +161,7 @@ def test_record_schema(tmp: Path) -> dict:
     return rec
 
 
-def test_status_derivation(tmp: Path) -> None:
+def _run_status_derivation(tmp: Path) -> None:
     section("status derivation from core services")
     out = make_fixture(tmp, "20261114T170000Z-down", down=("orchestrator",))
     rec = pr.build_run_record(
@@ -179,7 +179,7 @@ def test_status_derivation(tmp: Path) -> None:
     check("all core services down → DOWN", rec2["status"] == "DOWN", rec2["status"])
 
 
-def test_index(tmp: Path) -> None:
+def _run_index(tmp: Path) -> None:
     section("runs/index.json rebuild is self-healing")
     root = tmp / "site"
     (root / "runs").mkdir(parents=True)
@@ -209,7 +209,7 @@ def test_index(tmp: Path) -> None:
     check("machines deduplicated", idx2["machines"] == ["host"], str(idx2["machines"]))
 
 
-def test_retention(tmp: Path) -> None:
+def _run_retention(tmp: Path) -> None:
     section("retention (logs + screenshots)")
     root = tmp / "retain"
     for i in range(5):
@@ -236,7 +236,7 @@ def test_retention(tmp: Path) -> None:
           (root / "logs" / "run-0" / "run.log").is_file())
 
 
-def test_links(tmp: Path) -> None:
+def _run_links(tmp: Path) -> None:
     section("published tree links resolve")
     root = tmp / "links"
     out = make_fixture(tmp, "20261114T190000Z-link")
@@ -275,7 +275,7 @@ def test_links(tmp: Path) -> None:
           m.group(1) if m else "no redirect found")
 
 
-def test_no_secret_artifacts(tmp: Path) -> None:
+def _run_no_secret_artifacts(tmp: Path) -> None:
     section("sensitive artifacts are never published")
     out = make_fixture(tmp, "20261114T200000Z-secrets")
     (out / "logs" / "command_shutdown_reboot_user.log").write_text(
@@ -299,7 +299,7 @@ def test_no_secret_artifacts(tmp: Path) -> None:
     check("no published file contains the sentinel secret", not leaked, str(leaked))
 
 
-def test_dashboard_template() -> None:
+def _run_dashboard_template() -> None:
     section("dashboard template")
     tpl = Path(__file__).resolve().parent / "site" / "index.html"
     check("template exists", tpl.is_file())
@@ -316,7 +316,7 @@ def test_dashboard_template() -> None:
     check("no leftover placeholder domain", "placeholder" not in html.lower())
 
 
-def test_run_id_time() -> None:
+def _run_run_id_time() -> None:
     section("run id → timestamp")
     dt = pr.run_id_time("20261114T145307Z-Ali-Nikkhah-4")
     check("parses standard run id", dt is not None and pr.iso(dt) == "2026-11-14T14:53:07Z",
@@ -324,17 +324,40 @@ def test_run_id_time() -> None:
     check("unparseable id returns None", pr.run_id_time("not-a-run") is None)
 
 
+def _run_push_guard() -> None:
+    section("push-target guard (reports must never reach a production repo)")
+    refusal = pr.push_target_refusal
+    check("production umbrella repo refused",
+          refusal("https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1.git") is not None)
+    check("virtual-server-setup repo refused",
+          refusal("https://github.com/AliNikkhah2001/Work_RAG-Server-Setup.git") is not None)
+    check("component submodule repo refused",
+          refusal("git@github.com:AliNikkhah2001/Work_RAG-Orchestrator.git") is not None)
+    check("health-check repo allowed",
+          refusal("https://github.com/AliNikkhah2001/Work_RAG_HealthCheck.git") is None)
+    check("health-check repo allowed with different case",
+          refusal("https://github.com/AliNikkhah2001/work_rag_healthcheck") is None)
+    check("unrelated repo refused", refusal("https://github.com/someone/random.git") is not None)
+    check("empty remote refused", refusal("") is not None)
+    check("slug normalisation strips transport and .git",
+          pr.repo_slug("git@github.com:Owner/Repo.git") == "owner/repo",
+          pr.repo_slug("git@github.com:Owner/Repo.git"))
+    check("exit code is the refusal code, not a failure code", pr.EXIT_REFUSED == 64,
+          str(pr.EXIT_REFUSED))
+
+
 def main() -> int:
     tmp = Path(tempfile.mkdtemp(prefix="monitor-test-"))
     try:
-        test_run_id_time()
-        test_record_schema(tmp)
-        test_status_derivation(tmp)
-        test_index(tmp)
-        test_retention(tmp)
-        test_links(tmp)
-        test_no_secret_artifacts(tmp)
-        test_dashboard_template()
+        _run_run_id_time()
+        _run_record_schema(tmp)
+        _run_status_derivation(tmp)
+        _run_index(tmp)
+        _run_retention(tmp)
+        _run_links(tmp)
+        _run_no_secret_artifacts(tmp)
+        _run_dashboard_template()
+        _run_push_guard()
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 
@@ -346,6 +369,58 @@ def main() -> int:
         return 1
     print(f"PASSED — {PASSES} checks")
     return 0
+
+
+# --------------------------------------------------------------------------- #
+# pytest entry points
+#
+# The ``_run_*`` helpers above are driven by ``main()`` (the standalone runner
+# used by the GPU host, where pytest is not installed). These thin wrappers let
+# CI collect the same checks with ``pytest``; both paths share one code path, so
+# a check can never pass under one runner and fail under the other.
+# --------------------------------------------------------------------------- #
+def _assert_clean(fn, *args) -> None:
+    """Run one check group and fail the pytest test if it added any FAILS."""
+    before = len(FAILS)
+    fn(*args)
+    new = FAILS[before:]
+    assert not new, "failed checks:\n  - " + "\n  - ".join(new)
+
+
+def test_run_id_parsing() -> None:
+    _assert_clean(_run_run_id_time)
+
+
+def test_record_schema(tmp_path: Path) -> None:
+    _assert_clean(_run_record_schema, tmp_path)
+
+
+def test_status_derivation(tmp_path: Path) -> None:
+    _assert_clean(_run_status_derivation, tmp_path)
+
+
+def test_index(tmp_path: Path) -> None:
+    _assert_clean(_run_index, tmp_path)
+
+
+def test_retention(tmp_path: Path) -> None:
+    _assert_clean(_run_retention, tmp_path)
+
+
+def test_published_links(tmp_path: Path) -> None:
+    _assert_clean(_run_links, tmp_path)
+
+
+def test_no_secret_artifacts(tmp_path: Path) -> None:
+    _assert_clean(_run_no_secret_artifacts, tmp_path)
+
+
+def test_dashboard_template() -> None:
+    _assert_clean(_run_dashboard_template)
+
+
+def test_push_guard() -> None:
+    _assert_clean(_run_push_guard)
 
 
 if __name__ == "__main__":

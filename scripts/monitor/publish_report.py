@@ -745,6 +745,76 @@ def publish(
 
 
 # --------------------------------------------------------------------------- #
+# push-target guard
+# --------------------------------------------------------------------------- #
+# The publisher writes into a git repo it owns and pushes it. If that remote
+# ever points at the production source repo (or a component submodule), every
+# health report becomes a commit in the repo Jenkins polls — which is how a
+# monitoring run can trigger a production build. The monitoring repo is the
+# only legal target, so the check is an allowlist, not a denylist.
+EXIT_REFUSED = 64  # matches the deploy layer's "refused, nothing done" contract
+
+PROTECTED_SLUGS = (
+    "work_credit-rag_phase1",
+    "work_rag-server-setup",
+    "work_rag-orchestrator",
+    "work_rag-guardrails",
+    "work_rag-kb",
+    "work_rag-evaluation_suite",
+    "ics_chatbot_agent-state",
+    "agent-state",
+)
+
+HEALTH_SLUG_MARKER = "healthcheck"
+
+
+def repo_slug(remote: str) -> str:
+    """Normalise a git remote to a bare ``owner/repo`` slug.
+
+    Handles ``git@host:owner/repo.git``, ``https://host/owner/repo``, trailing
+    slashes and mixed case so a URL spelling cannot slip past the guard.
+    """
+    value = (remote or "").strip()
+    if not value:
+        return ""
+    if value.startswith("git@"):
+        value = value.split(":", 1)[-1]
+    elif "://" in value:
+        value = value.split("://", 1)[1].split("/", 1)[-1]
+    if value.endswith(".git"):
+        value = value[: -len(".git")]
+    return "/".join(p for p in value.strip("/").split("/") if p).lower()
+
+
+def push_target_refusal(
+    remote: str,
+    *,
+    allow_extra: tuple[str, ...] = (),
+) -> str | None:
+    """Return a refusal reason when ``remote`` is not a legal publish target.
+
+    ``None`` means "safe to push". The check runs before any file is written so
+    a misconfigured host cannot even stage a report into the wrong repo.
+    """
+    slug = repo_slug(remote)
+    if not slug:
+        return "no push remote configured"
+
+    name = slug.rsplit("/", 1)[-1]
+    protected = tuple(PROTECTED_SLUGS) + tuple(repo_slug(s) for s in allow_extra)
+    for bad in protected:
+        if bad and (name == bad.rsplit("/", 1)[-1] or slug == bad):
+            return f"target '{slug}' is a production repo (protected)"
+
+    if HEALTH_SLUG_MARKER not in name:
+        return (
+            f"target '{slug}' is not the standalone health-check repo "
+            f"(expected a '*{HEALTH_SLUG_MARKER}*' repo)"
+        )
+    return None
+
+
+# --------------------------------------------------------------------------- #
 # CLI
 # --------------------------------------------------------------------------- #
 def main(argv: list[str] | None = None) -> int:
@@ -805,6 +875,23 @@ def main(argv: list[str] | None = None) -> int:
 
     repo = args.repo.resolve()
     print(f"[publish] repo={repo} run={run_id} status={record['status']} machine={machine}")
+
+    # Refuse a production target BEFORE touching the tree. --dry-run and
+    # --no-push are allowed through only because they cannot reach a remote,
+    # but the guard still reports what it found so a misconfigured host is
+    # visible in the log instead of discovered after a push.
+    refusal = push_target_refusal(args.remote)
+    if args.dry_run or args.no_push:
+        if refusal and args.remote:
+            print(f"[publish] WARN: push target would be refused: {refusal}", file=sys.stderr)
+    elif refusal:
+        print(f"[publish] REFUSED: {refusal}", file=sys.stderr)
+        print(
+            "[publish] refusing to publish (exit 64): reports must go to the "
+            "standalone Work_RAG_HealthCheck repo, never a production repo",
+            file=sys.stderr,
+        )
+        return EXIT_REFUSED
 
     if not args.dry_run:
         ensure_repo(repo, args.remote, args.branch, args.no_push)
