@@ -9,6 +9,7 @@ This directory contains project-wide documentation.
 | File | Description |
 |------|-------------|
 | [evaluation.md](evaluation.md) | KB retrieval benchmarks, RAG E2E, LLM-as-judge, reproduction |
+| [edge-path-diagnostics.md](edge-path-diagnostics.md) | `diagnose_edge_path.sh` — hop-by-hop DNS/edge/port diagnosis, `--report`/`--push` capture, health-dashboard publishing, redaction |
 | [cross_encoder_benchmark_results.md](cross_encoder_benchmark_results.md) | Cross-encoder reranker benchmark results and latency breakdown |
 | [history/](history/) | Historical code audits and reviews |
 
