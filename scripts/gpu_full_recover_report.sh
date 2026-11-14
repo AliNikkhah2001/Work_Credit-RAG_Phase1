@@ -46,6 +46,7 @@ DRY_RUN=0
 DAEMON_MODE=0
 DAILY_TIME="16:00"
 RETRY_INTERVAL_HOURS=3
+GPU_MACHINE_NAME=""
 STEPS_TOTAL=20
 STEP_CURRENT=0
 
@@ -55,6 +56,9 @@ STATUS_SMOKE="NOT_ATTEMPTED"
 STATUS_PUSH="NOT_ATTEMPTED"
 STATUS_E2E="NOT_ATTEMPTED"
 STATUS_HTML="NOT_ATTEMPTED"
+KB_VERDICT="unknown"
+KB_SOURCE_DIR="${KB_SOURCE_DIR:-}"
+KB_BASE_URL="${KB_BASE_URL:-http://127.0.0.1:8000}"
 
 # --- Paths -------------------------------------------------------------------
 UMBRELLA="${DANA_HOST_REPO:-}"
@@ -81,6 +85,7 @@ ${CYAN}OPTIONS:${NC}
   --daemon           Run in daemon mode (daily at $DAILY_TIME, retry every $RETRY_INTERVAL_HOURS h on failure)
   --daily-time HH:MM Set the daily run time (default: $DAILY_TIME)
   --retry-hours N    Set retry interval in hours on failure (default: $RETRY_INTERVAL_HOURS)
+  --machine-name S   Override the machine name recorded in the published run record
   -h, --help         Show this help
 
 ${CYAN}REQUIRED:${NC}
@@ -146,6 +151,7 @@ while [[ $# -gt 0 ]]; do
     --daemon) DAEMON_MODE=1; shift ;;
     --daily-time) DAILY_TIME="$2"; shift 2 ;;
     --retry-hours) RETRY_INTERVAL_HOURS="$2"; shift 2 ;;
+    --machine-name) GPU_MACHINE_NAME="$2"; shift 2 ;;
     -h|--help) usage; exit 0 ;;
     --DANA_HOST_REPO=*) UMBRELLA="${1#*=}"; shift ;;
     *) echo "Unknown option: $1" >&2; usage; exit 2 ;;
@@ -168,7 +174,7 @@ if [[ ! -d "$UMBRELLA" ]]; then
   exit 2
 fi
 
-if [[ ! -d "$UMBRELLA/.git" ]]; then
+if ! git -C "$UMBRELLA" rev-parse --git-dir >/dev/null 2>&1; then
   fail "DANA_HOST_REPO is not a git repository: $UMBRELLA"
   exit 2
 fi
@@ -497,6 +503,27 @@ ok "builds/runs -> $OUT/builds/builds_and_runs.txt"
 step "Collecting knowledgebase details"
 KB_DIR="$OUT/kb"
 mkdir -p "$KB_DIR"
+KB_SOURCE_DIR="${KB_SOURCE_DIR:-$UMBRELLA/components/knowledgebase/kb-source}"
+
+# --- Live version probe: what is INGESTED in the DB vs what is EXPECTED ----
+# Field/endpoint names come from components/knowledgebase:
+#   chunks/documents/ingestion_jobs  -> kb_manager/models/database.py
+#   /health, /registry/api/active    -> kb_manager/web/app.py, web/routes/registry.py
+#   .dvc_pins/*                      -> kb_manager/dvc_snapshot.py
+if [[ -f "$UMBRELLA/scripts/monitor/kb_version.py" ]] && have python3; then
+  if python3 "$UMBRELLA/scripts/monitor/kb_version.py" \
+      --repo-root "$UMBRELLA" \
+      ${KB_SOURCE_DIR:+--kb-source "$KB_SOURCE_DIR"} \
+      --db-url "${KB_DB_URL:-postgresql://postgres:postgres@127.0.0.1:5432/kb_manager}" \
+      --kb-api "${KB_BASE_URL:-http://127.0.0.1:8000}" \
+      --out "$KB_DIR/kb_version.json" --quiet >>"$KB_DIR/kb_version.log" 2>&1; then
+    KB_VERDICT="$(python3 -c "import json,sys;print(json.load(open(sys.argv[1]))['verdict']['status'])" "$KB_DIR/kb_version.json" 2>/dev/null || echo unknown)"
+    ok "kb version probe -> $KB_DIR/kb_version.json (verdict: $KB_VERDICT)"
+  else
+    warn "kb version probe failed — see $KB_DIR/kb_version.log"
+  fi
+fi
+
 {
   echo "=== Knowledgebase container ==="
   if have docker; then
@@ -562,10 +589,34 @@ step "Attempting service restart"
 RESTART_LOG="$OUT/restart/restart.log"
 STATUS_RESTART="FAILED"
 
+# Compose layers bind-mount source trees (../../components/knowledgebase/...).
+# Running the report from a *different* checkout — a git worktree, a copy, a
+# partial clone — silently re-points every container at empty directories and
+# the stack comes back "unhealthy" for reasons unrelated to production. Only
+# restart from a checkout whose compose inputs actually exist.
+COMPOSE_INPUTS_OK=1
+for rel in \
+  components/knowledgebase/kb-manager/kb_manager \
+  components/knowledgebase/kb-manager/packs \
+  components/evaluation; do
+  if [[ ! -d "$UMBRELLA/$rel" ]]; then
+    COMPOSE_INPUTS_OK=0
+    warn "compose bind-mount source missing: $UMBRELLA/$rel"
+  fi
+done
+if [[ "$COMPOSE_INPUTS_OK" -eq 0 ]]; then
+  warn "refusing to restart: this checkout does not contain the compose mount sources"
+  warn "  (a git worktree or partial submodule init will break running containers)"
+  echo "skipped: compose mount sources missing in $UMBRELLA" >"$OUT/restart/action.txt"
+  STATUS_RESTART="SKIPPED"
+fi
+
 if [[ "$NO_RESTART" == "1" ]]; then
   echo "skip" >"$OUT/restart/action.txt"
   STATUS_RESTART="SKIPPED"
   warn "restart disabled (--no-restart)"
+elif [[ "$COMPOSE_INPUTS_OK" -eq 0 ]]; then
+  : # already reported above
 else
   {
     echo "Restart attempt at $(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -1617,106 +1668,86 @@ fi
 } >>"$INDEX"
 
 # =============================================================================
-# SECTION 16: Push to standalone health check repo (no Jenkins triggers)
+# SECTION 16: Publish to the standalone monitoring repo (single `main` branch)
 # =============================================================================
-step "Pushing recovery report to standalone repo"
+# Layout written to Work_RAG_HealthCheck:
+#   runs/<RUN_ID>.json      compact record (one per run, no logs)
+#   runs/index.json         manifest rebuilt from the directory listing
+#   latest/                 newest record + detail page + screenshots
+#   logs/<RUN_ID>/          raw evidence, retained for the newest N runs only
+#
+# A single `main` branch is used and pushes are rebase-and-retry, so the laptop
+# and the GPU host can publish concurrently without losing records. The old
+# behaviour (one `ops/gpu-recover-*` branch per run) left the repo with no main.
+step "Publishing run record to monitoring repo"
 HEALTH_REPO="${GPU_HEALTH_REPO:-https://github.com/AliNikkhah2001/Work_RAG_HealthCheck.git}"
 HEALTH_REPO_DIR="${GPU_HEALTH_REPO_DIR:-$HOME/Work_RAG_HealthCheck}"
+HEALTH_BRANCH="${GPU_HEALTH_BRANCH:-main}"
+HEALTH_KEEP_LOGS="${GPU_HEALTH_KEEP_LOGS:-30}"
+PUBLISHER="$UMBRELLA/scripts/monitor/publish_report.py"
+KB_VERSION_JSON="$OUT/kb/kb_version.json"
 STATUS_PUSH="FAILED"
+
+# --- Probe the KB version (DB + API) vs the repo pin ------------------------
+# Field names come from the real KB implementation; see scripts/monitor/kb_version.py.
+if [[ -f "$PUBLISHER" ]] && have python3; then
+  log "probing knowledge-base version (db + api) vs pinned"
+  KB_SOURCE_DIR="${KB_SOURCE_DIR:-$UMBRELLA/components/knowledgebase/kb-source}"
+  KB_API_URL="${KB_BASE_URL:-http://127.0.0.1:8000}"  # Host psql first; the prober falls back to `docker exec` against the
+  # postgres container, which is how the dev stack exposes the DB on 15432.
+  KB_DB_URL_RESOLVED="${KB_DB_URL:-postgresql://postgres:postgres@127.0.0.1:5432/kb_manager}"
+  if python3 "$UMBRELLA/scripts/monitor/kb_version.py" \
+      --repo-root "$UMBRELLA" \
+      ${KB_SOURCE_DIR:+--kb-source "$KB_SOURCE_DIR"} \
+      --db-url "$KB_DB_URL_RESOLVED" \
+      --kb-api "$KB_API_URL" \
+      --out "$KB_VERSION_JSON" --quiet 2>>"$OUT/kb/kb_version.log"; then
+    KB_VERDICT="$(python3 -c "import json,sys;print(json.load(open(sys.argv[1]))['verdict']['status'])" "$KB_VERSION_JSON" 2>/dev/null || echo unknown)"
+    if [[ "$KB_VERDICT" == "match" ]]; then
+      ok "KB version matches the pin"
+    elif [[ "$KB_VERDICT" == "mismatch" ]]; then
+      warn "KB version MISMATCH — ingested state differs from the pinned snapshot"
+    else
+      warn "KB version undetermined (values reported as 'unknown' on the dashboard)"
+    fi
+  else
+    KB_VERDICT="unknown"
+    warn "KB version probe failed — dashboard will show 'unknown'"
+  fi
+else
+  KB_VERDICT="unknown"
+  warn "publisher or python3 missing — KB version not probed"
+fi
 
 if [[ "$NO_PUSH" == "1" ]]; then
   STATUS_PUSH="SKIPPED"
   warn "push disabled (--no-push). Report at: $OUT"
+elif [[ ! -f "$PUBLISHER" ]]; then
+  warn "monitoring publisher not found at $PUBLISHER — skipping publish"
 else
-  PUSH_OK=0
-  (
-    echo "=== Setting up health check repo ==="
-    # Fresh local repo (no clone) to avoid pulling in secret-laden remote history from previous failed pushes
-    rm -rf "$HEALTH_REPO_DIR" 2>/dev/null || true
-    mkdir -p "$(dirname "$HEALTH_REPO_DIR")"
-    git init "$HEALTH_REPO_DIR" 2>&1 | tee -a "$OUT/meta/git-push.log" || true
-    git -C "$HEALTH_REPO_DIR" checkout -B main 2>&1 | tee -a "$OUT/meta/git-push.log" || true
-    # Force-set the correct remote URL (never push to umbrella repo by accident)
-    git -C "$HEALTH_REPO_DIR" remote remove origin 2>/dev/null || true
-    git -C "$HEALTH_REPO_DIR" remote add origin "$HEALTH_REPO" 2>&1 | tee -a "$OUT/meta/git-push.log" || true
-    # Large multi-MB reports fail with HTTP 400 on HTTP/2 + small postBuffer — force HTTP/1.1 + big buffer
-    git -C "$HEALTH_REPO_DIR" config http.version HTTP/1.1
-    git -C "$HEALTH_REPO_DIR" config http.postBuffer 524288000
-    git -C "$HEALTH_REPO_DIR" config user.name "$(git config user.name 2>/dev/null || echo 'GPU Health Bot')"
-    git -C "$HEALTH_REPO_DIR" config user.email "$(git config user.email 2>/dev/null || echo 'health@local')"
-    echo "DEBUG: origin URL = $(git -C "$HEALTH_REPO_DIR" config --get remote.origin.url 2>/dev/null || echo 'none')"
-    cd "$HEALTH_REPO_DIR"
+  PUBLISH_ARGS=(
+    --run-dir "$OUT"
+    --run-id "$RUN_ID"
+    --machine-name "${GPU_MACHINE_NAME:-$(hostname -s 2>/dev/null || echo host)}"
+    --machine-type "$MACHINE_TYPE"
+    --mode "$MODE"
+    --status "$STATUS"
+    --repo "$HEALTH_REPO_DIR"
+    --remote "$HEALTH_REPO"
+    --branch "$HEALTH_BRANCH"
+    --keep-logs "$HEALTH_KEEP_LOGS"
+  )
+  [[ -f "$KB_VERSION_JSON" ]] && PUBLISH_ARGS+=(--kb-version "$KB_VERSION_JSON")
+  [[ "$DRY_RUN" == "1" ]] && PUBLISH_ARGS+=(--dry-run)
 
-    # Create a clean branch for this run (does not exist on remote yet)
-    git checkout -B "ops/gpu-recover-$RUN_ID" 2>&1 | tee -a "$OUT/meta/git-push.log" || true
-
-    # Organize into dated folder: reports/YYYY/MM/DD/HH-MM/
-    REPORT_DATE="$(date -u +%Y/%m/%d/%H-%M)"
-    DEST_DIR="reports/$REPORT_DATE-$(hostname -s 2>/dev/null || echo host)"
-    rm -rf "$DEST_DIR" 2>/dev/null || true
-    mkdir -p "$DEST_DIR"
-    cp -r "$OUT"/* "$DEST_DIR/" 2>/dev/null || true
-
-    # Update index README
-    echo "- [$RUN_ID](./$DEST_DIR/REPORT.md) — **$STATUS** — QA $QA_PASS/$QA_TOTAL — machine: $(hostname -s 2>/dev/null || echo host) — $(date -u +%Y-%m-%dT%H:%M:%SZ)Z" >> reports/README.md 2>/dev/null || true
-
-    # --- Aggressive secret scrubbing before git add/commit/push ---
-    echo "=== Scrubbing secrets from all files before commit ==="
-    SCRUB_FILES="$(find "$DEST_DIR" reports/README.md -type f \( -name '*.txt' -o -name '*.log' -o -name '*.json' -o -name '*.md' -o -name '*.tsv' -o -name '*.html' -o -name '*.yaml' -o -name '*.yml' -o -name '*.env' -o -name '*.conf' -o -name '*.cfg' -o -name '*.ini' -o -name '*.sh' -o -name '*.toml' \) ! -name '*.bak' 2>/dev/null || true)"
-    echo "DEBUG: SCRUB_FILES count: $(echo "$SCRUB_FILES" | wc -l | tr -d ' ')"
-
-    if [[ -n "$SCRUB_FILES" ]]; then
-      echo "$SCRUB_FILES" | while IFS= read -r sf; do
-        [[ -f "$sf" ]] || continue
-        # LC_ALL=C handles files with invalid UTF-8 bytes (shell history, logs)
-        # Use ~ as delimiter to avoid / collisions and | conflicts with alternation
-        LC_ALL=C sed -E -i.bak \
-          -e 's~sk-[A-Za-z0-9_-]+~sk-REDACTED~g' \
-          -e 's~(API_KEY|SECRET|PASSWORD|TOKEN|CREDENTIAL|PRIVATE_KEY|CLIENT_SECRET|ACCESS_TOKEN|REFRESH_TOKEN|AUTH|BEARER)[[:space:]]*=[[:space:]]*[^[:space:]]+~\1=REDACTED~g' \
-          -e 's~(https?://)[^/:]+:[^@]+@~\1REDACTED:REDACTED@~g' \
-          -e 's~postgresql(\+asyncpg)?://[^[:space:]]+~postgresql://REDACTED~g' \
-          -e 's~mysql://[^[:space:]]+~mysql://REDACTED~g' \
-          -e 's~redis://[^[:space:]]+~redis://REDACTED~g' \
-          -e 's~OPENROUTER_API_KEY=[^[:space:]]+~OPENROUTER_API_KEY=REDACTED~g' \
-          -e 's~LANGFUSE_SECRET_KEY=[^[:space:]]+~LANGFUSE_SECRET_KEY=REDACTED~g' \
-          -e 's~LANGFUSE_PUBLIC_KEY=[^[:space:]]+~LANGFUSE_PUBLIC_KEY=REDACTED~g' \
-          -e 's~ghp_[A-Za-z0-9]{20,}~ghp_REDACTED~g' \
-          -e 's~github_pat_[A-Za-z0-9_]{20,}~github_pat_REDACTED~g' \
-          -e 's~eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+~JWT_REDACTED~g' \
-          "$sf" 2>/dev/null || true
-        rm -f "$sf.bak"
-      done
-    fi
-
-    # Verification: count real (non-placeholder) sk- secrets remaining
-    REMAINING_COUNT="$(find "$DEST_DIR" reports/README.md -type f \( -name '*.txt' -o -name '*.log' -o -name '*.json' -o -name '*.md' -o -name '*.tsv' -o -name '*.html' \) ! -name '*.bak' -print0 2>/dev/null | xargs -0 grep -lE 'sk-[A-Za-z0-9_-]{12,}' 2>/dev/null | grep -v 'sk-REDACTED' | wc -l | tr -d ' ')"
-    echo "DEBUG: Files with real sk- secrets after scrub: $REMAINING_COUNT"
-
-    # Stage everything (reports/ holds the dated dir + README index)
-    git add -A reports 2>&1 | tee -a "$OUT/meta/git-push.log" || true
-    git status --short | tee -a "$OUT/meta/git-push.log"
-
-    if git diff --cached --quiet; then
-      warn "nothing to commit in health check repo"
-    else
-      COMMIT_MSG="docs(ops): GPU full recovery report — $(date -u +%Y-%m-%dT%H:%M:%SZ)Z — machine: $(hostname -s 2>/dev/null || echo host) — $MACHINE_TYPE — status: $STATUS"
-      git commit -m "$COMMIT_MSG" 2>&1 | tee -a "$OUT/meta/git-push.log"
-    fi
-
-    if git push -u origin "ops/gpu-recover-$RUN_ID" 2>&1 | tee -a "$OUT/meta/git-push.log"; then
-      echo "PUSH_OK=1" >"$OUT/meta/push_status"
-      ok "pushed health check repo: ops/gpu-recover-$RUN_ID"
-    else
-      echo "PUSH_OK=0" >"$OUT/meta/push_status"
-      fail "health check repo push failed — report remains at $OUT"
-    fi
-  ) || fail "could not operate on health check repo"
-
-  # PUSH_OK is set inside the subshell above, so read it back from disk
-  PUSH_OK=0
-  [[ -f "$OUT/meta/push_status" ]] && . "$OUT/meta/push_status" 2>/dev/null || true
-  if [[ "$PUSH_OK" -eq 1 ]]; then
+  if python3 "$PUBLISHER" "${PUBLISH_ARGS[@]}" 2>&1 | tee -a "$OUT/meta/git-push.log"; then
+    echo "PUSH_OK=1" >"$OUT/meta/push_status"
     STATUS_PUSH="PASSED"
+    ok "published run $RUN_ID to $HEALTH_BRANCH"
+  else
+    echo "PUSH_OK=0" >"$OUT/meta/push_status"
+    STATUS_PUSH="FAILED"
+    fail "publish failed — report remains at $OUT"
   fi
 fi
 
