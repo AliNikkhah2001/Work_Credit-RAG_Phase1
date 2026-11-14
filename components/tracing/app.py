@@ -1,5 +1,5 @@
 """Self-hosted Langfuse-compatible trace collector (host fallback, no Docker needed).
-Implements Langfuse ingestion API + simple UI for Vast unprivileged host.
+Implements Langfuse ingestion API + simple UI for self-hosted unprivileged host.
 Stores traces to /tmp/langfuse_traces.jsonl and provides /api/public/health
 """
 from fastapi import FastAPI, Header, Request, Query
@@ -199,7 +199,7 @@ def _sg_assistant_id() -> str:
     if items:
         _studio_assistant_id = items[0]["assistant_id"]
         return _studio_assistant_id
-    raise RuntimeError("no assistants on :2024 (is `bash deploy/vast/studio.sh` running?)")
+    raise RuntimeError("no assistants on :2024 (is Studio API running?)")
 
 
 def _clip_state(values: dict) -> dict:
@@ -304,7 +304,7 @@ async def api_studio_run(request: Request):
         return await asyncio.to_thread(_start)
     except Exception as e:
         return JSONResponse(
-            {"error": f"studio run failed to start: {e} (is :2024 up? `bash deploy/vast/studio.sh`)"},
+            {"error": f"studio run failed to start: {e} (is :2024 up? Studio API running?)"},
             status_code=503)
 
 

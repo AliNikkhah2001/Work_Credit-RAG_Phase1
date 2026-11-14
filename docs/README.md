@@ -30,8 +30,8 @@ Each component has its own README:
 ## Deployment
 
 - [deploy/docker/README.md](../deploy/docker/README.md) — Privileged Docker Compose
-- [deploy/vast/](../deploy/vast/) — Vast.ai host-venv scripts
-- [compose.mvp.yml](../compose.mvp.yml) — Vast MVP variant
+- [deploy/gpu/](../deploy/gpu/) — self-hosted GPU host-venv scripts
+- [compose.mvp.yml](../compose.mvp.yml) — MVP variant
 
 ## Contracts
 

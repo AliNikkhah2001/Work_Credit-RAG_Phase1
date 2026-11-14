@@ -1,5 +1,5 @@
 # Dockerized Work Credit RAG Phase 1 — privileged CUDA host with NVIDIA Container Toolkit.
-# Mirrors deploy/vast/start.sh (same services, ports, env, startup order).
+# Mirrors deploy/gpu/start.sh (same services, ports, env, startup order).
 #
 # Run from THIS directory (deploy/docker):
 #   cp .env.example .env   # then set MODEL_FILE to your Gemma GGUF on the host

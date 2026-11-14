@@ -116,7 +116,7 @@ flowchart TB
           <li><strong>filter_path folder_hierarchy</strong> — Path-based and tag-based filtering mechanisms for scoping retrieval to specific document subspaces.</li>
           <li><strong>Guardrails :8200 work_rag_guardrails</strong> — The safety service on port 8200 implementing Persian safety policies.</li>
           <li><strong>api.py service.py create_app POST /v1/rails/check POST /v1/chat/completions</strong> — Guardrails FastAPI app with input rail checking and guarded chat completions.</li>
-          <li><strong>service.py judge signals LLM judge UPSTREAM Gemma :18000 :9000</strong> — The LLM judge service using deterministic signals plus Gemma-based judgment, calling upstream Gemma on :18000 (Vast) or :9000 (H200 manager).</li>
+          <li><strong>service.py judge signals LLM judge UPSTREAM Gemma :18000 :9000</strong> — The LLM judge service using deterministic signals plus Gemma-based judgment, calling upstream Gemma on :18000 (self-hosted) or :9000 (H200 manager).</li>
           <li><strong>LLM Manager :9000 llm_inference_manager/app.py</strong> — The LLM inference gateway on port 9000 managing multiple model backends.</li>
           <li><strong>MODEL_REGISTRY 11 models gemma-4-31b champion</strong> — The model registry containing 11 registered models with gemma-4-31b as the champion model.</li>
           <li><strong>uvicorn :9000 proxy_chat backends 8080-8084</strong> — The uvicorn server on port 9000 proxying chat requests to llama.cpp backends on ports 8080-8084.</li>
@@ -509,7 +509,7 @@ flowchart TD
           <tr><td>Entry points</td><td>api/</td><td>Yes</td><td>Thin wrappers → components/ submodules</td></tr>
           <tr><td>Implementation</td><td>components/</td><td>Yes</td><td>Production code (submodules, pinned commits)</td></tr>
           <tr><td>Contracts</td><td>contracts/</td><td>Yes</td><td>API request/response JSON schemas</td></tr>
-          <tr><td>Deployment</td><td>deploy/</td><td>Yes</td><td>Start/stop/health scripts per host (Vast/H200/Docker)</td></tr>
+          <tr><td>Deployment</td><td>deploy/</td><td>Yes</td><td>Start/stop/health scripts per host (self-hosted GPU/H200/Docker)</td></tr>
           <tr><td>Testing</td><td>eval/</td><td>Yes</td><td>E2E, guardrails, LLM-judge evaluation</td></tr>
           <tr><td>Utilities</td><td>scripts/</td><td>Yes</td><td>README TOC generation, system checks</td></tr>
           <tr><td>Agent context</td><td>agent-state/</td><td>Agent only</td><td>Agent mission, history, skills, standards</td></tr>
@@ -565,7 +565,7 @@ flowchart TD
           <tr><td>KB_RERANKER_MODEL</td><td>BAAI/bge-reranker-v2-m3</td><td>same</td><td>or MiniLM fallback</td></tr>
           <tr><td>KB_RERANK_POOL</td><td>15</td><td>15 CPU / 30 GPU</td><td></td></tr>
           <tr><td rowspan="3">Guardrails</td><td>GUARDRAILS_PORT</td><td>8200</td><td>8200</td><td></td></tr>
-          <tr><td>UPSTREAM_LLM_BASE_URL</td><td>http://127.0.0.1:9000/v1</td><td>http://127.0.0.1:18000/v1</td><td>Vast bare Gemma</td></tr>
+          <tr><td>UPSTREAM_LLM_BASE_URL</td><td>http://127.0.0.1:9000/v1</td><td>http://127.0.0.1:18000/v1</td><td>bare Gemma</td></tr>
           <tr><td>UPSTREAM_LLM_MODEL</td><td>gemma-4-31b</td><td>unsloth/gemma-4-31B-it-GGUF:UD-Q4_K_XL</td><td></td></tr>
           <tr><td rowspan="2">Gemma</td><td>MODEL</td><td>—</td><td>/tmp/hf_clean/...UD-Q4_K_XL.gguf</td><td>H200 uses manager :9000</td></tr>
           <tr><td>CTX_SIZE</td><td>8192</td><td>8192 (4096 if OOM)</td><td></td></tr>
@@ -644,7 +644,7 @@ curl -s --max-time 8 http://127.0.0.1:8100/ready | head -c 300; echo</code></pre
         <tbody>
           <tr><td>v13</td><td>2026-10-28</td><td>KB 1405-07-06: 18 docs / 1123 chunks · folder_hierarchy + filter_path + supplement tool (cos 0.4/0.6) · pgvector HNSW</td></tr>
           <tr><td>v13</td><td>2026-10-24</td><td>Orchestrator LangGraph conditional clarify (should_clarify → generate_clarification), sticky MemorySaver (X-Request-ID), MAX_CHUNKS=20/9000, evidence 0.15 G5 guard, grounded follow_ups, DLQ; ambiguity resolver (SVM-RBF, 1000-sample dataset)</td></tr>
-          <tr><td>v12</td><td>2026-10-12</td><td>Guardrails :8200 Persian rails, HurtLex 19 lemmas, enable_thinking:false / --no-mmproj --jinja clean Persian; Generation Gemma 4 31B via :18000 (Vast) / :9000 manager (H200); embed trio :8001-8003</td></tr>
+          <tr><td>v12</td><td>2026-10-12</td><td>Guardrails :8200 Persian rails, HurtLex 19 lemmas, enable_thinking:false / --no-mmproj --jinja clean Persian; Generation Gemma 4 31B via :18000 / :9000 manager (H200); embed trio :8001-8003</td></tr>
           <tr><td>v11</td><td>2026-10-12</td><td>WebUI :13000 ICS Helper (Arena OFF) · rag_trace_capture filter + 4 actions (rate/report/view/truth) · WEBUI_AUTH=false</td></tr>
           <tr><td>v10</td><td>2026-10-12</td><td>Observability :3000/dashboard/observability (unified observability.db, chunk cards, subspace badge, export) + Langfuse :3001 + Studio :2024</td></tr>
           <tr><td>v9</td><td>2026-10-12</td><td>Benchmark: multi-agent conversational 41 turns · RAGAS per-subspace · docs/benchmark-report-2026-10-12.md</td></tr>
@@ -703,7 +703,7 @@ curl -s http://127.0.0.1:8000/search/supplement -H 'Content-Type: application/js
     <section class="section">
       <h2>Links</h2>
       <ul>
-        <li>Runbook: <a href="AGENTS.md">AGENTS.md</a> §2–3 + deploy/vast/start.sh + deploy/vast/health.sh</li>
+        <li>Runbook: <a href="AGENTS.md">AGENTS.md</a> §2–3 + deploy/gpu/start.sh + deploy/gpu/health.sh</li>
         <li>Bench report: <a href="docs/benchmark-report-2026-10-12.md">docs/benchmark-report-2026-10-12.md</a> (also evaluation/artifacts/bench_report_latest.html)</li>
         <li>Compose: <a href="compose.mvp.yml">compose.mvp.yml</a> + deploy/docker/docker-compose.yml</li>
         <li>Guardrails allowlist: components/guardrails/kb/hurtlex_allowlist.json</li>

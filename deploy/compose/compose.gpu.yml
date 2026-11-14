@@ -1,4 +1,4 @@
-# GPU / self-hosted overlay — use on H200/Vast with NVIDIA toolkit.
+# GPU / self-hosted overlay — use on H200/self-hosted GPU with NVIDIA toolkit.
 # Requires LLM_UPSTREAM_MODE=self_hosted (do NOT enable OpenRouter litellm here).
 #
 #   DANA_ENV=prod LLM_UPSTREAM_MODE=self_hosted \
@@ -7,7 +7,7 @@
 #
 # Prefer existing privileged stack when available:
 #   deploy/docker/docker-compose.yml  (llama-server + full CUDA)
-#   deploy/vast/start.sh              (unprivileged host, Gemma :18000)
+#   deploy/gpu/start.sh              (unprivileged host, Gemma :18000)
 
 services:
   # No litellm service on GPU/prod path.

@@ -33,7 +33,7 @@
     <section class="section">
       <h2>Repository Purpose</h2>
       <p>Work Credit RAG Phase 1 is a self-hosted, Persian-capable conversational Retrieval-Augmented Generation (RAG) platform. It provides production-grade question answering over a Persian knowledgebase with hybrid retrieval, safety guardrails, sticky conversation memory, and full observability.</p>
-      <p>The platform is deployed on Vast.ai (RTX 3090) and H200 hosts, serving Persian-language queries about financial credit validation, facility guarantees, and general knowledge domains through an Open WebUI frontend.</p>
+      <p>The platform is deployed on self-hosted GPU (RTX 3090) and H200 hosts, serving Persian-language queries about financial credit validation, facility guarantees, and general knowledge domains through an Open WebUI frontend.</p>
     </section>
 
     <section class="section">
@@ -67,7 +67,7 @@
         <div class="card">
           <h3>Generation</h3>
           <p class="meta">Gemma 4 31B · :18000 / :9000</p>
-          <p>Generates answers using Gemma 4 31B Instruct (unsloth GGUF quantized) via direct llama-server on Vast or the LLM Inference Manager on H200.</p>
+          <p>Generates answers using Gemma 4 31B Instruct (unsloth GGUF quantized) via direct llama-server on self-hosted GPU or the LLM Inference Manager on H200.</p>
         </div>
       </div>
     </section>
@@ -99,7 +99,7 @@
           <tr><td>Entry points</td><td>api/</td><td>Yes</td><td>Thin wrappers → components/ submodules</td></tr>
           <tr><td>Implementation</td><td>components/</td><td>Yes</td><td>Production code (submodules, pinned commits)</td></tr>
           <tr><td>Contracts</td><td>contracts/</td><td>Yes</td><td>API request/response JSON schemas</td></tr>
-          <tr><td>Deployment</td><td>deploy/</td><td>Yes</td><td>Start/stop/health scripts per host (Vast/H200/Docker)</td></tr>
+          <tr><td>Deployment</td><td>deploy/</td><td>Yes</td><td>Start/stop/health scripts per host (self-hosted GPU/H200/Docker)</td></tr>
           <tr><td>Testing</td><td>eval/</td><td>Yes</td><td>E2E, guardrails, LLM-judge evaluation</td></tr>
           <tr><td>Utilities</td><td>scripts/</td><td>Yes</td><td>README TOC generation, system checks</td></tr>
           <tr><td>Agent context</td><td>agent-state/</td><td>Agent only</td><td>Agent mission, history, skills, standards</td></tr>
@@ -131,8 +131,8 @@
         <li><a href="AGENTS.md">Agent Operating Manual</a> — submodule ownership, service table, workflows, git rules</li>
         <li><a href="docs/benchmark-report-2026-10-12.md">Benchmark Report</a> — 41-turn conversational RAGAS evaluation</li>
         <li><a href="compose.mvp.yml">MVP Docker Compose</a> — privileged host deployment</li>
-        <li><a href="deploy/vast/start.sh">Vast Startup Script</a> — full service startup sequence</li>
-        <li><a href="deploy/vast/health.sh">Health Check Script</a> — service health verification</li>
+<li><a href="deploy/gpu/start.sh">GPU Startup Script</a> — full service startup sequence</li>
+<li><a href="deploy/gpu/health.sh">Health Check Script</a> — service health verification</li>
         <li><a href="contracts/">API Contracts</a> — JSON request/response schemas</li>
         <li><a href="LICENSE">License</a> — repository license terms</li>
       </ul>

@@ -139,6 +139,18 @@ flowchart TD
 
 ---
 
+## Full project bootstrap
+
+Prefer the umbrella script (Docker check, submodules, `.env`, Jenkins, compose stacks):
+
+```bash
+bash scripts/setup_project.sh              # laptop local + Jenkins
+bash scripts/setup_project.sh --with-stage
+bash scripts/setup_project.sh --gpu        # GPU host apps (+ prod Jenkins overlay)
+```
+
+Optional GPU backup daemon (tracks healthy `origin/main`; apps only): `scripts/gpu_keep_latest.sh` + `dana-keep-latest.{service,timer}` in this directory. Primary path remains Multibranch + `[ci prod]`.
+
 ## First-time laptop setup
 
 ```bash
@@ -181,7 +193,7 @@ See also parent `README.md` → **Server first-boot checklist** and `components/
 
 1. **Prereqs:** Docker + NVIDIA Container Toolkit; `nvidia-smi` OK; GitHub PAT.
 2. **Clone:** `git clone --recurse-submodules …/Work_Credit-RAG_Phase1.git`
-3. **LLMs up first:** Manager `:9000` / TRT / `deploy/vast/start.sh` — not started by Jenkins app deploy.
+3. **LLMs up first:** Manager `:9000` / TRT — not started by Jenkins app deploy (started via server-setup).
 4. **`deploy/compose/.env.prod`:** `DANA_ENV=prod`, `DANA_HOST=gpu`, `LLM_UPSTREAM_MODE=self_hosted`, CUDA embed/rerank, upstream URL to Manager or Gemma. No OpenRouter.
 5. **Edit `deploy/jenkins/docker-compose.yml`:** bind-mount the **server absolute path** to the same path inside the container (replace the Mac path). Set `DANA_HOST_REPO` accordingly.
 6. **Start Jenkins:** `docker compose -f deploy/jenkins/docker-compose.yml up -d --build` → `:8085`

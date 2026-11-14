@@ -1,4 +1,4 @@
-# MVP compose for Vast.ai — Gemma is external host llama-server :18000
+# MVP compose — Gemma is external host llama-server :18000
 # No gemma-manager. Guardrails -> host.docker.internal:18000/v1
 # Public: 0.0.0.0:13000 -> Open WebUI :8080
 # Internal: kb, guardrails, orchestrator via Docker DNS (no public ports)
@@ -109,7 +109,7 @@ services:
       - rag
     restart: unless-stopped
 
-  # Self-hosted Langfuse stack (requires Docker privileged host; on unprivileged Vast use host collector :3000 fallback)
+  # Self-hosted Langfuse stack (requires Docker privileged host; host collector :3000 fallback otherwise)
   langfuse-db:
     image: postgres:15
     container_name: rag-langfuse-db
@@ -238,7 +238,7 @@ services:
       - "0.0.0.0:13000:8080"
     environment:
       WEBUI_AUTH: "false"
-      WEBUI_NAME: "Work RAG (Vast)"
+      WEBUI_NAME: "Work RAG (self-hosted)"
       USE_OLLAMA_DOCKER: "false"
       USE_CUDA_DOCKER: "false"
       OPENAI_API_BASE_URL: http://orchestrator:8100/v1

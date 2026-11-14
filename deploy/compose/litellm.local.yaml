@@ -1,5 +1,5 @@
 # LiteLLM — laptop/test only (LLM_UPSTREAM_MODE=openrouter).
-# Self-hosted Gemma/TRT configs live in deploy/vast/ and deploy/docker/ — do not remove.
+# Self-hosted Gemma/TRT configs live in deploy/gpu/ and deploy/docker/ — do not remove.
 
 general_settings:
   master_key: os.environ/LITELLM_MASTER_KEY
