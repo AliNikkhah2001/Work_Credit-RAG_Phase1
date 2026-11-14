@@ -1,10 +1,19 @@
 # Prod-sim on laptop (Jenkins main, manual approval): standard ports, still LiteLLM
 # until H200 cutover swaps UPSTREAM to Manager/Gemma via env only.
+#
+# PROJECT-NAME CAVEAT (unresolved — needs an owner decision, not a silent fix):
+#   Jenkinsfile (:487-491, ci_rollback DANA_GATE_PROJECT) and this header use
+#   `-p dana-prod` for laptop prod-sim.
+#   deploy/gpu/lib/common.sh:67 uses `dana-prod-sim` for --profile prod-sim.
+#   Until they agree, `deploy/gpu/health.sh --profile prod-sim` inspects a
+#   different project than Jenkins deploys. Pick one before relying on the gate.
 #   docker compose -p dana-prod -f deploy/compose/compose.base.yml -f deploy/compose/compose.local.yml -f deploy/compose/compose.prod-sim.yml --env-file deploy/compose/.env up -d
 
 services:
   webui:
     environment:
       WEBUI_NAME: "Dana (prod-sim)"
-    ports:
+    # !override, not append: compose.local.yml already publishes 13000. Appending
+    # here would declare the same host port twice if local's mapping ever changes.
+    ports: !override
       - "127.0.0.1:13000:8080"

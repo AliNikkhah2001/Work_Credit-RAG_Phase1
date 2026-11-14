@@ -2,7 +2,17 @@
 # REQUIRES in .env: DANA_ENV=test and LLM_UPSTREAM_MODE=openrouter
 # Do NOT use this overlay on the GPU server (use compose.gpu.yml / deploy/gpu / deploy/docker).
 #
-#   docker compose -f deploy/compose/compose.base.yml -f deploy/compose/compose.local.yml --env-file deploy/compose/.env up -d --build
+# ALL dev host ports live here (compose.base.yml publishes nothing):
+#   webui 13000 · orch 8100 · kb 8000 · guardrails 8200
+#   postgres 15432 · redis 16379 · tracing 13002 · litellm 4000 · evaluation 8300
+#
+# Always layer base + this file and pass an explicit project name. Without -p,
+# COMPOSE_PROJECT_NAME=dana-local from --env-file makes a stage run collide with
+# this stack instead of creating dana-stage.
+#
+#   docker compose -p dana-local \
+#     -f deploy/compose/compose.base.yml -f deploy/compose/compose.local.yml \
+#     --env-file deploy/compose/.env up -d
 
 services:
   litellm:
