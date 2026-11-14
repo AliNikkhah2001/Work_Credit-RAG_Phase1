@@ -113,9 +113,20 @@ pipeline {
             steps {
                 sh '''
                     set -e
-                    python3 -m pip install --quiet ruff || true
-                    ruff check components/orchestrator/src components/guardrails/src components/knowledgebase/kb-manager/kb_manager || true
+                    # Ruff is advisory: install may fail on hosts with an
+                    # externally-managed Python (Debian/Ubuntu system python),
+                    # which is what produced build #52's visible
+                    # `error: externally-managed-environment`. A lint tool that
+                    # is not installed must never turn a good build red.
+                    if command -v ruff >/dev/null 2>&1; then
+                      ruff check components/orchestrator/src components/guardrails/src \
+                        components/knowledgebase/kb-manager/kb_manager || true
+                    else
+                      echo "ruff not installed on agent — skipping advisory lint"
+                    fi
                     python3 scripts/build_keep_graph.py || true
+                    # These two ARE gates: they decide whether this commit may
+                    # build/deploy, so a failure here is a real failure.
                     python3 scripts/ci_message_gate.py --self-test
                     python3 scripts/ci_controller_role.py --self-test
                 '''
@@ -277,10 +288,12 @@ pipeline {
                       flock -w 2400 9
                       build_once() {
                         export DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1
+                        # -p is explicit: --env-file carries COMPOSE_PROJECT_NAME=dana-local,
+                        # so a stage/prod build without -p would be labelled as the dev project.
                         if [ "${DANA_HOST:-laptop}" = "gpu" ] || [ "${DANA_ROLE:-stage}" = "prod" ]; then
-                          docker compose -f ${COMPOSE_BASE} -f ${COMPOSE_GPU} --env-file ${ENV_FILE_PROD:-${ENV_FILE}} build ${BUILD_SERVICES}
+                          docker compose -p dana-prod -f ${COMPOSE_BASE} -f ${COMPOSE_GPU} --env-file ${ENV_FILE_PROD:-${ENV_FILE}} build ${BUILD_SERVICES}
                         else
-                          docker compose -f ${COMPOSE_BASE} -f ${COMPOSE_LOCAL} --env-file ${ENV_FILE} build ${BUILD_SERVICES}
+                          docker compose -p dana-local -f ${COMPOSE_BASE} -f ${COMPOSE_LOCAL} --env-file ${ENV_FILE} build ${BUILD_SERVICES}
                         fi
                       }
                       ok=0
@@ -382,11 +395,15 @@ pipeline {
                       fi
                       sleep 10
                     done
-                    for p in 18100 18200 18000 14000; do
-                      curl -sf --max-time 5 http://127.0.0.1:$p/health \
-                        || curl -sf --max-time 5 http://127.0.0.1:$p/health/liveliness \
-                        || echo "port $p warming"
-                    done
+                    # Health-gated: published ports + container health + endpoints.
+                    # "compose up returned 0" is NOT success — base compose has no
+                    # ports, so a bad overlay yields a healthy stack with no :13100.
+                    chmod +x scripts/ci_deploy_gate.sh scripts/ci_record_last_good.sh
+                    bash scripts/ci_deploy_gate.sh \
+                      --ports 13100,18100,18000,18200 \
+                      --compose "docker compose -p dana-stage -f ${COMPOSE_BASE} -f ${COMPOSE_LOCAL} -f ${COMPOSE_STAGE} --env-file ${ENV_FILE}" \
+                      || { echo "stage deploy gate FAILED — not recording last-good for stage"; exit 1; }
+                    echo "stage deploy gate passed"
                 '''
             }
         }
@@ -457,28 +474,35 @@ pipeline {
             steps {
                 sh '''
                     set -e
-                    chmod +x scripts/ci_record_last_good.sh
+                    chmod +x scripts/ci_deploy_gate.sh scripts/ci_record_last_good.sh scripts/ci_rollback.sh
                     HOST_REPO="${DANA_HOST_REPO:-.}"
-                    # Snapshot current last-good as .prev before this deploy becomes the new tip
-                    if [ -f "${HOST_REPO}/deploy/compose/.last_good_sha" ]; then
-                      cp -f "${HOST_REPO}/deploy/compose/.last_good_sha" \
-                        "${HOST_REPO}/deploy/compose/.last_good_sha.prev" || true
-                    fi
+                    # Keep the previous manifest before this deploy overwrites it.
+                    for f in .last_good.json .last_good_sha; do
+                      if [ -f "${HOST_REPO}/deploy/compose/$f" ]; then
+                        cp -f "${HOST_REPO}/deploy/compose/$f" "${HOST_REPO}/deploy/compose/$f.prev" || true
+                      fi
+                    done
                     if [ "${DANA_HOST:-laptop}" = "gpu" ]; then
                       test -f ${ENV_FILE_PROD} || cp deploy/compose/.env.example ${ENV_FILE_PROD}
-                      docker compose -p dana-prod -f ${COMPOSE_BASE} -f ${COMPOSE_GPU} --env-file ${ENV_FILE_PROD} up -d
+                      PROD_COMPOSE="docker compose -p dana-prod -f ${COMPOSE_BASE} -f ${COMPOSE_GPU} --env-file ${ENV_FILE_PROD}"
+                      PROD_PORTS="8000,8200,8100,13000"
                     else
                       # Laptop prod-sim still uses OpenRouter local overlay
-                      docker compose -p dana-prod -f ${COMPOSE_BASE} -f ${COMPOSE_LOCAL} -f ${COMPOSE_PROD} --env-file ${ENV_FILE} up -d
+                      PROD_COMPOSE="docker compose -p dana-prod -f ${COMPOSE_BASE} -f ${COMPOSE_LOCAL} -f ${COMPOSE_PROD} --env-file ${ENV_FILE}"
+                      PROD_PORTS="8000,8200,8100,13000"
                     fi
-                    sleep 25
-                    for p in 8100 8200 8000 4000; do
-                      curl -sf --max-time 5 http://127.0.0.1:$p/health \
-                        || curl -sf --max-time 5 http://127.0.0.1:$p/health/liveliness \
-                        || echo "port $p warming"
-                    done
-                    # Record this commit as last-known-good after health probes
-                    bash scripts/ci_record_last_good.sh "${GIT_COMMIT}"
+                    $PROD_COMPOSE up -d --no-build
+                    # Health gate: publishes-ports + container health + endpoints.
+                    # On failure, automatically restore the previous known-good
+                    # image set instead of leaving a half-broken prod running.
+                    if ! bash scripts/ci_deploy_gate.sh --ports "$PROD_PORTS" --compose "$PROD_COMPOSE"; then
+                      echo "PROD DEPLOY GATE FAILED — rolling back to last-known-good"
+                      DANA_GATE_PROJECT=dana-prod bash scripts/ci_rollback.sh --target prev \
+                        || echo "rollback also failed — manual intervention required"
+                      exit 1
+                    fi
+                    # Record the manifest ONLY after the gate proved the deploy.
+                    bash scripts/ci_record_last_good.sh --if-gate-passes "${GIT_COMMIT}"
                 '''
             }
         }

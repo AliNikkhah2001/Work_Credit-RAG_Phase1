@@ -36,6 +36,13 @@ services:
       DANA_HOST: laptop
       # stage controller: may deploy dana-stage; must NOT deploy prod/gpu
       DANA_ROLE: stage
+    # Docker's embedded resolver (127.0.0.11) inherits the host's forwarders and
+    # intermittently returned NXDOMAIN for api.github.com — that is exactly what
+    # turned develop build #54 red (`UnknownHostException: api.github.com`)
+    # before any pipeline stage ran. Pin public resolvers explicitly.
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
     restart: unless-stopped
 
 volumes:

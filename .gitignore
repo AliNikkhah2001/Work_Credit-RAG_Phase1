@@ -16,6 +16,10 @@ eggs/
 .eggs/
 lib/
 lib64/
+# ...but the deploy helpers are hand-written shell/python, not build output.
+!deploy/gpu/lib/
+!deploy/gpu/lib/common.sh
+!deploy/gpu/lib/state.py
 parts/
 sdist/
 var/
@@ -223,6 +227,12 @@ docs/technical-report/scripts/__pycache__/
 # Sprint C — prod rollback markers (host-local)
 deploy/compose/.last_good_sha
 deploy/compose/.last_good_sha.prev
+# Manifest-based last-known-good (host-local state, never committed)
+deploy/compose/.last_good.json
+deploy/compose/.last_good.json.prev
+# deploy/gpu host-local runtime state (health snapshots, logs, promoted state)
+deploy/gpu/state/
+deploy/gpu/sim/.state-*/
 .ci-rollback-work/
 
 # tracing CI wheel cache placeholder (*.whl stay ignored via wheels/)
