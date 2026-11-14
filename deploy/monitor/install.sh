@@ -281,9 +281,15 @@ if [[ "$CHECK_ONLY" -eq 1 ]]; then
     bash -n "$SCRIPT_DIR/$helper" 2>/dev/null \
       && chk 0 "$helper parses" || chk 1 "$helper parses"
   done
-  [[ -d "$REPO_ROOT/.git" ]] \
-    && chk 0 "repo root is a git checkout" \
-    || chk 1 "repo root is a git checkout" "$REPO_ROOT"
+  # `.git` is a DIRECTORY in a normal clone but a FILE in a linked worktree,
+  # submodule checkout and `--separate-git-dir` clone. Testing only for -d
+  # reported "not a git checkout" on perfectly valid deployments (caught while
+  # validating a promotion worktree). Ask git instead of inspecting the layout.
+  if git -C "$REPO_ROOT" rev-parse --git-dir >/dev/null 2>&1; then
+    chk 0 "repo root is a git checkout"
+  else
+    chk 1 "repo root is a git checkout" "$REPO_ROOT"
+  fi
 
   # Publishing must target the standalone health-check repo, never production.
   case "$(printf '%s' "$HEALTH_REPO" | tr 'A-Z' 'a-z')" in
