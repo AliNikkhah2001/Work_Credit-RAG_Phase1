@@ -1,155 +1,166 @@
 #!/usr/bin/env bash
-# GPU / prod — keep app stack on the latest *healthy* origin/main tip.
+# =============================================================================
+# gpu_keep_latest.sh — keep the app stack on the latest *healthy* main tip.
 #
-# Preferred production path is still Jenkins Multibranch (pollSCM + [ci prod]).
-# This script is a backup daemon/timer for hosts where you want a simple
-# "always track successful main" loop without clicking Scan Now.
+# Preferred production path is still the Jenkins prod controller (pollSCM +
+# [ci prod]). This is the backup loop for when the controller itself is
+# unhealthy: it advances the host only if the deploy passes the health gate,
+# and otherwise restores the last-known-good manifest.
 #
-# One-shot:
-#   bash scripts/gpu_keep_latest.sh
-#   bash scripts/gpu_keep_latest.sh --dry-run
+# One-shot:   bash scripts/gpu_keep_latest.sh
+#             bash scripts/gpu_keep_latest.sh --dry-run
+# Daemon:     bash scripts/gpu_keep_latest.sh --loop --interval 300
+# systemd:    deploy/jenkins/dana-keep-latest.{service,timer}
 #
-# Daemon (foreground loop):
-#   bash scripts/gpu_keep_latest.sh --loop --interval 300
-#
-# systemd (example unit): deploy/jenkins/dana-keep-latest.service
-#
-# Behavior:
-#   1) git fetch origin main
-#   2) if origin/main == currently deployed SHA → exit 0
-#   3) checkout worktree / update host clone to that SHA + submodule sync
-#   4) compose up dana-prod (apps only — never Gemma/TRT)
-#   5) health probe :8100/:8200/:8000; on success record .last_good_sha
-#      on failure → ci_rollback.sh (previous good) and exit non-zero
-set -euo pipefail
+# Guarantees:
+#   * never advances to a tip that does not pass ci_deploy_gate.sh
+#   * never overwrites .last_good.json on a failed deploy
+#   * on failure, restores the recorded images (ci_rollback.sh), not a rebuild
+# =============================================================================
+set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 HOST_REPO="${DANA_HOST_REPO:-$ROOT}"
-cd "$HOST_REPO"
+cd "$HOST_REPO" || exit 1
 
 DRY=0
 LOOP=0
 INTERVAL=300
 BRANCH="${DANA_TRACK_BRANCH:-main}"
 REMOTE="${DANA_TRACK_REMOTE:-origin}"
+PROJECT="${DANA_GATE_PROJECT:-dana-prod}"
 
-while [[ $# -gt 0 ]]; do
+while [ $# -gt 0 ]; do
   case "$1" in
     --dry-run) DRY=1; shift ;;
     --loop) LOOP=1; shift ;;
     --interval) INTERVAL="$2"; shift 2 ;;
     --branch) BRANCH="$2"; shift 2 ;;
-    -h|--help)
-      sed -n '1,35p' "$0"
-      exit 0
-      ;;
+    -h|--help) sed -n '1,26p' "$0"; exit 0 ;;
     *) echo "unknown arg: $1" >&2; exit 2 ;;
   esac
 done
 
 log() { printf '[keep-latest] %s\n' "$*"; }
+err() { printf '[keep-latest][ERR] %s\n' "$*" >&2; }
 
-deployed_sha_file() {
-  echo "$HOST_REPO/deploy/compose/.deployed_sha"
-}
+MANIFEST="$HOST_REPO/deploy/compose/.last_good.json"
+DEPLOYED_FILE="$HOST_REPO/deploy/compose/.deployed_sha"
 
 current_target() {
   git -C "$HOST_REPO" rev-parse "${REMOTE}/${BRANCH}" 2>/dev/null \
     || git -C "$HOST_REPO" rev-parse "$BRANCH"
 }
 
-last_deployed() {
-  local f
-  f="$(deployed_sha_file)"
-  if [[ -f "$f" ]]; then
-    tr -d '[:space:]' <"$f"
-  elif [[ -f "$HOST_REPO/deploy/compose/.last_good_sha" ]]; then
+last_good_sha() {
+  if [ -f "$MANIFEST" ]; then
+    sed -n 's/.*"sha"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$MANIFEST" | head -1
+  elif [ -f "$HOST_REPO/deploy/compose/.last_good_sha" ]; then
     tr -d '[:space:]' <"$HOST_REPO/deploy/compose/.last_good_sha"
-  else
-    git -C "$HOST_REPO" rev-parse HEAD 2>/dev/null || echo ""
   fi
 }
 
+compose_cmd() {
+  local envf="$HOST_REPO/deploy/compose/.env.prod"
+  [ -f "$envf" ] || envf="$HOST_REPO/deploy/compose/.env"
+  local overlay="$HOST_REPO/deploy/compose/compose.gpu.yml"
+  [ -f "$overlay" ] || overlay="$HOST_REPO/deploy/compose/compose.local.yml"
+  printf 'docker compose -p %s -f %s -f %s --env-file %s' \
+    "$PROJECT" "$HOST_REPO/deploy/compose/compose.base.yml" "$overlay" "$envf"
+}
+
 health_ok() {
-  local p
-  for p in 8100 8200 8000; do
-    curl -sf --max-time 8 "http://127.0.0.1:$p/health" >/dev/null \
-      || curl -sf --max-time 8 "http://127.0.0.1:$p/health/liveliness" >/dev/null \
-      || return 1
-  done
-  return 0
+  DANA_GATE_PROJECT="$PROJECT" bash "$ROOT/scripts/ci_deploy_gate.sh" >/dev/null 2>&1
 }
 
 compose_up() {
   local envf="$HOST_REPO/deploy/compose/.env.prod"
-  [[ -f "$envf" ]] || envf="$HOST_REPO/deploy/compose/.env"
-  docker compose -p dana-prod \
+  [ -f "$envf" ] || envf="$HOST_REPO/deploy/compose/.env"
+  local overlay="$HOST_REPO/deploy/compose/compose.gpu.yml"
+  [ -f "$overlay" ] || overlay="$HOST_REPO/deploy/compose/compose.local.yml"
+
+  # --no-build on purpose: the tip may not have images built yet (built by CI).
+  # If the images are missing, the deploy gate will fail and we roll back
+  # rather than silently building from an unverified tip.
+  docker compose -p "$PROJECT" \
     -f "$HOST_REPO/deploy/compose/compose.base.yml" \
-    -f "$HOST_REPO/deploy/compose/compose.gpu.yml" \
+    -f "$overlay" \
     --env-file "$envf" \
-    up -d --build \
-    kb guardrails orchestrator tracing webui 2>/dev/null \
-    || docker compose -p dana-prod \
-      -f "$HOST_REPO/deploy/compose/compose.base.yml" \
-      -f "$HOST_REPO/deploy/compose/compose.gpu.yml" \
-      --env-file "$envf" \
-      up -d --build
+    up -d --no-build kb guardrails orchestrator tracing webui
 }
 
 once() {
   log "fetch ${REMOTE}/${BRANCH}"
-  git -C "$HOST_REPO" fetch "$REMOTE" "$BRANCH" --prune
+  if ! git -C "$HOST_REPO" fetch "$REMOTE" "$BRANCH" --prune; then
+    err "fetch failed — keeping current stack"
+    return 1
+  fi
 
   local target deployed
   target="$(current_target)"
-  deployed="$(last_deployed)"
-  log "remote tip=${target:0:12} deployed=${deployed:0:12}"
+  deployed="$(last_good_sha)"
 
-  if [[ -n "$deployed" && "$target" == "$deployed" ]]; then
-    log "already on tip — nothing to do"
+  if [ -z "$target" ]; then
+    err "could not resolve ${REMOTE}/${BRANCH}"
+    return 1
+  fi
+
+  log "remote tip=${target:0:12} last_good=${deployed:0:12}"
+
+  if [ -n "$deployed" ] && [ "$target" = "$deployed" ]; then
+    log "already on the last-known-good tip"
     if health_ok; then
       log "health OK"
       return 0
     fi
-    warn_health=1
-    log "health FAILED on current tip — attempting rollback"
-    if [[ "$DRY" == "1" ]]; then
-      log "dry-run: would rollback"
-      return 1
-    fi
-    bash "$HOST_REPO/scripts/ci_rollback.sh"
+    err "health FAILED on the recorded-good tip — restoring last-known-good images"
+    [ "$DRY" = "1" ] && { log "dry-run: would restore"; return 1; }
+    bash "$ROOT/scripts/ci_rollback.sh" --target current
     return $?
   fi
 
-  if [[ "$DRY" == "1" ]]; then
-    log "dry-run: would checkout $target and compose up dana-prod"
+  if [ "$DRY" = "1" ]; then
+    log "dry-run: would checkout $target, compose up --no-build, then gate"
+    log "dry-run: on gate failure would restore .last_good.json.prev"
     return 0
   fi
 
-  # Move host clone (or worktree) to tip
-  git -C "$HOST_REPO" checkout -f "$target"
-  bash "$HOST_REPO/scripts/ci_submodule_sync.sh" || git -C "$HOST_REPO" submodule update --init --recursive
+  local prev_head
+  prev_head="$(git -C "$HOST_REPO" rev-parse HEAD 2>/dev/null || echo '')"
 
-  log "compose up…"
-  compose_up
-  sleep 20
+  log "advancing host clone to $target"
+  if ! git -C "$HOST_REPO" checkout -q -f "$target"; then
+    err "checkout failed — staying on $prev_head"
+    return 1
+  fi
+  bash "$ROOT/scripts/ci_submodule_sync.sh" >/dev/null 2>&1 \
+    || git -C "$HOST_REPO" submodule update --init --recursive >/dev/null 2>&1
 
-  if health_ok; then
-    printf '%s\n' "$target" >"$(deployed_sha_file)"
-    bash "$HOST_REPO/scripts/ci_record_last_good.sh" "$target"
+  log "compose up --no-build (project=$PROJECT)"
+  if ! compose_up; then
+    err "compose up failed — restoring last-known-good"
+    bash "$ROOT/scripts/ci_rollback.sh" --target current || true
+    return 1
+  fi
+
+  log "gating (ports + container health + endpoints)"
+  if DANA_GATE_PROJECT="$PROJECT" bash "$ROOT/scripts/ci_record_last_good.sh" --if-gate-passes "$target"; then
+    printf '%s\n' "$target" >"$DEPLOYED_FILE"
     log "deployed OK → recorded last_good=$target"
     return 0
   fi
 
-  log "health FAILED after deploy — rolling back apps"
-  bash "$HOST_REPO/scripts/ci_rollback.sh" || true
+  err "gate FAILED for $target — NOT recorded; restoring last-known-good"
+  bash "$ROOT/scripts/ci_rollback.sh" --target current || true
+  # Put the clone back where it was so the host tree matches what is running.
+  [ -n "$prev_head" ] && git -C "$HOST_REPO" checkout -q -f "$prev_head" 2>/dev/null
   return 1
 }
 
-if [[ "$LOOP" == "1" ]]; then
-  log "loop every ${INTERVAL}s (Ctrl-C to stop)"
+if [ "$LOOP" = "1" ]; then
+  log "loop every ${INTERVAL}s (project=$PROJECT, Ctrl-C to stop)"
   while true; do
-    once || log "cycle failed (will retry)"
+    once || log "cycle failed (retrying in ${INTERVAL}s)"
     sleep "$INTERVAL"
   done
 else
