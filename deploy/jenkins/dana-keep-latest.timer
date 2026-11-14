@@ -1,0 +1,12 @@
+[Unit]
+Description=Run Dana keep-latest every 5 minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+AccuracySec=1min
+Persistent=true
+Unit=dana-keep-latest.service
+
+[Install]
+WantedBy=timers.target
