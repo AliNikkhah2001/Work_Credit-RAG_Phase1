@@ -83,6 +83,13 @@ REC_STATUS="$(python3 "$DANA_STATE_PY" get --state "$STATE_FILE" --field status 
 
 [ -n "$PROFILE" ] || PROFILE="$REC_PROFILE"
 [ -n "$REC_PROJECT" ] || REC_PROJECT="$(dana_profile_project "$PROFILE")"
+
+# Same guard deploy/health/reconcile run. Rollback is the most destructive path
+# we have (it force-replaces every service's image), so a leaked DANA_PROJECT /
+# DANA_COMPOSE_FILES / DANA_ENV_FILE must not silently redirect it at another
+# stack. For a production profile this is fatal unless DANA_ALLOW_OVERRIDE=1.
+dana_guard_overrides "$PROFILE" || die "refusing to roll back with uncontrolled overrides"
+
 ENV_FILE="${DANA_ENV_FILE:-$REC_ENV}"
 [ -n "$ENV_FILE" ] && [ ! -f "$ENV_FILE" ] && die "recorded env file is missing: $ENV_FILE"
 
