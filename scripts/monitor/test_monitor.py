@@ -299,6 +299,44 @@ def _run_no_secret_artifacts(tmp: Path) -> None:
     check("no published file contains the sentinel secret", not leaked, str(leaked))
 
 
+def _run_status_casing(tmp: Path) -> None:
+    section("run status casing (dashboard compares uppercase literals)")
+    # The template compares `r.status === "HEALTHY"` literally. A lowercase
+    # `--status healthy` used to slip through and render as a red stack —
+    # "0.0 % uptime · 0 healthy / N runs" on an all-healthy fleet. Emitting a
+    # fabricated downtime number must be impossible.
+    seen: dict[str, str] = {}
+
+    def record_for(status: str, run_id: str) -> dict:
+        out = make_fixture(tmp, run_id)
+        rec = pr.build_run_record(
+            out_dir=out,
+            run_id=run_id,
+            machine="m",
+            machine_type="production_gpu",
+            mode="compose",
+            status=status,
+            kb_version=None,
+        )
+        return rec
+
+    for given in ("healthy", "HEALTHY", " Healthy ", "Healthy"):
+        rec = record_for(given, "20261114T01010" + "0Z")
+        seen[given] = rec["status"]
+        check(f"status {given!r} normalised to HEALTHY", rec["status"] == "HEALTHY", rec["status"])
+
+    for given, want in (("down", "DOWN"), ("degraded", "DEGRADED"), ("Degraded", "DEGRADED")):
+        rec = record_for(given, "20261114T01020" + "0Z")
+        check(f"status {given!r} normalised to {want}", rec["status"] == want, rec["status"])
+
+    # An unrecognised word must never be reported as healthy.
+    rec = record_for("banana", "20261114T010300Z")
+    check("unknown status is not HEALTHY", rec["status"] != "HEALTHY", rec["status"])
+    check("unknown status falls back to DEGRADED", rec["status"] == "DEGRADED", rec["status"])
+    check("template literals match KNOWN_STATUSES",
+          "HEALTHY" in pr.KNOWN_STATUSES and "DOWN" in pr.KNOWN_STATUSES)
+
+
 def _run_dashboard_template() -> None:
     section("dashboard template")
     tpl = Path(__file__).resolve().parent / "site" / "index.html"
@@ -356,6 +394,7 @@ def main() -> int:
         _run_retention(tmp)
         _run_links(tmp)
         _run_no_secret_artifacts(tmp)
+        _run_status_casing(tmp)
         _run_dashboard_template()
         _run_push_guard()
     finally:
@@ -413,6 +452,10 @@ def test_published_links(tmp_path: Path) -> None:
 
 def test_no_secret_artifacts(tmp_path: Path) -> None:
     _assert_clean(_run_no_secret_artifacts, tmp_path)
+
+
+def test_status_casing(tmp_path: Path) -> None:
+    _assert_clean(_run_status_casing, tmp_path)
 
 
 def test_dashboard_template() -> None:
