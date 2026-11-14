@@ -1,0 +1,18 @@
+---
+description: Dana / ICS WebUI frontend conventions (RTL, themes, magic, contrast)
+globs: components/webui/**/*.{svelte,ts,css,json,html},**/static/dana/**/*
+alwaysApply: false
+---
+
+# Dana frontend rule
+
+When touching WebUI / Dana assets:
+
+1. Read `.cursor/skills/dana-ui/SKILL.md` (and `dana-contrast` if readability is involved).
+2. Prefer edits under `components/webui` only; sync `static/dana/*` ↔ `backend/open_webui/static/dana/*` for CSS/themes/tokens.
+3. Keep product themes: `ics-dark` (default `#8F0046`), `ics-maroon`; do not reintroduce `ics-gauge` as a selectable third brand theme.
+4. Persian RTL + Vazirmatn; convert widget digits via `fa.ts`.
+5. Suggestions must stay ICS/credit intents from theme `prompt_suggestions` — never restore OWUI stock study/procrastination prompts for Dana.
+6. One magic widget per assistant message (`parseMagicSegments` priority).
+7. Preserve text contrast helpers: shadows, glow, veil, mobile denser glass.
+8. Do not expose Gemma `:18000` or commit secrets; do not vendor React/shadcn as the WebUI stack (Svelte + OWUI fork).

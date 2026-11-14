@@ -23,9 +23,9 @@ COMPOSE_GLOBS = [
     "compose.mvp.yml",
 ]
 SEED_FILES = [
-    "deploy/vast/start.sh",
-    "deploy/vast/stop.sh",
-    "deploy/vast/health.sh",
+    "deploy/gpu/start.sh",
+    "deploy/gpu/stop.sh",
+    "deploy/gpu/health.sh",
     "Jenkinsfile",
     "deploy/compose/litellm.local.yaml",
     "litellm.yaml",

@@ -1,0 +1,37 @@
+flowchart TB
+  OP["Operator laptop"] -->|"SSH local forwards"| VAST
+  SQ["Squid 192.168.203.2:3128"] -->|"corporate egress only"| H200
+
+  subgraph VAST["Vast unprivileged NAT"]
+    W["WebUI :13000"]
+    O["Orchestrator :8100"]
+    K["KB :8000"]
+    GR["Guardrails :8200"]
+    C["Collector :3000"]
+    L["Langfuse :3001"]
+    S["Studio :2024"]
+    GE["Gemma 127.0.0.1:18000"]
+    DB["Postgres and Redis unpublished"]
+    W --> O
+    O --> GR
+    O --> K
+    GR --> GE
+    K --> DB
+    O --> C
+    O --> L
+    O --> S
+  end
+
+  subgraph H200["H200 host and Docker"]
+    HX["httpx trust_env=False"]
+    MG["Manager :9000"]
+    DS["DeepSeek :9001 standalone"]
+    EM["Embeds :8001-8003"]
+    LL["Gemma llama.cpp :8080-8084"]
+    TR["TRT-LLM :8010"]
+    DK["Docker WebUI :13000 pg :15432 redis :16379"]
+    HX --> MG
+    MG --> LL
+    MG --> TR
+    MG --> EM
+  end

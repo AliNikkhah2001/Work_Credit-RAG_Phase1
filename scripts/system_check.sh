@@ -139,7 +139,7 @@ log ""
 log "5. Running Services & Port Exposure"
 echo "------------------------------"
 
-# Expected services (Vast production ports)
+# Expected services (self-hosted GPU production ports)
 declare -A SERVICES=(
     [18000]="Gemma (llama-server, 127.0.0.1 only)"
     [8000]="KB Manager (0.0.0.0)"
@@ -232,8 +232,8 @@ if [[ -f "$MANAGER_DIR/app.py" ]]; then
             warn "Manager on :9000 not responding to /health"
         fi
     else
-        warn "Manager NOT running on :9000 (this is the H200 stack manager, not used in Vast MVP)"
-        log "Vast MVP uses Gemma directly on :18000, not via manager"
+        warn "Manager NOT running on :9000 (this is the H200 stack manager, not used in self-hosted GPU MVP)"
+        log "Self-hosted GPU MVP uses Gemma directly on :18000, not via manager"
     fi
     
     # Check registry models exist on disk
@@ -253,10 +253,10 @@ else
 fi
 
 # ──────────────────────────────────────────────
-# 8. GEMMA DIRECT (Vast MVP path)
+# 8. GEMMA DIRECT (self-hosted GPU MVP path)
 # ──────────────────────────────────────────────
 log ""
-log "8. Gemma Direct (Vast MVP :18000)"
+log "8. Gemma Direct (self-hosted GPU MVP :18000)"
 echo "------------------------------"
 
 if curl -s --max-time 5 "http://127.0.0.1:18000/v1/models" >/dev/null; then
@@ -356,8 +356,8 @@ log ""
 log "12. SSH Tunnel Required for External Access"
 echo "------------------------------"
 echo "Run on YOUR LOCAL MACHINE:"
-SSH_PORT=$(grep -oP 'ssh_port.*?\K\d+' /workspace/Work_Credit-RAG_Phase1/deploy/vast/start.sh 2>/dev/null || echo "<ssh_port>")
-SSH_HOST=$(grep -oP 'ssh_host.*?\K\S+' /workspace/Work_Credit-RAG_Phase1/deploy/vast/start.sh 2>/dev/null || echo "<ssh_host>")
+SSH_PORT=$(grep -oP 'ssh_port.*?\K\d+' /workspace/Work_Credit-RAG_Phase1/deploy/gpu/start.sh 2>/dev/null || echo "<ssh_port>")
+SSH_HOST=$(grep -oP 'ssh_host.*?\K\S+' /workspace/Work_Credit-RAG_Phase1/deploy/gpu/start.sh 2>/dev/null || echo "<ssh_host>")
 cat << EOF
 ssh -p $SSH_PORT root@$SSH_HOST \\
   -L 13000:localhost:13000 \\
@@ -384,15 +384,15 @@ echo "------------------------------"
 
 cat << 'EOF'
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ CURRENT MACHINE (this Vast instance)                                        │
+│ CURRENT MACHINE (this self-hosted GPU instance)                               │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│ Instance: 50713720 (ssh9.vast.ai:24044)                                     │
+│ Instance: self-hosted GPU                                                   │
 │ GPU: 1× RTX 3090 24GB (22.7GB used at ctx 8192)                             │
 │ CPU: EPYC 7443 (96 core)                                                    │
 │ RAM: 503 GiB                                                                │
 │ Disk: 100 GiB                                                               │
 │ OS: Linux, unprivileged container (NO Docker)                               │
-│ Deployment: Host venvs only (bash deploy/vast/start.sh)                     │
+│ Deployment: Host venvs only (bash deploy/gpu/start.sh)                     │
 │                                                                             │
 │ Services running HERE:                                                      │
 │   • Gemma :18000 (llama-server, GGUF, --no-mmproj --jinja)                 │
@@ -435,13 +435,13 @@ cat << 'EOF'
 │ Exposes: ONLY 13000 by default (others via docker-compose.override.yml)    │
 │ Services containerized: llama-server, postgres, kb, guardrails,            │
 │   orchestrator, langfuse stack, tracing-fallback, webui                    │
-│ NOT for this Vast instance (unprivileged)                                  │
+│ NOT for this self-hosted instance (unprivileged)                                  │
 └─────────────────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │ MODEL OPTIONS AVAILABLE                                                     │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│ Current (Vast): unsloth/gemma-4-31B-it-GGUF:UD-Q4_K_XL (18.8GB, 0.663)    │
+│ Current (self-hosted GPU): unsloth/gemma-4-31B-it-GGUF:UD-Q4_K_XL (18.8GB, 0.663)    │
 │                                                                             │
 │ On H200 (via Manager :9000):                                               │
 │   Loaded:  gemma-4-31b (5× :8080-8084), qwen2.5-7b (:8090)                │

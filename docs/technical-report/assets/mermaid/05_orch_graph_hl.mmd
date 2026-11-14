@@ -1,0 +1,12 @@
+flowchart TD
+  Input((Input)) --> Validate[Validate]
+  Validate -->|allowed| Classify[Classify]
+  Validate -->|blocked| Refusal[Refusal]
+  Classify -->|greeting_or_spec| Format[Format]
+  Classify -->|question| Retrieve[Retrieve]
+  Retrieve -->|needs_clarification| Clarify[Clarify]
+  Retrieve -->|continue| Generate[Generate]
+  Generate --> Format
+  Clarify --> Output((Output))
+  Refusal --> Output
+  Format --> Output

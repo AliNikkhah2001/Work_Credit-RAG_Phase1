@@ -1,0 +1,91 @@
+\chapter{System architecture and request-to-response}\label{system-architecture-and-request-to-response}
+
+\section{Section summary}\label{section-summary}
+
+Retrieval, policy, orchestration, and generation are separate processes with stable ports. The high-level figures show the boxes a new engineer needs. The detailed figures map those boxes onto LangGraph nodes, KB routes, and the Gemma gateway. The walkthrough below follows one chat completion from WebUI to citations, with the published budgets for sticky memory, context, evidence, and ambiguity.
+
+\section{Request path}\label{request-path}
+
+A production turn uses one hop list. The browser talks only to Open WebUI on \texttt{:13000}. WebUI posts an OpenAI-shaped chat completion to the orchestrator on \texttt{:8100}. The orchestrator calls guardrails on \texttt{:8200} for the input rail (\texttt{POST\ /v1/rails/check}), then the knowledge base on \texttt{:8000} (\texttt{POST\ /search/api} with \texttt{top\_k=20}, and \texttt{POST\ /search/supplement} at threshold \textbf{0.4}). \texttt{build\_context} packs at most \textbf{\texttt{MAX\_CHUNKS} = 20} chunks inside a context budget of \textbf{\texttt{MAX\_CONTEXT} = 9000}. Generation returns through guardrails \texttt{POST\ /v1/chat/completions}. Guardrails is the only service that calls Gemma, through the H200 LLM Inference Manager on \texttt{:9000}. Citations and \texttt{finish\_reason} go back through the orchestrator to WebUI. Traces go to Langfuse on \texttt{:3001} or the JSONL collector on \texttt{:3000}. LangGraph Studio listens on \texttt{:2024} and requires \texttt{request\_id} on every run input.
+
+Sticky subspace memory is checkpointed with \texttt{MemorySaver}. \texttt{STICKY\_DECAY\_TURNS} defaults to \textbf{3}: after three consecutive generic follow-ups the sticky subspace is dropped. If the best evidence score is below \textbf{0.15}, the turn abstains. Per-subspace floors can be lower than that global \texttt{EVIDENCE\_MIN\_SCORE}; chapter 5 lists them.
+
+\texttt{AmbiguityResult} is computed in \texttt{subspaces.py} with three defaults that define the current product behavior. \texttt{subspace\_ambiguity\_enabled} is \textbf{true} (compute the score and keep it for audit). \texttt{subspace\_ambiguity\_route} is \textbf{false} (instrument only: the score does not route and does not by itself clarify). \texttt{subspace\_ambiguity\_margin} is \textbf{0.08}. The scattered-query check can still open a clarification, and an entity supplement still short-circuits that branch. The remaining thresholds (minimum top-1, entropy cap, softmax temperature) are in chapter 5.
+
+\section{High-level system overview}\label{high-level-system-overview}
+
+\begin{figure}
+\centering
+\includegraphics[width=0.88\linewidth,height=0.36\textheight,keepaspectratio]{../assets/diagrams/01_system_overview_hl.png}
+\caption{High-level system overview}
+\end{figure}
+
+\textbf{Figure 1. High-level system overview.} The browser reaches Open WebUI on \texttt{:13000}, which forwards OpenAI-shaped chat calls to the orchestrator on \texttt{:8100}. The orchestrator coordinates the knowledge base (\texttt{:8000}) for evidence and guardrails (\texttt{:8200}) for both input adjudication and generation. Observability collectors sit beside the path rather than inside the user loop. This view hides LangGraph node names so a reader can see ownership boundaries before opening Python modules.
+
+\section{Detailed system overview}\label{detailed-system-overview}
+
+\begin{figure}
+\centering
+\includegraphics[width=0.88\linewidth,height=0.36\textheight,keepaspectratio]{../assets/diagrams/02_system_overview_detail.png}
+\caption{Detailed system overview}
+\end{figure}
+
+\textbf{Figure 2. Detailed system overview.} Expanding the orchestrator box shows \texttt{validate\_input}, \texttt{classify}, \texttt{retrieve}, \texttt{build\_context}, \texttt{guarded\_generate}, and \texttt{format\_response} as wired in \texttt{components/orchestrator/src/work\_rag\_orchestrator/graph.py}. The knowledge base exposes \texttt{POST\ /search/api} (BM25, dense retrieval, RRF, cross-encoder rerank) and \texttt{POST\ /search/supplement} for EntityList rows. Guardrails exposes \texttt{POST\ /v1/rails/check} and \texttt{POST\ /v1/chat/completions}, proxying Gemma through the manager on \texttt{:9000} only when generation is allowed. Embedding traffic for the ambiguity head targets MiniLM on \texttt{:8003}. This diagram recreates the parent technical-page ``Variant A'' overview for the report template.
+
+\section{Request flow (high level)}\label{request-flow-high-level}
+
+\begin{figure}
+\centering
+\includegraphics[width=0.88\linewidth,height=0.36\textheight,keepaspectratio]{../assets/diagrams/03_request_flow_hl.png}
+\caption{High-level request sequence}
+\end{figure}
+
+\textbf{Figure 3. Sticky filtered RAG --- high-level sequence.} A user question becomes a chat completion. Input rails may refuse before any retrieval. Otherwise hybrid search returns chunks and, when entity lists match, supplemental rows. Guarded generation calls the model through guardrails and returns through output rails. Citations are assembled before the answer reaches WebUI. Sticky decay (three generic turns), the 0.15 evidence floor, and the 20-chunk / 9000 context budget are omitted from this black-box picture and appear in the detailed sequence.
+
+\section{Request flow (detailed)}\label{request-flow-detailed}
+
+\begin{figure}
+\centering
+\includegraphics[width=0.88\linewidth,height=0.36\textheight,keepaspectratio]{../assets/diagrams/04_request_flow_detail.png}
+\caption{Detailed request sequence}
+\end{figure}
+
+\textbf{Figure 4. Sticky filtered RAG --- detailed sequence.} After \texttt{start\_trace}, the orchestrator calls the guardrails input check. Classification routes greetings and specifications away from retrieval. Questions call \texttt{KnowledgebaseClient.retrieve} (\texttt{clients/knowledgebase.py}), which posts to \texttt{/search/api} with optional \texttt{filter\_path} and a per-subspace \texttt{keyword\_boost}. When entity keywords match, \texttt{supplementary\_search} posts to \texttt{/search/supplement} at threshold 0.4. \texttt{should\_clarify} in \texttt{graph.py} skips clarification when \texttt{supplemental} or \texttt{injected\_entities} are present. Continuing turns run \texttt{build\_context} under \texttt{MAX\_CHUNKS=20} and \texttt{MAX\_CONTEXT=9000}, abstain when evidence is below 0.15, then call guarded generate and \texttt{format\_response}. Sticky \texttt{applied\_subspace} is restored from the \texttt{MemorySaver} checkpoint and decays after three generic turns.
+
+\section{End-to-end walkthrough}\label{end-to-end-walkthrough}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  \textbf{Ingress.} WebUI sets \texttt{OPENAI\_API\_BASE\_URL=http://127.0.0.1:8100/v1}. Sticky threads use \texttt{X-Request-ID} / \texttt{request\_id}. Studio runs must include \texttt{request\_id}. When WebUI sends no request id, the API mines sticky scope from user-only chat history: interrogatives are skipped and declarations set scope.
+\item
+  \textbf{Validate.} \texttt{nodes/validate\_input.py} calls Guardrails \texttt{POST\ /v1/rails/check} with \texttt{stage=input}. A block sets \texttt{blocked} and routes to \texttt{format\_refusal}.
+\item
+  \textbf{Classify.} \texttt{nodes/classify.py} labels greeting, specification, or question. Specifications lock subspace language that later becomes \texttt{filter\_path}. Optional \texttt{hybrid\_classify} stays off unless \texttt{HYBRID\_CLASSIFIER\_ENABLED} is set.
+\item
+  \textbf{Retrieve.} \texttt{nodes/retrieve.py} may rewrite coreference, apply sticky subspace with decay 3, search the KB, merge the RRF and cross-encoder pools (\texttt{RETRIEVAL\_TOP\_K=20}), fire the entity supplement, and score evidence. A filtered miss can retry once over the whole KB.
+\item
+  \textbf{Clarify or build.} \texttt{should\_clarify} asks a question via \texttt{generate\_clarification} for scattered ambiguity when no subspace is applied. The ambiguity \emph{score} is recorded (\texttt{enabled=true}) and does not drive this edge while \texttt{subspace\_ambiguity\_route} remains false and the margin stays 0.08. Entity hits skip clarification. Otherwise \texttt{build\_context.py} assembles the Persian system prompt, at most 20 chunks, history, and trimmed entity JSON inside the 9000 context budget.
+\item
+  \textbf{Generate.} \texttt{guarded\_generate} posts to Guardrails. It never opens a socket to Gemma. Upstream cleanup strips leaked special tokens (\texttt{enable\_thinking} stays false on the server).
+\item
+  \textbf{Format.} Citations and finish reasons match the OpenAI response schema. Audit fields and timings attach on non-streaming responses.
+\end{enumerate}
+
+\section{Orchestrator graph figures}\label{orchestrator-graph-figures}
+
+\begin{figure}
+\centering
+\includegraphics[width=0.88\linewidth,height=0.36\textheight,keepaspectratio]{../assets/diagrams/05_orch_graph_hl.png}
+\caption{Orchestrator graph high level}
+\end{figure}
+
+\textbf{Figure 5. Orchestrator graph --- high level.} Validate, classify, retrieve, optional clarify, generate, and format form one directed path with refusal and clarification exits. Operators can read latency off this picture: once the KB is warm, most wall time sits in retrieve-plus-generate, not in classify. Sticky bookkeeping and the instrument-only ambiguity score are state on the edges, not extra nodes.
+
+\begin{figure}
+\centering
+\includegraphics[width=0.88\linewidth,height=0.36\textheight,keepaspectratio]{../assets/diagrams/06_orch_graph_detail.png}
+\caption{Orchestrator graph detailed}
+\end{figure}
+
+\textbf{Figure 6. Orchestrator graph --- detailed.} Node names match \texttt{create\_graph()} in \texttt{graph.py}. The conditional edges are \texttt{should\_continue\_after\_validation} (\texttt{graph.py:24}), \texttt{should\_route\_after\_classify} (\texttt{graph.py:31}), and \texttt{should\_clarify} (\texttt{graph.py:45}). \texttt{should\_clarify} short-circuits when an entity supplement is present, consults \texttt{subspace\_ambiguity\_route} together with \texttt{ambiguity\_ambiguous} (a no-op for routing while the route flag is false), and falls back to the scattered-query check. File and line anchors for every node are tabulated in chapter 5.

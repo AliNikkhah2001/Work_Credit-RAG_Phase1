@@ -1,0 +1,148 @@
+\chapter{Appendix}\label{appendix}
+
+\section{Section summary}\label{section-summary}
+
+This appendix indexes libraries by role, lists primary source files, and records the published defaults for the H200 lab server.
+
+\section{Library and tooling index}\label{library-and-tooling-index}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule\noalign{}
+Library & Role \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+FastAPI & HTTP services \\
+LangGraph & Orchestrator graph \\
+SQLAlchemy & Async ORM \\
+pgvector & Vector storage/index \\
+tantivy & BM25 engine \\
+sentence-transformers & Embeddings \\
+FlagEmbedding / BGE & Reranker family \\
+Redis & Result cache \\
+httpx & Async HTTP client \\
+Langfuse & Tracing UI/API \\
+llama.cpp & GGUF serving \\
+TensorRT-LLM & High-throughput serve \\
+LiteLLM & Optional gateway \\
+Docker & Containers \\
+PyTorch & Training/inference deps \\
+Prometheus & Metrics \\
+\end{longtable}
+
+\section{Primary source map}\label{primary-source-map}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule\noalign{}
+Concern & Path \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Graph wiring & \texttt{orchestrator/graph.py} \\
+Retrieve + trim & \texttt{orchestrator/nodes/retrieve.py} \\
+Context budgets & \texttt{orchestrator/nodes/build\_context.py} \\
+Orch settings & \texttt{orchestrator/config.py} \\
+KB search & \texttt{kb/search.py} \\
+Dense index & \texttt{kb/dense.py} \\
+EntityList model & \texttt{kb/database.py} \\
+Guard service & \texttt{guardrails/service.py} \\
+Judge & \texttt{guardrails/judge.py} \\
+Signals & \texttt{guardrails/signals.py} \\
+Manager & \texttt{manager/app.py} \\
+Docker compose & \texttt{deploy/docker/} \\
+Trace collector & \texttt{tracing/app.py} \\
+Eval store & \texttt{tracing/eval\_store.py} \\
+Orch tracing & \texttt{orchestrator/tracing.py} \\
+\end{longtable}
+
+\section{Glossary}\label{glossary}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.5000}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.5000}}@{}}
+\toprule\noalign{}
+Term & Meaning in this stack \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Hit@5 & Fraction of eval queries whose relevant chunk appears in the top 5. Published v11 value is \textbf{0.9306}. \\
+Warm search & Hybrid retrieve after indexes and CUDA kernels are resident. Quote \textbf{\textasciitilde55 ms} (v13 README total); a later tune measured 39.6 ms p50. \\
+Sticky subspace & Orchestrator memory that keeps cheque / facilities / general across follow-up turns, keyed by \texttt{request\_id}, with decay. \\
+\texttt{request\_id} & Required on Studio run inputs and on rails checks. Joins sticky memory, Langfuse \texttt{:3001}, and the collector \texttt{:3000}. \\
+AuditTrail & Pydantic record of timings, chunks, and guard signals on the buffered chat path. \\
+PII-IR & Output-rail validators: national ID mod-11, Sheba / IR-IBAN mod-97, plus phone patterns. Valid hits mask; secrets hard-block. \\
+HurtLex allowlist & \textbf{28} exact lemmas in \texttt{kb/hurtlex\_allowlist.json} that must not fire hate. Profanity, PII, and secrets are not on it. \\
+Champion & TensorRT-LLM Gemma on \texttt{:8010}. The llama.cpp pool \texttt{8080–8084} is the fallback. DeepSeek \texttt{:9001} is outside \texttt{MODEL\_REGISTRY}. \\
+\texttt{trust\_env=False} & httpx flag that stops localhost calls from inheriting Squid at \texttt{192.168.203.2:3128}. \\
+Finish mismatch & Bench turn whose \texttt{finish\_reason} disagreed with the expected stop / length / content\_filter outcome. 6/41 before, 0/41 after. \\
+\end{longtable}
+
+\section{Environment variables}\label{environment-variables}
+
+Values below are the published defaults for the H200 lab server from the parent configuration table, plus the guard and cache flags the pages call out. Secrets are omitted on purpose.
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.3333}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.3333}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.3333}}@{}}
+\toprule\noalign{}
+Variable & Typical value & Why it matters \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+\texttt{ORCHESTRATOR\_PORT} & 8100 & Public chat API \\
+\texttt{KB\_BASE\_URL} & \texttt{localhost:8000} & Search URL is \texttt{\{KB\}/search/api} \\
+\texttt{GUARDRAILS\_BASE\_URL} & \texttt{localhost:8200} & Rails check and guarded generate \\
+\texttt{retrieval\_top\_k} & 20 & Raised from the early MVP of 5 \\
+\texttt{subspace\_threshold} & 0.8 & Clarify gate \\
+\texttt{evidence\_min\_score} & 0.15 & Global hallucination floor; cheque 0.05, facilities\_person 0.10, facilities\_legal and general 0.15 \\
+\texttt{MAX\_CHUNKS} / \texttt{MAX\_CONTEXT} & 20 / 9000 & Context budget (was 5 / 6000) \\
+\texttt{LANGFUSE\_HOST} & \texttt{localhost:3001} & Langfuse v2; collector fallback is \texttt{:3000} \\
+\texttt{KB\_DB\_URL} & \texttt{postgresql+asyncpg://…:5432/kb\_manager} & pgvector HNSW. Set explicitly so the vector index is the store in use \\
+\texttt{KB\_EMBED\_MODEL} & \texttt{paraphrase-multilingual-MiniLM-L12-v2} & 384-d dense leg \\
+\texttt{KB\_RERANKER\_MODEL} & \texttt{BAAI/bge-reranker-v2-m3} & MiniLM mmarco is the lightweight fallback \\
+\texttt{KB\_RERANK\_POOL} & 15 CPU / 30 GPU & Cross-encoder candidate cap \\
+\texttt{UPSTREAM\_LLM\_BASE\_URL} & \texttt{localhost:9000/v1} & Guardrails dials Gemma through the H200 manager \\
+\texttt{UPSTREAM\_LLM\_MODEL} & \texttt{gemma-4-31b} or the unsloth UD-Q4\_K\_XL id & Match the process actually listening \\
+\texttt{CTX\_SIZE} & 8192 & Gemma context window \\
+\texttt{GUARD\_JUDGE\_BACKEND} & \texttt{gemma} (default), \texttt{mizan}, or \texttt{hybrid} & Adjudicator \\
+\texttt{GUARD\_JUDGE\_MODE} & \texttt{on-signal} (default) or \texttt{always} & Skip the LLM judge on clean text when on-signal \\
+\texttt{GUARD\_NEMO\_SELFCHECK} & \texttt{on} / \texttt{shadow} / \texttt{off} & Selects the direct-LLM yes/no self-check \\
+\texttt{HF\_HOME} and \texttt{HF\_HUB\_CACHE} & both set, same cache directory & Hub 1.x reads \texttt{\$HF\_HOME/hub}. Setting only one misses weights \\
+\texttt{WEBUI\_AUTH} & \texttt{false} on the ICS Helper MVP & \texttt{true} when per-user ids are required \\
+Studio run field \texttt{request\_id} & required on every Studio input & Joins the \texttt{:2024} thread to traces \\
+\end{longtable}
+
+\texttt{httpx} clients that call localhost also set \texttt{trust\_env=False} in code. Exporting \texttt{no\_proxy=localhost,127.0.0.1} does not replace that flag while Squid is at \texttt{192.168.203.2:3128}.
+
+\section{Pages extract sources}\label{pages-extract-sources}
+
+Prose in sections 6--10 is synthesized from these extracts (original wording; not an HTML dump):
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.5000}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.5000}}@{}}
+\toprule\noalign{}
+Extract & What this report took from it \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+\texttt{server\_setup} & H200 ports, Docker publish surface, Squid / \texttt{trust\_env}, containerization phases 1--5, TRT champion \\
+\texttt{guardrails} & Signals, judge, self-check, HurtLex \textbf{28}, PII-IR mod-11/mod-97, \texttt{policies/ics-credit-v1.0.0.yaml}, judge backends, SVG inventory \\
+\texttt{parent} & 41-turn before/after bench, Ghadeer thresholds (0.80 / 0.80 / 0.90 / 0.85), Langfuse \texttt{:3001}, collector \texttt{:3000}, Studio \texttt{:2024}, env table \\
+\texttt{agent\_state} & Both HF cache vars, Studio \texttt{request\_id}, \texttt{trust\_env=False} \\
+\texttt{kb} & v11 Hit@5 \textbf{0.9306}, warm search \textbf{\textasciitilde55 ms} \\
+\end{longtable}
+
+Upstream HTML those extracts name: server-setup \texttt{docs/\{index,technical,high-level\}.html}, \texttt{guides/03-services-and-endpoints.md}, \texttt{gemma\_endpoints.md}, \texttt{migration/containerization-report.md}; guardrails \texttt{docs/\{index,technical,high-level\}.html}; parent \texttt{docs/\{index,technical,high-level\}.html} and \texttt{docs/papers/benchmarks.html}; agent-state \texttt{docs/\{index,high-level,technical\}.html}; KB \texttt{docs/\{index,technical,high-level\}.html}.
+
+\section{Build notes}\label{build-notes}
+
+Render diagrams: \texttt{bash\ docs/technical-report/scripts/render\_diagrams.sh}\\
+Assemble: \texttt{bash\ docs/technical-report/scripts/build\_pdf.sh}\\
+Sync HTML: \texttt{bash\ docs/technical-report/scripts/build\_html.sh}

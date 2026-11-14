@@ -1,0 +1,13 @@
+# Simulation overlay — the ONLY place ports are published, exactly like
+# compose.gpu.yml on the real stack. `!override` is used here too so the merge
+# semantics match production.
+services:
+  web:
+    ports: !override
+      - "127.0.0.1:19300:8080"
+  api:
+    ports: !override
+      - "127.0.0.1:19301:8100"
+  worker:
+    ports: !override
+      - "127.0.0.1:19302:8200"

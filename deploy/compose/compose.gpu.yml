@@ -1,4 +1,4 @@
-# GPU / self-hosted overlay — use on H200/Vast with NVIDIA toolkit.
+# GPU / self-hosted overlay — use on H200/self-hosted GPU with NVIDIA toolkit.
 # Requires LLM_UPSTREAM_MODE=self_hosted (do NOT enable OpenRouter litellm here).
 #
 #   DANA_ENV=prod LLM_UPSTREAM_MODE=self_hosted \
@@ -7,21 +7,29 @@
 #
 # Prefer existing privileged stack when available:
 #   deploy/docker/docker-compose.yml  (llama-server + full CUDA)
-#   deploy/vast/start.sh              (unprivileged host, Gemma :18000)
+#   deploy/gpu/start.sh              (unprivileged host, Gemma :18000)
 
 services:
   # No litellm service on GPU/prod path.
-  guardrails:
+  #
+  # IMPORTANT: compose.base.yml declares NO port mappings. Every reachable port is
+  # published here (prod) or in compose.local.yml (dev). Never run base alone —
+  # doing so leaves the stack with zero published ports (WebUI :13000 unreachable).
+  # Prod binds to loopback only; the ICS gateway/proxy fronts :13000 (chat.ics24.ir).
+
+  webui:
+    ports: !override
+      - "127.0.0.1:13000:8080"
+
+  orchestrator:
+    ports: !override
+      - "127.0.0.1:8100:8100"
     environment:
-      UPSTREAM_LLM_BASE_URL: ${UPSTREAM_LLM_BASE_URL:-http://host.docker.internal:18000/v1}
       UPSTREAM_LLM_MODEL: ${UPSTREAM_LLM_MODEL:-unsloth/gemma-4-31B-it-GGUF:UD-Q4_K_XL}
-      UPSTREAM_LLM_API_KEY: ${LLM_API_KEY:-sk-local-dev}
-      LLM_BASE_URL: ${UPSTREAM_LLM_BASE_URL:-http://host.docker.internal:18000/v1}
-      LLM_MODEL: ${UPSTREAM_LLM_MODEL:-unsloth/gemma-4-31B-it-GGUF:UD-Q4_K_XL}
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
 
   kb:
+    ports: !override
+      - "127.0.0.1:8000:8000"
     build:
       args:
         TORCH_CHANNEL: ${KB_TORCH_CHANNEL:-cuda}
@@ -34,6 +42,26 @@ services:
       KB_RERANKER_MODEL: ${KB_RERANKER_MODEL:-BAAI/bge-reranker-v2-m3}
       KB_USE_TANTIVY: ${KB_USE_TANTIVY:-true}
 
-  orchestrator:
+  guardrails:
+    ports: !override
+      - "127.0.0.1:8200:8200"
     environment:
+      UPSTREAM_LLM_BASE_URL: ${UPSTREAM_LLM_BASE_URL:-http://host.docker.internal:18000/v1}
       UPSTREAM_LLM_MODEL: ${UPSTREAM_LLM_MODEL:-unsloth/gemma-4-31B-it-GGUF:UD-Q4_K_XL}
+      UPSTREAM_LLM_API_KEY: ${LLM_API_KEY:-sk-local-dev}
+      LLM_BASE_URL: ${UPSTREAM_LLM_BASE_URL:-http://host.docker.internal:18000/v1}
+      LLM_MODEL: ${UPSTREAM_LLM_MODEL:-unsloth/gemma-4-31B-it-GGUF:UD-Q4_K_XL}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  tracing:
+    ports: !override
+      - "127.0.0.1:13002:3000"
+
+  postgres:
+    ports: !override
+      - "127.0.0.1:15432:5432"
+
+  redis:
+    ports: !override
+      - "127.0.0.1:16379:6379"

@@ -1,0 +1,20 @@
+flowchart TB
+  WEB["WebUI never dials Gemma"]
+  ORCH["Orchestrator :8100"]
+  subgraph GR["Guardrails :8200 black box"]
+    direction LR
+    INCHK["Input rails check"]
+    GEN["Guarded chat completions"]
+    OUTCHK["Output rails and PII mask"]
+    INCHK --> GEN --> OUTCHK
+  end
+  subgraph UP["Upstream stays off the public map"]
+    GEM["Gemma 127.0.0.1:18000"]
+    MGR["H200 Manager :9000"]
+  end
+  WEB --> ORCH
+  ORCH -->|"POST /v1/rails/check"| INCHK
+  ORCH -->|"POST /v1/chat/completions"| GEN
+  GEN --> GEM
+  GEN --> MGR
+  OUTCHK -->|"masked answer or content_filter"| ORCH

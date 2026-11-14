@@ -1,0 +1,28 @@
+# Optional GPU-host systemd unit — backup to Jenkins pollSCM.
+# Install (as root on the GPU server):
+#   1) Edit WorkingDirectory / DANA_HOST_REPO to this host's clone path
+#   2) cp deploy/jenkins/dana-keep-latest.service /etc/systemd/system/
+#      cp deploy/jenkins/dana-keep-latest.timer  /etc/systemd/system/
+#   3) systemctl daemon-reload
+#   4) systemctl enable --now dana-keep-latest.timer
+#
+# Prefer Jenkins Multibranch + [ci prod] when the prod controller is healthy.
+# This timer only deploys app containers (KB/guardrails/orch/webui) — not Gemma/TRT.
+
+[Unit]
+Description=Dana RAG keep latest successful main (apps)
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/workspace/Work_Credit-RAG_Phase1
+Environment=DANA_HOST_REPO=/workspace/Work_Credit-RAG_Phase1
+Environment=DANA_HOST=gpu
+Environment=DANA_ROLE=prod
+ExecStart=/bin/bash /workspace/Work_Credit-RAG_Phase1/scripts/gpu_keep_latest.sh
+Nice=10
+
+[Install]
+WantedBy=multi-user.target

@@ -4,9 +4,9 @@
 [![License](https://img.shields.io/github/license/AliNikkhah2001/Work_Credit-RAG_Phase1)](LICENSE)
 [![Branch](https://img.shields.io/badge/branch-main-blue)]()
 
-Self-hosted, Persian-capable conversational RAG platform. Production code lives in independently maintained Git submodules (orchestrator, knowledgebase, guardrails, server-setup) pinned to exact commits; the parent repo owns pins, integrated startup (`deploy/vast/`), and E2E evaluation.
+Self-hosted, Persian-capable conversational RAG platform. Production code lives in independently maintained Git submodules (orchestrator, knowledgebase, guardrails, server-setup) pinned to exact commits; the parent repo owns pins, integrated startup (`deploy/gpu/`), and E2E evaluation.
 
-> **Status:** Active on `main`. Deployed on Vast.ai (RTX 3090) and H200 host via `Work_RAG-Server-Setup` LLM manager `:9000`. Current KB `v13` — 18 docs / 1123 chunks · pgvector HNSW · `MAX_CHUNKS=20`.
+> **Status:** Active on `main`. Deployed on self-hosted GPU (RTX 3090) and H200 host via `Work_RAG-Server-Setup` LLM manager `:9000`. Current KB `v13` — 18 docs / 1123 chunks · pgvector HNSW · `MAX_CHUNKS=20`.
 
 <details>
 <summary>Repository composition &amp; layers</summary>
@@ -31,7 +31,7 @@ Layer separation:
 | Entry points | `api/` | Yes | Thin wrappers → `components/` submodules |
 | Implementation | `components/` | Yes | Production code (submodules, pinned commits) |
 | Contracts | `contracts/` | Yes | API request/response JSON schemas |
-| Deployment | `deploy/` | Yes | Start/stop/health scripts per host (Vast/H200/Docker) |
+| Deployment | `deploy/` | Yes | Start/stop/health scripts per host (self-hosted GPU / Docker) |
 | Testing | `eval/` | Yes | E2E, guardrails, LLM-judge evaluation |
 | Utilities | `scripts/` | Yes | README TOC generation, system checks |
 | Agent context | `agent-state/` | Agent only | Agent mission, history, skills, standards |
@@ -67,7 +67,7 @@ flowchart TB
     end
 
     subgraph Gen["Generation"]
-        Gemma["Gemma 4 31B\nunsloth/gemma-4-31B-it-GGUF UD-Q4_K_XL\n:18000 Vast · :9000 Manager H200"]
+        Gemma["Gemma 4 31B\nunsloth/gemma-4-31B-it-GGUF UD-Q4_K_XL\n:18000 self-hosted · :9000 Manager H200"]
         Embed["Embed trio :8001-8003\ne5-small · bge-m3 · MiniLM"]
     end
 
@@ -491,7 +491,7 @@ Key production libraries (+ versions):
 <details>
 <summary>Configuration — key environment variables</summary>
 
-| Component | Variable | Default | Production (Vast) | Notes |
+| Component | Variable | Default | Production (self-hosted GPU) | Notes |
 |-----------|----------|---------|-------------------|-------|
 | Orchestrator | `ORCHESTRATOR_PORT` | 8100 | 8100 | public API |
 | | `KB_BASE_URL` | `http://127.0.0.1:8000` | same | `kb_search_url = {KB}/search/api` |
@@ -515,7 +515,7 @@ Key production libraries (+ versions):
 | | `KB_RERANKER_MODEL` | `BAAI/bge-reranker-v2-m3` | same | or MiniLM fallback |
 | | `KB_RERANK_POOL` | 15 | 15 CPU / 30 GPU | |
 | Guardrails | `GUARDRAILS_PORT` | 8200 | 8200 | |
-| | `UPSTREAM_LLM_BASE_URL` | `http://127.0.0.1:9000/v1` | `http://127.0.0.1:18000/v1` | Vast bare Gemma |
+| | `UPSTREAM_LLM_BASE_URL` | `http://127.0.0.1:9000/v1` | `http://127.0.0.1:18000/v1` | bare Gemma `:18000` |
 | | `UPSTREAM_LLM_MODEL` | `gemma-4-31b` | `unsloth/gemma-4-31B-it-GGUF:UD-Q4_K_XL` | |
 | Gemma | `MODEL` | — | `/tmp/hf_clean/...UD-Q4_K_XL.gguf` | H200 uses manager `:9000` |
 | | `CTX_SIZE` | 8192 | 8192 (4096 if OOM) | |
@@ -561,10 +561,10 @@ git switch main
 git submodule sync --recursive && git submodule update --init --recursive
 
 # 2. Full startup (postgres → Gemma → KB → guardrails → collector → orchestrator → WebUI)
-bash deploy/vast/start.sh
+bash deploy/gpu/start.sh
 
 # 3. Health check
-bash deploy/vast/health.sh
+bash deploy/gpu/health.sh
 
 # 4. Access via SSH tunnel
 ssh -p <ssh_port> root@<ssh_host> \
@@ -594,7 +594,7 @@ docker compose up -d --build
 |---------|------|---------|
 | v13 | 2026-10-28 | KB `1405-07-06`: 18 docs / 1123 chunks · `folder_hierarchy` + `filter_path` + `supplement` tool (cos 0.4/0.6) · pgvector HNSW |
 | v13 | 2026-10-24 | Orchestrator LangGraph conditional clarify (`should_clarify` → `generate_clarification`), sticky `MemorySaver` (`X-Request-ID`), `MAX_CHUNKS=20/9000`, evidence `0.15` G5 guard, grounded `follow_ups`, DLQ; ambiguity resolver (SVM-RBF, 1000-sample dataset) |
-| v12 | 2026-10-12 | Guardrails `:8200` Persian rails, HurtLex 19 lemmas, `enable_thinking:false` / `--no-mmproj --jinja` clean Persian; Generation Gemma 4 31B via `:18000` (Vast) / `:9000` manager (H200); embed trio `:8001-8003` |
+| v12 | 2026-10-12 | Guardrails `:8200` Persian rails, HurtLex 19 lemmas, `enable_thinking:false` / `--no-mmproj --jinja` clean Persian; Generation Gemma 4 31B via `:18000` / `:9000` manager (H200); embed trio `:8001-8003` |
 | v11 | 2026-10-12 | WebUI `:13000` ICS Helper (Arena OFF) · `rag_trace_capture` filter + 4 actions (`rate`/`report`/`view`/`truth`) · `WEBUI_AUTH=false` |
 | v10 | 2026-10-12 | Observability `:3000/dashboard/observability` (unified `observability.db`, chunk cards, subspace badge, export) + Langfuse `:3001` + Studio `:2024` |
 | v9 | 2026-10-12 | Benchmark: multi-agent conversational 41 turns · RAGAS per-subspace · `docs/benchmark-report-2026-10-12.md` |
@@ -640,7 +640,7 @@ Jenkins **polls GitHub every hour** (`pollSCM` in root [`Jenkinsfile`](Jenkinsfi
 | **stage** | `develop` | build → `dana-stage` compose (alt ports) + E2E | OpenRouter (`LLM_UPSTREAM_MODE=openrouter`) on laptop |
 | **prod** | `main` | build → `dana-prod` (laptop sim) or GPU self-hosted | OpenRouter on laptop; Gemma/Manager/TRT on H200 |
 
-Self-hosted Gemma / TRT paths (`deploy/vast/`, `deploy/docker/`, server-setup manager) are **unchanged**. Laptop OpenRouter is used **only** when `DANA_ENV=test` and `LLM_UPSTREAM_MODE=openrouter` with `compose.local.yml`.
+Self-hosted Gemma / TRT paths (`deploy/docker/`, server-setup manager) are **unchanged**. Laptop OpenRouter is used **only** when `DANA_ENV=test` and `LLM_UPSTREAM_MODE=openrouter` with `compose.local.yml`.
 
 ### Commit-message triggers (bold + red)
 
@@ -714,13 +714,13 @@ Stage uses alt ports (`18100`, `18200`, …) via `compose.stage.yml`.
 
 Laptop Jenkins and GPU Jenkins are **two separate controllers**. Same GitHub repo and commit keys; **different** `jenkins_home` (admin password, jobs, credentials). The `dana-jenkins:lts` image is reusable software — it does **not** carry your laptop password or job history unless you explicitly migrate the volume.
 
-Do this **once** on the production GPU server (H200 / Vast with GPU):
+Do this **once** on the production GPU server (H200 / self-hosted with GPU):
 
 | Step | Action | Notes |
 |------|--------|-------|
 | 0 | **Prereqs** | Docker Engine, NVIDIA Container Toolkit, `nvidia-smi` OK, GitHub PAT (repo read), disk for images + HF cache |
 | 1 | **Clone umbrella** | `git clone --recurse-submodules https://github.com/AliNikkhah2001/Work_Credit-RAG_Phase1.git` then `cd Work_Credit-RAG_Phase1` |
-| 2 | **Bring up LLMs first** | Manager `:9000` / TRT / `deploy/vast/start.sh` Gemma `:18000` — CI only rebuilds **app** containers (KB, guardrails, orchestrator, webui, …), not the model servers |
+| 2 | **Bring up LLMs first** | Manager `:9000` / TRT Gemma `:18000` — CI only rebuilds **app** containers (KB, guardrails, orchestrator, webui, …), not the model servers |
 | 3 | **Prod env file** | Create gitignored `deploy/compose/.env.prod` with `DANA_ENV=prod`, `DANA_HOST=gpu`, `LLM_UPSTREAM_MODE=self_hosted`, `UPSTREAM_LLM_BASE_URL=…`, `KB_EMBED_DEVICE=cuda`, `KB_RERANKER_DEVICE=cuda`. **No OpenRouter keys** on this host |
 | 4 | **Fix Jenkins host path** | Edit `deploy/jenkins/docker-compose.yml`: replace the Mac absolute bind with **this server’s** clone path (same path inside the container and on the host so `docker.sock` bind mounts work). Set `DANA_HOST_REPO` to that path |
 | 5 | **Start Jenkins** | `docker compose -f deploy/jenkins/docker-compose.yml up -d --build` → UI `:8085` |
@@ -730,7 +730,7 @@ Do this **once** on the production GPU server (H200 / Vast with GPU):
 | 9 | **Multibranch job** | Name `dana-rag` → GitHub `AliNikkhah2001/Work_Credit-RAG_Phase1` → branches `main` (required), optionally `develop` → Jenkinsfile at repo root. Prefer **prod-only** on GPU (`main`); keep stage on laptop |
 | 10 | **Agent env** | Controller/agent env: `DANA_HOST=gpu` so Jenkinsfile uses `compose.gpu.yml` for prod |
 | 11 | **Smoke** | From laptop: `git push origin main` with $\textcolor{red}{\textbf{[ci prod]}}$ → on server **Scan Multibranch** / wait for hourly poll → confirm `:8100` chat and `LLM_UPSTREAM_MODE=self_hosted` |
-| 12 | **Ops** | Never `pkill python`; use `bash deploy/vast/stop.sh`. Keep Gemma/postgres loopback-only. Backup `jenkins_home` volume if you care about job history |
+| 12 | **Ops** | Never `pkill python`; use `bash deploy/gpu/stop.sh`. Keep Gemma/postgres loopback-only. Backup `jenkins_home` volume if you care about job history |
 
 Detailed twin of this list: [`deploy/jenkins/README.md`](deploy/jenkins/README.md) and [`components/server-setup/README.md`](components/server-setup/README.md) § Jenkins / CI on H200.
 
@@ -857,7 +857,7 @@ See [LICENSE](LICENSE). Each submodule may also declare its own license and depe
 
 ## Links
 
-- Runbook: [AGENTS.md](AGENTS.md) §2–3 + `deploy/vast/start.sh` + `deploy/vast/health.sh`
+- Runbook: [AGENTS.md](AGENTS.md) §2–3 + `deploy/gpu/start.sh` + `deploy/gpu/health.sh`
 - CI/CD: [deploy/jenkins/README.md](deploy/jenkins/README.md) · Compose: [deploy/compose/README.md](deploy/compose/README.md)
 - Bench report: [docs/benchmark-report-2026-10-12.md](docs/benchmark-report-2026-10-12.md) (also `evaluation/artifacts/bench_report_latest.html`)
 - Compose: [compose.mvp.yml](compose.mvp.yml) + [deploy/docker/docker-compose.yml](deploy/docker/docker-compose.yml)

@@ -1,8 +1,10 @@
-# MVP compose for Vast.ai — Gemma is external host llama-server :18000
+# MVP compose — Gemma is external host llama-server :18000
 # No gemma-manager. Guardrails -> host.docker.internal:18000/v1
-# Public: 0.0.0.0:13000 -> Open WebUI :8080
+# Public: 127.0.0.1:13000 -> Open WebUI :8080 (put a proxy in front; do NOT
+#   publish 0.0.0.0 without a firewall — WEBUI_AUTH is false here).
 # Internal: kb, guardrails, orchestrator via Docker DNS (no public ports)
 # Orchestrator :8100 is internal; expose 8100 only for debugging if needed.
+# Langfuse UI stays loopback-only on 127.0.0.1:3001.
 
 services:
   postgres:
@@ -32,6 +34,12 @@ services:
       dockerfile: Dockerfile
     container_name: rag-kb
     environment:
+      # KB_DB_URL is REQUIRED. Setting only KB_DB_HOST/PORT/NAME/USER/PASSWORD
+      # makes load_config() fall back to SQLite silently (empty /search/api against
+      # the pgvector DB, with no error). Keep the discrete vars for tooling, but
+      # always pin the URL too.
+      KB_DB_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/kb_manager
+      KB_DB_MODE: pgvector
       KB_DB_HOST: postgres
       KB_DB_PORT: 5432
       KB_DB_NAME: kb_manager
@@ -109,7 +117,7 @@ services:
       - rag
     restart: unless-stopped
 
-  # Self-hosted Langfuse stack (requires Docker privileged host; on unprivileged Vast use host collector :3000 fallback)
+  # Self-hosted Langfuse stack (requires Docker privileged host; host collector :3000 fallback otherwise)
   langfuse-db:
     image: postgres:15
     container_name: rag-langfuse-db
@@ -179,8 +187,11 @@ services:
       LANGFUSE_INIT_USER_NAME: Admin
     expose:
       - "3000"
+    # Langfuse UI is an internal debug surface. Publishing it on 0.0.0.0:3000
+    # collides with the fallback trace collector and exposes traces publicly.
+    # Use the loopback mapping below (or none) on any host with a public IP.
     ports:
-      - "0.0.0.0:3000:3000"
+      - "127.0.0.1:3001:3000"
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/public/health || exit 1"]
       interval: 10s
@@ -235,10 +246,10 @@ services:
     image: ghcr.io/open-webui/open-webui:main
     container_name: rag-open-webui
     ports:
-      - "0.0.0.0:13000:8080"
+      - "127.0.0.1:13000:8080"
     environment:
       WEBUI_AUTH: "false"
-      WEBUI_NAME: "Work RAG (Vast)"
+      WEBUI_NAME: "Work RAG (self-hosted)"
       USE_OLLAMA_DOCKER: "false"
       USE_CUDA_DOCKER: "false"
       OPENAI_API_BASE_URL: http://orchestrator:8100/v1

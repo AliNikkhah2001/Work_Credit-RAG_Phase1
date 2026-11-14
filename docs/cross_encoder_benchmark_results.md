@@ -4,7 +4,7 @@
 
 Tested 7 cross-encoder reranker models on the Work Credit RAG KB (v8 pgvector, 6593 chunks, 103 docs) using 20 diverse Persian credit queries.
 
-**Environment**: Vast.ai RTX 3090 24GB (Gemma using 23.16 GiB VRAM) → Rerankers forced to CPU mode.
+**Environment**: self-hosted GPU RTX 3090 24GB (Gemma using 23.16 GiB VRAM) → Rerankers forced to CPU mode.
 
 ---
 

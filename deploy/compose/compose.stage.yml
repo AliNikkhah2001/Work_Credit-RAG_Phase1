@@ -1,6 +1,13 @@
 # Stage overlay (Jenkins develop): alt host ports so it can coexist with local/prod-sim.
 # Uses Compose !override so ports REPLACE local.yml (compose merges sequences by append).
 #   docker compose -p dana-stage -f deploy/compose/compose.base.yml -f deploy/compose/compose.local.yml -f deploy/compose/compose.stage.yml --env-file deploy/compose/.env up -d
+#
+# NOTE: the explicit `-p dana-stage` is mandatory. deploy/compose/.env sets
+# COMPOSE_PROJECT_NAME=dana-local, so dropping -p silently targets the dev stack.
+#
+# Every service that publishes a host port in compose.local.yml must be
+# re-published here, otherwise the stage stack reuses the dev port and either
+# fails to bind or (worse) joins the dev stack's port by accident.
 
 services:
   litellm:
@@ -24,6 +31,11 @@ services:
   tracing:
     ports: !override
       - "127.0.0.1:13001:3000"
+  evaluation:
+    # compose.local.yml publishes 8300 for the dev stack; stage needs its own
+    # port or `--profile eval` on both stacks collides on the host.
+    ports: !override
+      - "127.0.0.1:18300:8300"
   webui:
     ports: !override
       - "127.0.0.1:13100:8080"

@@ -49,7 +49,7 @@
 | ID | File:Line | Error | Fix |
 |----|-----------|-------|-----|
 | **G-C1** | `guardrails/service.py:74` | `RailsConfig.from_content(yaml_content=config_dict.get("models", []))` passes **list** not YAML string → `TypeError` | `yaml.safe_dump({"models": ...})` |
-| **G-C2** | `guardrails/service.py:211,245` | `headers={"Authorization": f"Bearer {settings.upstream_llm_api_key}"}` ignores `resolved_api_key` → Vast `LLM_API_KEY` fails | Use `settings.resolved_api_key` |
+| **G-C2** | `guardrails/service.py:211,245` | `headers={"Authorization": f"Bearer {settings.upstream_llm_api_key}"}` ignores `resolved_api_key` → self-hosted `LLM_API_KEY` fails | Use `settings.resolved_api_key` |
 | **G-C3** | `guardrails/actions.py:275-288` | `check_pii_ir` `\b\d{10}\b` only ASCII, `۰۹۱۲` bypasses | `text = normalize_persian(text)` at top |
 | **G-C4** | `guardrails/judge.py:43-46,117` | YAML injection `base_url: {base}` unescaped | Dict + `yaml.safe_dump`, use `resolved_base_url` |
 | **G-C5** | `guardrails/signals.py:65-81` `judge.py:207` | Domain gate fail-open when `policies/active.yaml` missing → `allow` any off-domain | Fail-closed: `needs_domain_check` returns `True` when policy empty |
@@ -143,7 +143,7 @@ Full detail in `/tmp/CODE_AUDIT_REPORT.md` (162 lines, 142 issues with `file:lin
 
 | Order | IDs | Action | Effort | Verify |
 |-------|-----|--------|--------|--------|
-| **1** | C1-21 (all Critical) | Auth on all `web/routes/*`, sanitize `file.filename`, restrict `from-path`, quota+reaper, escape `ilike`, `WAL`+`filelock`, rotate secrets, `CORS` explicit, `shell=False`, validate `port`/`n_ctx`, `RailsConfig` arity, Persian PII normalize, fail-closed domain gate | 2 days | `bash deploy/vast/health.sh` (5 `ok`), `curl` E2E `{"finish":"stop","citations":5}`, PII Persian `۰۹۱۲۳۴۵۶۷۸۹` test, policy-missing fail-closed test |
+| **1** | C1-21 (all Critical) | Auth on all `web/routes/*`, sanitize `file.filename`, restrict `from-path`, quota+reaper, escape `ilike`, `WAL`+`filelock`, rotate secrets, `CORS` explicit, `shell=False`, validate `port`/`n_ctx`, `RailsConfig` arity, Persian PII normalize, fail-closed domain gate | 2 days | `bash deploy/gpu/health.sh` (5 `ok`), `curl` E2E `{"finish":"stop","citations":5}`, PII Persian `۰۹۱۲۳۴۵۶۷۸۹` test, policy-missing fail-closed test |
 | **2** | H1-H38 | Fix `HTTPException` handler, streaming race, `MemorySaver` TTL, thread-pool for tracing, `faq_verified` TypedDict, `SentenceTransformer` `to_thread`, shared client timeout, sequential judge → `asyncio.gather`, output rails on stream, `fcntl` for events, uncompiled regex → `re.compile`, Sheba spaced bypass | 3 days | Same + `pytest -q` guardrails `tests/`, kb-manager 17 tests, `ruff check` + `mypy --strict` + `bandit -r kb_manager` |
 | **3** | M1-M52 | Centralize magic numbers in `config.py`, batch queries with `asyncio.gather`, `to_thread` for parsers, `422` for validation, wire `HyDE` multi or remove, lazy `db` singleton, `Query(ge/le)` validation | 2 days | Same |
 | **4** | L1-L31 | `ruff --select ALL` + `mypy --strict` CI, `__all__`, remove `opentelemetry` bloat, `Dockerfile` `COPY .env.example` remove, `eval` `statistics.quantiles` fix | 1 day | CI green |

@@ -10,21 +10,21 @@
 
 | Layer | How it runs today | Host | Ports | Containerized? |
 |-------|-------------------|------|-------|----------------|
-| Gemma LLM (5× backends) | `llama_chat_server.py` via `gemma_supervisor.sh` | H200 / Vast | 8080–8084 | No (host venv) |
+| Gemma LLM (5× backends) | `llama_chat_server.py` via `gemma_supervisor.sh` | H200 / self-hosted | 8080–8084 | No (host venv) |
 | LLM Manager (gateway) | `llm_inference_manager/app.py` | H200 | 9000 | No |
-| Embeddings (3 models) | `embed_server.py` ×3 | H200 / Vast | 8001–8003 | No |
-| KB Retrieval | `kb_manager.web.app:app` | Vast | 8000 | No |
-| Guardrails | `work_rag_guardrails.api:create_app` | Vast | 8200 | No |
-| Orchestrator (LangGraph) | `work_rag_orchestrator.api:create_app` | Vast | 8100 | No |
-| Tracing fallback | `components/tracing/app.py` | Vast | 3000 | No |
+| Embeddings (3 models) | `embed_server.py` ×3 | H200 / self-hosted | 8001–8003 | No |
+| KB Retrieval | `kb_manager.web.app:app` | self-hosted | 8000 | No |
+| Guardrails | `work_rag_guardrails.api:create_app` | self-hosted | 8200 | No |
+| Orchestrator (LangGraph) | `work_rag_orchestrator.api:create_app` | self-hosted | 8100 | No |
+| Tracing fallback | `components/tracing/app.py` | self-hosted | 3000 | No |
 | Open WebUI | Docker `open-webui:main` | Docker | 13000 | ✅ Yes |
 | postgres + pgvector | system cluster | system | 5432 | No |
 | Redis | system | system | 16379 | No |
 
 **Pain points:**
-- Vast.ai is **unprivileged** → no Docker, no `unshare`/iptables → host venvs only
+- Self-hosted unprivileged host → no Docker, no `unshare`/iptables → host venvs only
 - H200 host has Docker but services run as bare Python processes
-- No CI/CD pipeline → manual `git push` + manual `bash deploy/vast/start.sh`
+- No CI/CD pipeline → manual `git push` + manual `bash deploy/gpu/start.sh`
 - No health-check automation, no rollback, no blue/green
 - Gemma runs via llama.cpp (not Triton/TensorRT) → suboptimal GPU utilization on H200
 
@@ -40,9 +40,9 @@
    - Shared Docker network, health checks, restart policies
    - Volume mounts for models (`offline-prep/models/`), configs, logs
 2. **Dockerfiles per service** (Python base, `requirements.txt`, non-root user, `gunicorn`/`uvicorn` workers)
-3. **Vast.ai workaround** (unprivileged, no Docker):
+3. **Unprivileged-host workaround** (no Docker):
    - Continue host venvs OR use `proot`/`bubblewrap` for lightweight isolation
-   - Document dual deployment paths: Docker Compose (privileged) vs. host venv (Vast)
+   - Document dual deployment paths: Docker Compose (privileged) vs. host venv (unprivileged host)
 4. **Base image selection**: `python:3.11-slim` vs. `nvidia/cuda:12.x-base` for GPU services
 5. **Multi-stage builds** to reduce image size (build deps in stage 1, runtime in stage 2)
 
@@ -66,9 +66,9 @@
   - `ruff` lint, `mypy` type check, `pytest` on `eval/`, `scripts/gen_readme_toc.py --check`
   - Build Docker images (dry-run), verify submodule pins
 - **CD workflow** (`.github/workflows/cd.yml`): run on merge to `main`
-  - Deploy to Vast.ai via SSH tunnel (`ssh` + `bash deploy/vast/start.sh`)
+  - Deploy to GPU host via SSH tunnel (`ssh` + `bash deploy/gpu/start.sh`)
   - Health check gates, rollback on failure
-- **Secrets**: `VAST_SSH_KEY`, `VAST_HOST`, `VAST_SSH_PORT`, `DOCKER_HUB_TOKEN`
+- **Secrets**: `GPU_SSH_KEY`, `GPU_HOST`, `GPU_SSH_PORT`, `DOCKER_HUB_TOKEN`
 
 **Branch protection integration:**
 - CI must pass before merge (already planned in Rulesets)
@@ -118,7 +118,7 @@
 | Host | GPU | Recommended stack |
 |------|-----|-------------------|
 | H200 | Hopper SM90 | TensorRT-LLM + Triton (FP8) |
-| Vast.ai | RTX 3090 (Ampere) | TensorRT-LLM (INT8) or llama.cpp (current) |
+| Self-hosted GPU | RTX 3090 / H200 | TensorRT-LLM (INT8/FP8) or llama.cpp (current) |
 | Local dev | Any | llama.cpp (simplest) |
 
 **Deliverable:** `deploy/triton/` directory with `config.pbtxt`, model conversion scripts, benchmark plan
@@ -139,7 +139,7 @@
 
 ---
 
-### E. Vast.ai Specific Constraints
+### E. Unprivileged Host Constraints
 
 **Investigate:**
 - Unprivileged container → no Docker daemon → all services as host processes
@@ -154,7 +154,7 @@
 
 ### Phase 1: Audit & Documentation (Week 1)
 - [ ] Inventory all services, entry points, env vars, dependencies
-- [ ] Map current `deploy/vast/start.sh` → service startup order
+- [ ] Map current `deploy/gpu/start.sh` → service startup order
 - [ ] Document all `.env` requirements and secrets
 - [ ] Benchmark current Gemma latency/throughput (baseline for optimization)
 - [ ] Check Docker availability on H200 host
@@ -168,11 +168,11 @@
 - [ ] Write `Dockerfile` for LLM Manager (FastAPI, `httpx`, `llama_cpp`)
 - [ ] Create `docker-compose.prod.yml` with networks, volumes, health checks, restart policies
 - [ ] Test `docker compose up -d` on H200 host
-- [ ] Document Vast.ai host-venv fallback (no Docker)
+- [ ] Document unprivileged-host venv fallback (no Docker)
 
 ### Phase 3: CI/CD (Week 3–4)
 - [ ] `.github/workflows/ci.yml`: lint + test + docker build (dry-run)
-- [ ] `.github/workflows/cd.yml`: deploy to Vast via SSH on `main` merge
+- [ ] `.github/workflows/cd.yml`: deploy to GPU host via SSH on `main` merge
 - [ ] Configure GitHub branch protection (Rulesets) — already planned
 - [ ] Add `Dockerfile` lint (`hadolint`) to CI
 - [ ] Add `docker-compose config` validation to CI
@@ -209,7 +209,7 @@
 | Alerting | Prometheus Alertmanager | Integrated with Prometheus |
 | Logging | Loki or ELK | Centralized, queryable |
 | Secrets | GitHub Secrets + runtime inject | No new infra for now |
-| Process mgmt (Vast) | supervisord / systemd user | No Docker on Vast |
+| Process mgmt (unprivileged host) | supervisord / systemd user | No Docker on unprivileged host |
 
 ---
 
@@ -217,7 +217,7 @@
 
 | Risk | Mitigation |
 |------|------------|
-| Vast.ai no Docker → can't containerize there | Keep host venv path; Docker only for H200/privileged hosts |
+| Self-hosted GPU no Docker → can't containerize there | Keep host venv path; Docker only for H200/privileged hosts |
 | TensorRT-LLM conversion complexity | Fallback to llama.cpp (current) or vLLM |
 | Gemma-4-31B too large for single GPU | Model parallelism (MP=2) across 2× H200 or RTX 3090s |
 | Breaking changes during containerization | Feature flag: keep old start.sh working until new stack verified |
@@ -243,7 +243,7 @@
 
 1. **Approve this plan** — confirm which areas to prioritize
 2. **Provide H200 access / Docker confirmation** — can we build images there?
-3. **Provide Vast.ai SSH details** — for CI/CD deploy testing (or I document the commands without running)
+3. **Provide GPU server SSH details** — for CI/CD deploy testing (or I document the commands without running)
 4. **Decide on CI/CD** — GitHub Actions (recommended) vs. Jenkins vs. other
 5. **Decide on model optimization target** — TensorRT-LLM vs. vLLM vs. keep llama.cpp
 

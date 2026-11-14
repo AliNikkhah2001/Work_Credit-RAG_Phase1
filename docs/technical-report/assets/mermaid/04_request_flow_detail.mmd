@@ -1,0 +1,37 @@
+sequenceDiagram
+  autonumber
+  participant U as User
+  participant W as WebUI_13000
+  participant O as Orch_8100
+  participant G as Guard_8200
+  participant K as KB_8000
+  participant M as Gemma_18000_or_9000
+  participant T as Trace_3000_3001
+  U->>W: User message
+  W->>O: chat completions plus X-Request-ID
+  O->>T: start_trace
+  O->>G: POST /v1/rails/check stage=input
+  alt blocked
+    G-->>O: refuse
+    O-->>W: content_filter refusal
+  else allowed
+    O->>O: classify greeting spec question
+    O->>K: POST /search/api filter_path optional
+    K-->>O: final_results merged_candidates injected_entities
+    opt entity keywords
+      O->>K: POST /search/supplement
+      K-->>O: entity lists
+    end
+    alt needs clarification
+      O-->>W: clarifying question
+    else continue
+      O->>O: build_context trim supplemental
+      O->>G: POST /v1/chat/completions
+      G->>M: upstream generate
+      M-->>G: text
+      G-->>O: output rails
+      O->>O: format_response citations
+      O->>T: update_trace plus observability save
+      O-->>W: grounded answer
+    end
+  end

@@ -1,0 +1,26 @@
+\chapter{Work Credit RAG --- Technical Documentation Report}\label{work-credit-rag-technical-documentation-report}
+
+\textbf{Organization:} Iranian Credit Scoring Company (ICS)\\
+\textbf{Platform:} Work Credit RAG Phase 1 (Dana Agent Framework)\\
+\textbf{Document date:} 2026-11-10
+
+\section{Submodule pins}\label{submodule-pins}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.2500}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.2500}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.2500}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.2500}}@{}}
+\toprule\noalign{}
+Module & Branch & Pages pin & Owns \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Server setup & \texttt{main} & \texttt{ff8c5a8} & LLM manager \texttt{:9000}, embeds \texttt{:8001}--\texttt{:8003} \\
+Knowledge base & \texttt{master} & \texttt{92503e5} & Ingest, retrieval \texttt{:8000} \\
+Guardrails & \texttt{main} & \texttt{1002ea8} & Persian rails, guarded generate \texttt{:8200} \\
+Orchestrator & \texttt{main} & \texttt{75cf970} & LangGraph API \texttt{:8100} \\
+Tracing & --- & --- & Fallback collector \texttt{:3000} \\
+Agent-state & \texttt{main} & \texttt{a0d454e} & Agent context (off request path) \\
+\end{longtable}

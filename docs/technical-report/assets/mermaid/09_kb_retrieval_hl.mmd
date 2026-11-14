@@ -1,0 +1,5 @@
+flowchart LR
+  Q[Query] --> CACHE{Redis_cache}
+  CACHE -->|hit| OUT[Results]
+  CACHE -->|miss| HYB[Hybrid_retrieve]
+  HYB --> OUT

@@ -1,0 +1,25 @@
+flowchart TB
+  subgraph HOST["H200_host"]
+    MG[Manager_9000]
+    TRT[TRTLLM_champion_8010]
+    GEMMA[llama_cpp_gemma_8080_8084]
+    QW[Qwen_8090]
+    EMB1[embed_e5_8001]
+    EMB2[embed_bge_8002]
+    EMB3[embed_minilm_8003]
+  end
+  subgraph DOCKER["Docker_plane"]
+    WEBUI[WebUI_13000]
+    REDIS[Redis]
+    PG[pgvector]
+    QDR[Qdrant]
+  end
+  MG --> TRT
+  MG --> GEMMA
+  MG --> QW
+  Orch[Orchestrator] --> MG
+  Orch --> Guard[Guardrails]
+  Guard --> MG
+  KB[KB] --> EMB3
+  KB --> PG
+  WEBUI --> Orch

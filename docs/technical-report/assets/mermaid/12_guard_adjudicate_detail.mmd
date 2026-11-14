@@ -1,0 +1,9 @@
+flowchart TD
+  IN[Input_text] --> NORM[Normalize]
+  NORM --> SIG[collect_signals]
+  SIG --> DOM[domain_scope_check]
+  DOM --> JUDGE[policy_judge_gemma_or_mizan]
+  JUDGE --> SELF[direct_LLM_selfcheck]
+  SELF -->|fail_closed_on_error| OUT{allowed}
+  OUT -->|yes| ALLOW[allow]
+  OUT -->|no| REFUSE[refuse_premade_Persian]

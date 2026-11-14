@@ -1,0 +1,22 @@
+flowchart TB
+  subgraph Client["Client layer"]
+    User[User_Browser]
+    WebUI[OpenWebUI_13000]
+  end
+  subgraph Platform["RAG platform"]
+    Orch[Orchestrator_8100]
+    KB[Knowledgebase_8000]
+    Guard[Guardrails_8200]
+    LLM[LLM_Gemma_or_Manager]
+  end
+  subgraph Obs["Observability"]
+    Coll[Collector_3000]
+    Langfuse[Langfuse_3001]
+  end
+  User --> WebUI
+  WebUI --> Orch
+  Orch --> KB
+  Orch --> Guard
+  Guard --> LLM
+  Orch -.-> Coll
+  Coll --> Langfuse

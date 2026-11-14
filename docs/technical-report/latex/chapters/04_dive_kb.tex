@@ -1,0 +1,223 @@
+\chapter{Knowledge base}\label{knowledge-base}
+
+\section{Section summary}\label{section-summary}
+
+The knowledge base (\texttt{components/knowledgebase}, kb-manager) is the retrieval substrate for Persian credit-scoring questions. It turns source files into versioned chunks and entity supplements, then answers hybrid search with named stage timings. Release \texttt{v13\_1405-07-06} is \textbf{RAM-first}: tantivy BM25 and the pgvector HNSW index stay resident, MiniLM and BGE-m3 run on GPU, and a warm hybrid query averages about \textbf{55 ms}. This chapter walks ingest, the published parameter table, the v1--v13 changelog, and EntityList thresholds (0.6 in search, 0.4 on the supplement tool).
+
+\section{Purpose in the platform}\label{purpose-in-the-platform}
+
+The KB is the retrieval service beside the chat model and the policy layer. Its contract is: given a Persian or mixed query and an optional subspace hint, return ranked chunk evidence with timings and citation metadata. The orchestrator (\texttt{:8100}) calls \texttt{POST\ /search/api} after input rails. \texttt{build\_context} then packs the hits. The service listens on \textbf{\texttt{:8000}}, persists through SQLAlchemy into Postgres with pgvector (SQLite is the fallback), and exposes FastAPI routes for search, the ingest pipeline, and metrics. Quality is reported with Hit@\emph{k}, MRR, and nDCG, plus \texttt{stage\_ms}, so each release carries both a quality figure and a named-stage latency.
+
+The KB owns documents, ingest, indexing, retrieval, reranking, and KB evaluation. It does not own model lifecycle, safety policy, orchestration, or the WebUI.
+
+\section{Corpus at v13}\label{corpus-at-v13}
+
+The current release label is \textbf{\texttt{v13\_1405-07-06}}: \textbf{18 documents / 1,123 chunks}, from kb-source folder \texttt{1405-07-06} (earlier folders \texttt{1405-05-31} and \texttt{1405-06-23} remain in the submodule). KB Pages date the full RAM-first rebuild to \textbf{2026-10-07}. A latency page measured \textbf{1,110} chunks at \texttt{top\_k=5}; that count is the same rebuild family as 1,123, not a second corpus.
+
+Chunk types in the v13 tree are \texttt{qa\_pair} \textbf{776}, \texttt{reason\_detail} \textbf{198}, \texttt{body} \textbf{71}, \texttt{article} \textbf{46}, \texttt{kv\_pair} \textbf{19}, plus \textbf{13} parent chunks. Four hierarchy roots organize the folders: حقیقی تسهیلات, حقیقی چک, حقوقی تسهیلات, and عمومی. There is no third sheet under those roots.
+
+The frozen evaluation set is \textbf{120} queries in six formats. The published \textbf{v11 Hit@5 is 0.9306}. The KB tree's cited \texttt{pytest} run records \textbf{116 passed}.
+
+Entity supplements sit beside chunks. XLSX list sheets (shareholders, lenders, loan titles, and similar annexes) land in the \texttt{entity\_lists} table. Search step 8 embeds the query with MiniLM and keeps lists whose cosine against \texttt{description\_embedding} is \textbf{≥ 0.6}, returned as \texttt{injected\_entities}. The orchestrator also calls the supplement tool at threshold \textbf{0.4} (\texttt{POST\ /search/supplement}) and surfaces the payload as \texttt{rag.supplemental}. Those two thresholds are different gates. The 0.6 step is inside \texttt{/search/api}. The 0.4 route ranks \texttt{EntityList} rows over list name and description and returns them on the tool path.
+
+\section{Ingest pipeline}\label{ingest-pipeline}
+
+\begin{figure}
+\centering
+\includegraphics[width=0.88\linewidth,height=0.36\textheight,keepaspectratio]{../assets/diagrams/07_kb_ingest_hl.png}
+\caption{High-level KB ingest}
+\end{figure}
+
+\textbf{Figure --- High-level ingest.} Source trees under \texttt{kb-source} enter one pipeline that writes two durable stores: document and chunk tables with dense embeddings, and a parallel \texttt{EntityList} table for structured supplements that must stay out of ordinary prose chunks. Ingest is a write path. Hybrid search reads the snapshot that a full or incremental rebuild leaves behind. The v13 snapshot behind this figure is the 18-document, 1,123-chunk tree described above.
+
+Coordination lives in \texttt{components/knowledgebase/kb-manager/kb\_manager/pipeline/orchestrator.py}. \texttt{PipelineOrchestrator} selects a parser by extension, runs Persian hygiene (digit and character normalization, punctuation cleanup), then chunks and embeds. Folder hierarchy under \texttt{kb-source} becomes the metadata that \texttt{filter\_path} and sticky subspaces later consume.
+
+\begin{figure}
+\centering
+\includegraphics[width=0.88\linewidth,height=0.36\textheight,keepaspectratio]{../assets/diagrams/08_kb_ingest_detail.png}
+\caption{Detailed KB ingest}
+\end{figure}
+
+\textbf{Figure --- Ingest detail.} The per-file loop is parse, preprocess, content-hash skip or update, semantic chunk, embed, and store, with an early branch for supplementary Excel lists. Annex and list paths bypass normal chunking into \texttt{EntityList} rows. Synonym and glossary annexes feed the BM25 synonym map (93 colloquial-to-formal entries from v12) and stay out of the prose chunk corpus. Embeddings on the list branch fill \texttt{description\_embedding}, which the 0.6 cosine inject ranks.
+
+\texttt{SemanticChunker} (\texttt{kb\_manager/chunker/semantic.py}) prefers meaning-preserving units. Tabular schemas become row-aware chunks with Persian field labels. Narrative documents split on structure and on normalized question text. Near-duplicate normalized questions are removed so BM25 is not rewarded for FAQ clones. The published chunk policy is semantic chunks with a \textbf{512}-token maximum, parent chunks up to \textbf{1536}, scoped to the sheet.
+
+\subsection{EntityList model}\label{entitylist-model}
+
+Structured supplements are first-class rows in \texttt{kb\_manager/models/database.py}:
+
+\begin{itemize}
+\item
+  \texttt{list\_name} --- the human title used as the retrieval surface
+\item
+  \texttt{description} and \texttt{description\_embedding} --- a short Persian description plus the JSON embedding used for cosine matching
+\item
+  \texttt{content\_json} --- the sheet payload kept intact for injection into context
+\end{itemize}
+
+Bank-name tables, code maps, and similar annexes stay queryable as units. Flattening those cells into MiniLM space is a poor fit for short keys, which is why the 0.6 / 0.4 gates exist beside the chunk index.
+
+\section{Retrieval pipeline}\label{retrieval-pipeline}
+
+\begin{figure}
+\centering
+\includegraphics[width=0.88\linewidth,height=0.36\textheight,keepaspectratio]{../assets/diagrams/09_kb_retrieval_hl.png}
+\caption{High-level KB retrieval}
+\end{figure}
+
+\textbf{Figure --- High-level retrieval.} A request hits Redis first. The cache key is the SHA-256 of the normalized query, \texttt{top\_k}, keyword boost, and \texttt{filter\_path}, so a subspace answer cannot leak into another domain. Hits return in \textbf{2--7 ms} and skip the ranker. Misses run the hybrid path and write back with a \textbf{600 s} TTL. Pages describe that Redis hit as about \textbf{150×} faster than a cold search. \texttt{KB\_FAST\_CACHE} defaults to true and skips a fingerprint scan of about \textbf{2.7 s} on every search. Errors are never cached.
+
+The implementation behind the figure is \texttt{kb\_manager/web/routes/search.py}. \texttt{search\_knowledge\_base} builds or reuses in-memory indexes and runs the stages below. \texttt{filter\_path} resolves to \texttt{allowed\_ids} from \texttt{folder\_hierarchy} \emph{before} BM25 and dense search, which is how sticky product subspaces scope a query without re-embedding the corpus.
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  \textbf{Normalize.} Arabic characters fold to Persian, ZWNJ is handled, and digits are normalized. Tokens are words plus Persian character \textbf{3-grams}.
+\item
+  \textbf{Expand.} The synonym beam defaults to \textbf{\texttt{KB\_SYNONYM\_BEAM} = 5}. Setting the beam to 1 cuts BM25 work by about 5×. HyDE (\texttt{KB\_HYDE\_ENABLED}) defaults to \textbf{false}.
+\item
+  \textbf{Retrieve in parallel.} Tantivy BM25 (content and keyword legs) runs beside dense MiniLM over pgvector HNSW.
+\item
+  \textbf{Fuse and rerank.} Reciprocal rank fusion uses \textbf{k = 60}. The BGE cross-encoder then fuses with RRF at \textbf{α = 0.7}, with pin protection for a strong keyword hit.
+\item
+  \textbf{Gate.} A final top-\emph{k} and \texttt{min\_relevance} cut, then EntityList inject at cosine \textbf{≥ 0.6}.
+\item
+  \textbf{Respond.} \texttt{POST\ /search/api} returns \texttt{SearchSteps} and \texttt{final\_results}, plus \texttt{injected\_entities} when step 8 fires.
+\end{enumerate}
+
+\begin{figure}
+\centering
+\includegraphics[width=0.88\linewidth,height=0.36\textheight,keepaspectratio]{../assets/diagrams/10_kb_retrieval_detail.png}
+\caption{Detailed KB retrieval}
+\end{figure}
+
+\textbf{Figure --- Retrieval detail.} Stages that fill \texttt{SearchSteps.stage\_ms} are \texttt{bm25}, \texttt{dense}, \texttt{hyde}, \texttt{rrf}, \texttt{rerank}, and \texttt{total}. The same timings feed metrics, so rerank time and a BM25 rebuild each show up under their own name. HNSW distance itself is computed on the Postgres CPU. The GPU is used to embed the query and to run the cross-encoder. On the measured \textasciitilde1,110-chunk relation the HNSW index is about \textbf{4.8 MB}, the chunks table about \textbf{1.2 MB}, and \texttt{pg\_total\_relation\_size} about \textbf{203 MB}, held hot with \texttt{pg\_prewarm}.
+
+\subsection{RAM-first parameters}\label{ram-first-parameters}
+
+The stack on the KB Pages is FastAPI, SQLAlchemy async, SQLite or pgvector (HNSW, 384-d, RAM-pinned), Rust tantivy BM25 in a RAM directory, MiniLM-L12 on GPU, BGE-v2-m3 on GPU, hazm/shekar normalization, and a Redis result cache. The latency host cited for the table is \textbf{1.0 TiB} of RAM and \textbf{2× H200} (143 GB HBM each). Dense weights occupy about \textbf{3 GB} of HBM.
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.2500}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.2500}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.2500}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.2500}}@{}}
+\toprule\noalign{}
+Stage & Parameter & Value & Notes \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Postgres & \texttt{shared\_buffers} / \texttt{effective\_cache\_size} & \textbf{16 GB / 800 GB} plus \texttt{pg\_prewarm} & Vectors and HNSW stay resident \\
+BM25 engine & tantivy & \textbf{0.26.2}, \texttt{RAMDirectory}, heap \textbf{50 MB} & \texttt{KB\_USE\_TANTIVY=true} \\
+BM25 & \emph{k}1 / \emph{b} & \textbf{1.5 / 0.75} & Content leg and keyword leg \\
+BM25 & Keyword boost / n-grams & \textbf{×3} / character \textbf{3}-grams & \texttt{KB\_KEYWORD\_BOOST=3.0} \\
+Synonym beam & \texttt{KB\_SYNONYM\_BEAM} & \textbf{5} & 93-entry map; set \texttt{1} to shrink BM25 about 5× \\
+Dense & Model / dim / batch / device & MiniLM-L12-v2 / \textbf{384} / \textbf{64} / \textbf{cuda} & \texttt{paraphrase-multilingual-MiniLM-L12-v2} \\
+Dense index & pgvector HNSW & \texttt{vector\_cosine\_ops}, \textbf{m = 16}, \textbf{ef = 64} & Plus an npz cache \\
+RRF & \emph{k} & \textbf{60} & \\
+Fusion & RRF ↔ rerank α & \textbf{0.7} & \texttt{KB\_RERANK\_FUSION\_ALPHA} \\
+Rerank & Model / pool & \texttt{BAAI/bge-reranker-v2-m3} / \texttt{min(50,\ top\_k×3)} & GPU; pin-protect top-3 at rank ≥ 10 \\
+Redis & TTL / hit latency & \textbf{600 s}, \textbf{2--7 ms} & About \textbf{150×} versus a cold search \\
+Fast cache & \texttt{KB\_FAST\_CACHE} & \textbf{true} & Skips the \textasciitilde2.7 s fingerprint scan \\
+Chunk & Strategy / max tokens & semantic / \textbf{512} & Parent max 1536, scope is the sheet \\
+HyDE & \texttt{KB\_HYDE\_ENABLED} & \textbf{false} & Off unless explicitly enabled \\
+EntityList & In-search cosine / supplement tool & \textbf{≥ 0.6} / \textbf{0.4} & Step 8 versus \texttt{POST\ /search/supplement} \\
+\end{longtable}
+
+\subsection{Latency on the measured rebuild}\label{latency-on-the-measured-rebuild}
+
+Measured \textbf{2026-10-07} on the \texttt{1405-07-06} corpus (\texttt{top\_k=5}, warm after the GPU load). The headline warm total is \textbf{51--66 ms}, average about \textbf{55 ms}.
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.2000}}
+  >{\raggedleft\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.2667}}
+  >{\raggedleft\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.2667}}
+  >{\raggedleft\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.2667}}@{}}
+\toprule\noalign{}
+Stage & \begin{minipage}[b]{\linewidth}\raggedleft
+Before (Python BM25 / CPU)
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+After (tantivy + GPU)
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Share after
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+BM25 lexical (content + keyword, beam 5) & \textasciitilde3000 ms & \textbf{3.8--5.9 ms} & \textasciitilde7\% \\
+Dense cosine (pgvector HNSW) & 16--50 ms warm (CPU path \textasciitilde3000 ms) & \textbf{22--27 ms} & \textasciitilde44\% \\
+RRF \emph{k} = 60 & 0.1--0.2 ms & 0.1--0.2 ms & \textless1\% \\
+Cross-encoder BGE-v2-m3 & 20--23 ms warm (CPU \textasciitilde5400 ms) & \textbf{21--25 ms} & \textasciitilde44\% \\
+Total warm & \textasciitilde3100 ms (cold \textasciitilde12 s) & \textbf{51--66 ms (avg \textasciitilde55 ms)} & 100\% \\
+Redis hit & 2--7 ms & 2--7 ms & \textbf{\textasciitilde150×} vs cold \\
+\end{longtable}
+
+The first query after restart is a one-time cold start: dense about \textbf{4246 ms}, rerank about \textbf{5396 ms}, BM25 about \textbf{5 ms}, together near \textbf{12 s}. Later queries sit near the 55 ms average. RRF is cheap. The cross-encoder and the HNSW probe dominate the warm budget, in roughly equal shares.
+
+\begin{figure}
+\centering
+\includegraphics[width=0.88\linewidth,height=0.36\textheight,keepaspectratio]{../assets/plots/latency_breakdown_ram_tantivy.png}
+\caption{Latency breakdown after RAM/tantivy tune}
+\end{figure}
+
+\textbf{Figure --- Stage latency after the RAM-first and tantivy work.} The chart is a log-scale before/after on the warm path (\texttt{top\_k=5}, folder \texttt{1405-07-06}, 1,110 chunks). Python BM25 at about 3000 ms falls to a tantivy bar of 4.5 ms. Dense stays near 24.5 ms and rerank near 24.5 ms, so the warm total moves from about 3100 ms to \textbf{55.6 ms}. RRF is a sliver on this scale (0.2 ms to 0.1 ms). The picture is the steady warm state. The separate \textasciitilde12 s figure in the table is the first query after restart, which this chart does not draw.
+
+\begin{figure}
+\centering
+\includegraphics[width=0.88\linewidth,height=0.36\textheight,keepaspectratio]{../assets/plots/p_latency_v13_1.png}
+\caption{Latency distribution v13.1}
+\end{figure}
+
+\textbf{Figure --- Latency on the v13.1 pass.} The left panel is p50 stage latency for 30 fresh queries at \texttt{top\_k=5}: the 2026-10-07 README profile totals \textbf{55.0 ms}, a 13 October ``before'' totals 44.4 ms, and the same-day ``after'' totals \textbf{39.6 ms} (BM25 2.6, dense 13.5, rerank 22.0). The right panel repeats those end-to-end p50s with p95 whiskers against a 50 ms reference line, and notes Redis hits at 2--7 ms (about 150× versus cold). Read 55 ms as the Pages warm headline and 39.6 ms as the later same-corpus tune under co-tenant GPU load, not as a new document set.
+
+\section{Version highlights (v1--v13)}\label{version-highlights-v1v13}
+
+Each row is a corpus change or a retrieval change that later rows assume. ``v13-RAM'' is the code and host tuning on top of the v13 corpus, not a fourteenth document set.
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.2500}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.2500}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.2500}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.2500}}@{}}
+\toprule\noalign{}
+Version & Corpus & What changed & Published benchmark \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+v1 & \textasciitilde160 files (31 Tir 1405) & Baseline ingest and BM25 & --- \\
+v2 & 355 docs / 6,208 chunks & BM25 + TF-IDF, RRF \emph{k} = 60 & Hit@5 90\%, MRR 0.736 \\
+v3 & same & Dense MiniLM-L12 added & Hit@5 89.2\%, MRR 0.787 \\
+v4 & same & Character 3-grams and a cross-encoder & Hit@5 90\%, MRR 0.775 \\
+v5 & same & Frozen dataset, BM25 ×3 & Hit@5 84.2\%, MRR 0.751 \\
+v6 & 69 docs / 3,626 chunks & Synonym beam 5, MinHash dedup & 10-query smoke, Hit@5 100\% \\
+v7 & 34 docs / 2,074 chunks & Fresh \texttt{1405-05-31}, colloquial expansion, IVA-15 & Doc Hit@5 73.3\% \\
+v8 & 103 docs / 6,593 chunks & pgvector HNSW-384, keyword ×3.0 & HNSW GPU load note 18.4 s \\
+v9 & 21+32 docs / \textasciitilde1,084 chunks & Type-aware chunks, transparency/zip & IVA 11/15 \\
+v10 & 35 docs / 2,282 chunks & \texttt{1405-06-23}, kv and single-column schemas, stage bench & Hit@5 \textbf{0.9244} \\
+v11 & 35 docs / 2,227 chunks & Chunk rebuild, dense \texttt{use\_context=False} & Hit@5 \textbf{0.9306}, MRR \textbf{0.8281} \\
+v12 & same KB corpus as v11 & Typo fixes, exclusive-term beam, Redis cache & Synonym map \textbf{93} entries \\
+\textbf{v13} & \textbf{18 docs / 1,123 chunks} & \texttt{1405-07-06} RAM-first: tantivy RAM BM25, 16 GB buffers, prewarm, GPU dense and rerank on H200 & Latency \textbf{\textasciitilde55 ms} \\
+\end{longtable}
+
+The v11 manifest path cited on the KB pages is \texttt{kb-manager/versions/v11\_1405-06-23/manifest.json}. Published v11 quality on that line is Hit@5 \textbf{0.9306} and MRR \textbf{0.8281}. Pin protection keeps a strong keyword hit in the fused list, and the keyword boost raises short codes and fixed phrases beside the cross-encoder.
+
+\section{Tooling}\label{tooling}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule\noalign{}
+Name & Role \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+FastAPI & HTTP API for search, pipeline, and metrics \\
+SQLAlchemy & ORM and async sessions over Postgres or SQLite \\
+pgvector & Vector column type and HNSW for dense nearest neighbors \\
+tantivy-py & Python bindings for the Rust BM25 index \\
+sentence-transformers & MiniLM runtime for \texttt{DenseSemanticIndex} \\
+BGE (FlagEmbedding) & \texttt{bge-reranker-v2-m3} cross-encoder \\
+Redis & Shared result cache, TTL 600 s \\
+\end{longtable}

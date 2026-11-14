@@ -1,7 +1,21 @@
 # Shared services for Dana / Work Credit RAG (no LLM backend).
 # Use with compose.local.yml / compose.stage.yml / compose.prod-sim.yml.
+#
+# THIS FILE PUBLISHES NO HOST PORTS. Every reachable port lives in an overlay:
+#   compose.local.yml     dev laptop   13000/8100/8000/8200/15432/16379/13002/4000
+#   compose.stage.yml     Jenkins dev  13100/18100/18000/18200/25432/26379/13001/14000
+#   compose.prod-sim.yml  prod naming, same ports as local
+#   compose.gpu.yml       GPU prod     13000/8100/8000/8200/15432/16379/13002
+#
+# Running THIS FILE ALONE recreates every container with zero published ports and
+# silently kills http://localhost:13000. Always layer base + exactly one overlay
+# and always pass an explicit -p project name (deploy/compose/.env sets
+# COMPOSE_PROJECT_NAME=dana-local, which would otherwise capture a stage run).
+#
 # Run from repo root:
-#   docker compose -f deploy/compose/compose.base.yml -f deploy/compose/compose.local.yml --env-file deploy/compose/.env up -d --build
+#   docker compose -p dana-local \
+#     -f deploy/compose/compose.base.yml -f deploy/compose/compose.local.yml \
+#     --env-file deploy/compose/.env up -d
 
 services:
   postgres:
@@ -126,6 +140,11 @@ services:
       RETRIEVAL_TOP_K: ${RETRIEVAL_TOP_K:-5}
       TRACE_ENABLED: ${TRACE_ENABLED:-false}
       LANGFUSE_HOST: ${LANGFUSE_HOST:-http://tracing:3000}
+      # Passed through so TRACE_ENABLED=true actually works. Without these the
+      # orchestrator starts fine but every trace POST is rejected, which looks
+      # like "tracing is broken" rather than "keys were never wired".
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-}
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-}
     depends_on:
       kb:
         condition: service_healthy
@@ -162,6 +181,11 @@ services:
     # Frontend is built on the host first (Docker Desktop OOMs on Vite):
     #   bash components/webui/scripts/dana-local-image.sh
     # Jenkins Build stage runs that script before compose build.
+    #
+    # CACHE-BUST: BUILD_HASH is passed through so a compose-driven build stamps
+    # the image with the same identity the host script uses. Without it every
+    # compose rebuild fell back to the Dockerfile default `dev-build`, which made
+    # identical-looking images impossible to tell apart after a theme change.
     build:
       context: ../../components/webui
       dockerfile: Dockerfile.local
@@ -169,6 +193,7 @@ services:
         USE_SLIM: "true"
         USE_CUDA: "false"
         USE_OLLAMA: "false"
+        BUILD_HASH: ${WEBUI_BUILD_HASH:-local-v${WEBUI_BUILD_VERSION:-0}}
     image: ${REGISTRY:-}rag-webui:${TAG:-local}
     environment:
       WEBUI_AUTH: "false"

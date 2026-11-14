@@ -1,0 +1,12 @@
+flowchart TD
+  SRC[kb_source_xlsx_pdf_docx] --> SCAN[Scan_files]
+  SCAN --> PARSE[Parser_registry]
+  PARSE --> PREP[Persian_preprocess]
+  PREP --> CHUNK[Semantic_chunker]
+  CHUNK --> QUAL[Quality_gates]
+  QUAL --> DEDUP[Dedup]
+  DEDUP --> EMB[MiniLM_embed_384d]
+  EMB --> STORE[(chunks_HNSW)]
+  PARSE --> ENT[EntityList_rows]
+  ENT --> EEMB[description_embedding]
+  EEMB --> EL[(entity_lists)]

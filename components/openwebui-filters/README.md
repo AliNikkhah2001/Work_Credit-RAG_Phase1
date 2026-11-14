@@ -219,7 +219,7 @@ or via the API. No restart is needed.
 
 | Valve | Default | Description |
 |-------|---------|-------------|
-| `trace_endpoint` | `http://127.0.0.1:3000` | Collector base URL. Trailing slash is stripped. On Vast the collector lives at `http://127.0.0.1:3000` (fallback) or `http://127.0.0.1:3001` (Langfuse v2). |
+| `trace_endpoint` | `http://127.0.0.1:3000` | Collector base URL. Trailing slash is stripped. Collector lives at `http://127.0.0.1:3000` (fallback) or `http://127.0.0.1:3001` (Langfuse v2). |
 | `capture_enabled` | `true` | Master toggle for capture (filter still runs but is a no-op when false). |
 | `log_to_console` | `false` | Print trace lifecycle to the OpenWebUI server log (useful for debugging). |
 
@@ -238,7 +238,7 @@ or via the API. No restart is needed.
 | `rating_scale` | `5` | Max star rating. The `/rate` parser accepts `1–rating_scale`. Change to `10` for a 10-point scale. |
 
 All URLs respect `http://` vs `https://` and optional non-standard ports.
-If the observability service is behind an SSH tunnel (e.g. Vast
+If the observability service is behind an SSH tunnel (e.g. self-hosted GPU host)
 `ssh -L 3000:localhost:3000`), use the tunneled `http://127.0.0.1:3000`.
 
 ---

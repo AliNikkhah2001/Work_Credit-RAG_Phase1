@@ -1,7 +1,8 @@
 #!/bin/bash
-# Vast.ai deployment startup — Work Credit RAG Phase 1 (unprivileged host, no Docker).
-# Services run in host venvs. Tested on instance 50713720 (1x RTX 3090 24GB).
-# Adjust MODEL path / ports as needed. All logs go to /tmp/*.log.
+# Self-hosted GPU server startup — Work Credit RAG Phase 1.
+# Host venvs + loopback services. Corporate HTTP proxy may be present;
+# localhost LLM/KB/guard calls must use trust_env=False / no_proxy=127.0.0.1.
+# All logs go to /tmp/*.log.
 set -u
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 MODEL="${MODEL:-/tmp/hf_clean/models--unsloth--gemma-4-31B-it-GGUF/snapshots/c1ac76e99d5513b141e8adde7288b85c3f9c32ec/gemma-4-31B-it-UD-Q4_K_XL.gguf}"
@@ -12,6 +13,9 @@ KB_DB_URL="${KB_DB_URL:-postgresql+asyncpg://postgres:${KB_DB_PASSWORD}@127.0.0.
 LANGFUSE_PUBLIC_KEY="${LANGFUSE_PUBLIC_KEY:-changeme}"
 LANGFUSE_SECRET_KEY="${LANGFUSE_SECRET_KEY:-changeme}"
 export HF_HOME="${HF_HOME:-/tmp/hf_clean}" HF_HUB_CACHE="${HF_HUB_CACHE:-/tmp/hf_clean}" HF_HUB_OFFLINE=1
+# Do not send localhost traffic through the corporate proxy
+export NO_PROXY="${NO_PROXY:-127.0.0.1,localhost}"
+export no_proxy="${no_proxy:-127.0.0.1,localhost}"
 
 echo "== 0. postgres (expects cluster running with kb_manager DB + vector ext) =="
 pg_lsclusters || pg_ctlcluster 14 main start
@@ -46,8 +50,6 @@ sleep 6
 
 echo "== 5. Orchestrator :8100 =="
 cd "$ROOT"
-# Tracing: real Langfuse v2 on :3001 (keys in /tmp/opencode/langfuse.env — never commit).
-# Falls back to the :3000 collector if LANGFUSE_HOST is unset (defaults apply).
 PYTHONPATH="$ROOT/components/orchestrator/src" KB_BASE_URL=http://127.0.0.1:8000 \
   GUARDRAILS_BASE_URL=http://127.0.0.1:8200 \
   UPSTREAM_LLM_MODEL=unsloth/gemma-4-31B-it-GGUF:UD-Q4_K_XL \
@@ -68,5 +70,5 @@ for p in 18000 8000 8200 8100; do
   printf "%s: " "$p"; curl -s --max-time 8 "http://127.0.0.1:$p/health" | head -c 60; echo
 done
 curl -s --max-time 8 http://127.0.0.1:3000/api/public/health; echo
-echo "done. Public access on Vast = SSH tunnels (ports are NAT-fixed at creation):"
-echo "  ssh -p <ssh_port> root@<ssh_host> -L 13000:localhost:13000 -L 8100:localhost:8100"
+echo "done. Prefer SSH tunnels for remote UI access:"
+echo "  ssh -L 13000:localhost:13000 -L 8100:localhost:8100 user@gpu-host"

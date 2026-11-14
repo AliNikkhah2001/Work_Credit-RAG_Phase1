@@ -30,7 +30,7 @@ import sys
 from pathlib import Path
 
 TRACE_FILE = Path(os.getenv("TRACE_FILE", "/tmp/langfuse_traces.jsonl"))
-# Live orchestrator traces go to Langfuse v2 :3001 (deploy/vast/start.sh default);
+# Live orchestrator traces go to Langfuse v2 :3001 (deploy/gpu/start.sh default);
 # fallback collector :3000 / JSONL file is the offline backup.
 DEFAULT_HOST = os.getenv("LANGFUSE_HOST", "http://127.0.0.1:3001")
 FALLBACK_HOST = "http://127.0.0.1:3000"
