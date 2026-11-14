@@ -12,6 +12,11 @@ services:
     environment:
       DANA_HOST: gpu
       DANA_ROLE: prod
+      # This host owns prod verification: a `main` build that skips the prod
+      # deploy is a hard failure, never a green check.
+      CI_REQUIRE_PROD_CONTROLLER: "1"
+      CI_MAIN_PROOF_POLICY: "fail"
+      GITHUB_STATUS_ENABLED: "${GITHUB_STATUS_ENABLED:-1}"
       # Override on the server to the absolute clone path (same inside container):
       # DANA_HOST_REPO: /path/to/Work_Credit-RAG_Phase1
     ports:
