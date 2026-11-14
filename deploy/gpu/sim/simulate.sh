@@ -324,7 +324,7 @@ print("\n".join("%s=%s" % (i["service"], (i.get("image_id") or "")[:19]) for i i
     bash "$FROZEN/health.sh" --profile gpu --quiet 2>/tmp/sim_c3.err
     RC_C3=$?
     [ "$RC_C3" -eq 0 ] && break
-    [ "$RC_C3" -eq 2 ] && { echo "health.sh refused to run (exit 2):"; sed 's/^/  /' /tmp/sim_c3.err; break; }
+    [ "$RC_C3" -eq 64 ] && { echo "health.sh refused to run (exit 64):"; sed 's/^/  /' /tmp/sim_c3.err; break; }
     sleep 5
   done
   [ "$RC_C3" -eq 0 ] && record "(c3) re-verification green after rollback" 1 \

@@ -38,6 +38,14 @@
 #   2 CONTAINER DOWN        (not running / unhealthy / missing)
 #   3 ENDPOINT DOWN         (port listening but HTTP probe failed)
 #   4 STATE DRIFT           (--state-check: live stack != last-good record)
+#  64 USAGE / REFUSED       (bad args, unknown profile, or an override guard
+#                            tripped — NOTHING WAS PROBED)
+#
+# Codes 0-4 are health VERDICTS and are all safe to act on (rollback). Code 64
+# means the script never looked at the stack, so callers must not treat it as
+# "the stack is broken". 2 used to be overloaded for both purposes, which made
+# reconcile.sh roll back a healthy production stack whenever a leaked
+# DANA_PROJECT/DANA_COMPOSE_FILES tripped the guard.
 # =============================================================================
 set -uo pipefail
 
@@ -71,18 +79,18 @@ while [ $# -gt 0 ]; do
     --project) PROJECT_OVERRIDE="$2"; shift 2 ;;
     -f|--file) EXPLICIT_FILES+=("$2"); shift 2 ;;
     -h|--help) sed -n '1,45p' "$0"; exit 0 ;;
-    *) echo "health.sh: unknown arg: $1" >&2; exit 2 ;;
+    *) echo "health.sh: unknown arg: $1" >&2; exit 64 ;;
   esac
 done
 
 case "$PROFILE" in
   gpu|prod-sim|stage|local|host) ;;
-  *) err "unknown --profile '$PROFILE' (gpu|prod-sim|stage|local|host)"; exit 2 ;;
+  *) err "unknown --profile '$PROFILE' (gpu|prod-sim|stage|local|host)"; exit 64 ;;
 esac
 
 PROJECT="${PROJECT_OVERRIDE:-${DANA_PROJECT:-$(dana_profile_project "$PROFILE")}}"
 # Refuse to act on production with leaked overrides (see common.sh).
-dana_guard_overrides "$PROFILE" || exit 2
+dana_guard_overrides "$PROFILE" || exit 64
 ENV_FILE="${DANA_ENV_FILE:-$(dana_profile_env "$PROFILE")}"
 SPEC="$(dana_port_spec "$PROFILE")"
 [ -n "$REQUIRE_OVERRIDE" ] && SPEC="$REQUIRE_OVERRIDE"

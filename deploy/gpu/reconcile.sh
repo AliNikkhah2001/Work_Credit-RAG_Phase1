@@ -62,7 +62,10 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-dana_guard_overrides "$PROFILE" || exit 2
+# 64 = refused to act (see health.sh's exit-code contract). Distinct from 1
+# ("the stack is unhealthy") so a timer/cron can tell a misconfiguration from
+# a real outage instead of alerting on a leaked env var.
+dana_guard_overrides "$PROFILE" || exit 64
 dana_ensure_log_dir
 RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)"
 RUN_LOG="$DANA_LOG_DIR/reconcile.log"
@@ -94,6 +97,16 @@ fi
 say "health gate"
 bash "$HERE/health.sh" --profile "$PROFILE" --json "$HEALTH_JSON" 2>&1 | tee -a "$RUN_LOG"
 HEALTH_RC=${PIPESTATUS[0]}
+
+# health.sh exit 64 means "I did not check anything": an override guard tripped, or
+# the profile/arg was bad. That is NOT a broken stack — rolling back on it would
+# replace good production images because of a typo or a leaked env var. Refuse to
+# act, and report a distinct code so the timer retries instead of "healing".
+if [ "$HEALTH_RC" -eq 64 ]; then
+  say "health gate REFUSED to run (exit 64) — not treating this as a failure"
+  say "fix the reported problem (override/profile/args) and re-run; no rollback attempted"
+  exit 64
+fi
 
 if [ "$HEALTH_RC" -eq 0 ]; then
   say "healthy (exit 0)"

@@ -65,7 +65,7 @@ while [ $# -gt 0 ]; do
 done
 
 PROJECT="$(dana_profile_project "$PROFILE")" || die "unknown profile '$PROFILE'"
-dana_guard_overrides "$PROFILE" || exit 2
+dana_guard_overrides "$PROFILE" || exit 64
 ENV_FILE="${DANA_ENV_FILE:-$(dana_profile_env "$PROFILE")}"
 SPEC="$(dana_port_spec "$PROFILE")"
 dana_ensure_log_dir
@@ -303,6 +303,16 @@ if [ "$ROLLOUT_FAILED" = "0" ]; then
 else
   err "skipping health gate details — rollout already failed"
   bash "$HERE/health.sh" --profile "$PROFILE" --json "$HEALTH_JSON" 2>&1 | tee -a "$RUN_LOG" || true
+fi
+
+if [ "$HEALTH_RC" -eq 64 ]; then
+  # 64 = health.sh refused to probe (bad args / override guard). The stack was
+  # never examined, so this is not evidence of a bad deploy — and rolling back
+  # would replace good images because of a leaked env var. Fail loudly, act on
+  # nothing.
+  err "health gate REFUSED to run (exit 64) — deploy NOT promoted, NO rollback"
+  err "the stack was never probed; fix the override/profile/args and re-run"
+  exit 64
 fi
 
 if [ "$HEALTH_RC" -ne 0 ]; then
