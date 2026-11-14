@@ -133,44 +133,79 @@ status publication to be a gate.
 
 ### Recommended: parent repo `main` + `develop`
 
+`PATCH /branches/{branch}/protection` **replaces the whole protection object**, so
+every field you want to keep must be in the body. Use `--input` with explicit JSON
+rather than `-f` flags: it is reviewable, and it avoids `gh`'s typed-coercion
+surprises on empty values (`restrictions` must be `null`, not `""`).
+
 ```bash
-# main: prod-relevant proof
+# --- main: prod-relevant proof -------------------------------------------
+cat > /tmp/protect-main.json <<'JSON'
+{
+  "required_status_checks": {
+    "strict": true,
+    "contexts": ["dana/validate"]
+  },
+  "enforce_admins": false,
+  "required_pull_request_reviews": {
+    "required_approving_review_count": 1,
+    "dismiss_stale_reviews": true
+  },
+  "restrictions": null,
+  "allow_force_pushes": false,
+  "allow_deletions": false
+}
+JSON
+
 gh api -X PATCH repos/AliNikkhah2001/Work_Credit-RAG_Phase1/branches/main/protection \
   -H 'Accept: application/vnd.github+json' \
-  -f 'required_status_checks[strict]=true' \
-  -f 'required_status_checks[contexts][]=dana/validate' \
-  -f 'required_status_checks[contexts][]=dana/build' \
-  -f 'required_status_checks[contexts][]=dana/prod-deploy' \
-  -f 'required_pull_request_reviews[required_approving_review_count]=1' \
-  -f 'enforce_admins=false' \
-  -F 'restrictions=' \
-  -f 'allow_force_pushes=false' \
-  -f 'allow_deletions=false'
+  --input /tmp/protect-main.json
 
-# develop: stage-relevant proof only (no prod-deploy — it never runs there)
+# --- develop: stage-relevant proof only (no prod-deploy) ------------------
+cat > /tmp/protect-develop.json <<'JSON'
+{
+  "required_status_checks": {
+    "strict": true,
+    "contexts": ["dana/validate"]
+  },
+  "enforce_admins": false,
+  "required_pull_request_reviews": {
+    "required_approving_review_count": 1,
+    "dismiss_stale_reviews": true
+  },
+  "restrictions": null,
+  "allow_force_pushes": false,
+  "allow_deletions": false
+}
+JSON
+
 gh api -X PATCH repos/AliNikkhah2001/Work_Credit-RAG_Phase1/branches/develop/protection \
   -H 'Accept: application/vnd.github+json' \
-  -f 'required_status_checks[strict]=true' \
-  -f 'required_status_checks[contexts][]=dana/validate' \
-  -f 'required_status_checks[contexts][]=dana/build' \
-  -f 'required_status_checks[contexts][]=dana/stage-deploy' \
-  -f 'required_status_checks[contexts][]=dana/stage-e2e' \
-  -f 'required_pull_request_reviews[required_approving_review_count]=1' \
-  -f 'enforce_admins=false' \
-  -F 'restrictions=' \
-  -f 'allow_force_pushes=false' \
-  -f 'allow_deletions=false'
+  --input /tmp/protect-develop.json
 ```
+
+### Adding more contexts later (once each has posted at least once)
+
+Widen `required_status_checks.contexts` in the same JSON body. Only add a context
+after you have seen it on a real commit — a required context that never appears
+blocks the branch forever.
+
+| Branch | Safe to require now | Add after the stage reliably posts |
+|---|---|---|
+| `main` | `dana/validate` | `dana/prod-deploy` (prod controller only) |
+| `develop` | `dana/validate` | `dana/stage-deploy`, `dana/stage-e2e` |
+
+`dana/build` is intentionally **not** in the safe set — see the caveat below.
 
 ### Check applicability
 
-| Context | `main` | `develop` | Notes |
+| Context | `main` | `develop` | When it posts |
 |---|---|---|---|
-| `dana/validate` | required | required | Always posted by `post { always }` |
-| `dana/build` | required | required | Posted from the Build stage's `post` when the stage ran |
-| `dana/stage-deploy` | — | required | `develop` only |
-| `dana/stage-e2e` | — | required | `develop` only |
-| `dana/prod-deploy` | required | — | `main`, prod controller only |
+| `dana/validate` | ✅ require | ✅ require | always (`post { always }`), including skipped builds |
+| `dana/build` | after caveat | after caveat | Build stage `post` — **skipped when `CI_SERVICES=none`** |
+| `dana/stage-deploy` | — | after 1st post | `develop` only |
+| `dana/stage-e2e` | — | after 1st post | `develop` only |
+| `dana/prod-deploy` | after 1st post | — | `main`, prod controller only |
 
 **`dana/build` is conditional today.** The Build stage is dropped when
 `CI_SERVICES=none` (Jenkinsfile/docs-only changes) and by the `when` guards, so
@@ -179,10 +214,9 @@ requiring it would block docs-only PRs forever. Before adding it to
 path, or make the pipeline always publish `dana/build` (`skipped`) — the latter
 is a deliberate follow-up, not part of this change.
 
-**Safe minimum** (recommended for the first rollout): require only
-`dana/validate` plus the review rule. It is posted on every build, including
-skipped ones, and it is exactly the check that encodes "we proved what we
-claim".
+**Safe minimum for the first rollout: `dana/validate` only,** plus the review
+rule. It is posted on every build, skipped ones included, and it is exactly the
+check that encodes "we proved what we claim".
 
 ### Verify what is live
 
