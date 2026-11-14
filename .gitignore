@@ -227,6 +227,17 @@ docs/technical-report/scripts/__pycache__/
 # Sprint C — prod rollback markers (host-local)
 deploy/compose/.last_good_sha
 deploy/compose/.last_good_sha.prev
+# CI run artifacts (stage evidence, coverage verdict, message-gate env)
+.ci-evidence/
+.ci_coverage.env
+.ci_coverage.guard
+.ci_coverage.state
+.ci_coverage.desc
+.ci_gate.env
+.ci_role.env
+.ci_commit_msg.txt
+.ci_changed_files.txt
+.ci_ran_stages.txt
 # Manifest-based last-known-good (host-local state, never committed)
 deploy/compose/.last_good.json
 deploy/compose/.last_good.json.prev

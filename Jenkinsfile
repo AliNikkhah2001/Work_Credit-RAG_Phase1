@@ -131,7 +131,7 @@ pipeline {
             steps {
                 sh '''
                     set -e
-                    echo lint >> .ci_ran_stages.txt
+                    bash scripts/ci_stage_evidence.sh mark lint || true
                     # Ruff is advisory: install may fail on hosts with an
                     # externally-managed Python (Debian/Ubuntu system python),
                     # which is what produced build #52's visible
@@ -149,7 +149,6 @@ pipeline {
                     python3 scripts/ci_message_gate.py --self-test
                     python3 scripts/ci_controller_role.py --self-test
                     python3 scripts/ci_verify_coverage.py --self-test
-                    bash scripts/ci_stage_evidence.sh mark lint
                 '''
             }
         }
@@ -348,7 +347,7 @@ pipeline {
                         docker tag "$src" "$dst" || true
                       fi
                     done
-                    echo build >> .ci_ran_stages.txt
+                    bash scripts/ci_stage_evidence.sh mark build || true
                 '''
             }
         }
@@ -426,7 +425,7 @@ pipeline {
                       --compose "docker compose -p dana-stage -f ${COMPOSE_BASE} -f ${COMPOSE_LOCAL} -f ${COMPOSE_STAGE} --env-file ${ENV_FILE}" \
                       || { echo "stage deploy gate FAILED — not recording last-good for stage"; exit 1; }
                     echo "stage deploy gate passed"
-                    echo stage-deploy >> .ci_ran_stages.txt
+                    bash scripts/ci_stage_evidence.sh mark stage-deploy || true
                 '''
             }
         }
@@ -451,7 +450,7 @@ pipeline {
                     curl -sf --max-time 90 http://127.0.0.1:18100/v1/chat/completions \
                       -H 'Content-Type: application/json' \
                       -d '{"model":"chat-primary","messages":[{"role":"user","content":"سلام"}]}' | head -c 500; echo
-                    echo stage-e2e >> .ci_ran_stages.txt
+                    bash scripts/ci_stage_evidence.sh mark stage-e2e || true
                 '''
             }
         }
@@ -527,7 +526,7 @@ pipeline {
                     fi
                     # Record the manifest ONLY after the gate proved the deploy.
                     bash scripts/ci_record_last_good.sh --if-gate-passes "${GIT_COMMIT}"
-                    echo prod-deploy >> .ci_ran_stages.txt
+                    bash scripts/ci_stage_evidence.sh mark prod-deploy || true
                 '''
             }
         }
@@ -545,30 +544,53 @@ pipeline {
                 # the stages that actually ran.
                 : > .ci_coverage.guard
                 if [ -f scripts/ci_verify_coverage.py ]; then
-                  RAN="$(tr '\n' ' ' < .ci_ran_stages.txt 2>/dev/null || true)"
+                  RAN="$(bash scripts/ci_stage_evidence.sh list 2>/dev/null || true)"
                   chmod +x scripts/ci_verify_coverage.py 2>/dev/null || true
                   python3 scripts/ci_verify_coverage.py \
                     --branch "${BRANCH_NAME:-}" \
                     --executed "$RAN" \
+                    --require-prod-controller "${CI_REQUIRE_PROD_CONTROLLER:-0}" \
                     --write-env .ci_coverage.env 2>/dev/null || true
                   cat .ci_coverage.env 2>/dev/null || true
                   sed -n 's/^COVERAGE_GUARD=//p' .ci_coverage.env 2>/dev/null > .ci_coverage.guard || true
+                  sed -n 's/^COVERAGE_STATE=//p' .ci_coverage.env 2>/dev/null > .ci_coverage.state || true
+                  sed -n 's/^COVERAGE_DESCRIPTION=//p' .ci_coverage.env 2>/dev/null > .ci_coverage.desc || true
                 fi
-                rm -f .ci_commit_msg.txt .ci_changed_files.txt .ci_gate.env .ci_role.env .ci_ran_stages.txt || true
+                rm -f .ci_commit_msg.txt .ci_changed_files.txt .ci_gate.env .ci_role.env || true
             '''
             script {
                 def guard = ''
                 if (fileExists('.ci_coverage.guard')) {
                     guard = readFile('.ci_coverage.guard').trim()
                 }
+                // Publish the verdict BEFORE downgrading the run: the plugin's
+                // own status only knows our final result, not what it covered.
+                def state = fileExists('.ci_coverage.state') ? readFile('.ci_coverage.state').trim() : 'success'
+                def desc = fileExists('.ci_coverage.desc') ? readFile('.ci_coverage.desc').trim() : 'Jenkins verified'
+                if (state == '') { state = 'success' }
+                if (desc == '') { desc = 'Jenkins verified' }
+                ghStatus('validate', state, desc)
+
                 if (guard == 'fail') {
                     currentBuild.result = 'FAILURE'
                     echo 'COVERAGE GUARD: FAIL — this build did not verify what it claims'
                 } else if (guard == 'unstable') {
-                    // Truthful, not destructive: the laptop stage controller
-                    // cannot verify prod, so it must not paint main green.
-                    currentBuild.result = 'UNSTABLE'
-                    echo 'COVERAGE GUARD: UNSTABLE — build ran but did not cover this branch'
+                    def policy = (env.CI_MAIN_PROOF_POLICY ?: 'unstable').trim().toLowerCase()
+                    if (policy == 'allow') {
+                        // Explicit opt-out for a host that is allowed to run
+                        // unverified main builds (never the prod daemon). The
+                        // dana/validate status above still says "not verified",
+                        // so GitHub does not silently show green.
+                        echo 'COVERAGE GUARD: not covered, allowed by CI_MAIN_PROOF_POLICY=allow'
+                    } else if (policy == 'fail') {
+                        currentBuild.result = 'FAILURE'
+                        echo 'COVERAGE GUARD: FAIL — no prod controller verified main'
+                    } else {
+                        // Truthful, not destructive: the laptop stage controller
+                        // cannot verify prod, so it must not paint main green.
+                        currentBuild.result = 'UNSTABLE'
+                        echo 'COVERAGE GUARD: UNSTABLE — build ran but did not cover this branch'
+                    }
                 }
             }
         }
@@ -579,22 +601,31 @@ pipeline {
 }
 
 // Post one named commit status. Observability only: never fails the build.
+// Opt-in via GITHUB_STATUS_ENABLED=1 so a credential-less agent still builds;
+// when off, the plugin's own `continuous-integration/jenkins/branch` status is
+// still posted, so the build is never silently unreported.
 // Credential `github-pat` (username + PAT, `repo:status`); no secret in-repo.
 def ghStatus(String stage, String state, String description) {
+    if ((env.GITHUB_STATUS_ENABLED ?: '0') != '1') {
+        echo "GitHub status dana/${stage} skipped (GITHUB_STATUS_ENABLED!=1)"
+        return
+    }
     try {
         withCredentials([usernamePassword(
-                credentialsId: 'github-pat',
+                credentialsId: env.GITHUB_STATUS_CREDENTIALS_ID ?: 'github-pat',
                 usernameVariable: 'GITHUB_USER',
                 passwordVariable: 'GITHUB_TOKEN')]) {
-            sh """
-                set +e
-                bash scripts/ci_github_status.sh \\
-                  --sha "\${GIT_COMMIT}" \\
-                  --state "${state}" \\
-                  --context "dana/${stage}" \\
-                  --description "${description}" \\
-                  --target-url "\${BUILD_URL}" || true
-            """
+            withEnv(['GITHUB_STATUS_ENABLED=1']) {
+                sh """
+                    set +e
+                    bash scripts/ci_github_status.sh \\
+                      --sha "\${GIT_COMMIT}" \\
+                      --state "${state}" \\
+                      --context "dana/${stage}" \\
+                      --description "${description}" \\
+                      --target-url "\${BUILD_URL}" || true
+                """
+            }
         }
     } catch (Exception e) {
         echo "WARN: GitHub status dana/${stage} not reported — ${e.message}"

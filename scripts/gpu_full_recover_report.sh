@@ -1617,14 +1617,58 @@ fi
 } >>"$INDEX"
 
 # =============================================================================
-# SECTION 16: Push to standalone health check repo (no Jenkins triggers)
+# SECTION 16: Push to standalone health check repo
+#
+# SAFETY: this push must never be able to trigger CI/builds on the production
+# repos. Verified properties (see deploy/gpu/README.md "Health report push"):
+#   * target is a SEPARATE repo (Work_RAG_HealthCheck), never the umbrella repo,
+#     a component submodule, or the Jenkins multibranch project;
+#   * that repo has NO Jenkinsfile, NO .github/workflows, NO .gitlab-ci.yml and
+#     NO webhooks (verified via gh api), so a push cannot start a build anywhere;
+#   * the remote URL is force-set below, so a stale `origin` from a previous run
+#     can never redirect the push into the production repo;
+#   * a guard aborts if the resolved origin is the umbrella/production repo.
 # =============================================================================
 step "Pushing recovery report to standalone repo"
 HEALTH_REPO="${GPU_HEALTH_REPO:-https://github.com/AliNikkhah2001/Work_RAG_HealthCheck.git}"
 HEALTH_REPO_DIR="${GPU_HEALTH_REPO_DIR:-$HOME/Work_RAG_HealthCheck}"
 STATUS_PUSH="FAILED"
 
-if [[ "$NO_PUSH" == "1" ]]; then
+# --- Guard: never push into a production repo -------------------------------
+# Normalise both URLs to owner/repo for a robust comparison (https vs ssh forms).
+norm_repo_slug() {
+  printf '%s' "$1" \
+    | sed -E 's#^git@[^:]+:#https://x/#' \
+    | sed -E 's#^https?://[^/]+/##' \
+    | sed -E 's#\.git$##' \
+    | tr 'A-Z' 'a-z'
+}
+HEALTH_SLUG="$(norm_repo_slug "$HEALTH_REPO")"
+UMBRELLA_SLUG="$(norm_repo_slug "$(git -C "$UMBRELLA" remote get-url origin 2>/dev/null || echo '')")"
+PROTECTED_SLUGS="$UMBRELLA_SLUG"
+for sub in "$UMBRELLA"/components/*/; do
+  [ -d "$sub/.git" ] || continue
+  s="$(norm_repo_slug "$(git -C "$sub" remote get-url origin 2>/dev/null || echo '')")"
+  [ -n "$s" ] && PROTECTED_SLUGS="$PROTECTED_SLUGS $s"
+done
+
+push_target_is_safe() {
+  local slug="$1" p
+  [ -n "$slug" ] || return 1
+  case "$slug" in
+    *healthcheck*) return 0 ;;
+  esac
+  for p in $PROTECTED_SLUGS; do
+    [ "$slug" = "$p" ] && return 1
+  done
+  return 0
+}
+
+if ! push_target_is_safe "$HEALTH_SLUG"; then
+  STATUS_PUSH="REFUSED"
+  fail "refusing to push: target '$HEALTH_SLUG' is a production repo (protected: $PROTECTED_SLUGS)"
+  warn "set GPU_HEALTH_REPO to the standalone health-check repo"
+elif [[ "$NO_PUSH" == "1" ]]; then
   STATUS_PUSH="SKIPPED"
   warn "push disabled (--no-push). Report at: $OUT"
 else
