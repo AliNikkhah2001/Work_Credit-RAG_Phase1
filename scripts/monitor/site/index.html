@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dana RAG — Production Health</title>
+<style>
+  :root {
+    --bg: #0b0d12;
+    --panel: #12161f;
+    --panel-2: #171c27;
+    --line: #232a38;
+    --text: #e6ebf5;
+    --muted: #8894a8;
+    --up: #2ecc71;
+    --down: #ff4d5e;
+    --degraded: #f5a524;
+    --nodata: #313a49;
+    --accent: #4d9dff;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: radial-gradient(1200px 700px at 15% -10%, #16233a 0%, var(--bg) 55%);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    line-height: 1.5;
+    min-height: 100vh;
+    padding: 24px 18px 64px;
+  }
+  .wrap { max-width: 1360px; margin: 0 auto; }
+
+  header.top {
+    display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end;
+    justify-content: space-between; margin-bottom: 22px;
+  }
+  h1 { font-size: 26px; margin: 0 0 6px; letter-spacing: -0.3px; font-weight: 650; }
+  .sub { color: var(--muted); font-size: 13px; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 7px;
+    border: 1px solid var(--line); background: var(--panel);
+    border-radius: 999px; padding: 6px 13px; font-size: 12px; color: var(--muted);
+  }
+  .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; margin-bottom: 20px; }
+  .card {
+    background: linear-gradient(180deg, var(--panel-2), var(--panel));
+    border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px;
+  }
+  .card .label { color: var(--muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 8px; }
+  .card .value { font-size: 27px; font-weight: 650; letter-spacing: -0.6px; font-variant-numeric: tabular-nums; }
+  .card .hint { color: var(--muted); font-size: 12px; margin-top: 5px; }
+
+  section.panel {
+    background: linear-gradient(180deg, var(--panel-2), var(--panel));
+    border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 20px 20px 18px; margin-bottom: 18px;
+  }
+  section.panel > h2 {
+    font-size: 15px; margin: 0 0 4px; font-weight: 650; letter-spacing: 0.2px;
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  }
+  .panel-note { color: var(--muted); font-size: 12.5px; margin: 0 0 16px; }
+
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; }
+  .seg button {
+    background: transparent; color: var(--muted); border: 0; padding: 6px 13px;
+    font-size: 12px; cursor: pointer; font-family: inherit;
+  }
+  .seg button + button { border-left: 1px solid var(--line); }
+  .seg button[aria-pressed="true"] { background: #1f2b3f; color: var(--text); font-weight: 600; }
+
+  /* ---- heatmap ---- */
+  .heat-scroll { overflow-x: auto; padding-bottom: 6px; }
+  .heat-grid { display: grid; gap: 3px; align-items: center; min-width: max-content; }
+  .heat-label {
+    font-size: 11.5px; color: var(--muted); padding-right: 10px; white-space: nowrap;
+    text-align: right; font-variant-numeric: tabular-nums;
+  }
+  .heat-label.core { color: var(--text); font-weight: 600; }
+  .cell {
+    width: 13px; height: 22px; border-radius: 3px; background: var(--nodata);
+    cursor: pointer; transition: transform .08s ease, outline-color .08s ease;
+    outline: 1px solid transparent;
+  }
+  .cell:hover { transform: scaleY(1.14); outline-color: #ffffff66; z-index: 2; }
+  .cell.up { background: var(--up); }
+  .cell.down { background: var(--down); }
+  .cell.degraded { background: var(--degraded); }
+  .cell.nodata { background: var(--nodata); }
+  .axis { font-size: 10.5px; color: #65718a; white-space: nowrap; }
+
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px; color: var(--muted); margin-top: 14px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .swatch { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
+
+  /* ---- tables ---- */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; font-weight: 600; }
+  tbody tr:last-child td { border-bottom: 0; }
+  td.num { font-variant-numeric: tabular-nums; }
+
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 11px;
+    font-weight: 650; letter-spacing: 0.2px; text-transform: uppercase;
+  }
+  .b-up { background: #14351f; color: #67e08c; }
+  .b-down { background: #3a1620; color: #ff8b96; }
+  .b-degraded { background: #3a2c11; color: #ffc76b; }
+  .b-nodata { background: #222a37; color: #8f9cb0; }
+  .b-match { background: #14351f; color: #67e08c; }
+  .b-mismatch { background: #3a1620; color: #ff8b96; }
+  .b-unknown { background: #3a2c11; color: #ffc76b; }
+
+  .bar-track { background: #1b2230; border-radius: 5px; height: 8px; overflow: hidden; min-width: 90px; }
+  .bar-fill { height: 100%; background: linear-gradient(90deg, #2ecc71, #4d9dff); }
+  .bar-fill.warn { background: linear-gradient(90deg, #f5a524, #ff8b3d); }
+  .bar-fill.bad { background: linear-gradient(90deg, #ff4d5e, #ff7a5c); }
+
+  .kv { display: grid; grid-template-columns: minmax(140px, 1fr) 2fr; gap: 9px 18px; font-size: 13px; }
+  .kv .k { color: var(--muted); }
+  .kv .v { font-variant-numeric: tabular-nums; word-break: break-word; }
+
+  .muted { color: var(--muted); }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; }
+  .empty { color: var(--muted); font-size: 13px; padding: 14px 0; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  #tooltip {
+    position: fixed; pointer-events: none; z-index: 50; display: none;
+    background: #05070b; border: 1px solid #2b3444; border-radius: 9px;
+    padding: 9px 12px; font-size: 12px; line-height: 1.5; max-width: 320px;
+    box-shadow: 0 10px 32px rgba(0,0,0,.6); color: var(--text);
+  }
+  #tooltip .tt-head { font-weight: 650; margin-bottom: 4px; }
+  #tooltip .tt-row { color: var(--muted); }
+  .two-col { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 26px; }
+  @media (max-width: 640px) {
+    .card .value { font-size: 23px; }
+    header.top { align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <h1>Dana RAG — Production Health</h1>
+      <div class="sub" id="subtitle">loading run history…</div>
+    </div>
+    <div style="display:flex; gap:8px; flex-wrap:wrap">
+      <span class="pill"><span class="dot" id="live-dot" style="background:var(--muted)"></span><span id="live-text">checking latest run</span></span>
+      <span class="pill" id="machine-pill">all machines</span>
+    </div>
+  </header>
+
+  <div class="cards" id="cards"></div>
+
+  <section class="panel">
+    <h2>Historical uptime
+      <span class="seg" id="window-seg">
+        <button data-window="24" aria-pressed="false">24h</button>
+        <button data-window="168" aria-pressed="true">7d</button>
+        <button data-window="720" aria-pressed="false">30d</button>
+        <button data-window="0" aria-pressed="false">all</button>
+      </span>
+    </h2>
+    <p class="panel-note">One row per service, oldest → newest. Each column is a run; hover for details.
+      Grey means no run exists for that slot — it is <em>not</em> an outage.</p>
+    <div class="heat-scroll"><div class="heat-grid" id="heatmap"></div></div>
+    <div class="legend">
+      <span><i class="swatch" style="background:var(--up)"></i>up</span>
+      <span><i class="swatch" style="background:var(--down)"></i>down</span>
+      <span><i class="swatch" style="background:var(--degraded)"></i>degraded</span>
+      <span><i class="swatch" style="background:var(--nodata)"></i>no data</span>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Downtime percentage
+      <span class="seg" id="uptime-seg">
+        <button data-window="24" aria-pressed="true">24h</button>
+        <button data-window="168" aria-pressed="false">7d</button>
+        <button data-window="720" aria-pressed="false">30d</button>
+        <button data-window="0" aria-pressed="false">all</button>
+      </span>
+    </h2>
+    <p class="panel-note" id="uptime-note">Share of runs in which each service answered. Computed from the run records in this window.</p>
+    <table>
+      <thead><tr><th>Service</th><th>Uptime</th><th style="width:33%"></th><th class="num">Runs up</th><th class="num">Down</th><th class="num">Degraded</th></tr></thead>
+      <tbody id="uptime-body"></tbody>
+    </table>
+  </section>
+
+  <section class="panel">
+    <h2>Failures — last 24 hours <span class="badge b-nodata" id="f24-count">0</span></h2>
+    <p class="panel-note">Incidents detected in runs from the last 24 hours. Duration is measured between the first failing run and the next passing run.</p>
+    <div id="f24-body"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Knowledge base version — ingested vs expected <span class="badge b-nodata" id="kb-badge">unknown</span></h2>
+    <p class="panel-note">Left: what is physically in the <span class="mono">kb_manager</span> database and served by KB <span class="mono">:8000</span>.
+      Right: what this checkout pins as production truth. Values that cannot be read are shown as <em>unknown</em>, never guessed.</p>
+    <div class="two-col">
+      <div>
+        <div class="kv" id="kb-actual"></div>
+      </div>
+      <div>
+        <div class="kv" id="kb-expected"></div>
+      </div>
+    </div>
+    <h3 style="font-size:13px; margin:22px 0 8px; color:var(--muted); text-transform:uppercase; letter-spacing:.6px;">Checks</h3>
+    <table>
+      <thead><tr><th>Check</th><th>Actual</th><th>Expected</th><th>Result</th></tr></thead>
+      <tbody id="kb-checks"></tbody>
+    </table>
+    <h3 style="font-size:13px; margin:22px 0 8px; color:var(--muted); text-transform:uppercase; letter-spacing:.6px;">Corpus change history</h3>
+    <div id="kb-history"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Run log</h2>
+    <p class="panel-note">Newest first. Per-run detail pages keep logs and screenshots from the original report.</p>
+    <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>When (UTC)</th><th>Machine</th><th>Status</th><th>QA</th><th>KB</th><th>Detail</th></tr></thead>
+        <tbody id="runs-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer class="sub" style="text-align:center; margin-top:28px">
+    Static site — no backend. Data comes from <span class="mono">runs/index.json</span> and <span class="mono">runs/*.json</span> in this repo.
+  </footer>
+</div>
+<div id="tooltip"></div>
+
+<script>
+"use strict";
+const CORE = ["kb", "guardrails", "orchestrator", "webui"];
+const STATUS_CLASS = { up: "b-up", down: "b-down", degraded: "b-degraded", "no-data": "b-nodata", nodata: "b-nodata" };
+const state = { records: [], index: null, heatWindow: 168, uptimeWindow: 24 };
+
+/* ------------------------------------------------------------------ utils */
+const $ = (id) => document.getElementById(id);
+const esc = (v) => String(v == null ? "" : v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const fmtTs = (iso) => {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (isNaN(d)) return String(iso);
+  return d.toISOString().replace("T", " ").replace(/\.\d+Z$/, "Z");
+};
+const fmtShort = (iso) => {
+  const d = new Date(iso);
+  if (isNaN(d)) return "—";
+  return d.toISOString().slice(5, 16).replace("T", " ");
+};
+const uptimeClass = (pct) => (pct == null ? "" : pct >= 99 ? "" : pct >= 90 ? "warn" : "bad");
+
+async function getJSON(path) {
+  try {
+    const res = await fetch(path, { cache: "no-store" });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (err) {
+    return null;
+  }
+}
+
+/* ------------------------------------------------------------ tooltip */
+const tip = $("tooltip");
+function showTip(evt, html) {
+  tip.innerHTML = html;
+  tip.style.display = "block";
+  const pad = 14;
+  let x = evt.clientX + pad, y = evt.clientY + pad;
+  const r = tip.getBoundingClientRect();
+  if (x + r.width > window.innerWidth - 8) x = evt.clientX - r.width - pad;
+  if (y + r.height > window.innerHeight - 8) y = evt.clientY - r.height - pad;
+  tip.style.left = x + "px";
+  tip.style.top = y + "px";
+}
+function hideTip() { tip.style.display = "none"; }
+
+/* ------------------------------------------------------------ helpers */
+// A run record stores `services` as an array of {name,status,...}; the compact
+// index entry stores a name→status map. Normalize to the array shape so every
+// renderer only deals with one structure.
+function normServices(rec) {
+  const raw = rec.services;
+  if (Array.isArray(raw)) {
+    const map = {};
+    raw.forEach((s) => { if (s && s.name) map[s.name] = s; });
+    return map;
+  }
+  const map = {};
+  Object.entries(raw || {}).forEach(([name, st]) => {
+    map[name] = typeof st === "string" ? { name, status: st } : { name, status: st && st.status };
+  });
+  return map;
+}
+
+function serviceMatrix(records) {
+  // stable service order: core first, then alphabetical extras
+  const names = new Set();
+  records.forEach((r) => Object.keys(r.serviceMap || {}).forEach((n) => names.add(n)));
+  const all = Array.from(names);
+  const core = CORE.filter((n) => all.includes(n));
+  const rest = all.filter((n) => !CORE.includes(n)).sort();
+  return [...core, ...rest];
+}
+
+function within(records, hours) {
+  if (!hours) return records.slice();
+  const cutoff = Date.now() - hours * 3600 * 1000;
+  return records.filter((r) => new Date(r.ts).getTime() >= cutoff);
+}
+
+function statusOf(run, service) {
+  const s = (run.serviceMap || {})[service];
+  if (!s || !s.status) return "no-data";
+  return s.status === "no-data" ? "no-data" : s.status;
+}
+
+/* ------------------------------------------------------------ cards */
+function renderCards(records) {
+  const last = records[records.length - 1];
+  const day = within(records, 24);
+  const dayBad = day.filter((r) => r.status !== "HEALTHY").length;
+  const dayPct = day.length ? Math.round(((day.length - dayBad) / day.length) * 1000) / 10 : null;
+
+  const kb = last && last.kb ? last.kb : null;
+  const cards = [
+    {
+      label: "Current status",
+      value: last ? last.status : "no data",
+      hint: last ? `last run ${fmtShort(last.ts)} UTC` : "no runs published yet",
+    },
+    {
+      label: "Uptime · last 24h",
+      value: dayPct == null ? "—" : dayPct.toFixed(1) + "<span style='font-size:15px;color:var(--muted)'> %</span>",
+      hint: day.length ? `${day.length - dayBad} healthy / ${day.length} runs` : "no runs in window",
+    },
+    {
+      label: "Failures · last 24h",
+      value: String(collectIncidents(day).length),
+      hint: "distinct service incidents",
+    },
+    {
+      label: "KB version",
+      value: kb && kb.chunks_in_db != null ? String(kb.chunks_in_db) : "unknown",
+      hint: kb ? `chunks in db · ${kb.verdict || "unknown"}` : "KB probe missing",
+    },
+  ];
+  $("cards").innerHTML = cards.map((c) => `
+    <div class="card">
+      <div class="label">${esc(c.label)}</div>
+      <div class="value">${c.value}</div>
+      <div class="hint">${esc(c.hint)}</div>
+    </div>`).join("<div></div>").replace(/<div><\/div>/g, "");
+}
+
+/* ------------------------------------------------------------ heatmap */
+function renderHeatmap(records) {
+  const rows = serviceMatrix(records);
+  const grid = $("heatmap");
+  const visible = state.heatWindow ? records.slice(-state.heatWindow) : records;
+  if (!visible.length || !rows.length) {
+    grid.innerHTML = '<div class="empty">No runs published yet.</div>';
+    return;
+  }
+  const cols = visible.length;
+  const cellW = 13, gap = 3;
+  grid.style.gridTemplateColumns = `max-content repeat(${cols}, ${cellW}px)`;
+
+  let html = "";
+  // header: time labels (every Nth column)
+  html += '<div class="heat-label axis"></div>';
+  const step = Math.max(1, Math.ceil(cols / 10));
+  for (let i = 0; i < cols; i++) {
+    const label = i % step === 0 ? `<div class="axis" style="writing-mode:vertical-rl;transform:rotate(180deg);height:46px;font-size:9.5px">${esc(fmtShort(visible[i].ts).slice(6))}</div>` : "<div></div>";
+    html += label;
+  }
+  rows.forEach((svc) => {
+    const isCore = CORE.includes(svc);
+    html += `<div class="heat-label ${isCore ? "core" : ""}" title="${esc(svc)}">${esc(svc)}</div>`;
+    visible.forEach((run) => {
+      const st = statusOf(run, svc);
+      const cls = st === "no-data" ? "nodata" : st;
+      html += `<div class="cell ${cls}" data-run="${esc(run.id)}" data-svc="${esc(svc)}" data-status="${esc(st)}"></div>`;
+    });
+  });
+  grid.innerHTML = html;
+
+  grid.querySelectorAll(".cell").forEach((cell) => {
+    cell.addEventListener("mousemove", (evt) => {
+      const run = records.find((r) => r.id === cell.dataset.run);
+      if (!run) return;
+      const svc = cell.dataset.svc;
+      const info = (run.serviceMap || {})[svc] || {};
+      const excerpt = info.detail ? `<div class="tt-row mono">${esc(String(info.detail).slice(0, 140))}</div>` : "";
+      showTip(evt, `
+        <div class="tt-head">${esc(svc)} — ${esc(cell.dataset.status)}</div>
+        <div class="tt-row">${esc(fmtTs(run.ts))}</div>
+        <div class="tt-row">machine: ${esc(run.machine)} · run: ${esc(run.status)}</div>
+        ${info.http_code ? `<div class="tt-row">HTTP ${esc(info.http_code)}${info.port ? ` · port ${esc(info.port)}` : ""}</div>` : ""}
+        ${excerpt}
+        ${run.qa ? `<div class="tt-row">QA: ${esc(run.qa)}</div>` : ""}`);
+    });
+    cell.addEventListener("mouseleave", hideTip);
+  });
+}
+
+/* ------------------------------------------------------------ incidents */
+function collectIncidents(records) {
+  // Walk runs in order; a service entering a non-up state opens an incident,
+  // returning to `up` closes it.
+  const services = serviceMatrix(records);
+  const open = {};
+  const incidents = [];
+  records.forEach((run) => {
+    services.forEach((svc) => {
+      const st = statusOf(run, svc);
+      const failing = st === "down" || st === "degraded";
+      if (failing && !open[svc]) {
+        open[svc] = { service: svc, first_seen: run.ts, last_seen: run.ts, status: st, run_id: run.id, machine: run.machine, detail: (run.serviceMap || {})[svc] };
+      } else if (failing && open[svc]) {
+        open[svc].last_seen = run.ts;
+        open[svc].status = st === "down" ? "down" : open[svc].status;
+      } else if (!failing && open[svc]) {
+        incidents.push({ ...open[svc], resolved_at: run.ts });
+        delete open[svc];
+      }
+    });
+  });
+  Object.values(open).forEach((inc) => incidents.push({ ...inc, resolved_at: null }));
+  incidents.sort((a, b) => new Date(b.first_seen) - new Date(a.first_seen));
+  return incidents;
+}
+
+function renderFailures(records) {
+  const day = within(records, 24);
+  const incidents = collectIncidents(day.length ? day : records);
+  const badge = $("f24-count");
+  badge.textContent = String(incidents.length);
+  badge.className = "badge " + (incidents.length ? "b-down" : "b-up");
+
+  if (!incidents.length) {
+    $("f24-body").innerHTML = '<div class="empty">No failures in the last 24 hours.</div>';
+    return;
+  }
+  const rows = incidents.map((inc) => {
+    const start = new Date(inc.first_seen).getTime();
+    const end = inc.resolved_at ? new Date(inc.resolved_at).getTime() : Date.now();
+    const mins = Math.max(0, Math.round((end - start) / 60000));
+    const dur = inc.resolved_at ? `${mins} min` : `${mins} min (ongoing)`;
+    const code = inc.detail && inc.detail.http_code ? inc.detail.http_code : "—";
+    const excerpt = inc.detail && inc.detail.detail ? inc.detail.detail : "";
+    return `<tr>
+      <td><strong>${esc(inc.service)}</strong></td>
+      <td><span class="badge ${STATUS_CLASS[inc.status] || "b-nodata"}">${esc(inc.status)}</span></td>
+      <td class="num">${esc(fmtTs(inc.first_seen))}</td>
+      <td class="num">${esc(dur)}</td>
+      <td class="mono">${esc(code)}</td>
+      <td class="muted">${esc(excerpt).slice(0, 120)}</td>
+    </tr>`;
+  }).join("");
+  $("f24-body").innerHTML = `<table>
+    <thead><tr><th>Service</th><th>State</th><th>First seen (UTC)</th><th>Duration</th><th>HTTP</th><th>Error excerpt</th></tr></thead>
+    <tbody>${rows}</tbody></table>`;
+}
+
+/* ------------------------------------------------------------ uptime */
+function renderUptime(records) {
+  const win = within(records, state.uptimeWindow);
+  const rows = serviceMatrix(records);
+  const note = $("uptime-note");
+  note.textContent = win.length
+    ? `${win.length} run(s) in the selected window (${fmtTs(win[0].ts)} → ${fmtTs(win[win.length - 1].ts)}).`
+    : "No runs in the selected window.";
+
+  if (!win.length || !rows.length) {
+    $("uptime-body").innerHTML = '<tr><td colspan="6" class="empty">No data in this window.</td></tr>';
+    return;
+  }
+  const body = rows.map((svc) => {
+    let up = 0, down = 0, degraded = 0, nodata = 0;
+    win.forEach((r) => {
+      const st = statusOf(r, svc);
+      if (st === "up") up++;
+      else if (st === "down") down++;
+      else if (st === "degraded") degraded++;
+      else nodata++;
+    });
+    const counted = up + down + degraded;
+    const pct = counted ? Math.round((up / counted) * 1000) / 10 : null;
+    return `<tr>
+      <td><strong>${esc(svc)}</strong>${CORE.includes(svc) ? ' <span class="muted" style="font-size:10px">CORE</span>' : ""}</td>
+      <td class="num">${pct == null ? "unknown" : pct.toFixed(1) + " %"}</td>
+      <td><div class="bar-track"><div class="bar-fill ${uptimeClass(pct)}" style="width:${pct == null ? 0 : pct}%"></div></div></td>
+      <td class="num">${up}</td>
+      <td class="num">${down}</td>
+      <td class="num">${degraded}</td>
+    </tr>`;
+  }).join("");
+  $("uptime-body").innerHTML = body;
+}
+
+/* ------------------------------------------------------------ KB */
+function renderKB(records) {
+  const withKb = records.filter((r) => r.kb).sort((a, b) => new Date(b.ts) - new Date(a.ts));
+  const latest = withKb[0];
+  const kb = latest ? latest.kb : null;
+  const badge = $("kb-badge");
+
+  if (!kb) {
+    badge.textContent = "unknown";
+    badge.className = "badge b-unknown";
+    $("kb-actual").innerHTML = '<div class="k">state</div><div class="v">no KB probe in any run record</div>';
+    $("kb-expected").innerHTML = "";
+    $("kb-checks").innerHTML = '<tr><td colspan="4" class="empty">No KB version data published yet. Run the report with the KB probe enabled.</td></tr>';
+    $("kb-history").innerHTML = "";
+    return;
+  }
+
+  const verdict = kb.verdict || "unknown";
+  badge.textContent = verdict;
+  badge.className = "badge " + (verdict === "match" ? "b-match" : verdict === "mismatch" ? "b-mismatch" : "b-unknown");
+
+  const models = (kb.embedding_models || []).length
+    ? kb.embedding_models.map((m) => `${esc(m.model)} (${m.chunks == null ? "?" : m.chunks})`).join("<br>")
+    : "unknown";
+  const job = kb.last_ingestion_job;
+  const jobText = job
+    ? `${esc(job.job_type || "?")} · ${esc(job.status || "?")} · ${esc(job.completed_at || "no timestamp")}`
+    : "unknown";
+
+  $("kb-actual").innerHTML = `
+    <div class="k">Chunks in DB</div><div class="v">${kb.chunks_in_db == null ? "unknown" : esc(kb.chunks_in_db)}</div>
+    <div class="k">Documents in DB</div><div class="v">${kb.documents_in_db == null ? "unknown" : esc(kb.documents_in_db)}</div>
+    <div class="k">Chunks in DVC pin</div><div class="v">${kb.chunks_in_pin == null ? "unknown" : esc(kb.chunks_in_pin)}</div>
+    <div class="k">Embedding model</div><div class="v">${models}</div>
+    <div class="k">Corpus serving</div><div class="v">${kb.corpus_live ? esc(kb.corpus_live) : "unknown"}</div>
+    <div class="k">Manifest</div><div class="v mono">${kb.manifest_id ? esc(kb.manifest_id) : "unknown"}</div>
+    <div class="k">Last ingestion job</div><div class="v">${jobText}</div>`;
+
+  const packs = kb.packs || {};
+  const packRows = Object.keys(packs).sort().map((k) => `<div class="k">${esc(k)}</div><div class="v mono">${esc(packs[k])}</div>`).join("");
+  $("kb-expected").innerHTML = `
+    <div class="k">Pinned corpus (processed)</div><div class="v">${kb.corpus_latest ? esc(kb.corpus_latest) : "unknown"}</div>
+    <div class="k">Corpus lagging</div><div class="v">${kb.corpus_lagging == null ? "unknown" : kb.corpus_lagging ? '<span class="badge b-mismatch">yes — newer corpus available</span>' : '<span class="badge b-match">no</span>'}</div>
+    <div class="k">Mismatches</div><div class="v">${(kb.mismatches || []).length ? (kb.mismatches || []).map((m) => `<span class="badge b-mismatch">${esc(m)}</span>`).join(" ") : "none"}</div>
+    <div class="k">Pinned pack versions</div><div class="v"></div>
+    ${packRows || '<div class="k">packs</div><div class="v">unknown</div>'}`;
+
+  // checks
+  const checks = kb.checks || [];
+  $("kb-checks").innerHTML = checks.length
+    ? checks.map((c) => {
+        const m = c.match === true ? '<span class="badge b-match">match</span>' : c.match === false ? '<span class="badge b-mismatch">mismatch</span>' : '<span class="badge b-unknown">unknown</span>';
+        const fmt = (v) => (v == null ? '<span class="muted">unknown</span>' : typeof v === "object" ? `<span class="mono">${esc(JSON.stringify(v))}</span>` : esc(v));
+        return `<tr><td>${esc(c.check)}</td><td>${fmt(c.actual)}</td><td>${fmt(c.expected)}</td><td>${m}</td></tr>`;
+      }).join("")
+    : '<tr><td colspan="4" class="empty">No comparable checks (values unknown).</td></tr>';
+
+  // history across runs: corpus served per run
+  const hist = withKb.slice().reverse().filter((r) => r.kb.corpus_live);
+  const changes = [];
+  let prev = null;
+  hist.forEach((r) => {
+    if (r.kb.corpus_live !== prev) {
+      changes.push({ ts: r.ts, corpus: r.kb.corpus_live, chunks: r.kb.chunks_in_db, run: r.id });
+      prev = r.kb.corpus_live;
+    }
+  });
+  $("kb-history").innerHTML = changes.length
+    ? `<table><thead><tr><th>Observed (UTC)</th><th>Corpus</th><th>Chunks</th><th>Run</th></tr></thead><tbody>${changes.reverse().map((c) => `<tr>
+        <td class="num">${esc(fmtTs(c.ts))}</td><td class="mono">${esc(c.corpus)}</td>
+        <td class="num">${c.chunks == null ? "unknown" : esc(c.chunks)}</td>
+        <td class="mono">${esc(c.run)}</td></tr>`).join("")}</tbody></table>`
+    : '<div class="empty">No corpus change observed in the published runs yet.</div>';
+}
+
+/* ------------------------------------------------------------ run log */
+function renderRuns(records) {
+  const sorted = records.slice().sort((a, b) => new Date(b.ts) - new Date(a.ts));
+  $("runs-body").innerHTML = sorted.map((r) => {
+    const cls = r.status === "HEALTHY" ? "b-up" : r.status === "DOWN" ? "b-down" : "b-degraded";
+    const verdict = (r.kb && r.kb.verdict) || r.kb_verdict || "unknown";
+    const kbCls = verdict === "match" ? "b-match" : verdict === "mismatch" ? "b-mismatch" : "b-unknown";
+    const detail = (r.links && r.links.detail) || r.detail;
+    const qa = r.qa || ((r.e2e && r.e2e.total) ? `${r.e2e.passed}/${r.e2e.total}` : null);
+    return `<tr>
+      <td class="num">${esc(fmtTs(r.ts))}</td>
+      <td>${esc(r.machine)}<div class="muted" style="font-size:11px">${esc(r.machine_type || "")}</div></td>
+      <td><span class="badge ${cls}">${esc(r.status)}</span></td>
+      <td class="num">${esc(qa || "—")}</td>
+      <td><span class="badge ${kbCls}">${esc(verdict)}</span></td>
+      <td>${detail ? `<a href="${esc(detail)}">open</a>` : '<span class="muted">—</span>'} · <a href="runs/${esc(r.id)}.json">json</a></td>
+    </tr>`;
+  }).join("");
+}
+
+/* ------------------------------------------------------------ header */
+function renderHeader(records) {
+  const last = records[records.length - 1];
+  $("subtitle").textContent = records.length
+    ? `${records.length} run(s) · ${fmtTs(records[0].ts)} → ${fmtTs(last.ts)}`
+    : "no runs published yet";
+  const machines = Array.from(new Set(records.map((r) => r.machine).filter(Boolean)));
+  $("machine-pill").textContent = machines.length ? machines.join(" · ") : "all machines";
+  const dot = $("live-dot"), txt = $("live-text");
+  if (!last) { dot.style.background = "var(--nodata)"; txt.textContent = "no data"; return; }
+  const ageMin = (Date.now() - new Date(last.ts).getTime()) / 60000;
+  const stale = ageMin > 36 * 60;
+  dot.style.background = last.status === "HEALTHY" ? "var(--up)" : last.status === "DOWN" ? "var(--down)" : "var(--degraded)";
+  txt.textContent = `${last.status} · ${ageMin < 90 ? Math.round(ageMin) + " min ago" : Math.round(ageMin / 60) + " h ago"}${stale ? " (stale)" : ""}`;
+}
+
+/* ------------------------------------------------------------ boot */
+function renderAll() {
+  renderHeader(state.records);
+  renderCards(state.records);
+  renderHeatmap(state.records);
+  renderUptime(state.records);
+  renderFailures(state.records);
+  renderKB(state.records);
+  renderRuns(state.records);
+}
+
+function wireSeg(id, key) {
+  $(id).addEventListener("click", (evt) => {
+    const btn = evt.target.closest("button[data-window]");
+    if (!btn) return;
+    $(id).querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b === btn)));
+    state[key] = Number(btn.dataset.window);
+    renderAll();
+  });
+}
+wireSeg("window-seg", "heatWindow");
+wireSeg("uptime-seg", "uptimeWindow");
+
+async function boot() {
+  const index = await getJSON("runs/index.json");
+  if (!index || !Array.isArray(index.entries)) {
+    $("subtitle").textContent = "runs/index.json not found — has the first report been published?";
+    renderAll();
+    return;
+  }
+  state.index = index;
+  const entries = index.entries;
+
+  // Fetch each run record for the full per-service detail. Cap concurrency so a
+  // long history does not open hundreds of sockets at once.
+  const records = [];
+  const queue = entries.slice();
+  const workers = Array.from({ length: Math.min(8, queue.length || 1) }, async () => {
+    while (queue.length) {
+      const entry = queue.shift();
+      const rec = await getJSON(`runs/${entry.id}.json`);
+      if (rec && rec.services) {
+        rec.id = rec.run_id || entry.id;
+        rec.ts = rec.generated_at || entry.ts;
+        rec.serviceMap = normServices(rec);
+        rec.qa = entry.qa;
+        records.push(rec);
+      } else {
+        // Fall back to the compact index entry (services map of name→status).
+        const fallback = {
+          id: entry.id, ts: entry.ts, machine: entry.machine, machine_type: entry.machine_type,
+          status: entry.status, qa: entry.qa, origin: entry.origin,
+          services: entry.services,
+          kb: { verdict: entry.kb_verdict, chunks_in_db: entry.kb_chunks, corpus_live: entry.kb_corpus, corpus_lagging: entry.kb_lagging },
+        };
+        fallback.serviceMap = normServices(fallback);
+        records.push(fallback);
+      }
+    }
+  });
+  await Promise.all(workers);
+  records.sort((a, b) => new Date(a.ts) - new Date(b.ts));
+  state.records = records;
+  renderAll();
+}
+
+boot();
+</script>
+</body>
+</html>
