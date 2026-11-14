@@ -127,10 +127,20 @@ else
       && record "remote webhooks absent (count=0)" 1 \
       || record "remote webhooks absent" 0 "count=$HOOKS"
 
-    WF="$(gh api "repos/$OWNER_REPO/actions/workflows" --jq '.total_count' 2>/dev/null || echo "?")"
-    [ "$WF" = "0" ] \
-      && record "remote Actions workflows absent (count=0)" 1 \
-      || record "remote Actions workflows absent" 0 "count=$WF"
+    # GitHub creates the `pages-build-deployment` workflow automatically when
+    # Pages is enabled from a branch. It is not a repo-authored CI config and
+    # cannot run arbitrary build steps, so it must not fail this check --
+    # otherwise enabling Pages (which we deliberately want) looks like a
+    # CI-on-the-report-repo violation.
+    WF_TOTAL="$(gh api "repos/$OWNER_REPO/actions/workflows" --jq '.total_count' 2>/dev/null || echo "?")"
+    WF_REAL="$(gh api "repos/$OWNER_REPO/actions/workflows" \
+      --jq '[.workflows[]? | select(.path | startswith("dynamic/pages/") | not)] | length' \
+      2>/dev/null || echo "?")"
+    if [ "$WF_REAL" = "0" ]; then
+      record "remote Actions workflows absent (count=0, pages=$WF_TOTAL)" 1
+    else
+      record "remote Actions workflows absent" 0 "count=$WF_REAL (pages excluded)"
+    fi
 
     # Jenkins multibranch on the prod controller only indexes the prod repo(s);
     # the health-check repo is not among them.
