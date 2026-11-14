@@ -128,6 +128,53 @@ fallback_host_venv() {
 }
 
 # ---------------------------------------------------------------------------
+# Retention of dana-lastgood/* rollback tags + optional disk hygiene.
+#
+# Every promotion/rollback stamps `dana-lastgood/<svc>:<stamp>-<sha>`; with a
+# daily sweep plus 3-hour retries that grows without bound. The prune logic lives
+# in ONE place (scripts/dana_lastgood_prune.sh) — this daemon only schedules it.
+#
+# Scheduling choice: run on the HEALTHY path, throttled (default daily). Pruning
+# while the stack is red would be the worst possible moment to touch rollback
+# material, and a 60s sweep must not shell out to Docker every minute.
+#
+# Opt-in: the retention script is a dry-run unless DANA_LASTGOOD_PRUNE_APPLY=1.
+# Set that in the systemd unit for the GPU host (see deploy/gpu/README.md).
+# Never fatal: a prune failure must not fail a heal sweep.
+# ---------------------------------------------------------------------------
+retention_due() {
+  local interval="${DANA_LASTGOOD_PRUNE_INTERVAL:-86400}"
+  local stamp="$LOG_DIR/.lastgood-prune-stamp"
+  [ -f "$stamp" ] || return 0
+  local age=$(( $(date +%s) - $(date -r "$stamp" +%s 2>/dev/null || echo 0) ))
+  [ "$age" -ge "$interval" ]
+}
+
+run_retention() {
+  local script="$ROOT/scripts/dana_lastgood_prune.sh"
+  [ -f "$script" ] || { err "retention script missing: $script"; return 0; }
+  retention_due || return 0
+
+  local args=(--quiet)
+  [ "${DANA_LASTGOOD_PRUNE_APPLY:-0}" = "1" ] && args+=(--apply)
+  [ -n "${DANA_LASTGOOD_KEEP:-}" ] && args+=(--keep "$DANA_LASTGOOD_KEEP")
+
+  # Disk hygiene is separately opt-in and deliberately narrow: dangling layers
+  # only, and build cache only when a budget is named. Never `system prune -a`,
+  # never volumes, never tagged images outside dana-*.
+  if [ "${DANA_DISK_HYGIENE:-0}" = "1" ]; then
+    args+=(--prune-dangling)
+    [ "${DANA_BUILDER_PRUNE:-0}" = "1" ] && args+=(--prune-build-cache)
+  fi
+
+  log "lastgood retention (${args[*]})"
+  DANA_HOST_REPO="$ROOT" bash "$script" "${args[@]}" >>"$LOG_DIR/retention.log" 2>&1 \
+    || { err "lastgood retention failed (non-fatal) — see $LOG_DIR/retention.log"; return 0; }
+  : >"$LOG_DIR/.lastgood-prune-stamp"
+  return 0
+}
+
+# ---------------------------------------------------------------------------
 # Report to the standalone health repo so status is visible remotely.
 #
 # NEVER push into components/server-setup: that is a submodule of the repo
@@ -220,6 +267,7 @@ run_once() {
 
   if [[ -z "$down_ports" ]]; then
     write_status_json "$health"
+    run_retention
     push_health_report "$health"
     return 0
   fi

@@ -236,6 +236,80 @@ What it does:
 
 Triggers: deploy failure (automatic), `reconcile.sh` (automatic), or an operator.
 
+## Last-known-good tag retention
+
+Every promotion and every rollback stamps `dana-lastgood/<service>:<stamp>-<sha>`.
+Nothing bounded that set, so on a host running the daily keep-alive plus the 3-hour
+retry loop the tag count (and the image generations those tags keep addressable)
+grew forever. One afternoon of deploy simulations on a laptop left 43 such tags.
+
+Retention is one script, `scripts/dana_lastgood_prune.sh`; it is **dry-run by
+default** and is safe to run at any time.
+
+```bash
+bash scripts/dana_lastgood_prune.sh                  # show would-keep/would-remove
+bash scripts/dana_lastgood_prune.sh --apply          # retire tags
+bash scripts/dana_lastgood_prune.sh --keep 3 --apply # tighter retention
+bash scripts/dana_lastgood_prune.sh --self-test      # KEEP-N + LKG guard, no Docker
+```
+
+| Env var | Flag | Default | Meaning |
+|---|---|---|---|
+| `DANA_LASTGOOD_KEEP` | `--keep N` | `5` | newest tags kept **per repository** |
+| `DANA_LASTGOOD_PRUNE_APPLY` | `--apply` | `0` (dry-run) | actually remove tags |
+| `DANA_LASTGOOD_PREFIX` | `--prefix` | `dana-lastgood` | tag namespace to consider |
+| `DANA_STATE_DIR` / `DANA_STATE_FILE` | `--state F` | auto | extra LKG state files to protect |
+
+What is **never** removed:
+
+1. Any tag named by a last-known-good state file — `images[].rollback_tag` from
+   `last_good.json`, `last_good.prev.json`, the sim state dir, and the legacy
+   `deploy/compose/.last_good.json`. If a state file records only an
+   `image_id`, the newest tag addressing those bytes is kept.
+2. The `N` newest tags per repository.
+3. The last remaining tag for an image a **running container** uses. Containers
+   are matched by `docker ps` image **ID**, never by name.
+
+Only the *tag* is retired (`docker rmi <repo>:<tag>`, no `-f`). Untagging a shared
+image such as `python:3.11-slim` or `rag-kb:local` leaves the image, its layers and
+every container untouched. No volumes, no networks, no `docker system prune`.
+
+Where it runs (single implementation, three schedulers):
+
+| Caller | Behaviour |
+|---|---|
+| `scripts/ci_record_last_good.sh` | after a new manifest is written; only when `DANA_LASTGOOD_PRUNE_APPLY=1` |
+| `scripts/gpu_auto_heal.sh` | on each **healthy** sweep, throttled by `DANA_LASTGOOD_PRUNE_INTERVAL` (default 86400s) |
+| operator | anytime, dry-run or `--apply` |
+
+The record step is the natural owner: it is the only place that creates new LKG
+state, and therefore the only place that makes older rollback tags genuinely
+obsolete. The daemon covers hosts where nothing re-records for long stretches.
+Both call sites treat a prune failure as a warning — retention must never be able
+to fail a deploy or a heal.
+
+Daily runs at `keep=5` bound the tag set to roughly `5 × (#services)` per host
+instead of growing with every deploy, heal and retry.
+
+### Optional disk hygiene (off by default)
+
+Separate from tag retention, and never aggressive:
+
+```bash
+bash scripts/dana_lastgood_prune.sh --prune-dangling                    # dangling layers only
+bash scripts/dana_lastgood_prune.sh --apply --prune-dangling
+bash scripts/dana_lastgood_prune.sh --apply --prune-build-cache --keep-storage 10GB
+```
+
+`--prune-dangling` maps to `docker image prune -f` (untagged layers only, never a
+tagged image). `--prune-build-cache` maps to
+`docker builder prune -f --keep-storage=<size>` and is **off by default**, because
+it is the flag that costs you a rebuild after the next base-image change.
+`docker system prune -a` and volume pruning are deliberately not implemented.
+
+From the daemon: `DANA_DISK_HYGIENE=1` enables the dangling prune and
+`DANA_BUILDER_PRUNE=1` adds build-cache pruning on healthy sweeps.
+
 ## Keep-alive cadence
 
 ```bash

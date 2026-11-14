@@ -39,6 +39,23 @@ bash scripts/gpu_keep_latest.sh --loop --interval 300   # foreground
 
 On health failure after a pull it runs `scripts/ci_rollback.sh` (apps only — not Gemma/TRT).
 
+### Last-known-good image tags: bounded retention
+
+`dana-lastgood/<service>:<stamp>-<sha>` tags are what makes rollback a re-tag
+instead of a rebuild. They are now pruned to a bounded set:
+
+```bash
+bash scripts/dana_lastgood_prune.sh            # dry-run: show keep/remove
+bash scripts/dana_lastgood_prune.sh --apply    # retire old tags
+```
+
+Keeps the newest `DANA_LASTGOOD_KEEP` (default **5**) per repository, plus every
+tag a last-known-good state file names, plus the last reference to any image a
+running container uses. Dry-run unless `--apply` / `DANA_LASTGOOD_PRUNE_APPLY=1`.
+Only tags are removed — never images, layers or volumes. Optional
+`--prune-dangling` / `--prune-build-cache` disk hygiene is off by default.
+Details: [deploy/gpu/README.md](../gpu/README.md#last-known-good-tag-retention).
+
 ## Laptop (test)
 
 ```bash

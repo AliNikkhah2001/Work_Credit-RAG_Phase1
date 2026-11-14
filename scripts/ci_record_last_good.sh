@@ -154,3 +154,23 @@ printf '%s\n' "$SHA" >"$DIR/.last_good_sha"
 echo "ci_record_last_good: wrote $DIR/.last_good.json"
 echo "  sha=$SHA  tag=$TAG  config_hash=${CONFIG_HASH:0:12}…  host=$HOSTNAME_S"
 echo "  health={ $HEALTH_JSON }"
+
+# ---------------------------------------------------------------------------
+# Bounded retention for dana-lastgood/* tags.
+#
+# Runs HERE, right after a new record is written, because this is the only place
+# that creates new last-known-good state and therefore the only place that can
+# make the previous rollback tags genuinely obsolete. The prune protects every
+# tag referenced by a state file — including the one just written — so it cannot
+# remove the tag rollback would use. Never fatal: retention must not be able to
+# fail a deploy (a full disk is a problem, a failed deploy is an outage).
+#
+# Opt-in apply: set DANA_LASTGOOD_PRUNE_APPLY=1 (and DANA_LASTGOOD_KEEP=N) to
+# retire old tags here. Default is a silent no-op so recording stays fast.
+# ---------------------------------------------------------------------------
+if [ "${DANA_LASTGOOD_PRUNE_APPLY:-0}" = "1" ]; then
+  if [ -x "$ROOT/scripts/dana_lastgood_prune.sh" ]; then
+    DANA_HOST_REPO="$HOST_REPO" bash "$ROOT/scripts/dana_lastgood_prune.sh" --apply --quiet \
+      || echo "ci_record_last_good: WARN — lastgood retention prune failed (ignored)" >&2
+  fi
+fi
