@@ -32,6 +32,10 @@ ok()   { printf '%s[OK]%s %s\n'   "$C_GREEN" "$C_OFF" "$*"; }
 warn() { printf '%s[WARN]%s%s %s\n' "$C_YELLOW" "$C_OFF" "$C_BOLD" "$*"; }
 err()  { printf '%s[FAIL]%s%s %s\n' "$C_RED" "$C_OFF" "$C_BOLD" "$*" >&2; }
 die()  { err "$*"; exit 1; }
+# Refusal: the script declined to act (bad args, override guard, missing input),
+# as opposed to die() which means it tried and failed. Lets a timer/cron tell a
+# misconfiguration apart from a real outage. Matches health.sh's exit code 64.
+refuse() { err "$*"; exit 64; }
 
 # --- profile -> compose layering + default env file -------------------------
 # gpu        : production self-hosted GPU (compose.gpu.yml publishes the ports)
