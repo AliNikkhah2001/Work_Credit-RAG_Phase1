@@ -191,7 +191,34 @@ deploy/docker/.env
 .opencode/
 
 # Jenkins customWorkspace (host-visible for docker bind mounts)
+# Jenkins appends @2/@3/@tmp suffixes when a workspace is busy — the bare
+# pattern alone does NOT match those, so `git status` filled up with 100s of
+# MB of duplicated checkouts after concurrent builds.
 .ci-workspace/
+.ci-workspace@*/
+
+# Local ops evidence packs — these belong to Work_RAG_HealthCheck, never the
+# umbrella repo (they contain shell history and multi-MB logs).
+reports/
+
+# Cursor agent tooling (MCP server builds, machine-local settings) — 100s of MB
+# local-only, never part of the deployable platform.
+.cursor/tools/
+.cursor/settings.json
+.cursor/mcp.json
+
+# Vendored UI sources / dev screenshots (machine-local, huge)
+dev/vibefarsiui/
+dev/ux-shots/
+
+# Technical report build outputs (sources stay tracked)
+docs/technical-report/out/
+docs/technical-report/latex/*.pdf
+docs/technical-report/latex/*.aux
+docs/technical-report/latex/*.log
+docs/technical-report/latex/*.toc
+docs/technical-report/latex/*.out
+docs/technical-report/scripts/__pycache__/
 
 # Sprint C — prod rollback markers (host-local)
 deploy/compose/.last_good_sha
