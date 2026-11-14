@@ -118,19 +118,23 @@ pipeline {
         }
 
         stage('Lint') {
-            when {
-                allOf {
-                    expression { return env.CI_SKIP != '1' }
-                    anyOf {
-                        expression { return env.CI_BUILD == '1' }
-                        expression { return env.CI_STAGE == '1' }
-                        expression { return env.CI_PROD == '1' }
-                        expression { return env.CI_AUTO == '1' }
-                        expression { return env.CHANGE_ID != null }
-                        expression { return env.CI_HEAVY_PATHS == '1' }
-                    }
-                }
-            }
+            // Lint is the baseline proof that a build ran *something*: it carries
+            // the gate self-tests (message gate, controller role, coverage
+            // verdict, stage evidence) and it is the only stage the coverage
+            // verifier requires on every branch. It therefore runs on EVERY
+            // build except an explicit `[ci skip]`.
+            //
+            // This used to be guarded by `CI_BUILD/STAGE/PROD/AUTO/CHANGE_ID/
+            // HEAVY_PATHS`, which is true only when a commit *asked* for
+            // something. A docs-only commit (CI_SERVICES=none, no markers)
+            // therefore ran no stage at all, and `ci_verify_coverage.py`
+            // correctly reported `unexpected-missing: lint` -> build FAILURE and
+            // a red `dana/validate` on GitHub (observed on build #3 of
+            // feature/lastgood-retention, and #1 of feature/ops-diagnostics).
+            // Failing a docs-only push teaches people to ignore red, so the
+            // guard is gone rather than the verifier being loosened: the
+            // verdict stays honest and it is now satisfiable.
+            when { expression { return env.CI_SKIP != '1' } }
             steps {
                 sh '''
                     set -e
