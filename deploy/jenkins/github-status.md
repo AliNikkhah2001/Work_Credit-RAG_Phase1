@@ -8,6 +8,19 @@ contexts**, so required checks are possible without guessing names.
 Parent overview: `README.md` → **CI/CD & Jenkins**. Operator guide:
 `deploy/jenkins/README.md`.
 
+> **Read this before trusting a green check (audit 2026-11-14).**
+> The named `dana/*` contexts only exist on branches whose `Jenkinsfile` carries
+> `ghStatus()`. The parent `main` and `develop` Jenkinsfiles do **not** (495
+> lines, `grep -c ghStatus` = 0), so the protected branches are still reported
+> only by the coarse plugin status. Verified:
+> ```bash
+> for s in $(git log --format=%H -14 origin/main); do
+>   gh api repos/AliNikkhah2001/Work_Credit-RAG_Phase1/commits/$s/statuses --jq '.[].context'
+> done | sort -u
+> # continuous-integration/jenkins/branch   <- only context, 0/14 commits carry dana/*
+> ```
+> See §7 for what that means for branch protection.
+
 ---
 
 ## 1. What Jenkins reports today (verified)
@@ -278,3 +291,67 @@ shellcheck scripts/ci_stage_evidence.sh scripts/ci_github_status.sh
 
 These run inside the `Lint` stage, so a broken gate fails the build instead of
 silently allowing a false green.
+
+Because `Lint` now runs on every build except `[ci skip]` (§8), these self-tests
+are the one thing guaranteed to execute on every push.
+
+---
+
+## 7. Audit state — do NOT enable required checks yet (2026-11-14)
+
+Evidence gathered from this laptop against `AliNikkhah2001/*`:
+
+| Question | Answer | Evidence |
+|---|---|---|
+| Does *a* Jenkins report to GitHub? | **Yes** | `continuous-integration/jenkins/branch` present on `main`, `develop` and feature commits, e.g. `7b812d1` -> `success` -> `.../job/dana-rag/job/main/22/`. The laptop container `dana-jenkins` (`--env DANA_ROLE=stage`) posts it over REST. |
+| Does the **GPU prod** controller report? | **Not observed** | Every status `target_url` points at `:8085/job/dana-rag/...` (the laptop controller). No `dana-rag-prod` target URL appears on any commit. `dana-jenkins-prod` runs on `ai-gpu1` but its job is `dana-rag-prod`, and `dana-rag-prod/main#10..13` only appear as CSRF-rejected manual triggers in its log. |
+| Do named `dana/*` contexts exist on protected branches? | **No (0 / 14 on both)** | `main` and `develop` `Jenkinsfile`s predate `ghStatus()`; `scripts/ci_github_status.sh`, `ci_stage_evidence.sh`, `ci_verify_coverage.py` are absent from both tips. They live only on `feature/*` (PR #62). |
+| Are GitHub webhooks configured? | **No** | `gh api repos/AliNikkhah2001/<repo>/hooks` -> `[]` for all 8 repos. Jenkins *polls* (`H/15 * * * *`) and posts outward. |
+
+**Consequence:** `required_status_checks` is `null` on `main` for every repo
+(review rule = 1 approval is set; `enforce_admins=false`). Enabling
+`dana/validate` today would leave every PR "Expected — waiting for status to be
+reported", because no code on `main`/`develop` can publish it. The prerequisite
+is: **merge the `ghStatus()` pipeline to `develop`+`main`, watch one real
+`dana/validate` post on each branch, then enable.**
+
+### The red crosses are not Jenkins
+
+Recent commits do show red, but from **GitHub Actions**, not Jenkins:
+
+```bash
+gh run list --workflow=pages.yml --limit 30 --json conclusion --jq '[.[].conclusion]|group_by(.)|map({(.[0]):length})|add'
+# {"failure":30}     <- every "Deploy to GitHub Pages" run has failed
+gh run view <id> --log-failed
+# ##[error]TypeError: error must be an instance of Error      (actions/configure-pages@v5)
+```
+
+`pages.yml` pushes `docs/` via `upload-pages-artifact` + `deploy-pages` while the
+repo's Pages source is **legacy branch build** (`build_type=legacy`,
+`source=main:/docs`), which already publishes the same content. Two publishers,
+one site: the workflow cannot succeed and the built-in `pages-build-deployment`
+does. Same shape in Work_RAG-KB / -Orchestrator / -Guardrails / -Server-Setup.
+
+---
+
+## 8. Lint runs on every build now
+
+`stage('Lint')` used to be skipped unless the commit asked for something
+(`CI_BUILD|CI_STAGE|CI_PROD|CI_AUTO|CHANGE_ID|CI_HEAVY_PATHS`). A docs-only
+commit asks for nothing (`CI_SERVICES=none`), so the build ran **zero** stages
+while `ci_verify_coverage.py` still owed `lint` on every branch. Result: verdict
+`unexpected-missing`, guard `fail`, `dana/validate: failure`, Jenkins `FAILURE`
+— a red check on a perfectly good commit.
+
+Reproduced against the real verifier:
+
+```bash
+python3 -c 'import importlib.util as u; ...' # see commit message for the exact case
+# feature/lastgood-retention, ran=[]  -> unexpected-missing failure guard=fail
+# feature/lastgood-retention, ran=[lint] -> covered            success guard=pass
+```
+
+Fixed on the pipeline side, not by loosening the verifier: `Lint` now has
+`when { CI_SKIP != '1' }` only, and the self-test gained a regression case
+asserting both halves (docs-only + `lint` ran = green, docs-only + nothing ran =
+red).

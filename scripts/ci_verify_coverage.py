@@ -350,6 +350,46 @@ def self_test() -> None:
     )
     assert feature["verdict"] == COVERED, feature
 
+    # Regression: a docs-only feature commit asked for nothing (CI_SERVICES=none,
+    # no [ci ...] markers), so the Lint stage's old guard dropped it too and the
+    # build ran zero stages -> red `dana/validate` on a perfectly good commit
+    # (build #3 of feature/lastgood-retention). The Jenkinsfile now runs Lint
+    # unconditionally; the verifier still owes `lint` here, and that is
+    # satisfiable. Guard against anyone re-narrowing the Lint stage.
+    docs_only = decide(
+        "feature/docs-only",
+        frozenset({LINT}),
+        may_deploy_stage=True,
+        may_deploy_prod=False,
+        ci_skip=False,
+        ci_stage=False,
+        ci_prod=False,
+        ci_auto=False,
+        ci_build=False,
+        heavy_paths=False,
+        require_prod_controller=False,
+    )
+    assert docs_only["verdict"] == COVERED, docs_only
+    assert docs_only["state"] == "success", docs_only
+
+    # And if Lint really did not run, the verdict must stay red (no silent pass).
+    docs_only_unrun = decide(
+        "feature/docs-only",
+        frozenset(),
+        may_deploy_stage=True,
+        may_deploy_prod=False,
+        ci_skip=False,
+        ci_stage=False,
+        ci_prod=False,
+        ci_auto=False,
+        ci_build=False,
+        heavy_paths=False,
+        require_prod_controller=False,
+    )
+    assert docs_only_unrun["verdict"] == UNEXPECTED_MISSING, docs_only_unrun
+    assert docs_only_unrun["state"] == "failure", docs_only_unrun
+    assert docs_only_unrun["missing"] == "lint", docs_only_unrun
+
     assert len(long_desc_guard()) <= DESC_LIMIT
     assert parse_executed("lint, build  bogus prod-deploy") == frozenset({LINT, BUILD, PROD_DEPLOY})
 
