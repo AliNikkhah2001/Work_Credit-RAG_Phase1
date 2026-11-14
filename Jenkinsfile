@@ -74,6 +74,9 @@ pipeline {
                 sh '''
                     set -e
                     chmod +x scripts/ci_submodule_sync.sh scripts/ci_message_gate.py scripts/ci_controller_role.py || true
+                    # Workspace is reused across builds/branches: clear stage
+                    # evidence so a previous run cannot vouch for this one.
+                    bash scripts/ci_stage_evidence.sh reset || rm -rf .ci-evidence
                     bash scripts/ci_submodule_sync.sh
                     git log -1 --pretty=%B > .ci_commit_msg.txt
                     git diff --name-only HEAD~1...HEAD 2>/dev/null > .ci_changed_files.txt || true
@@ -149,6 +152,7 @@ pipeline {
                     python3 scripts/ci_message_gate.py --self-test
                     python3 scripts/ci_controller_role.py --self-test
                     python3 scripts/ci_verify_coverage.py --self-test
+                    bash scripts/ci_stage_evidence.sh self-test
                 '''
             }
         }
@@ -572,6 +576,7 @@ pipeline {
                   sed -n 's/^COVERAGE_DESCRIPTION=//p' .ci_coverage.env 2>/dev/null > .ci_coverage.desc || true
                 fi
                 rm -f .ci_commit_msg.txt .ci_changed_files.txt .ci_gate.env .ci_role.env || true
+                rm -rf .ci-evidence || true
             '''
             script {
                 def guard = ''
@@ -584,14 +589,27 @@ pipeline {
                 def desc = fileExists('.ci_coverage.desc') ? readFile('.ci_coverage.desc').trim() : 'Jenkins verified'
                 if (state == '') { state = 'success' }
                 if (desc == '') { desc = 'Jenkins verified' }
+                // A build that already failed cannot vouch for coverage, even if
+                // the stages that did run happened to satisfy the expectation.
+                def already = currentBuild.result ?: 'SUCCESS'
+                if (already != 'SUCCESS') {
+                    state = 'failure'
+                    desc = "build ${already}" + (desc ? ": ${desc}" : '')
+                }
                 ghStatus('validate', state, desc)
 
                 if (guard == 'fail') {
                     currentBuild.result = 'FAILURE'
                     echo 'COVERAGE GUARD: FAIL — this build did not verify what it claims'
                 } else if (guard == 'unstable') {
+                    // Never improve an existing result: a build that already
+                    // failed elsewhere must not be softened to UNSTABLE by the
+                    // coverage guard.
+                    def current = currentBuild.result ?: 'SUCCESS'
                     def policy = (env.CI_MAIN_PROOF_POLICY ?: 'unstable').trim().toLowerCase()
-                    if (policy == 'allow') {
+                    if (current == 'FAILURE' || current == 'ABORTED' || current == 'UNSTABLE') {
+                        echo "COVERAGE GUARD: not covered (build already ${current})"
+                    } else if (policy == 'allow') {
                         // Explicit opt-out for a host that is allowed to run
                         // unverified main builds (never the prod daemon). The
                         // dana/validate status above still says "not verified",

@@ -81,6 +81,8 @@ case "$PROFILE" in
 esac
 
 PROJECT="${PROJECT_OVERRIDE:-${DANA_PROJECT:-$(dana_profile_project "$PROFILE")}}"
+# Refuse to act on production with leaked overrides (see common.sh).
+dana_guard_overrides "$PROFILE" || exit 2
 ENV_FILE="${DANA_ENV_FILE:-$(dana_profile_env "$PROFILE")}"
 SPEC="$(dana_port_spec "$PROFILE")"
 [ -n "$REQUIRE_OVERRIDE" ] && SPEC="$REQUIRE_OVERRIDE"

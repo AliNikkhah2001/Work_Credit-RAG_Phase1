@@ -65,6 +65,7 @@ while [ $# -gt 0 ]; do
 done
 
 PROJECT="$(dana_profile_project "$PROFILE")" || die "unknown profile '$PROFILE'"
+dana_guard_overrides "$PROFILE" || exit 2
 ENV_FILE="${DANA_ENV_FILE:-$(dana_profile_env "$PROFILE")}"
 SPEC="$(dana_port_spec "$PROFILE")"
 dana_ensure_log_dir

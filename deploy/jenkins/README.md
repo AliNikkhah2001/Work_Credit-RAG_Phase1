@@ -233,3 +233,21 @@ echo 'feat: x [ci stage]' | python3 scripts/ci_message_gate.py --msg-stdin
 - **CPU torch on laptop:** `compose.local.yml` + Jenkins `KB_TORCH_CHANNEL=cpu` install PyTorch from the CPU index so develop builds do not pull `nvidia_*` / cudnn wheels (common hang on `files.pythonhosted.org`). GPU prod uses `compose.gpu.yml` → `TORCH_CHANNEL=cuda`.
 - **Path-aware `CI_SERVICES`:** Jenkinsfile / scripts / docs alone → `none` (deploy `--no-build` with existing `:local` tags). A component path rebuilds only that service. `[ci all]` or `deploy/compose/` changes still force `all`.
 - **Do not** put `[ci all]` on routine `[ci stage]` commits unless images must be rebuilt.
+
+---
+
+## True green, GitHub statuses, required checks
+
+Jenkins already posts `continuous-integration/jenkins/branch` (Branch Source
+plugin — poll, not webhook). It only knows the whole-run result, so a stage-only
+controller's `main` build could be `SUCCESS` with every build/deploy stage
+skipped (`dana-rag/main` #20/#21).
+
+The pipeline now records per-stage evidence and publishes named contexts
+(`dana/validate`, `dana/build`, `dana/stage-deploy`, `dana/stage-e2e`,
+`dana/prod-deploy`), and downgrades a build that cannot prove its claim to
+`UNSTABLE` (which the plugin reports to GitHub as `failure`).
+
+Full detail — credential setup, the exact `gh api` required-checks patch, which
+contexts belong on which branch, and why the prod controller should not be
+stood up before it can be tested: **[`github-status.md`](github-status.md)**.

@@ -115,7 +115,9 @@ def decide(
     def result(verdict: str, expected: Iterable[str], guard: str, description: str) -> dict[str, str]:
         expected_set = frozenset(expected)
         missing = expected_set - ran
-        state = "success" if not missing and verdict != UNEXPECTED_MISSING else "failure"
+        # The commit status must never claim success unless the build is either
+        # fully covered or the commit explicitly opted out of verification.
+        state = "success" if verdict in (COVERED, OPTED_OUT) else "failure"
         return {
             "verdict": verdict,
             "ran": _fmt(ran),
@@ -350,6 +352,27 @@ def self_test() -> None:
 
     assert len(long_desc_guard()) <= DESC_LIMIT
     assert parse_executed("lint, build  bogus prod-deploy") == frozenset({LINT, BUILD, PROD_DEPLOY})
+
+    # A structurally-skipped build must never publish `success`, on any branch.
+    for branch, kwargs in (
+        ("develop", dict(may_deploy_stage=False, may_deploy_prod=False, ci_stage=True)),
+        ("main", dict(may_deploy_stage=True, may_deploy_prod=False, ci_prod=True)),
+    ):
+        verdict = decide(
+            branch,
+            frozenset({LINT}),
+            ci_skip=False,
+            ci_prod=kwargs.get("ci_prod", False),
+            ci_stage=kwargs.get("ci_stage", False),
+            ci_auto=False,
+            ci_build=False,
+            heavy_paths=False,
+            require_prod_controller=False,
+            **{k: v for k, v in kwargs.items() if k.startswith("may_")},
+        )
+        assert verdict["state"] == "failure", (branch, verdict)
+        assert verdict["guard"] == GUARD_UNSTABLE, (branch, verdict)
+
     print("ci_verify_coverage self-test OK")
 
 

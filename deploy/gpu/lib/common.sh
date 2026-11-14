@@ -300,6 +300,35 @@ dana_ensure_log_dir() {
   fi
 }
 
+# Guard against a leaked override pointing a production operation at a disposable
+# stack. Environment overrides are legitimate (tests, alternate hosts), but they
+# must be explicit: if an override is active and the caller is operating on a real
+# production profile, require DANA_ALLOW_OVERRIDE=1.
+dana_guard_overrides() {
+  local profile="$1"
+  local active=""
+  [ -n "${DANA_COMPOSE_FILES:-}" ] && active="$active DANA_COMPOSE_FILES"
+  [ -n "${DANA_PROJECT:-}" ] && active="$active DANA_PROJECT"
+  [ -n "${DANA_PORT_SPEC:-}" ] && active="$active DANA_PORT_SPEC"
+  [ -n "${DANA_ENV_FILE:-}" ] && active="$active DANA_ENV_FILE"
+  [ -z "$active" ] && return 0
+
+  case "$profile" in
+    gpu|prod-sim)
+      if [ "${DANA_ALLOW_OVERRIDE:-0}" != "1" ]; then
+        printf '%s[FAIL]%s override(s) active for a production profile:%s\n' \
+          "$C_RED" "$C_OFF" "$active" >&2
+        printf '  This would act on a DIFFERENT stack than production.\n' >&2
+        printf '  Unset them, or set DANA_ALLOW_OVERRIDE=1 if this is deliberate.\n' >&2
+        return 1
+      fi
+      ;;
+  esac
+  # Surface the override so it can never be invisible in a log.
+  printf '%s[warn] overrides active:%s%s\n' "$C_YELLOW" "$active" "$C_OFF" >&2
+  return 0
+}
+
 # Wait for a TCP port to accept connections, with a bounded deadline. This is a
 # readiness gate, not a sleep: it returns as soon as the port answers.
 dana_wait_port() {

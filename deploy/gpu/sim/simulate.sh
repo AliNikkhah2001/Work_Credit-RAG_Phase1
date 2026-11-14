@@ -94,15 +94,39 @@ export DANA_STATE_FILE="$SIM_STATE_DIR/last_good.json"
 export DANA_LOG_DIR="$SIM_STATE_DIR/logs"
 # Same port contract SHAPE as prod, different numbers so nothing collides.
 export DANA_PORT_SPEC="web:19300:8080:/health api:19301:8100:/health worker:19302:8200:/health"
+# The sim deliberately targets a non-production stack through the production code
+# path; DANA_ALLOW_OVERRIDE acknowledges that (see dana_guard_overrides).
+export DANA_ALLOW_OVERRIDE=1
+
+sim_teardown() {
+  # Primary: project-scoped compose down (also drops the sim's own volumes).
+  docker compose -p "$SIM_PROJECT" \
+    -f "$SIM_DIR/compose.base.yml" -f "$SIM_DIR/compose.override.yml" \
+    --env-file "$SIM_DIR/sim.env" down -v --remove-orphans >/dev/null 2>&1 || true
+  # Fallback: rollback re-creates containers from a *different* file set
+  # (frozen copy + generated pin), so compose down alone can miss them.
+  # Container IDs are always labelled with their project — sweep by label.
+  local ids
+  ids="$(docker ps -aq --filter "label=com.docker.compose.project=$SIM_PROJECT" 2>/dev/null || true)"
+  if [ -n "$ids" ]; then
+    # shellcheck disable=SC2086
+    docker rm -f $ids >/dev/null 2>&1 || true
+  fi
+  # Sim-local volumes only; never touches dana-local or dana-stage volumes.
+  local vols
+  vols="$(docker volume ls -q --filter "label=com.docker.compose.project=$SIM_PROJECT" 2>/dev/null || true)"
+  if [ -n "$vols" ]; then
+    # shellcheck disable=SC2086
+    docker volume rm $vols >/dev/null 2>&1 || true
+  fi
+}
 
 cleanup() {
   if [ "$KEEP" = "1" ]; then
     warn "leaving sim project '$SIM_PROJECT' running (--keep)"
     return
   fi
-  docker compose -p "$SIM_PROJECT" \
-    -f "$SIM_DIR/compose.base.yml" -f "$SIM_DIR/compose.override.yml" \
-    --env-file "$SIM_DIR/sim.env" down -v --remove-orphans >/dev/null 2>&1 || true
+  sim_teardown
 }
 trap cleanup EXIT
 

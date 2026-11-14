@@ -62,6 +62,7 @@ while [ $# -gt 0 ]; do
   esac
 done
 
+dana_guard_overrides "$PROFILE" || exit 2
 dana_ensure_log_dir
 RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)"
 RUN_LOG="$DANA_LOG_DIR/reconcile.log"

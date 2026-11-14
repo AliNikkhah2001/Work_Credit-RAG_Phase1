@@ -10,11 +10,17 @@
 # per-stage statuses make each claim individually visible on the commit.
 #
 # Subcommands
+#   reset                              clear evidence (call at build start!)
 #   mark <stage>                       record that <stage> executed
 #   list                               print executed stages (space separated)
 #   report <stage> <success|failure> [description]
 #                                      post a `dana/<stage>` commit status
 #   contexts                           print the status contexts this file owns
+#
+# `reset` is not optional: the pipeline reuses one workspace
+# (`.ci-workspace`) across branches and sequential builds, so a leftover
+# marker from a previous full stage run would make a later build look covered
+# when it was not.
 #
 # Reporting is opt-in: needs GITHUB_STATUS_ENABLED=1 AND GITHUB_TOKEN. Without
 # either it prints why and exits 0, so a credential-less agent still builds.
@@ -43,6 +49,12 @@ is_valid_stage() {
 require_stage() {
   [[ $# -ge 1 && -n "${1:-}" ]] || die "missing <stage>"
   is_valid_stage "$1" || die "unknown stage '$1' (valid: ${VALID_STAGES})"
+}
+
+cmd_reset() {
+  rm -rf "$EVIDENCE_DIR"
+  mkdir -p "$EVIDENCE_DIR"
+  echo "ci_stage_evidence: reset"
 }
 
 cmd_mark() {
@@ -105,10 +117,57 @@ cmd_report() {
     --repo "$REPO_DEFAULT"
 }
 
+cmd_self_test() {
+  local tmp rc=0
+  tmp="$(mktemp -d "${TMPDIR:-/tmp}/ci_evidence_test.XXXXXX")"
+
+  CI_EVIDENCE_DIR="$tmp/ev" cmd_reset >/dev/null
+  [[ -z "$(CI_EVIDENCE_DIR="$tmp/ev" cmd_list)" ]] || { echo "FAIL: reset did not clear"; rc=1; }
+
+  CI_EVIDENCE_DIR="$tmp/ev" cmd_mark build >/dev/null
+  CI_EVIDENCE_DIR="$tmp/ev" cmd_mark lint >/dev/null
+  # list must be canonically ordered regardless of mark order
+  [[ "$(CI_EVIDENCE_DIR="$tmp/ev" cmd_list)" == "lint build" ]] \
+    || { echo "FAIL: list order/content: '$(CI_EVIDENCE_DIR="$tmp/ev" cmd_list)'"; rc=1; }
+
+  # duplicate marks are idempotent
+  CI_EVIDENCE_DIR="$tmp/ev" cmd_mark build >/dev/null
+  [[ "$(CI_EVIDENCE_DIR="$tmp/ev" cmd_list)" == "lint build" ]] \
+    || { echo "FAIL: duplicate mark changed the set"; rc=1; }
+
+  # invalid stage must be rejected
+  if ( CI_EVIDENCE_DIR="$tmp/ev" cmd_mark bogus ) >/dev/null 2>&1; then
+    echo "FAIL: unknown stage accepted"; rc=1
+  fi
+  # empty stage must be rejected, not silently mark nothing
+  if ( CI_EVIDENCE_DIR="$tmp/ev" cmd_mark "" ) >/dev/null 2>&1; then
+    echo "FAIL: empty stage accepted"; rc=1
+  fi
+
+  # reporting is a no-op without the opt-in flag and must exit 0
+  GITHUB_STATUS_ENABLED=0 CI_EVIDENCE_DIR="$tmp/ev" \
+    cmd_report build success "test" >/dev/null 2>&1 \
+    || { echo "FAIL: report not disabled-safe"; rc=1; }
+
+  # contexts must be exactly the published set
+  local want got
+  want="dana/lint dana/build dana/stage-deploy dana/stage-e2e dana/prod-deploy dana/verify"
+  got="$(cmd_contexts | tr '\n' ' ' | sed 's/ $//')"
+  [[ "$got" == "$want" ]] || { echo "FAIL: contexts '$got' != '$want'"; rc=1; }
+
+  rm -rf "$tmp"
+  if [[ "$rc" == "0" ]]; then
+    echo "ci_stage_evidence self-test OK"
+  fi
+  return "$rc"
+}
+
 main() {
   local sub="${1:-}"
   [[ $# -gt 0 ]] && shift
   case "$sub" in
+    reset) cmd_reset ;;
+    self-test) cmd_self_test ;;
     mark) cmd_mark "$@" ;;
     list) cmd_list ;;
     contexts) cmd_contexts ;;
