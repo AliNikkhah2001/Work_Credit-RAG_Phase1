@@ -664,11 +664,3 @@ def ghStatus(String stage, String state, String description) {
         echo "WARN: GitHub status dana/${stage} not reported — ${e.message}"
     }
 }
-
-// Record that a verification stage really executed (read back by the gate).
-def markStage(String stage) {
-    sh """
-        set +e
-        bash scripts/ci_stage_evidence.sh mark ${stage} || true
-    """
-}
