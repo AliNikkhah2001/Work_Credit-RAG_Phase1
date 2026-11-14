@@ -149,9 +149,31 @@ probe() { # $1=port $2=path
 
 check_endpoints() {
   local deadline=$(( $(date +%s) + TIMEOUT ))
-  local spec p path pending
-  # port:path pairs — webui answers on / , the rest on /health.
-  local SPECS="8000:/health 8200:/health 8100:/health 13000:/"
+  local spec p path pending orchestrator_port=""
+  # Derive the endpoint set from the caller's port list. Hardcoding 8000/8200/
+  # 8100/13000 here meant a `--ports 13100,18100,18000,18200` gate validated the
+  # LOCAL prod stack instead of the stage stack it was asked about — a stage
+  # deploy could pass the gate while its own published ports were broken.
+  local SPECS=""
+  local first=1
+  local IFS_SAVE="$IFS"
+  IFS=','
+  for p in $EXPECTED_PORTS; do
+    p="${p//[[:space:]]/}"
+    [ -n "$p" ] || continue
+    # WebUI (and anything else serving a UI) answers on /; the API tier on /health.
+    case "$p" in
+      13000|13100|13200) SPECS="$SPECS $p:/" ;;
+      8100|18100|18200|18000) SPECS="$SPECS $p:/health"; orchestrator_port="$p" ;;
+      *) SPECS="$SPECS $p:/health" ;;
+    esac
+    first=0
+  done
+  IFS="$IFS_SAVE"
+  if [ -z "$SPECS" ]; then
+    bad "no ports to probe — expected at least one endpoint"
+    return 1
+  fi
 
   pending="$SPECS"
   while :; do
@@ -173,9 +195,12 @@ check_endpoints() {
     sleep 3
   done
 
-  # orchestrator readiness is a separate, stronger signal
-  if ! curl -sf --max-time 5 http://127.0.0.1:8100/ready >/dev/null 2>&1; then
-    warn "orchestrator /ready not green (health ok) — deploy allowed, degraded"
+  # Orchestrator readiness is a separate, stronger signal. Only probe it on the
+  # stack we were asked about — never on a hardcoded prod port.
+  if [ -n "$orchestrator_port" ]; then
+    if ! curl -sf --max-time 5 "http://127.0.0.1:${orchestrator_port}/ready" >/dev/null 2>&1; then
+      warn "orchestrator :${orchestrator_port} /ready not green (health ok) — deploy allowed, degraded"
+    fi
   fi
   note "endpoints answering:$ok_ports"
 }
