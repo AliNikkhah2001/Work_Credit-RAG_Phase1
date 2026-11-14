@@ -16,7 +16,41 @@ DANA_DEPLOY_DIR="$(cd "$DANA_GPU_DIR/.." && pwd)"                 # deploy
 DANA_ROOT="$(cd "$DANA_DEPLOY_DIR/.." && pwd)"                    # repo root
 DANA_COMPOSE_DIR="$DANA_DEPLOY_DIR/compose"
 DANA_STATE_DIR="${DANA_STATE_DIR:-$DANA_GPU_DIR/state}"
-DANA_STATE_FILE="${DANA_STATE_FILE:-$DANA_STATE_DIR/last_good.json}"
+# The state file must live inside the state dir. Deriving it from DANA_STATE_FILE
+# alone let a stale exported value point state operations at a DIFFERENT stack
+# than the directory being inspected (seen during testing: rollback wrote sim
+# state while the caller read /tmp state). If DANA_STATE_FILE is set explicitly it
+# must agree with DANA_STATE_DIR.
+#
+# A mismatch is a REFUSAL, not a warning: adopting the foreign path is exactly
+# how rollback once wrote one stack's state while the caller read another. The
+# only escape hatch is the deliberate DANA_ALLOW_OVERRIDE=1 used by the sim
+# harness, which is opt-in and noisy.
+if [ -n "${DANA_STATE_FILE:-}" ]; then
+  case "$DANA_STATE_FILE" in
+    "$DANA_STATE_DIR"/*) : ;;
+    *)
+      if [ "${DANA_ALLOW_OVERRIDE:-0}" = "1" ]; then
+        printf '%s[warn]%s DANA_STATE_FILE=%s is outside DANA_STATE_DIR=%s — override armed (DANA_ALLOW_OVERRIDE=1)\n' \
+          "${C_YELLOW:-\033[1;33m}" "${C_OFF:-\033[0m}" "$DANA_STATE_FILE" "$DANA_STATE_DIR" >&2
+      else
+        printf '%s[fatal]%s DANA_STATE_FILE=%s is outside DANA_STATE_DIR=%s\n' \
+          "${C_RED:-\033[0;31m}" "${C_OFF:-\033[0m}" "$DANA_STATE_FILE" "$DANA_STATE_DIR" >&2
+        printf '        refusing to operate: rollback/record would touch a different stack than the one inspected.\n' >&2
+        printf '        unset DANA_STATE_FILE, or set DANA_ALLOW_OVERRIDE=1 if this is deliberate.\n' >&2
+        # Callers run with `set -uo pipefail` (no -e), so `return 1` from a
+        # sourced file does not stop them. This is a fatal config error: exit
+        # the calling script rather than letting it operate on the wrong stack.
+        # Exit 64 ("refused, nothing probed"), NOT 1: callers read 1 as
+        # DEPLOY/LAYERING BUG and reconcile.sh would roll back a healthy stack
+        # on what is really a stale env var.
+        exit 64
+      fi
+      ;;
+  esac
+else
+  DANA_STATE_FILE="$DANA_STATE_DIR/last_good.json"
+fi
 DANA_LOG_DIR="${DANA_LOG_DIR:-/var/log/dana-rag}"
 DANA_STATE_PY="${DANA_STATE_PY:-$DANA_GPU_DIR/lib/state.py}"
 
