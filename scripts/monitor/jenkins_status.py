@@ -168,8 +168,10 @@ def diagnose_console(console: str, last_result: str | None) -> dict[str, Any]:
         r"script\.sh(?:\.copy)?: \d+: source: not found", console
     ):
         labels.append("agent_shell_dash_source_builtin_missing")
-    if "docker: not found" in lower:
+    if "docker: not found" in lower or "docker: command not found" in lower:
         labels.append("docker_cli_not_on_path")
+    if "ci_resolve_docker: error" in lower:
+        labels.append("docker_cli_resolve_failed")
     if "no prod controller" in lower or "dana_role=stage" in lower:
         labels.append("coverage_gate_stage_controller_on_main")
     if "csrf" in lower or "crumb" in lower:
@@ -195,11 +197,12 @@ def diagnose_console(console: str, last_result: str | None) -> dict[str, Any]:
             "Build must use `bash … --export-env` + `. envfile` (or a bash heredoc), "
             "never bare `source` under dash. See .ci-evidence/shell_probe.txt."
         )
-    elif "docker_cli_not_on_path" in labels:
+    elif "docker_cli_not_on_path" in labels or "docker_cli_resolve_failed" in labels:
         tip = (
-            "docker CLI missing from PATH in the agent context. "
-            "Expect /usr/local/bin/docker (Jenkins image) or host bind-mount; "
-            "check .ci-evidence/agent_context.txt."
+            "docker CLI missing or broken in the agent (often a host-binary bind-mount "
+            "with glibc mismatch → 'command not found'). Use image /usr/local/bin/docker "
+            "+ docker.sock only; see deploy/jenkins/docker-compose.h200.yml and "
+            "scripts/ci_resolve_docker.sh. Check .ci-evidence/agent_context.txt."
         )
     elif "coverage_gate_stage_controller_on_main" in labels:
         tip = (

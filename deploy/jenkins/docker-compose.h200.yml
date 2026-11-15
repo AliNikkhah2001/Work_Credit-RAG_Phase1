@@ -19,7 +19,11 @@ services:
     volumes:
       - jenkins_home:/var/jenkins_home
       - /var/run/docker.sock:/var/run/docker.sock
-      - /usr/bin/docker:/usr/bin/docker:ro
+      # Do NOT bind-mount the host docker binary over /usr/bin/docker.
+      # Host CLI is often dynamically linked; inside the container it shows up as
+      # `docker: command not found` (ENOENT on the interpreter). Use the static
+      # CLI baked into dana-jenkins:* at /usr/local/bin/docker (see Dockerfile).
+      # Optional: host compose plugins if the image plugin dir is empty.
       - /usr/libexec/docker/cli-plugins:/usr/libexec/docker/cli-plugins:ro
       - /splunk-data/production/Work_Credit-RAG_Phase1:/splunk-data/production/Work_Credit-RAG_Phase1:rw
       # Also expose Mac-path workspace used by older agent configs
@@ -27,6 +31,8 @@ services:
     environment:
       JAVA_OPTS: "-Djenkins.install.runSetupWizard=false"
       DOCKER_HOST: unix:///var/run/docker.sock
+      # Durable-task sh often starts with PATH=/usr/bin:/bin — put image CLI first.
+      PATH: /usr/local/bin:/usr/bin:/bin
       DANA_HOST_REPO: /splunk-data/production/Work_Credit-RAG_Phase1
       DANA_HOST: gpu
       DANA_ROLE: prod
