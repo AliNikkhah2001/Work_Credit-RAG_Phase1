@@ -49,4 +49,10 @@ System Postgres+pgvector for live KB may also use host `:5432` (`pgvector-kb-pro
 
 ## Docker bridge CIDRs
 
-See [`gateway/WAF_CIDR_CLASH.md`](gateway/WAF_CIDR_CLASH.md). Jenkins bridge: `172.30.100.0/24`.
+See [`gateway/WAF_CIDR_CLASH.md`](gateway/WAF_CIDR_CLASH.md).
+
+| Network | Subnet |
+|---------|--------|
+| `jenkins_default` | `172.30.100.0/24` |
+| `dana-stage_rag` | `172.30.101.0/24` |
+| compose `rag` (base) | `172.30.110.0/24` |

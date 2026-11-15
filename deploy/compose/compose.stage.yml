@@ -1,8 +1,19 @@
 # Stage overlay (Jenkins develop): alt host ports so it can coexist with local/prod-sim.
 # Uses Compose !override so ports REPLACE local.yml (compose merges sequences by append).
 #   docker compose -p dana-stage -f deploy/compose/compose.base.yml -f deploy/compose/compose.local.yml -f deploy/compose/compose.stage.yml --env-file deploy/compose/.env up -d
+#
+# Stage bridge is pinned to 172.30.101.0/24 (never 172.24 — WAF VIP clash).
+
+networks:
+  rag:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.101.0/24
+          gateway: 172.30.101.1
 
 services:
+
   litellm:
     ports: !override
       - "127.0.0.1:14000:4000"

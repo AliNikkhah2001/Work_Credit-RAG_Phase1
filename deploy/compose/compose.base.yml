@@ -233,6 +233,12 @@ volumes:
   trace_data:
   webui_data:
 
+# Default rag bridge pinned off WAF VIP space (172.24.65.0/24). See deploy/gateway/WAF_CIDR_CLASH.md.
 networks:
   rag:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.110.0/24
+          gateway: 172.30.110.1
+

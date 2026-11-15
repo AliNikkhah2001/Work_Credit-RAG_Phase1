@@ -46,7 +46,11 @@ On 2026-11-14 Docker also logged bind failures (`127.0.0.1:16379`, `:8200` alrea
 | Range | Use |
 |-------|-----|
 | `172.30.100.0/24` | Jenkins (`jenkins_default`) |
-| `172.30.0.0/16` pools | Future Docker Compose default bridges |
+| `172.30.101.0/24` | Stage compose (`dana-stage_rag`) |
+| `172.30.110.0/24` | Base/local compose (`rag` / `dana-prod` style) |
+| `172.30.0.0/16` pools | Future Docker Compose default bridges (`daemon.json`) |
+
+**Lesson (2026-11-15):** After Jenkins was fixed, bringing up `dana-stage` without an IPAM pin auto-claimed `172.24.0.0/16` again and immediately re-broke `ip route get 172.24.65.109`. Always pin every Compose project network on this host.
 
 ## Acceptance checks
 
