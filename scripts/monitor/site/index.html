@@ -1169,6 +1169,29 @@ function wireSeg(id, key) {
 wireSeg("window-seg", "heatWindow");
 wireSeg("uptime-seg", "uptimeWindow");
 
+function entryToRecord(entry) {
+  const fallback = {
+    id: entry.id,
+    ts: entry.ts,
+    machine: entry.machine,
+    machine_type: entry.machine_type,
+    status: entry.status,
+    qa: entry.qa,
+    origin: entry.origin,
+    mode: entry.mode,
+    services: entry.services,
+    kb: {
+      verdict: entry.kb_verdict,
+      chunks_in_db: entry.kb_chunks,
+      corpus_live: entry.kb_corpus,
+      corpus_lagging: entry.kb_lagging,
+    },
+    links: { detail: `logs/${entry.id}/dashboard.html` },
+  };
+  fallback.serviceMap = normServices(fallback);
+  return fallback;
+}
+
 async function boot() {
   const [index, metricsStatus, metricsSeries] = await Promise.all([
     getJSON("runs/index.json"),
@@ -1177,6 +1200,10 @@ async function boot() {
   ]);
   state.metricsStatus = metricsStatus;
   state.metricsSeries = metricsSeries;
+  // Paint metrics panels immediately (do not wait on per-run JSON).
+  renderMetricsStatus();
+  renderJenkins(state.records);
+
   if (!index || !Array.isArray(index.entries)) {
     $("subtitle").textContent = "runs/index.json not found — has the first report been published?";
     renderAll();
@@ -1185,8 +1212,24 @@ async function boot() {
   state.index = index;
   const entries = index.entries;
 
-  const records = [];
+  // Progressive paint from the compact index so the page is never stuck on
+  // "Single reports 0" / empty KB while 9+ full run JSON files download.
+  const byId = new Map(entries.map((e) => [e.id, entryToRecord(e)]));
+  state.records = Array.from(byId.values()).sort((a, b) => new Date(a.ts) - new Date(b.ts));
+  $("subtitle").textContent = `${entries.length} run(s) · loading details…`;
+  $("live-text").textContent = "loading run details";
+  renderAll();
+
   const queue = entries.slice();
+  let pendingPaint = null;
+  const schedulePaint = () => {
+    if (pendingPaint) return;
+    pendingPaint = requestAnimationFrame(() => {
+      pendingPaint = null;
+      state.records = Array.from(byId.values()).sort((a, b) => new Date(a.ts) - new Date(b.ts));
+      renderAll();
+    });
+  };
   const workers = Array.from({ length: Math.min(8, queue.length || 1) }, async () => {
     while (queue.length) {
       const entry = queue.shift();
@@ -1196,22 +1239,14 @@ async function boot() {
         rec.ts = rec.generated_at || entry.ts;
         rec.serviceMap = normServices(rec);
         if (entry.qa && !rec.qa) rec.qa = entry.qa;
-        records.push(rec);
-      } else {
-        const fallback = {
-          id: entry.id, ts: entry.ts, machine: entry.machine, machine_type: entry.machine_type,
-          status: entry.status, qa: entry.qa, origin: entry.origin,
-          services: entry.services,
-          kb: { verdict: entry.kb_verdict, chunks_in_db: entry.kb_chunks, corpus_live: entry.kb_corpus, corpus_lagging: entry.kb_lagging },
-        };
-        fallback.serviceMap = normServices(fallback);
-        records.push(fallback);
+        if (!rec.links) rec.links = { detail: `logs/${entry.id}/dashboard.html` };
+        byId.set(entry.id, rec);
+        schedulePaint();
       }
     }
   });
   await Promise.all(workers);
-  records.sort((a, b) => new Date(a.ts) - new Date(b.ts));
-  state.records = records;
+  state.records = Array.from(byId.values()).sort((a, b) => new Date(a.ts) - new Date(b.ts));
   renderAll();
 }
 
