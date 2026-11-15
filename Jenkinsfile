@@ -299,7 +299,7 @@ pipeline {
                     export https_proxy="${HTTPS_PROXY}"
                     export NO_PROXY="${NO_PROXY:-localhost,127.0.0.1,192.168.96.82,.local}"
                     export no_proxy="${NO_PROXY}"
-                    # Iranian pip/npm mirrors as GPU/prod fallback (PyPI ReadTimeout / npm registry).
+                    # Iranian pip/npm as FALLBACK only (pypi.org / npmjs primary). Laptop + GPU.
                     chmod +x scripts/ci_apply_iran_mirrors.sh
                     # shellcheck disable=SC1091
                     source scripts/ci_apply_iran_mirrors.sh
@@ -331,24 +331,40 @@ pipeline {
                           # Always rebuild frontend — leftover build/ from a prior SHA caused
                           # stage to ship stale Dana themes while reporting "webui Built".
                           rm -rf build .svelte-kit
-                          ONNXRUNTIME_NODE_INSTALL_CUDA=skip npm ci --force
+                          # Official npm registry first; Iranian mirrors only on failure.
+                          if declare -F npm_with_iran_fallback >/dev/null 2>&1; then
+                            ONNXRUNTIME_NODE_INSTALL_CUDA=skip npm_with_iran_fallback npm ci --force
+                          else
+                            ONNXRUNTIME_NODE_INSTALL_CUDA=skip npm ci --force
+                          fi
                           npm run build
                           find build -type f -name '*.map' -delete || true
                         )
                         case " $BUILD_SERVICES " in *" webui "*) ;; *) BUILD_SERVICES="${BUILD_SERVICES} webui" ;; esac
                       elif [ -f components/webui/package.json ] && command -v docker >/dev/null 2>&1; then
                         # Agent has no host npm (GPU Jenkins #18) — build frontend in node container.
-                        echo "Building WebUI via node:20 container (npm missing on agent; registry=${NPM_CONFIG_REGISTRY:-default})"
+                        echo "Building WebUI via node:20 container (npm missing on agent; primary registry=${NPM_CONFIG_REGISTRY:-https://registry.npmjs.org/})"
                         rm -rf components/webui/build components/webui/.svelte-kit
-                        docker run --rm \
-                          -e HTTP_PROXY -e HTTPS_PROXY -e http_proxy -e https_proxy -e NO_PROXY -e no_proxy \
-                          -e NPM_CONFIG_REGISTRY -e npm_config_registry \
-                          -e ONNXRUNTIME_NODE_INSTALL_CUDA=skip \
-                          -e NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=8192}" \
-                          -v "$PWD/components/webui:/app" -w /app \
-                          node:20-bookworm \
-                          bash -lc 'npm ci --force && npm run build && find build -type f -name "*.map" -delete || true'
-                        if [ -d components/webui/build ]; then
+                        _npm_regs="${NPM_CONFIG_REGISTRY:-https://registry.npmjs.org/} ${IRAN_NPM_REGISTRIES:-}"
+                        _webui_ok=0
+                        for _reg in $_npm_regs; do
+                          [ -n "$_reg" ] || continue
+                          echo "WebUI node build trying registry=${_reg}"
+                          rm -rf components/webui/build components/webui/.svelte-kit
+                          if docker run --rm \
+                            -e HTTP_PROXY -e HTTPS_PROXY -e http_proxy -e https_proxy -e NO_PROXY -e no_proxy \
+                            -e NPM_CONFIG_REGISTRY="$_reg" -e npm_config_registry="$_reg" \
+                            -e ONNXRUNTIME_NODE_INSTALL_CUDA=skip \
+                            -e NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=8192}" \
+                            -v "$PWD/components/webui:/app" -w /app \
+                            node:20-bookworm \
+                            bash -lc 'npm ci --force && npm run build && find build -type f -name "*.map" -delete'
+                          then
+                            if [ -d components/webui/build ]; then _webui_ok=1; break; fi
+                          fi
+                          echo "WebUI node build failed for ${_reg} — next Iranian/npm fallback"
+                        done
+                        if [ "$_webui_ok" = "1" ] && [ -d components/webui/build ]; then
                           case " $BUILD_SERVICES " in *" webui "*) ;; *) BUILD_SERVICES="${BUILD_SERVICES} webui" ;; esac
                           echo "WebUI build/ ready via node container"
                         else
@@ -406,11 +422,17 @@ pipeline {
                       }
                       ok=0
                       for attempt in 1 2 3; do
-                        echo "docker compose build attempt ${attempt}/3"
+                        echo "docker compose build attempt ${attempt}/3 (PIP_INDEX_URL=${PIP_INDEX_URL:-default})"
                         if build_once; then ok=1; break; fi
                         echo "build attempt ${attempt} failed — retrying in 20s (often PyPI ReadTimeout)"
                         sleep 20
                       done
+                      # Still failing: promote Iranian pip mirrors to index-url once, then retry.
+                      if [ "$ok" != "1" ] && declare -F promote_iran_pip_primary >/dev/null 2>&1; then
+                        promote_iran_pip_primary || true
+                        echo "docker compose build fallback attempt with Iran pip primary"
+                        if build_once; then ok=1; fi
+                      fi
                       if [ "$ok" != "1" ]; then
                         # Laptop CI: files.pythonhosted.org often stalls via Docker Desktop proxy.
                         # Reuse existing :local images so stage deploy/E2E can still run.
