@@ -16,6 +16,24 @@
 //   [ci rollback]          → restore deploy/compose/.last_good_sha (prod controller)
 //
 // CI_SERVICES from scripts/ci_message_gate.py: "kb", "kb guardrails", "all", or "none".
+//
+// Verification proof (no more false green):
+//   A stage-only controller sets CI_MAY_DEPLOY_PROD=0, so every prod stage is
+//   dropped by its `when` guard. Such a `main` build finished SUCCESS having run
+//   only Lint, while GitHub showed the commit green (dana-rag/main #20, #21 —
+//   and #23, which ran Checkout+Lint only). Each stage now leaves an evidence
+//   marker (scripts/ci_stage_evidence.sh) and the final `post` block asks
+//   scripts/ci_verify_coverage.py what that evidence actually proves, publishes
+//   it as `dana/validate`, and downgrades the build when proof is missing.
+//
+//   CI_MAIN_PROOF_POLICY=unstable|fail|allow  (default unstable)
+//     unstable — main without a prod controller is UNSTABLE (never green)
+//     fail     — same, but hard FAILURE (what the GPU prod host should use)
+//     allow    — keep SUCCESS on the Jenkins side (the `dana/validate`
+//                commit status still reports failure, so GitHub stays honest)
+//
+//   CI_REQUIRE_PROD_CONTROLLER=1 — this host is supposed to verify prod
+//     (set on the GPU daemon); turns a missing prod proof into a hard failure.
 
 pipeline {
     // Host-identical path (DANA_HOST_REPO) so docker.sock bind mounts resolve.
@@ -56,6 +74,9 @@ pipeline {
                 sh '''
                     set -e
                     chmod +x scripts/ci_submodule_sync.sh scripts/ci_message_gate.py scripts/ci_controller_role.py || true
+                    # Workspace is reused across builds/branches: clear stage
+                    # evidence so a previous run cannot vouch for this one.
+                    bash scripts/ci_stage_evidence.sh reset || rm -rf .ci-evidence
                     bash scripts/ci_submodule_sync.sh
                     git log -1 --pretty=%B > .ci_commit_msg.txt
                     git diff --name-only HEAD~1...HEAD 2>/dev/null > .ci_changed_files.txt || true
@@ -97,27 +118,44 @@ pipeline {
         }
 
         stage('Lint') {
-            when {
-                allOf {
-                    expression { return env.CI_SKIP != '1' }
-                    anyOf {
-                        expression { return env.CI_BUILD == '1' }
-                        expression { return env.CI_STAGE == '1' }
-                        expression { return env.CI_PROD == '1' }
-                        expression { return env.CI_AUTO == '1' }
-                        expression { return env.CHANGE_ID != null }
-                        expression { return env.CI_HEAVY_PATHS == '1' }
-                    }
-                }
-            }
+            // Lint is the baseline proof that a build ran *something*: it carries
+            // the gate self-tests (message gate, controller role, coverage
+            // verdict, stage evidence) and it is the only stage the coverage
+            // verifier requires on every branch. It therefore runs on EVERY
+            // build except an explicit `[ci skip]`.
+            //
+            // This used to be guarded by `CI_BUILD/STAGE/PROD/AUTO/CHANGE_ID/
+            // HEAVY_PATHS`, which is true only when a commit *asked* for
+            // something. A docs-only commit (CI_SERVICES=none, no markers)
+            // therefore ran no stage at all, and `ci_verify_coverage.py`
+            // correctly reported `unexpected-missing: lint` -> build FAILURE and
+            // a red `dana/validate` on GitHub. Failing a docs-only push teaches
+            // people to ignore red, so the guard is gone rather than the
+            // verifier being loosened: the verdict stays honest and it is now
+            // satisfiable.
+            when { expression { return env.CI_SKIP != '1' } }
             steps {
                 sh '''
                     set -e
-                    python3 -m pip install --quiet ruff || true
-                    ruff check components/orchestrator/src components/guardrails/src components/knowledgebase/kb-manager/kb_manager || true
+                    bash scripts/ci_stage_evidence.sh mark lint || true
+                    # Ruff is advisory: install may fail on hosts with an
+                    # externally-managed Python (Debian/Ubuntu system python),
+                    # which is what produced build #52's visible
+                    # `error: externally-managed-environment`. A lint tool that
+                    # is not installed must never turn a good build red.
+                    if command -v ruff >/dev/null 2>&1; then
+                      ruff check components/orchestrator/src components/guardrails/src \
+                        components/knowledgebase/kb-manager/kb_manager || true
+                    else
+                      echo "ruff not installed on agent — skipping advisory lint"
+                    fi
                     python3 scripts/build_keep_graph.py || true
+                    # These ARE gates: they decide whether this commit may
+                    # build/deploy, so a failure here is a real failure.
                     python3 scripts/ci_message_gate.py --self-test
                     python3 scripts/ci_controller_role.py --self-test
+                    python3 scripts/ci_verify_coverage.py --self-test
+                    bash scripts/ci_stage_evidence.sh self-test
                 '''
             }
         }
@@ -325,7 +363,12 @@ pipeline {
                         docker tag "$src" "$dst" || true
                       fi
                     done
+                    bash scripts/ci_stage_evidence.sh mark build || true
                 '''
+            }
+            post {
+                success { ghStatus('build', 'success', 'app images built') }
+                failure { ghStatus('build', 'failure', 'image build failed') }
             }
         }
 
@@ -398,7 +441,12 @@ pipeline {
                         || curl -sf --max-time 5 http://127.0.0.1:$p/health/liveliness \
                         || echo "port $p warming"
                     done
+                    bash scripts/ci_stage_evidence.sh mark stage-deploy || true
                 '''
+            }
+            post {
+                success { ghStatus('stage-deploy', 'success', 'stage deploy + health probe done') }
+                failure { ghStatus('stage-deploy', 'failure', 'stage deploy or health probe failed') }
             }
         }
 
@@ -422,7 +470,12 @@ pipeline {
                     curl -sf --max-time 90 http://127.0.0.1:18100/v1/chat/completions \
                       -H 'Content-Type: application/json' \
                       -d '{"model":"chat-primary","messages":[{"role":"user","content":"سلام"}]}' | head -c 500; echo
+                    bash scripts/ci_stage_evidence.sh mark stage-e2e || true
                 '''
+            }
+            post {
+                success { ghStatus('stage-e2e', 'success', 'stage E2E chat probe passed') }
+                failure { ghStatus('stage-e2e', 'failure', 'stage E2E chat probe failed') }
             }
         }
 
@@ -505,17 +558,126 @@ pipeline {
                     fi
                     # Record this commit as last-known-good after health probes
                     bash scripts/ci_record_last_good.sh "${GIT_COMMIT}"
+                    bash scripts/ci_stage_evidence.sh mark prod-deploy || true
                 '''
+            }
+            post {
+                success { ghStatus('prod-deploy', 'success', 'prod deploy + health probe done') }
+                failure { ghStatus('prod-deploy', 'failure', 'prod deploy or health probe failed') }
             }
         }
     }
 
     post {
         always {
-            sh 'docker image prune -f || true; rm -f .ci_commit_msg.txt .ci_changed_files.txt .ci_gate.env .ci_role.env || true'
+            sh '''
+                docker image prune -f || true
+                # True-green guard: a build that only ran Lint is not a verified
+                # build. dana-rag/main #20/#21 (and #23) went SUCCESS on the
+                # stage-only laptop controller with every build/deploy/prod stage
+                # dropped by its `when` guard, which put a green GitHub check on
+                # a commit nothing had ever exercised. Compute an explicit
+                # verdict from the stages that actually ran.
+                : > .ci_coverage.guard
+                if [ -f scripts/ci_verify_coverage.py ]; then
+                  RAN="$(bash scripts/ci_stage_evidence.sh list 2>/dev/null || true)"
+                  chmod +x scripts/ci_verify_coverage.py 2>/dev/null || true
+                  python3 scripts/ci_verify_coverage.py \
+                    --branch "${BRANCH_NAME:-}" \
+                    --executed "$RAN" \
+                    --require-prod-controller "${CI_REQUIRE_PROD_CONTROLLER:-0}" \
+                    --write-env .ci_coverage.env 2>/dev/null || true
+                  cat .ci_coverage.env 2>/dev/null || true
+                  sed -n 's/^COVERAGE_GUARD=//p' .ci_coverage.env 2>/dev/null > .ci_coverage.guard || true
+                  sed -n 's/^COVERAGE_STATE=//p' .ci_coverage.env 2>/dev/null > .ci_coverage.state || true
+                  sed -n 's/^COVERAGE_DESCRIPTION=//p' .ci_coverage.env 2>/dev/null > .ci_coverage.desc || true
+                fi
+                rm -f .ci_commit_msg.txt .ci_changed_files.txt .ci_gate.env .ci_role.env || true
+                rm -rf .ci-evidence || true
+            '''
+            script {
+                def guard = ''
+                if (fileExists('.ci_coverage.guard')) {
+                    guard = readFile('.ci_coverage.guard').trim()
+                }
+                // Publish the verdict BEFORE downgrading the run: the plugin's
+                // own status only knows our final result, not what it covered.
+                def state = fileExists('.ci_coverage.state') ? readFile('.ci_coverage.state').trim() : 'success'
+                def desc = fileExists('.ci_coverage.desc') ? readFile('.ci_coverage.desc').trim() : 'Jenkins verified'
+                if (state == '') { state = 'success' }
+                if (desc == '') { desc = 'Jenkins verified' }
+                // A build that already failed cannot vouch for coverage, even if
+                // the stages that did run happened to satisfy the expectation.
+                def already = currentBuild.result ?: 'SUCCESS'
+                if (already != 'SUCCESS') {
+                    state = 'failure'
+                    desc = "build ${already}" + (desc ? ": ${desc}" : '')
+                }
+                ghStatus('validate', state, desc)
+
+                if (guard == 'fail') {
+                    currentBuild.result = 'FAILURE'
+                    echo 'COVERAGE GUARD: FAIL — this build did not verify what it claims'
+                } else if (guard == 'unstable') {
+                    // Never improve an existing result: a build that already
+                    // failed elsewhere must not be softened to UNSTABLE by the
+                    // coverage guard.
+                    def current = currentBuild.result ?: 'SUCCESS'
+                    def policy = (env.CI_MAIN_PROOF_POLICY ?: 'unstable').trim().toLowerCase()
+                    if (current == 'FAILURE' || current == 'ABORTED' || current == 'UNSTABLE') {
+                        echo "COVERAGE GUARD: not covered (build already ${current})"
+                    } else if (policy == 'allow') {
+                        // Explicit opt-out for a host that is allowed to run
+                        // unverified main builds (never the prod daemon). The
+                        // dana/validate status above still says "not verified",
+                        // so GitHub does not silently show green.
+                        echo 'COVERAGE GUARD: not covered, allowed by CI_MAIN_PROOF_POLICY=allow'
+                    } else if (policy == 'fail') {
+                        currentBuild.result = 'FAILURE'
+                        echo 'COVERAGE GUARD: FAIL — no prod controller verified main'
+                    } else {
+                        // Truthful, not destructive: the laptop stage controller
+                        // cannot verify prod, so it must not paint main green.
+                        currentBuild.result = 'UNSTABLE'
+                        echo 'COVERAGE GUARD: UNSTABLE — build ran but did not cover this branch'
+                    }
+                }
+            }
         }
         failure {
             echo 'Pipeline failed — inspect Jenkins console + docker compose logs'
         }
+    }
+}
+
+// Post one named commit status. Observability only: never fails the build.
+// Opt-in via GITHUB_STATUS_ENABLED=1 so a credential-less agent still builds;
+// when off, the plugin's own `continuous-integration/jenkins/branch` status is
+// still posted, so the build is never silently unreported.
+// Credential `github-pat` (username + PAT, `repo:status`); no secret in-repo.
+def ghStatus(String stage, String state, String description) {
+    if ((env.GITHUB_STATUS_ENABLED ?: '0') != '1') {
+        echo "GitHub status dana/${stage} skipped (GITHUB_STATUS_ENABLED!=1)"
+        return
+    }
+    try {
+        withCredentials([usernamePassword(
+                credentialsId: env.GITHUB_STATUS_CREDENTIALS_ID ?: 'github-pat',
+                usernameVariable: 'GITHUB_USER',
+                passwordVariable: 'GITHUB_TOKEN')]) {
+            withEnv(['GITHUB_STATUS_ENABLED=1']) {
+                sh """
+                    set +e
+                    bash scripts/ci_github_status.sh \\
+                      --sha "\${GIT_COMMIT}" \\
+                      --state "${state}" \\
+                      --context "dana/${stage}" \\
+                      --description "${description}" \\
+                      --target-url "\${BUILD_URL}" || true
+                """
+            }
+        }
+    } catch (Exception e) {
+        echo "WARN: GitHub status dana/${stage} not reported — ${e.message}"
     }
 }
