@@ -1,0 +1,236 @@
+% Open WebUI frontend guide for ICS / Dana
+% Build: cd docs && xelatex openwebui-frontend-guide.tex
+
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[margin=2.2cm]{geometry}
+\usepackage{fontspec}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{hyperref}
+\usepackage{titlesec}
+\usepackage{parskip}
+\usepackage{underscore}
+\usepackage{tabularx}
+
+\setmainfont{Vazirmatn}
+\setmonofont{Arial Unicode MS}[
+  Scale=0.85,
+  BoldFont={Arial Unicode MS}
+]
+
+\definecolor{codebg}{HTML}{F5F5F5}
+\definecolor{codeframe}{HTML}{DDDDDD}
+\definecolor{hi}{HTML}{E8F5E9}
+\definecolor{linkc}{HTML}{1A1A1A}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=linkc,
+  urlcolor=linkc,
+  pdftitle={Open WebUI Frontend Guide --- Dana / ICS},
+  pdfauthor={ICS / Dana}
+}
+
+\titleformat{\section}{\large\bfseries}{\thesection}{0.75em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{0.75em}{}
+\titlespacing*{\section}{0pt}{1.35em}{0.45em}
+\titlespacing*{\subsection}{0pt}{0.9em}{0.3em}
+
+\lstset{
+  basicstyle=\ttfamily\footnotesize,
+  backgroundcolor=\color{codebg},
+  frame=single,
+  rulecolor=\color{codeframe},
+  framesep=5pt,
+  breaklines=true,
+  columns=fullflexible,
+  keepspaces=true,
+  showstringspaces=false,
+  aboveskip=0.5em,
+  belowskip=0.5em
+}
+
+\setlist[itemize]{leftmargin=1.2em, itemsep=0.12em, topsep=0.25em}
+\newcommand{\pathbox}[1]{\texttt{\detokenize{#1}}}
+
+\begin{document}
+
+\begin{center}
+  {\LARGE\bfseries Open WebUI Frontend Guide}\\[0.35em]
+  {\large Dana / ICS --- chat UI customization}\\[0.5em]
+  {\small Shared WebUI fork \textperiodcentered\ 2026}
+\end{center}
+
+\vspace{0.5em}\hrule\vspace{0.9em}
+
+\section{Shared repo}
+
+Frontend work happens in the Open WebUI fork:
+
+\begin{itemize}
+  \item GitHub: \url{https://github.com/AliNikkhah2001/Work_RAG-WebUI}
+  \item In the umbrella repo it lives at \pathbox{components/webui}
+\end{itemize}
+
+Fork or clone that repo, branch from \texttt{develop}, open a PR back to \texttt{develop}. Do not edit UI inside parent \pathbox{components/} copies without committing in the WebUI repo first.
+
+Default product caption: \textbf{دستیار اعتباری نوین ایران}\\
+Default theme: \texttt{ics-maroon} (white / light shell)
+
+\section{Where Dana UI lives (change these)}
+
+Only these paths matter for chat look-and-feel:
+
+\begin{center}
+\begin{tabularx}{\textwidth}{@{}lX@{}}
+\toprule
+\textbf{Path} & \textbf{What to edit} \\
+\midrule
+\pathbox{static/dana/} & Themes, CSS, brand assets, gallery, magic tokens \\
+\pathbox{static/dana/themes/*.json} & Colors, logos, copy, chat background per theme \\
+\pathbox{static/dana/dana.css} & Glass, empty-state, chat chrome CSS \\
+\pathbox{static/dana/design-gallery.html} & Theme picker page \\
+\pathbox{static/dana/ux-preview.html} & Widget / magic preview page \\
+\pathbox{src/lib/dana/} & Theme loader, types, Persian helpers \\
+\pathbox{src/lib/components/dana/} & Chat background, theme admin, magic widgets \\
+\pathbox{src/lib/components/chat/} & Placeholder, Navbar, MessageInput, bubbles \\
+\pathbox{src/app.html} & Splash / first paint branding \\
+\pathbox{backend/open_webui/static/dana/} & Runtime static copy (keep in sync with \pathbox{static/dana/}) \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+Ignore for UI work: \pathbox{backend/open_webui/} Python (except static), tests, upstream Open WebUI admin/docs, \pathbox{node_modules/}, \pathbox{build/}.
+
+\section{Simplified tree}
+
+\begin{lstlisting}
+Work_RAG-WebUI/
+  src/
+    app.html                          # splash + title
+    lib/dana/                         # theme.ts, types, fa.ts
+    lib/components/dana/              # DanaChatBackground, magic/*
+    lib/components/chat/              # Placeholder, Navbar, messages
+  static/dana/                        # *** primary design surface ***
+    dana.css
+    design-gallery.html               # theme variants page
+    ux-preview.html                   # widgets preview
+    themes/                           # ics-maroon, ics-dark, ...
+    brand/                            # logos, motion, fonts
+    magic-tokens.json
+  backend/open_webui/static/dana/     # served copy of static/dana
+  DANA.md                             # short Dana notes
+\end{lstlisting}
+
+\section{How we customize Open WebUI}
+
+\begin{enumerate}[leftmargin=1.4em, itemsep=0.25em]
+  \item Theme packs as JSON under \pathbox{static/dana/themes/} (colors, logo, empty copy, backgrounds).
+  \item \pathbox{src/lib/dana/theme.ts} loads a pack, sets CSS variables, \texttt{WEBUI_NAME}, RTL, \texttt{localStorage}.
+  \item \pathbox{static/dana/dana.css} styles glass bubbles / empty state when \texttt{html.dana-theme} is set.
+  \item \pathbox{DanaChatBackground.svelte} draws motion / still background from the pack.
+  \item Magic widgets parse allowlisted tokens in assistant text (\pathbox{src/lib/components/dana/magic/}).
+  \item After changing \pathbox{static/dana/}, copy into \pathbox{backend/open_webui/static/dana/} (or rebuild image).
+\end{enumerate}
+
+Default theme id: \texttt{ics-maroon}. Override with \texttt{?dana_theme=<id>} or env \texttt{DANA_THEME_ID}.
+
+\section{Theme gallery}
+
+\begin{itemize}
+  \item URL: \url{http://127.0.0.1:13000/static/dana/design-gallery.html}
+  \item File: \pathbox{static/dana/design-gallery.html}
+  \item Loads each \pathbox{themes/<id>.json}, previews still/webm, writes \texttt{dana.theme_id} in \texttt{localStorage}, opens chat via \texttt{/?dana_theme=<id>}.
+  \item Widget lab: \url{http://127.0.0.1:13000/static/dana/ux-preview.html}
+\end{itemize}
+
+\section{Connect Open WebUI $\rightarrow$ orchestrator}
+
+WebUI talks only to the orchestrator OpenAI-compatible API.
+
+\begin{center}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Service} & \textbf{Local} & \textbf{Role} \\
+\midrule
+WebUI & \texttt{:13000} & Chat UI \\
+Orchestrator & \texttt{:8100} & RAG agent API \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Compose / env (laptop):
+
+\begin{lstlisting}
+OPENAI_API_BASE_URL=http://127.0.0.1:8100/v1
+OPENAI_API_KEY=sk-local-dev
+WEBUI_NAME=دستیار اعتباری نوین ایران
+DEFAULT_INTERFACE_SETTINGS={"dana_theme_id":"ics-maroon","params":{"stream_response":true}}
+\end{lstlisting}
+
+Model id from orchestrator: \texttt{ics-helper-agent}\\
+Chat: \texttt{POST /v1/chat/completions} (SSE when \texttt{stream:true})\\
+Full request/response contract: parent doc \pathbox{docs/frontend-rag-api.pdf}
+
+\section{Testing designs}
+
+\subsection{A --- Dummy / mock agent (UI only)}
+
+Point WebUI at any OpenAI-compatible mock that streams SSE chunks shaped like:
+
+\begin{lstlisting}
+data: {"choices":[{"delta":{"content":"hello "}}]}
+
+data: {"choices":[{"delta":{},"finish_reason":"stop"}]}
+
+data: [DONE]
+\end{lstlisting}
+
+Examples: a tiny local FastAPI/Flask stub, or tools such as \texttt{prism} / mock servers. Keep \texttt{OPENAI_API_BASE_URL} aimed at the mock. Useful for theme, RTL, empty state, and glass work without RAG.
+
+\subsection{B --- Real orchestrator}
+
+\begin{lstlisting}
+# health
+curl -s http://127.0.0.1:8100/health
+
+# non-stream
+curl -s http://127.0.0.1:8100/v1/chat/completions \
+  -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer sk-local-dev' \
+  -H 'X-Request-ID: ui-test-1' \
+  -d '{"model":"ics-helper-agent","messages":[{"role":"user","content":"سلام"}],"stream":false}'
+
+# stream
+curl -N -s http://127.0.0.1:8100/v1/chat/completions \
+  -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer sk-local-dev' \
+  -H 'X-Request-ID: ui-test-2' \
+  -d '{"model":"ics-helper-agent","messages":[{"role":"user","content":"اعتبارسنجی چیست؟"}],"stream":true}'
+\end{lstlisting}
+
+Then open \url{http://127.0.0.1:13000} and \url{http://127.0.0.1:13000/static/dana/design-gallery.html}.
+
+\subsection{Local rebuild tips}
+
+\begin{itemize}
+  \item Static-only CSS/JSON/HTML: copy into the running container under \texttt{/app/backend/open_webui/static/dana/} or rebuild WebUI image.
+  \item Svelte changes: \texttt{npm run build} in the WebUI repo, then recreate the \texttt{webui} compose service.
+  \item Hard-refresh the browser (theme id is cached in \texttt{localStorage}).
+\end{itemize}
+
+\section{Speed checklist}
+
+\begin{itemize}
+  \item Edit \pathbox{static/dana/themes/ics-maroon.json} for white-theme tokens/copy first.
+  \item Tune glass/empty-state in \pathbox{static/dana/dana.css}.
+  \item Preview variants in the design gallery before full chat rebuild.
+  \item Keep magic widgets allowlisted in \pathbox{magic-tokens.json}.
+  \item Sync \pathbox{backend/open_webui/static/dana/} whenever you touch \pathbox{static/dana/}.
+  \item PR against WebUI \texttt{develop}; parent umbrella only advances the submodule pin.
+\end{itemize}
+
+\end{document}
