@@ -299,6 +299,10 @@ pipeline {
                     export https_proxy="${HTTPS_PROXY}"
                     export NO_PROXY="${NO_PROXY:-localhost,127.0.0.1,192.168.96.82,.local}"
                     export no_proxy="${NO_PROXY}"
+                    # Iranian pip/npm mirrors as GPU/prod fallback (PyPI ReadTimeout / npm registry).
+                    chmod +x scripts/ci_apply_iran_mirrors.sh
+                    # shellcheck disable=SC1091
+                    source scripts/ci_apply_iran_mirrors.sh
                     SVC="${CI_SERVICES:-all}"
                     if [ "$SVC" = "none" ]; then
                       echo "CI_SERVICES=none — skipping image build (deploy will use existing :local tags)"
@@ -332,6 +336,25 @@ pipeline {
                           find build -type f -name '*.map' -delete || true
                         )
                         case " $BUILD_SERVICES " in *" webui "*) ;; *) BUILD_SERVICES="${BUILD_SERVICES} webui" ;; esac
+                      elif [ -f components/webui/package.json ] && command -v docker >/dev/null 2>&1; then
+                        # Agent has no host npm (GPU Jenkins #18) — build frontend in node container.
+                        echo "Building WebUI via node:20 container (npm missing on agent; registry=${NPM_CONFIG_REGISTRY:-default})"
+                        rm -rf components/webui/build components/webui/.svelte-kit
+                        docker run --rm \
+                          -e HTTP_PROXY -e HTTPS_PROXY -e http_proxy -e https_proxy -e NO_PROXY -e no_proxy \
+                          -e NPM_CONFIG_REGISTRY -e npm_config_registry \
+                          -e ONNXRUNTIME_NODE_INSTALL_CUDA=skip \
+                          -e NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=8192}" \
+                          -v "$PWD/components/webui:/app" -w /app \
+                          node:20-bookworm \
+                          bash -lc 'npm ci --force && npm run build && find build -type f -name "*.map" -delete || true'
+                        if [ -d components/webui/build ]; then
+                          case " $BUILD_SERVICES " in *" webui "*) ;; *) BUILD_SERVICES="${BUILD_SERVICES} webui" ;; esac
+                          echo "WebUI build/ ready via node container"
+                        else
+                          echo "WARNING: node container WebUI build produced no build/ — skipping rag-webui"
+                          BUILD_SERVICES="$(echo "$BUILD_SERVICES" | tr ' ' '\n' | grep -v '^webui$' | tr '\n' ' ')"
+                        fi
                       elif [ -d "${HOST_REPO}/components/webui/build" ]; then
                         mkdir -p components/webui
                         rm -rf components/webui/build
