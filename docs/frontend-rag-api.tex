@@ -1,0 +1,309 @@
+% Dana RAG Agent — Frontend API
+% Minimal article template (XeLaTeX)
+% Build: xelatex docs/frontend-rag-api.tex
+
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[margin=2.2cm]{geometry}
+\usepackage{fontspec}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{hyperref}
+\usepackage{titlesec}
+\usepackage{parskip}
+\usepackage{underscore}
+
+\setmainfont{Vazirmatn}
+\setmonofont{Arial Unicode MS}[
+  Scale=0.85,
+  BoldFont={Arial Unicode MS}
+]
+
+\definecolor{codebg}{HTML}{F5F5F5}
+\definecolor{codeframe}{HTML}{DDDDDD}
+\definecolor{linkc}{HTML}{1A1A1A}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=linkc,
+  urlcolor=linkc,
+  pdfauthor={ICS / Dana},
+  pdftitle={Dana RAG Agent — Frontend API}
+}
+
+\titleformat{\section}{\large\bfseries}{\thesection}{0.75em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{0.75em}{}
+\titlespacing*{\section}{0pt}{1.4em}{0.5em}
+\titlespacing*{\subsection}{0pt}{1.0em}{0.35em}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  backgroundcolor=\color{codebg},
+  frame=single,
+  rulecolor=\color{codeframe},
+  framesep=6pt,
+  breaklines=true,
+  breakatwhitespace=false,
+  columns=fullflexible,
+  keepspaces=true,
+  showstringspaces=false,
+  aboveskip=0.6em,
+  belowskip=0.6em,
+  xleftmargin=4pt,
+  xrightmargin=4pt
+}
+
+\setlist[itemize]{leftmargin=1.2em, itemsep=0.15em, topsep=0.3em}
+
+\begin{document}
+
+\begin{center}
+  {\LARGE\bfseries Dana RAG Agent --- Frontend API}\\[0.4em]
+  {\large Orchestrator contract for a replacement UI}\\[0.6em]
+  {\small ICS / Dana \quad\textperiodcentered\quad 2026}
+\end{center}
+
+\vspace{0.6em}
+\hrule
+\vspace{1em}
+
+\noindent Base URL (orchestrator only):
+
+\begin{center}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Env} & \textbf{URL} \\
+\midrule
+Local & \texttt{http://127.0.0.1:8100} \\
+Stage & \texttt{http://127.0.0.1:18100} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent Headers on every call:
+
+\begin{lstlisting}
+Authorization: Bearer sk-local-dev
+X-Request-ID: <uuid>
+Content-Type: application/json
+\end{lstlisting}
+
+\noindent Model: \texttt{ics-helper-agent}
+
+\section{Endpoints}
+
+\begin{center}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Method} & \textbf{Path} \\
+\midrule
+\texttt{GET}  & \texttt{/health} \\
+\texttt{GET}  & \texttt{/ready} \\
+\texttt{GET}  & \texttt{/v1/models} \\
+\texttt{POST} & \texttt{/v1/chat/completions} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{\texttt{GET /health}}
+
+\noindent\textbf{Response}
+
+\begin{lstlisting}
+{ "status": "ok" }
+\end{lstlisting}
+
+\section{\texttt{GET /ready}}
+
+\noindent\textbf{Response}
+
+\begin{lstlisting}
+{
+  "status": "ready",
+  "dependencies": [
+    { "name": "kb", "status": "ready", "url": "...", "error": null }
+  ]
+}
+\end{lstlisting}
+
+\section{\texttt{GET /v1/models}}
+
+\noindent\textbf{Response}
+
+\begin{lstlisting}
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "ics-helper-agent",
+      "object": "model",
+      "created": 0,
+      "owned_by": "ics",
+      "name": "دانا"
+    }
+  ]
+}
+\end{lstlisting}
+
+\section{\texttt{POST /v1/chat/completions}}
+
+\subsection{Request}
+
+\begin{lstlisting}
+{
+  "model": "ics-helper-agent",
+  "messages": [
+    { "role": "user", "content": "رتبه اعتباری چیست؟" }
+  ],
+  "stream": true,
+  "temperature": 0.0,
+  "max_tokens": 1024,
+  "session_id": null,
+  "filter_path": null
+}
+\end{lstlisting}
+
+\noindent\texttt{stream} defaults to \texttt{true}.
+
+\subsection{Response (\texttt{stream: false})}
+
+\begin{lstlisting}
+{
+  "id": "chatcmpl-...",
+  "object": "chat.completion",
+  "model": "ics-helper-agent",
+  "choices": [
+    {
+      "index": 0,
+      "message": { "role": "assistant", "content": "..." },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": null,
+  "rag": {
+    "request_id": "...",
+    "citations": [
+      {
+        "chunk_id": "...",
+        "document_id": "...",
+        "title": "...",
+        "heading": "..."
+      }
+    ],
+    "supplemental": null,
+    "follow_ups": ["..."],
+    "applied_subspace": "general",
+    "sticky_subspace": "general",
+    "available_subspaces": null
+  },
+  "audit": null
+}
+\end{lstlisting}
+
+\noindent\texttt{finish_reason}: \texttt{stop} $|$ \texttt{clarify} $|$ \texttt{content_filter} $|$ \texttt{length} $|$ \texttt{error}
+
+\subsection{Response (\texttt{stream: true}) --- SSE}
+
+\noindent Media type: \texttt{text/event-stream}
+
+\begin{lstlisting}
+data: {"id":"chatcmpl-...","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"role":"assistant"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-...","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"content":"اعتبارسنجی "},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-...","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"content":"فرآیندی "},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-...","object":"chat.completion.chunk","choices":[{"index":0,"delta":{},"finish_reason":"stop"}],"rag":{"request_id":"...","citations":[],"follow_ups":[]}}
+
+data: [DONE]
+\end{lstlisting}
+
+\begin{itemize}
+  \item Lines starting with \texttt{:} --- ignore
+  \item Append every \texttt{choices[0].delta.content}
+  \item Final chunk may include \texttt{rag}
+  \item End on \texttt{data: [DONE]}
+\end{itemize}
+
+\section{Rating --- \texttt{/rate}}
+
+\noindent Same endpoint. Last user message:
+
+\begin{lstlisting}
+/rate <1-5> [comment] [#tag ...]
+\end{lstlisting}
+
+\subsection{Request}
+
+\begin{lstlisting}
+{
+  "model": "ics-helper-agent",
+  "messages": [
+    { "role": "user", "content": "/rate 5 پاسخ خوب بود #helpful" }
+  ],
+  "stream": false
+}
+\end{lstlisting}
+
+\noindent Use the same \texttt{X-Request-ID} as the rated answer.
+
+\subsection{Response}
+
+\begin{lstlisting}
+{
+  "id": "chatcmpl-...",
+  "object": "chat.completion",
+  "model": "ics-helper-agent",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Rating saved: ***** (5/5)\n> پاسخ خوب بود  Tags: #helpful"
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "rag": { "request_id": "...", "citations": [] },
+  "audit": null
+}
+\end{lstlisting}
+
+\subsection{Related commands (same endpoint)}
+
+\begin{lstlisting}
+/report inaccurate توضیح #bug
+/truth متن پاسخ صحیح
+\end{lstlisting}
+
+\noindent Report categories: \texttt{inaccurate} $|$ \texttt{incomplete} $|$ \texttt{hallucination} $|$ \texttt{wrong_source} $|$ \texttt{off_topic} $|$ \texttt{other}
+
+\section{Test}
+
+\begin{lstlisting}
+curl -s http://127.0.0.1:8100/health
+
+curl -s http://127.0.0.1:8100/v1/models
+
+curl -s http://127.0.0.1:8100/v1/chat/completions \
+  -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer sk-local-dev' \
+  -H 'X-Request-ID: test-001' \
+  -d '{"model":"ics-helper-agent","messages":[{"role":"user","content":"سلام"}],"stream":false}'
+
+curl -N -s http://127.0.0.1:8100/v1/chat/completions \
+  -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer sk-local-dev' \
+  -H 'X-Request-ID: test-002' \
+  -d '{"model":"ics-helper-agent","messages":[{"role":"user","content":"اعتبارسنجی چیست؟"}],"stream":true}'
+
+curl -s http://127.0.0.1:8100/v1/chat/completions \
+  -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer sk-local-dev' \
+  -H 'X-Request-ID: test-001' \
+  -d '{"model":"ics-helper-agent","messages":[{"role":"user","content":"/rate 5 #ok"}],"stream":false}'
+\end{lstlisting}
+
+\end{document}
