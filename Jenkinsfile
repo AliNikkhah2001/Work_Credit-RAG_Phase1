@@ -275,6 +275,9 @@ pipeline {
                     set -e
                     export PATH="/usr/local/bin:/usr/bin:/bin:${PATH:-}"
                     mkdir -p .ci-evidence
+                    chmod +x scripts/ci_resolve_docker.sh scripts/ci_capture_build_evidence.sh
+                    # shellcheck disable=SC1091
+                    source scripts/ci_resolve_docker.sh
                     # Prefer laptop secrets from host clone (gitignored); workspace is .ci-workspace
                     HOST_REPO="${DANA_HOST_REPO:-/Users/alinikkhah/Documents/Work/CreditScoring/Chatbot_production_v1}"
                     for src in \
@@ -302,7 +305,7 @@ pipeline {
                       export KB_TORCH_CHANNEL="${KB_TORCH_CHANNEL:-cpu}"
                     fi
                     echo "KB_TORCH_CHANNEL=${KB_TORCH_CHANNEL}"
-                    echo "docker=$(command -v docker || echo MISSING) PATH=$PATH"
+                    echo "docker=$(command -v docker || echo MISSING) DOCKER_BIN=${DOCKER_BIN:-} PATH=$PATH"
                     # BuildKit RUN (apt/pip) needs client proxy config or build-args; export for compose.
                     export HTTP_PROXY="${HTTP_PROXY:-http://192.168.203.2:3128}"
                     export HTTPS_PROXY="${HTTPS_PROXY:-http://192.168.203.2:3128}"
@@ -709,7 +712,9 @@ DANA_BUILD_IMAGES
             sh '''
                 set +e
                 export PATH="/usr/local/bin:/usr/bin:/bin:${PATH:-}"
-                chmod +x scripts/ci_capture_build_evidence.sh 2>/dev/null || true
+                chmod +x scripts/ci_capture_build_evidence.sh scripts/ci_resolve_docker.sh 2>/dev/null || true
+                # dash-safe: print exports from bash helper
+                eval "$(bash scripts/ci_resolve_docker.sh --print-exports 2>/dev/null)" 2>/dev/null || true
                 bash scripts/ci_capture_build_evidence.sh .ci-evidence || true
                 if command -v docker >/dev/null 2>&1; then
                   docker image prune -f || true
