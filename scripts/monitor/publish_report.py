@@ -509,10 +509,9 @@ def write_latest(root: Path, out_dir: Path, record: dict[str, Any], detail_rel: 
             shutil.copy2(detail, latest / "dashboard.html")
 
 
-# Directories worth publishing as evidence. Everything else (container dumps,
-# shell history, builds) stays local — those were ~90% of a 9.4 MB run and are
-# exactly what made log retention untenable in git.
-LOG_SUBDIRS = ("meta", "curl", "e2e", "kb", "logs", "restart")
+# Directories worth publishing as evidence. Full container dumps stay local
+# (too large); ``builds/`` is capped (jenkins CLI logs) for CI forensics.
+LOG_SUBDIRS = ("meta", "curl", "e2e", "kb", "logs", "restart", "builds")
 LOG_FILES = ("REPORT.md", "run.log")
 
 # Never publish these, even inside an allowed subdir. The monitoring repo is

@@ -265,10 +265,16 @@ pipeline {
             steps {
                 sh '''
                     set -e
-                    # GPU Jenkins uses dash as /bin/sh — `source`/`export -f` need bash.
+                    # Always put Docker CLI on PATH (image installs to /usr/local/bin;
+                    # some durable-task contexts only have /usr/bin:/bin).
+                    export PATH="/usr/local/bin:/usr/bin:/bin:${PATH:-}"
+                    mkdir -p .ci-evidence
+                    # GPU Jenkins uses dash as /bin/sh — bash needed for functions/flock helpers.
                     bash -euo pipefail <<'DANA_BUILD_IMAGES'
 
                     set -e
+                    export PATH="/usr/local/bin:/usr/bin:/bin:${PATH:-}"
+                    mkdir -p .ci-evidence
                     # Prefer laptop secrets from host clone (gitignored); workspace is .ci-workspace
                     HOST_REPO="${DANA_HOST_REPO:-/Users/alinikkhah/Documents/Work/CreditScoring/Chatbot_production_v1}"
                     for src in \
@@ -296,6 +302,7 @@ pipeline {
                       export KB_TORCH_CHANNEL="${KB_TORCH_CHANNEL:-cpu}"
                     fi
                     echo "KB_TORCH_CHANNEL=${KB_TORCH_CHANNEL}"
+                    echo "docker=$(command -v docker || echo MISSING) PATH=$PATH"
                     # BuildKit RUN (apt/pip) needs client proxy config or build-args; export for compose.
                     export HTTP_PROXY="${HTTP_PROXY:-http://192.168.203.2:3128}"
                     export HTTPS_PROXY="${HTTPS_PROXY:-http://192.168.203.2:3128}"
@@ -303,10 +310,14 @@ pipeline {
                     export https_proxy="${HTTPS_PROXY}"
                     export NO_PROXY="${NO_PROXY:-localhost,127.0.0.1,192.168.96.82,.local}"
                     export no_proxy="${NO_PROXY}"
-                    # Iranian pip/npm as FALLBACK only (pypi.org / npmjs primary). Laptop + GPU.
-                    chmod +x scripts/ci_apply_iran_mirrors.sh
+                    # Iranian pip/npm as FALLBACK only. Dash-safe: export-env then `.` (never `source`).
+                    chmod +x scripts/ci_apply_iran_mirrors.sh scripts/ci_capture_build_evidence.sh
+                    bash scripts/ci_apply_iran_mirrors.sh --export-env .ci_iran_mirrors.env
+                    set -a
                     # shellcheck disable=SC1091
-                    source scripts/ci_apply_iran_mirrors.sh
+                    . ./.ci_iran_mirrors.env
+                    set +a
+                    cp -f .ci_iran_mirrors.env .ci-evidence/iran_mirrors.env 2>/dev/null || true
                     SVC="${CI_SERVICES:-all}"
                     if [ "$SVC" = "none" ]; then
                       echo "CI_SERVICES=none — skipping image build (deploy will use existing :local tags)"
@@ -336,11 +347,16 @@ pipeline {
                           # stage to ship stale Dana themes while reporting "webui Built".
                           rm -rf build .svelte-kit
                           # Official npm registry first; Iranian mirrors only on failure.
-                          if declare -F npm_with_iran_fallback >/dev/null 2>&1; then
-                            ONNXRUNTIME_NODE_INSTALL_CUDA=skip npm_with_iran_fallback npm ci --force
-                          else
-                            ONNXRUNTIME_NODE_INSTALL_CUDA=skip npm ci --force
-                          fi
+                          _npm_ok=0
+                          for _reg in ${NPM_CONFIG_REGISTRY:-https://registry.npmjs.org/} ${IRAN_NPM_REGISTRIES:-}; do
+                            [ -n "$_reg" ] || continue
+                            echo "npm ci trying registry=${_reg}"
+                            if ONNXRUNTIME_NODE_INSTALL_CUDA=skip NPM_CONFIG_REGISTRY="$_reg" npm_config_registry="$_reg" npm ci --force; then
+                              _npm_ok=1
+                              break
+                            fi
+                          done
+                          [ "$_npm_ok" = "1" ] || exit 1
                           npm run build
                           find build -type f -name '*.map' -delete || true
                         )
@@ -425,17 +441,22 @@ pipeline {
                         fi
                       }
                       ok=0
+                      : > .ci-evidence/compose-build.log
                       for attempt in 1 2 3; do
-                        echo "docker compose build attempt ${attempt}/3 (PIP_INDEX_URL=${PIP_INDEX_URL:-default})"
-                        if build_once; then ok=1; break; fi
-                        echo "build attempt ${attempt} failed — retrying in 20s (often PyPI ReadTimeout)"
+                        echo "docker compose build attempt ${attempt}/3 (PIP_INDEX_URL=${PIP_INDEX_URL:-default})" | tee -a .ci-evidence/compose-build.log
+                        if build_once >> .ci-evidence/compose-build.log 2>&1; then ok=1; break; fi
+                        echo "build attempt ${attempt} failed — retrying in 20s (often PyPI ReadTimeout)" | tee -a .ci-evidence/compose-build.log
                         sleep 20
                       done
                       # Still failing: promote Iranian pip mirrors to index-url once, then retry.
-                      if [ "$ok" != "1" ] && declare -F promote_iran_pip_primary >/dev/null 2>&1; then
-                        promote_iran_pip_primary || true
-                        echo "docker compose build fallback attempt with Iran pip primary"
-                        if build_once; then ok=1; fi
+                      if [ "$ok" != "1" ]; then
+                        bash scripts/ci_apply_iran_mirrors.sh --promote-primary --export-env .ci_iran_mirrors.env || true
+                        set -a
+                        # shellcheck disable=SC1091
+                        . ./.ci_iran_mirrors.env
+                        set +a
+                        echo "docker compose build fallback attempt with Iran pip primary PIP_INDEX_URL=${PIP_INDEX_URL}" | tee -a .ci-evidence/compose-build.log
+                        if build_once >> .ci-evidence/compose-build.log 2>&1; then ok=1; fi
                       fi
                       if [ "$ok" != "1" ]; then
                         # Laptop CI: files.pythonhosted.org often stalls via Docker Desktop proxy.
@@ -445,7 +466,10 @@ pipeline {
                           ok=1
                         fi
                       fi
-                      [ "$ok" = "1" ] || exit 1
+                      if [ "$ok" != "1" ]; then
+                        bash scripts/ci_capture_build_evidence.sh .ci-evidence || true
+                        exit 1
+                      fi
                     ) 9>"$LOCK"
                     # Always publish :local → :${TAG} for the whole app matrix so path-filtered
                     # builds (SERVICES=kb) still satisfy compose image: rag-*:${TAG} on deploy.
@@ -467,7 +491,16 @@ DANA_BUILD_IMAGES
             }
             post {
                 success { ghStatus('build', 'success', 'app images built') }
-                failure { ghStatus('build', 'failure', 'image build failed') }
+                failure {
+                    sh '''
+                      set +e
+                      export PATH="/usr/local/bin:/usr/bin:/bin:${PATH:-}"
+                      chmod +x scripts/ci_capture_build_evidence.sh 2>/dev/null || true
+                      bash scripts/ci_capture_build_evidence.sh .ci-evidence || true
+                    '''
+                    archiveArtifacts artifacts: '.ci-evidence/**', allowEmptyArchive: true
+                    ghStatus('build', 'failure', 'image build failed')
+                }
             }
         }
 
@@ -674,7 +707,15 @@ DANA_BUILD_IMAGES
     post {
         always {
             sh '''
-                docker image prune -f || true
+                set +e
+                export PATH="/usr/local/bin:/usr/bin:/bin:${PATH:-}"
+                chmod +x scripts/ci_capture_build_evidence.sh 2>/dev/null || true
+                bash scripts/ci_capture_build_evidence.sh .ci-evidence || true
+                if command -v docker >/dev/null 2>&1; then
+                  docker image prune -f || true
+                else
+                  echo "WARN: docker not on PATH ($PATH) — skip image prune"
+                fi
                 # True-green guard: a build that only ran Lint is not a verified
                 # build. dana-rag/main #20/#21 (and #23) went SUCCESS on the
                 # stage-only laptop controller with every build/deploy/prod stage
@@ -696,8 +737,9 @@ DANA_BUILD_IMAGES
                   sed -n 's/^COVERAGE_DESCRIPTION=//p' .ci_coverage.env 2>/dev/null > .ci_coverage.desc || true
                 fi
                 rm -f .ci_commit_msg.txt .ci_changed_files.txt .ci_gate.env .ci_role.env || true
-                rm -rf .ci-evidence || true
+                # Keep .ci-evidence for archiveArtifacts / HC; prune only ephemeral gate files.
             '''
+            archiveArtifacts artifacts: '.ci-evidence/**', allowEmptyArchive: true
             script {
                 def guard = ''
                 if (fileExists('.ci_coverage.guard')) {
@@ -748,7 +790,7 @@ DANA_BUILD_IMAGES
             }
         }
         failure {
-            echo 'Pipeline failed — inspect Jenkins console + docker compose logs'
+            echo 'Pipeline failed — inspect Jenkins console, archived .ci-evidence/, and HC meta/jenkins/'
         }
     }
 }

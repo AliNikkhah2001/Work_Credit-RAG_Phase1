@@ -51,6 +51,8 @@ EXCERPT_RE = re.compile(
     r"rag-webui|no prod controller|DANA_ROLE|CI_MAY_DEPLOY|"
     r"CSRF|crumb|Skipping rag-webui|externally-managed|"
     r"dana/validate|COVERAGE_|structurally-skipped|unexpected-missing|"
+    r"source:\s*not found|docker:\s*not found|ci_apply_iran|iran_mirrors|"
+    r"PIP_INDEX_URL|mode=fallback-only|DANA_BUILD_IMAGES|"
     r"Build images|Deploy prod|Stage\s+\(|Finished:\s+\w+"
     r")"
 )
@@ -162,6 +164,12 @@ def diagnose_console(console: str, last_result: str | None) -> dict[str, Any]:
     """Heuristic labels so Pages can show more than last_build_FAILURE."""
     labels: list[str] = []
     lower = console.lower()
+    if "source: not found" in lower or re.search(
+        r"script\.sh(?:\.copy)?: \d+: source: not found", console
+    ):
+        labels.append("agent_shell_dash_source_builtin_missing")
+    if "docker: not found" in lower:
+        labels.append("docker_cli_not_on_path")
     if "no prod controller" in lower or "dana_role=stage" in lower:
         labels.append("coverage_gate_stage_controller_on_main")
     if "csrf" in lower or "crumb" in lower:
@@ -171,7 +179,7 @@ def diagnose_console(console: str, last_result: str | None) -> dict[str, Any]:
     if re.search(r"npm (ci|run build).*(error|failed|err!)", console, re.I):
         labels.append("npm_frontend_build_failed")
     if "docker compose build" in lower and (
-        "failed after retries" in lower or "exit code" in lower
+        "failed after retries" in lower or "exit code" in lower or "readtimeout" in lower
     ):
         labels.append("docker_compose_build_failed")
     if "externally-managed-environment" in lower:
@@ -181,7 +189,19 @@ def diagnose_console(console: str, last_result: str | None) -> dict[str, Any]:
     if not labels and last_result not in (None, "SUCCESS", "UNSTABLE"):
         labels.append("unknown_build_failure_see_console")
     tip = None
-    if "coverage_gate_stage_controller_on_main" in labels:
+    if "agent_shell_dash_source_builtin_missing" in labels:
+        tip = (
+            "Jenkins agent /bin/sh is dash — `source` is not a builtin (exit 127). "
+            "Build must use `bash … --export-env` + `. envfile` (or a bash heredoc), "
+            "never bare `source` under dash. See .ci-evidence/shell_probe.txt."
+        )
+    elif "docker_cli_not_on_path" in labels:
+        tip = (
+            "docker CLI missing from PATH in the agent context. "
+            "Expect /usr/local/bin/docker (Jenkins image) or host bind-mount; "
+            "check .ci-evidence/agent_context.txt."
+        )
+    elif "coverage_gate_stage_controller_on_main" in labels:
         tip = (
             "Laptop/stage Jenkins ran `main` and correctly refused prod proof. "
             "Image rebuilds for prod require GPU job `dana-rag-prod` on `main` "
@@ -194,7 +214,10 @@ def diagnose_console(console: str, last_result: str | None) -> dict[str, Any]:
             "Ensure the GPU agent has npm or a prebuilt webui/build."
         )
     elif "npm_frontend_build_failed" in labels or "docker_compose_build_failed" in labels:
-        tip = "Real image build failure — inspect console_excerpt.txt / consoleText.txt."
+        tip = (
+            "Real image build failure — inspect console_excerpt.txt / consoleText.txt "
+            "and archived .ci-evidence/compose-build.log."
+        )
     return {"labels": labels, "tip": tip}
 
 
@@ -308,6 +331,52 @@ def capture_build_forensics(
         json.dumps(diagnosis, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
     )
 
+    # Pull archived .ci-evidence/* when the job archived them (Build failure post).
+    evidence_dir = dest / "ci-evidence"
+    evidence_saved: list[str] = []
+    for prefix in build_paths(job, str(branch), int(number)):
+        api = f"{base}/{prefix}/api/json?tree=artifacts[relativePath,fileName]"
+        code, data = jenkins_get(api, user, password)
+        arts = data.get("artifacts") if isinstance(data, dict) else None
+        if code != 200 or not isinstance(arts, list):
+            continue
+        for art in arts:
+            if not isinstance(art, dict):
+                continue
+            rel = str(art.get("relativePath") or "")
+            if not rel.startswith(".ci-evidence/") and "/.ci-evidence/" not in rel:
+                # Jenkins may strip the leading dot dir → ci-evidence/
+                if not (rel.startswith("ci-evidence/") or rel.startswith(".ci-evidence")):
+                    continue
+            url = f"{base}/{prefix}/artifact/{rel}"
+            acode, abody = jenkins_get(url, user, password, raw=True)
+            if acode != 200 or not isinstance(abody, (bytes, bytearray)):
+                continue
+            # Normalize into dest/ci-evidence/<name>
+            name = Path(rel).name
+            evidence_dir.mkdir(parents=True, exist_ok=True)
+            target = evidence_dir / name
+            try:
+                raw = bytes(abody)
+                if len(raw) > 2_000_000:
+                    raw = raw[:2_000_000] + b"\n\n[truncated by jenkins_status]\n"
+                target.write_bytes(raw)
+                evidence_saved.append(name)
+            except OSError:
+                continue
+        if evidence_saved:
+            break
+
+    artifacts = [
+        "consoleText.txt",
+        "console_excerpt.txt",
+        "build.json",
+        "diagnosis.json",
+        *(["wfapi.json"] if wfapi is not None else []),
+        *(["stages.json"] if stages else []),
+        *(["ci-evidence/" + n for n in evidence_saved]),
+    ]
+
     return {
         "captured": bool(console),
         "build_number": number,
@@ -318,14 +387,8 @@ def capture_build_forensics(
         "excerpt_lines": len(excerpt_lines),
         "stages": len(stages),
         "diagnosis": diagnosis,
-        "artifacts": [
-            "consoleText.txt",
-            "console_excerpt.txt",
-            "build.json",
-            "diagnosis.json",
-            *(["wfapi.json"] if wfapi is not None else []),
-            *(["stages.json"] if stages else []),
-        ],
+        "ci_evidence_files": evidence_saved,
+        "artifacts": artifacts,
     }
 
 
