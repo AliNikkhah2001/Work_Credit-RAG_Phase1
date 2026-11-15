@@ -6,6 +6,15 @@ Healthy means:
   * Multibranch job exists / last build not failed red forever
   * Production image aliases exist and are not older than the latest snapshot tag
     by more than ``--stale-hours`` (default 168h = 7d) relative to each other
+
+Also captures forensic artifacts next to ``--out`` under ``jenkins/`` so the next
+HealthCheck publish can show *why* a build failed:
+
+  meta/jenkins/consoleText.txt       truncated console log
+  meta/jenkins/console_excerpt.txt   docker/npm/Build images / ERROR lines
+  meta/jenkins/wfapi.json            pipeline stage dump (when plugin present)
+  meta/jenkins/build.json            last build API record
+  meta/jenkins/diagnosis.json        heuristic classification of the failure
 """
 
 from __future__ import annotations
@@ -14,6 +23,7 @@ import argparse
 import base64
 import json
 import os
+import re
 import subprocess
 import time
 import urllib.error
@@ -30,26 +40,58 @@ PROD_ALIASES = [
     "dana-jenkins:lts",
 ]
 
+CONSOLE_MAX_BYTES = 750_000
+EXCERPT_MAX_LINES = 400
 
-def jenkins_get(url: str, user: str, password: str) -> tuple[int, Any]:
+# Lines worth keeping when operators dig into image / gate failures.
+EXCERPT_RE = re.compile(
+    r"(?i)("
+    r"error|exception|failed|failure|fatal|"
+    r"docker(?:\s+compose)?\s+build|building compose|npm\s+(?:ci|run\s+build)|"
+    r"rag-webui|no prod controller|DANA_ROLE|CI_MAY_DEPLOY|"
+    r"CSRF|crumb|Skipping rag-webui|externally-managed|"
+    r"dana/validate|COVERAGE_|structurally-skipped|unexpected-missing|"
+    r"Build images|Deploy prod|Stage\s+\(|Finished:\s+\w+"
+    r")"
+)
+
+SECRET_RE = re.compile(
+    r"(?i)(password|passwd|token|secret|api[_-]?key|authorization)\s*[:=]\s*\S+"
+)
+
+
+def jenkins_get(url: str, user: str, password: str, *, raw: bool = False) -> tuple[int, Any]:
     token = base64.b64encode(f"{user}:{password}".encode()).decode()
     req = urllib.request.Request(
         url,
         headers={
             "Authorization": f"Basic {token}",
-            "Accept": "application/json",
+            "Accept": "text/plain, application/json;q=0.9, */*;q=0.1",
         },
     )
     try:
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            raw = resp.read().decode("utf-8", errors="replace")
-            return int(resp.status), json.loads(raw) if raw else {}
+        with urllib.request.urlopen(req, timeout=45) as resp:
+            body = resp.read()
+            code = int(resp.status)
+            if raw:
+                return code, body
+            text = body.decode("utf-8", errors="replace")
+            ctype = (resp.headers.get("Content-Type") or "").lower()
+            if "json" in ctype or text.lstrip().startswith(("{", "[")):
+                try:
+                    return code, json.loads(text) if text else {}
+                except json.JSONDecodeError:
+                    return code, text
+            return code, text
     except urllib.error.HTTPError as e:
-        body = e.read().decode("utf-8", errors="replace")
+        body = e.read()
+        if raw:
+            return int(e.code), body
+        text = body.decode("utf-8", errors="replace")
         try:
-            return int(e.code), json.loads(body)
+            return int(e.code), json.loads(text)
         except Exception:
-            return int(e.code), {"error": body[:300]}
+            return int(e.code), {"error": text[:300]}
     except Exception as e:
         return 0, {"error": f"{type(e).__name__}: {e}"}
 
@@ -77,7 +119,6 @@ def image_info(ref: str) -> dict[str, Any]:
     created = parts[1] if len(parts) > 1 else ""
     age_h = None
     try:
-        # 2026-11-15T12:43:50.123456789Z
         ts = created.replace("Z", "+00:00")
         if "." in ts:
             head, rest = ts.split(".", 1)
@@ -85,9 +126,6 @@ def image_info(ref: str) -> dict[str, Any]:
             tz = ""
             if "+" in rest:
                 tz = "+" + rest.split("+", 1)[1]
-            elif rest.count("-") and not rest.startswith("-"):
-                # rare
-                tz = ""
             else:
                 for i, ch in enumerate(rest):
                     if ch in "+-":
@@ -116,6 +154,181 @@ def snapshot_stamps(root: Path) -> list[str]:
     return sorted(p.name for p in root.iterdir() if p.is_dir())
 
 
+def redact(text: str) -> str:
+    return SECRET_RE.sub(r"\1=***", text)
+
+
+def diagnose_console(console: str, last_result: str | None) -> dict[str, Any]:
+    """Heuristic labels so Pages can show more than last_build_FAILURE."""
+    labels: list[str] = []
+    lower = console.lower()
+    if "no prod controller" in lower or "dana_role=stage" in lower:
+        labels.append("coverage_gate_stage_controller_on_main")
+    if "csrf" in lower or "crumb" in lower:
+        labels.append("jenkins_csrf_rejected")
+    if "skipping rag-webui" in lower:
+        labels.append("webui_image_skipped_no_npm_build")
+    if re.search(r"npm (ci|run build).*(error|failed|err!)", console, re.I):
+        labels.append("npm_frontend_build_failed")
+    if "docker compose build" in lower and (
+        "failed after retries" in lower or "exit code" in lower
+    ):
+        labels.append("docker_compose_build_failed")
+    if "externally-managed-environment" in lower:
+        labels.append("python_externally_managed_env")
+    if "finished: failure" in lower or last_result == "FAILURE":
+        labels.append("jenkins_result_failure")
+    if not labels and last_result not in (None, "SUCCESS", "UNSTABLE"):
+        labels.append("unknown_build_failure_see_console")
+    tip = None
+    if "coverage_gate_stage_controller_on_main" in labels:
+        tip = (
+            "Laptop/stage Jenkins ran `main` and correctly refused prod proof. "
+            "Image rebuilds for prod require GPU job `dana-rag-prod` on `main` "
+            "with `[ci prod]` / `[ci auto]` (or heavy paths). "
+            "Do not treat this as a Dockerfile/npm failure."
+        )
+    elif "webui_image_skipped_no_npm_build" in labels:
+        tip = (
+            "Agent lacked npm and had no components/webui/build — WebUI image was skipped. "
+            "Ensure the GPU agent has npm or a prebuilt webui/build."
+        )
+    elif "npm_frontend_build_failed" in labels or "docker_compose_build_failed" in labels:
+        tip = "Real image build failure — inspect console_excerpt.txt / consoleText.txt."
+    return {"labels": labels, "tip": tip}
+
+
+def build_paths(job: str, branch: str | None, number: int) -> list[str]:
+    """Candidate Jenkins URL prefixes for Multibranch vs flat jobs."""
+    paths = []
+    if branch:
+        paths.append(f"job/{job}/job/{branch}/{number}")
+    paths.append(f"job/{job}/{number}")
+    return paths
+
+
+def capture_build_forensics(
+    *,
+    base: str,
+    user: str,
+    password: str,
+    job: str,
+    last: dict[str, Any],
+    dest: Path,
+) -> dict[str, Any]:
+    """Fetch console + stage dump for the last build into ``dest``."""
+    dest.mkdir(parents=True, exist_ok=True)
+    number = last.get("number")
+    branch = last.get("branch") or "main"
+    if not isinstance(number, int):
+        return {"captured": False, "error": "no_build_number"}
+
+    (dest / "build.json").write_text(
+        json.dumps(last, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
+
+    console = ""
+    console_url = None
+    for prefix in build_paths(job, str(branch), int(number)):
+        url = f"{base}/{prefix}/consoleText"
+        code, body = jenkins_get(url, user, password, raw=True)
+        if code == 200 and isinstance(body, (bytes, bytearray)) and body:
+            console = body.decode("utf-8", errors="replace")
+            console_url = url
+            break
+        # Some controllers need progressiveText
+        url2 = f"{base}/{prefix}/logText/progressiveText?start=0"
+        code2, body2 = jenkins_get(url2, user, password, raw=True)
+        if code2 == 200 and isinstance(body2, (bytes, bytearray)) and body2:
+            console = body2.decode("utf-8", errors="replace")
+            console_url = url2
+            break
+
+    console = redact(console)
+    if len(console.encode("utf-8", errors="ignore")) > CONSOLE_MAX_BYTES:
+        # Keep the tail — failures usually print at the end.
+        encoded = console.encode("utf-8", errors="ignore")
+        console = (
+            "[truncated head — keeping last "
+            f"{CONSOLE_MAX_BYTES} bytes]\n\n"
+            + encoded[-CONSOLE_MAX_BYTES:].decode("utf-8", errors="replace")
+        )
+    (dest / "consoleText.txt").write_text(console or "(empty console)\n", encoding="utf-8")
+
+    excerpt_lines = [ln for ln in console.splitlines() if EXCERPT_RE.search(ln)]
+    if len(excerpt_lines) > EXCERPT_MAX_LINES:
+        excerpt_lines = excerpt_lines[-EXCERPT_MAX_LINES:]
+    (dest / "console_excerpt.txt").write_text(
+        ("\n".join(excerpt_lines) + "\n") if excerpt_lines else "(no matching build/error lines)\n",
+        encoding="utf-8",
+    )
+
+    wfapi: Any = None
+    wfapi_url = None
+    for prefix in build_paths(job, str(branch), int(number)):
+        for suffix in ("wfapi/describe", "pipeline-overview/tree", "api/json?tree=actions[*]"):
+            url = f"{base}/{prefix}/{suffix}"
+            code, data = jenkins_get(url, user, password)
+            if code == 200 and data:
+                wfapi = data
+                wfapi_url = url
+                break
+        if wfapi is not None:
+            break
+    if wfapi is not None:
+        (dest / "wfapi.json").write_text(
+            json.dumps(wfapi, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+        )
+
+    # Stage list (best-effort flatten)
+    stages: list[dict[str, Any]] = []
+    if isinstance(wfapi, dict):
+        for key in ("stages", "nodes", "childNodes"):
+            val = wfapi.get(key)
+            if isinstance(val, list):
+                for node in val:
+                    if not isinstance(node, dict):
+                        continue
+                    stages.append(
+                        {
+                            "name": node.get("name") or node.get("displayName"),
+                            "status": node.get("status") or node.get("result"),
+                            "durationMillis": node.get("durationMillis") or node.get("durationInMillis"),
+                            "id": node.get("id"),
+                        }
+                    )
+                break
+    if stages:
+        (dest / "stages.json").write_text(
+            json.dumps(stages, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+        )
+
+    diagnosis = diagnose_console(console, last.get("result") if isinstance(last, dict) else None)
+    (dest / "diagnosis.json").write_text(
+        json.dumps(diagnosis, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
+
+    return {
+        "captured": bool(console),
+        "build_number": number,
+        "branch": branch,
+        "console_url": console_url,
+        "wfapi_url": wfapi_url,
+        "console_bytes": len(console.encode("utf-8", errors="ignore")),
+        "excerpt_lines": len(excerpt_lines),
+        "stages": len(stages),
+        "diagnosis": diagnosis,
+        "artifacts": [
+            "consoleText.txt",
+            "console_excerpt.txt",
+            "build.json",
+            "diagnosis.json",
+            *(["wfapi.json"] if wfapi is not None else []),
+            *(["stages.json"] if stages else []),
+        ],
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--out", type=Path, required=True)
@@ -133,6 +346,17 @@ def main(argv: list[str] | None = None) -> int:
         type=Path,
         default=Path("/splunk-data/production/snapshots"),
     )
+    ap.add_argument(
+        "--capture-console",
+        action="store_true",
+        default=True,
+        help="Always capture console/stage dump for the last completed build (default on).",
+    )
+    ap.add_argument(
+        "--no-capture-console",
+        action="store_false",
+        dest="capture_console",
+    )
     args = ap.parse_args(argv)
 
     password = ""
@@ -143,13 +367,14 @@ def main(argv: list[str] | None = None) -> int:
     who_code, who = jenkins_get(f"{base}/whoAmI/api/json", args.user, password)
     # Multibranch: prefer .../job/<name>/job/main ; fall back to folder API.
     job_code, job = jenkins_get(
-        f"{base}/job/{args.job}/job/main/api/json?tree=name,url,lastBuild[number,result,timestamp,url],lastCompletedBuild[number,result,timestamp]",
+        f"{base}/job/{args.job}/job/main/api/json?tree=name,url,lastBuild[number,result,timestamp,url,duration],lastCompletedBuild[number,result,timestamp,url,duration],lastFailedBuild[number,result,timestamp,url]",
         args.user,
         password,
     )
+    branch_hint = "main" if job_code == 200 else None
     if job_code != 200:
         job_code, job = jenkins_get(
-            f"{base}/job/{args.job}/api/json?tree=name,url,lastBuild[number,result,timestamp,url],lastCompletedBuild[number,result,timestamp],jobs[name,lastBuild[number,result,timestamp]]",
+            f"{base}/job/{args.job}/api/json?tree=name,url,lastBuild[number,result,timestamp,url,duration],lastCompletedBuild[number,result,timestamp,url,duration],jobs[name,lastBuild[number,result,timestamp,url,duration],lastCompletedBuild[number,result,timestamp,url]]",
             args.user,
             password,
         )
@@ -167,13 +392,17 @@ def main(argv: list[str] | None = None) -> int:
     last = None
     if isinstance(job, dict):
         last = job.get("lastCompletedBuild") or job.get("lastBuild")
-        # Multibranch: look at jobs[].lastBuild
+        if isinstance(last, dict) and branch_hint and "branch" not in last:
+            last = {**last, "branch": branch_hint}
         if not last and isinstance(job.get("jobs"), list):
             for sub in job["jobs"]:
-                lb = sub.get("lastBuild") if isinstance(sub, dict) else None
+                lb = None
+                if isinstance(sub, dict):
+                    lb = sub.get("lastCompletedBuild") or sub.get("lastBuild")
                 if isinstance(lb, dict):
-                    if last is None or (lb.get("timestamp") or 0) > (last.get("timestamp") or 0):
-                        last = {**lb, "branch": sub.get("name")}
+                    cand = {**lb, "branch": sub.get("name")}
+                    if last is None or (cand.get("timestamp") or 0) > (last.get("timestamp") or 0):
+                        last = cand
 
     last_result = (last or {}).get("result") if isinstance(last, dict) else None
     jenkins_up = who_code == 200 and bool((who or {}).get("authenticated"))
@@ -196,8 +425,26 @@ def main(argv: list[str] | None = None) -> int:
     if last_result not in (None, "SUCCESS", "UNSTABLE"):
         reasons.append(f"last_build_{last_result}")
 
+    forensics: dict[str, Any] | None = None
+    if args.capture_console and isinstance(last, dict) and jenkins_up:
+        forensics_dir = args.out.parent / "jenkins"
+        try:
+            forensics = capture_build_forensics(
+                base=base,
+                user=args.user,
+                password=password,
+                job=args.job,
+                last=last,
+                dest=forensics_dir,
+            )
+            for label in (forensics.get("diagnosis") or {}).get("labels") or []:
+                if label not in reasons:
+                    reasons.append(label)
+        except Exception as e:
+            forensics = {"captured": False, "error": f"{type(e).__name__}: {e}"}
+
     payload = {
-        "schema_version": "jenkins-status/v1",
+        "schema_version": "jenkins-status/v2",
         "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "healthy": healthy,
         "images_ok": images_ok,
@@ -212,6 +459,7 @@ def main(argv: list[str] | None = None) -> int:
             "job_http": job_code,
             "last_build": last,
         },
+        "forensics": forensics,
         "images": images,
         "missing_images": missing,
         "stale_images": stale,
@@ -229,7 +477,11 @@ def main(argv: list[str] | None = None) -> int:
         )
     except OSError:
         pass
-    print(f"[jenkins] status={payload['status']} healthy={healthy} reasons={reasons or ['ok']}")
+    diag = ((forensics or {}).get("diagnosis") or {}).get("labels") or []
+    print(
+        f"[jenkins] status={payload['status']} healthy={healthy} "
+        f"reasons={reasons or ['ok']} forensics={diag or ['none']}"
+    )
     return 0 if healthy else 1
 
 

@@ -20,6 +20,8 @@ publishes do not fill GitHub storage or trip soft rate limits.
 | **Screenshots** | Jenkins **login → dashboard**, KB manager `/docs`, WebUI main `:13000` + alt `:8088` (+ stage `:13100`), manager `:9000`, orch/guard docs — **10s settle** between shots |
 | **Host inventory** | Open ports, disk, RAM, NVIDIA GPU → `meta/host_inventory.json` + diagrams |
 | **Jenkins status** | Auth + Multibranch job + image freshness (missing/stale) → `meta/jenkins_status.json` on Pages |
+| **Jenkins forensics** | Last build `consoleText` (tail-truncated), error/`docker`/`npm` excerpt, `wfapi`/stage dump, heuristic `diagnosis.json` → `meta/jenkins/*` (published under `logs/<run>/meta/jenkins/`) |
+| **QA samples on dashboard** | Per-run HTML reads `e2e/random_qa.json` (question + answer_preview); no longer looks for missing `random_qa_N.json` files |
 | **WebUI submodule watch** | Same hourly timer: compares `components/webui` gitlink vs `Work_RAG-WebUI` `main` tip; nudges Jenkins scan (does **not** auto-push umbrella) |
 | **KB version** | Pack pins normalized (`schemas/v1.0.1.yaml` ≡ `1.0.1`) so false “discrepancy / unknown latest” is gone when corpus matches |
 
@@ -33,6 +35,27 @@ publishes do not fill GitHub storage or trip soft rate limits.
 - **No CI here.** Pages builds straight from the `main` branch root, so report
   pushes never reach Jenkins (which is a multibranch job on a different repo).
   There is no workflow file and no webhook in the HealthCheck repo by design.
+
+### How the frontend (`rag-webui`) image actually builds
+
+A red `dana/validate` / `last_build_FAILURE` on GitHub is often **not** an npm/Docker failure.
+Laptop Jenkins (`DANA_ROLE=stage`, job `dana-rag`) correctly refuses to call `main` verified
+(`main NOT verified: no prod controller`). That status does **not** rebuild prod images.
+
+| Requirement | Detail |
+|---|---|
+| Controller | GPU `dana-jenkins-prod` with `DANA_ROLE=prod` → Multibranch job **`dana-rag-prod`** |
+| Branch | **`main` only** on the prod controller |
+| Commit trigger | Message must include **`[ci prod]`** or **`[ci auto]`** (or heavy path changes / `[ci build]`) |
+| Preferred path | PR `develop` → `main` with title/body containing `[ci prod]`, or `bash scripts/promote_stage_to_main.sh --execute --push` |
+| WebUI pin | Bump `components/webui` gitlink on the umbrella **before** the `[ci prod]` commit — watcher alone does not advance the pin |
+| After push | Wait for hourly `pollSCM` or **Scan Multibranch Now** on `dana-rag-prod` |
+
+On a real prod build, Jenkins runs `npm ci` + `npm run build` in `components/webui`, then
+`docker compose … build … webui`, and retags `rag-webui:local` → `:production` / `:dana` on deploy.
+If the agent has no npm and no `components/webui/build`, the log says
+`Skipping rag-webui image build` — that is a real skip, visible in `meta/jenkins/console_excerpt.txt`
+after the next health publish.
 
 ### How to test Jenkins sees submodule commits (no manual rebuild from this host)
 
