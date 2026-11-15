@@ -879,6 +879,22 @@ git commit -m "chore: advance orchestrator submodule"
 
 Always run health + `python components/evaluation/scripts/run_multiturn.py --only conv_cheque_02` before advancing a production pin.
 
+### Sticky multiturn stress QA (`dev/stress`)
+
+Development-only sticky streaming packs (30/40/50 turns) with optional clarify
+auto-replies live under [`dev/stress/`](dev/stress/README.md). After the
+2026-11 QA bugfix loop (orchestrator abstention/buffer/ضمانت‌نامه ranking +
+guardrails سفته/سوابق domain), clarify reruns improved vs baseline:
+
+| Suite | avg score | content_filter | no_evidence | hard errors |
+|------:|----------:|---------------:|------------:|------------:|
+| 30 | 0.908 → 0.932 | 1 → 0 | 2 → 1 | 0 |
+| 40 | 0.904 → 0.955 | 1 → 0 | 4 → 0 | 0 |
+| 50 | 0.907 → 0.947 | 2 → 0 | 4 → 1 | 0 |
+
+Details and how to re-run: [dev/stress/README.md](dev/stress/README.md) ·
+[before/after compare](dev/stress/results/compare_clarify_before_after.md).
+
 ---
 
 ## License
@@ -893,6 +909,7 @@ See [LICENSE](LICENSE). Each submodule may also declare its own license and depe
 - Compose: [compose.mvp.yml](compose.mvp.yml) + [deploy/docker/docker-compose.yml](deploy/docker/docker-compose.yml)
 - Guardrails allowlist: `components/guardrails/kb/hurtlex_allowlist.json`
 - Evaluation docs: [docs/evaluation.md](docs/evaluation.md) · [docs/cross_encoder_benchmark_results.md](docs/cross_encoder_benchmark_results.md)
+- Sticky stress QA (dev): [dev/stress/README.md](dev/stress/README.md) · [before/after 30/40/50](dev/stress/results/compare_clarify_before_after.md)
 
 <!-- docs-toc:start -->
 ## Documentation Index
