@@ -1057,11 +1057,22 @@ function renderJenkins(records) {
   ).join("");
   const snaps = (j.snapshots || []).slice(-5).map((s) => `<span class="mono">${esc(s)}</span>`).join(" · ") || "—";
   const reasons = (j.reasons || []).length ? (j.reasons || []).map((r) => `<span class="badge b-degraded">${esc(r)}</span>`).join(" ") : '<span class="badge b-up">ok</span>';
+  const diag = (j.forensics && j.forensics.diagnosis) || {};
+  const tip = diag.tip ? `<div class="k">Diagnosis</div><div class="v">${esc(diag.tip)}</div>` : "";
+  const labels = (diag.labels || []).length
+    ? `<div class="k">Forensics</div><div class="v">${(diag.labels || []).map((r) => `<span class="badge b-degraded">${esc(r)}</span>`).join(" ")}</div>`
+    : "";
+  const links = (last && last.links) || {};
+  const consoleLink = links.jenkins_console
+    ? `<div class="k">Console</div><div class="v"><a href="${esc(links.jenkins_console)}">consoleText.txt</a>${links.jenkins_excerpt ? ` · <a href="${esc(links.jenkins_excerpt)}">excerpt</a>` : ""}${links.jenkins_dir ? ` · <a href="${esc(links.jenkins_dir)}">all artifacts</a>` : ""}</div>`
+    : `<div class="k">Console</div><div class="v muted">Will appear under logs/&lt;run&gt;/meta/jenkins/ after the next hourly publish</div>`;
   body.innerHTML = `
     <div class="k">Jenkins auth</div><div class="v">${(j.jenkins && j.jenkins.authenticated) ? '<span class="badge b-up">yes</span>' : '<span class="badge b-down">no</span>'}</div>
     <div class="k">Job</div><div class="v mono">${esc((j.jenkins && j.jenkins.job) || "—")}</div>
     <div class="k">Last build</div><div class="v">${esc(JSON.stringify(j.jenkins && j.jenkins.last_build || {}).slice(0, 180))}</div>
+    <div class="k">build_ok</div><div class="v">${j.build_ok ? '<span class="badge b-up">yes</span>' : '<span class="badge b-down">no</span>'}</div>
     <div class="k">Reasons</div><div class="v">${reasons}</div>
+    ${labels}${tip}${consoleLink}
     <div class="k">Snapshots</div><div class="v">${snaps}</div>
     ${imgs}`;
 }

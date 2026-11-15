@@ -185,6 +185,24 @@ def load_e2e(out_dir: Path) -> dict[str, Any]:
         total = int(right) if right.isdigit() else None
     latency = _read_json_file(out_dir / "e2e" / "latency_summary.json")
     random_qa = _read_json_file(out_dir / "e2e" / "random_qa.json")
+    samples: list[dict[str, Any]] = []
+    if isinstance(random_qa, dict):
+        for row in random_qa.get("results") or []:
+            if not isinstance(row, dict):
+                continue
+            gen = row.get("generation") if isinstance(row.get("generation"), dict) else {}
+            samples.append(
+                {
+                    "question": (row.get("question") or "")[:240],
+                    "answer_preview": (gen.get("answer_preview") or gen.get("answer") or "")[
+                        :400
+                    ],
+                    "passed": bool(row.get("passed")),
+                    "http": gen.get("http"),
+                    "wall_ms": row.get("e2e_wall_ms"),
+                    "chunks_used": gen.get("chunks_used"),
+                }
+            )
     return {
         "tests": summary,
         "passed": passed,
@@ -199,6 +217,7 @@ def load_e2e(out_dir: Path) -> dict[str, Any]:
             "pool_size": (random_qa or {}).get("pool_size"),
             "questions": (latency or {}).get("questions")
             or (random_qa or {}).get("summary", {}).get("questions"),
+            "samples": samples,
         }
         if random_qa
         else None,
@@ -337,6 +356,11 @@ def _run_links(out_dir: Path, run_id: str, *, keep_detail: bool) -> dict[str, An
     shot_dir = out_dir / "screenshots"
     if shot_dir.is_dir():
         shots = sorted(p.name for p in shot_dir.glob("*.png"))
+    jenkins_dir = out_dir / "meta" / "jenkins"
+    jenkins_artifacts: list[str] = []
+    if jenkins_dir.is_dir():
+        jenkins_artifacts = sorted(p.name for p in jenkins_dir.iterdir() if p.is_file())
+    base_logs = f"logs/{run_id}" if keep_detail else None
     return {
         # Per-run detail page lives inside the retained logs dir so its
         # screenshots/ links resolve; falls back to the newest snapshot.
@@ -344,10 +368,27 @@ def _run_links(out_dir: Path, run_id: str, *, keep_detail: bool) -> dict[str, An
             f"logs/{run_id}/dashboard.html" if keep_detail else "latest/dashboard.html"
         ),
         "record": f"runs/{run_id}.json",
-        "logs": f"logs/{run_id}/" if keep_detail else None,
+        "logs": f"{base_logs}/" if base_logs else None,
         "screenshots": shots,
         "screenshots_dir": f"logs/{run_id}/screenshots" if shots and keep_detail else (
             "latest/screenshots" if shots else None
+        ),
+        "jenkins_dir": f"{base_logs}/meta/jenkins/" if base_logs and jenkins_artifacts else None,
+        "jenkins_artifacts": jenkins_artifacts,
+        "jenkins_console": (
+            f"{base_logs}/meta/jenkins/consoleText.txt"
+            if base_logs and "consoleText.txt" in jenkins_artifacts
+            else None
+        ),
+        "jenkins_excerpt": (
+            f"{base_logs}/meta/jenkins/console_excerpt.txt"
+            if base_logs and "console_excerpt.txt" in jenkins_artifacts
+            else None
+        ),
+        "random_qa": (
+            f"{base_logs}/e2e/random_qa.json"
+            if base_logs and (out_dir / "e2e" / "random_qa.json").is_file()
+            else None
         ),
     }
 
