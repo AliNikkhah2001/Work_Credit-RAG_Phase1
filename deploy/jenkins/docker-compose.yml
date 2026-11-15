@@ -45,3 +45,15 @@ services:
 
 volumes:
   jenkins_home:
+
+# Pin the default bridge off corporate WAF VIP space (172.24.65.0/24 → chat.ics24.ir).
+# Docker auto-assigned 172.24.0.0/16 here previously and blackholed the VIP on the host.
+# Forbidden on this host: 172.24.0.0/16, 10.10.10.0/24. See deploy/gateway/WAF_CIDR_CLASH.md.
+networks:
+  default:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.100.0/24
+          gateway: 172.30.100.1
+

@@ -3,6 +3,8 @@
 Laptop Jenkins (`:8085`) and the same pipeline on the H200 GPU server.  
 **No paid webhook / Cloudflare** — Jenkins uses **hourly `pollSCM`** against GitHub.
 
+**Pinned prod Jenkins image:** `dana-jenkins:production` → `sha256:46b04ab41fa71b05f2bb6a939a9b50f4c99b5ffe6799b42c798ea0178bdb674c` (see [`../PRODUCTION.md`](../PRODUCTION.md)).
+
 Detailed operator guide. Parent overview: repo root `README.md` → section **CI/CD & Jenkins**.
 
 ---
@@ -209,12 +211,29 @@ In Jenkins → `dana-rag` → branch → **Build Now**, or **Scan Multibranch Pi
 
 ---
 
+## Docker network CIDR (required on H200)
+
+Jenkins default bridge is pinned to **`172.30.100.0/24`** in `docker-compose.yml` so it cannot overlap the corporate WAF VIP range `172.24.65.0/24` (`chat.ics24.ir`).
+
+- **Forbidden:** `172.24.0.0/16`, `10.10.10.0/24`
+- **Docs:** [`../gateway/WAF_CIDR_CLASH.md`](../gateway/WAF_CIDR_CLASH.md)
+
+After changing IPAM, recreate the project network (`compose down` → `up -d`). Verify:
+
+```bash
+docker network inspect jenkins_default --format '{{range .IPAM.Config}}{{.Subnet}}{{end}}'
+# expect 172.30.100.0/24
+ip route get 172.24.65.109
+# expect via ens35, not a docker bridge
+```
+
 ## Local gate self-test
 
 ```bash
 python3 scripts/ci_message_gate.py --self-test
 echo 'feat: x [ci stage]' | python3 scripts/ci_message_gate.py --msg-stdin
 ```
+
 
 ## Laptop build efficiency (torch / path skips)
 

@@ -781,7 +781,9 @@ if have docker; then
   fi
 fi
 
-PORTS=(18000 9000 8000 8200 8100 3000 3001 13000 8085 8010 8001 8002 8003)
+# Production hybrid ports + stage offsets (see deploy/PORT_MAP.md). 8089 is forbidden.
+PORTS=(9000 8000 8200 8100 3000 3001 13000 8085 8088 8010 8001 8002 8003 18000 18100 18200 13100)
+
 : >"$CURLDIR/matrix.tsv"
 echo -e "port\tservice\thttp_code\tbody_preview" >>"$CURLDIR/matrix.tsv"
 HEALTH_FAIL=0
@@ -1150,28 +1152,37 @@ else
   fi
   shoot() {
     local url="$1" name="$2"
+    # Snap Chromium is confined: needs a writable --user-data-dir (TUI/headless OK).
+    local udir="$SHOT/.chrome-profile-${name}"
+    mkdir -p "$udir"
     if [[ -n "$CHROME" ]]; then
       "$CHROME" --headless=new --disable-gpu --no-sandbox --hide-scrollbars \
+        --user-data-dir="$udir" \
         --window-size=1400,900 --virtual-time-budget=8000 \
         --screenshot="$SHOT/${name}.png" "$url" 2>"$SHOT/${name}.chrome.log" && [[ -f "$SHOT/${name}.png" ]] && ok "shot $name" && return 0
     fi
     if have python3; then
-      python3 - "$url" "$SHOT/${name}.png" <<'PY' 2>"$SHOT/${name}.py.log" && ok "shot $name (playwright)" && return 0
+      # Prefer the ops venv when present (system python is PEP 668 locked).
+      local py=python3
+      [[ -x /opt/dana-playwright/bin/python ]] && py=/opt/dana-playwright/bin/python
+      "$py" - "$url" "$SHOT/${name}.png" <<'PY' 2>"$SHOT/${name}.py.log" && ok "shot $name (playwright)" && return 0
 import sys
 url, out = sys.argv[1], sys.argv[2]
 try:
     from playwright.sync_api import sync_playwright
     with sync_playwright() as p:
-        b = p.chromium.launch()
+        b = p.chromium.launch(args=["--no-sandbox", "--disable-gpu"])
         page = b.new_page(viewport={"width": 1400, "height": 900})
         page.goto(url, wait_until="networkidle", timeout=60000)
         page.screenshot(path=out, full_page=True)
         b.close()
     sys.exit(0)
 except Exception as e:
+    sys.stderr.write(f"playwright screenshot failed: {type(e).__name__}: {e}\n")
     sys.exit(1)
 PY
     fi
+
     warn "no browser for $name — wrote URL stub"
     echo "$url" >"$SHOT/${name}.url.txt"
   }

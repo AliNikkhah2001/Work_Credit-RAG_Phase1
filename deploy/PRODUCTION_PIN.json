@@ -1,0 +1,206 @@
+{
+  "version": "v1.3.0",
+  "label": "production",
+  "alias_tags": [
+    "production",
+    "working",
+    "prod-2026-11-12"
+  ],
+  "pinned_at_utc": "2026-11-12T11:12:11Z",
+  "host": "H200 hybrid (host uvicorn for kb/orch/guard + docker for webui/jenkins/pg/redis/embed)",
+  "git": {
+    "parent_head_before_pin_commit": "de7fa3bc75e72cc489f58eb8d5b0375440d2cf18",
+    "submodules": {
+      "orchestrator": "0e559a0cdb24fc78fb3d2cb7e27aac14d8af1694",
+      "knowledgebase": "8b0445f21896644bc240ba37d95dc6c2d921197e",
+      "guardrails": "0b010986d263c31fc8e315a872a603ae1118a809",
+      "webui": "5fc58d2b1d0b7ff5098b125e666887671432af47",
+      "server-setup": "9e495b3ff2d40eb4df7260dd5c69535c9bcaf619",
+      "evaluation": "4cb79cfbc50eda9b43d4e432ec499152a5a8aa61",
+      "agent-state": "31be58fe5596009cb811268d056ffa10940a9507"
+    },
+    "kb_source": "eb9ad934b3979384bb03bf6deda4e912462fb41d",
+    "parent_base": "de7fa3bc75e72cc489f58eb8d5b0375440d2cf18",
+    "parent_v1_3_0": "4f1db786ad8873e283c362b611dbe57afac6a2d6",
+    "tags": [
+      "v1.3.0",
+      "production",
+      "production-2026-11-12"
+    ]
+  },
+  "images": {
+    "rag-webui": {
+      "ref": "rag-webui:production",
+      "id": "sha256:4e76b1243fabb207a25937387a43c0999cb9e00b99b0a4508092f5471c44b40e",
+      "repo_digests": [
+        "rag-webui@sha256:4e76b1243fabb207a25937387a43c0999cb9e00b99b0a4508092f5471c44b40e"
+      ],
+      "repo_tags": [
+        "rag-webui:dana",
+        "rag-webui:de7fa3b",
+        "rag-webui:local",
+        "rag-webui:prod-2026-11-12",
+        "rag-webui:production",
+        "rag-webui:sha-4e76b1243f",
+        "rag-webui:working"
+      ],
+      "created": "2026-11-12T10:43:15.579368996Z",
+      "size": 285674780
+    },
+    "dana-jenkins": {
+      "ref": "dana-jenkins:production",
+      "id": "sha256:46b04ab41fa71b05f2bb6a939a9b50f4c99b5ffe6799b42c798ea0178bdb674c",
+      "repo_digests": [
+        "dana-jenkins@sha256:46b04ab41fa71b05f2bb6a939a9b50f4c99b5ffe6799b42c798ea0178bdb674c"
+      ],
+      "repo_tags": [
+        "dana-jenkins:h200",
+        "dana-jenkins:prod-2026-11-12",
+        "dana-jenkins:production",
+        "dana-jenkins:sha-46b04ab41f",
+        "dana-jenkins:working"
+      ],
+      "created": "2026-11-11T06:59:05.9171976Z",
+      "size": 305964390
+    },
+    "rag-orchestrator": {
+      "ref": "rag-orchestrator:production",
+      "id": "sha256:a865567e3a181ca2142528aaceca9dea994891a803e6299895985f4131b98237",
+      "repo_digests": [
+        "rag-orchestrator@sha256:a865567e3a181ca2142528aaceca9dea994891a803e6299895985f4131b98237"
+      ],
+      "repo_tags": [
+        "rag-orchestrator:de7fa3b",
+        "rag-orchestrator:local",
+        "rag-orchestrator:prod-2026-11-12",
+        "rag-orchestrator:production",
+        "rag-orchestrator:sha-a865567e3a",
+        "rag-orchestrator:working"
+      ],
+      "created": "2026-11-12T10:52:12.21957369Z",
+      "size": 176848625
+    },
+    "rag-guardrails": {
+      "ref": "rag-guardrails:production",
+      "id": "sha256:0f3a49c6bfe2b72d6d4502622ba43728fe5be97981b386b9c43c8dd1b3d5af6a",
+      "repo_digests": [
+        "rag-guardrails@sha256:0f3a49c6bfe2b72d6d4502622ba43728fe5be97981b386b9c43c8dd1b3d5af6a"
+      ],
+      "repo_tags": [
+        "rag-guardrails:de7fa3b",
+        "rag-guardrails:local",
+        "rag-guardrails:prod-2026-11-12",
+        "rag-guardrails:production",
+        "rag-guardrails:sha-0f3a49c6bf",
+        "rag-guardrails:working"
+      ],
+      "created": "2026-11-12T10:51:56.249626424Z",
+      "size": 134619047
+    },
+    "rag-embed": {
+      "ref": "rag-embed:production",
+      "id": "sha256:6495b1aa7ab35e7cb019cdaff462881b1f432b01bc8d641296b919a5d6f4f4ff",
+      "repo_digests": [
+        "rag-embed@sha256:6495b1aa7ab35e7cb019cdaff462881b1f432b01bc8d641296b919a5d6f4f4ff",
+        "local-h200:5000/rag-embed@sha256:6495b1aa7ab35e7cb019cdaff462881b1f432b01bc8d641296b919a5d6f4f4ff"
+      ],
+      "repo_tags": [
+        "rag-embed:prod-2026-11-12",
+        "rag-embed:production",
+        "rag-embed:working",
+        "local-h200:5000/rag-embed:b1d48b6",
+        "local-h200:5000/rag-embed:prod-2026-11-12",
+        "local-h200:5000/rag-embed:production",
+        "local-h200:5000/rag-embed:working"
+      ],
+      "created": "2026-11-09T18:13:10.597045483Z",
+      "size": 43284962
+    },
+    "pgvector": {
+      "ref": "pgvector/pgvector:production",
+      "id": "sha256:a36250871de0833b8757561c72f2477ef1ddd1101afa4e617fb552e0de514c6b",
+      "repo_digests": [
+        "pgvector/pgvector@sha256:a36250871de0833b8757561c72f2477ef1ddd1101afa4e617fb552e0de514c6b"
+      ],
+      "repo_tags": [
+        "pgvector/pgvector:pg16",
+        "pgvector/pgvector:prod-2026-11-12",
+        "pgvector/pgvector:production",
+        "pgvector/pgvector:working"
+      ],
+      "created": "2026-07-29T18:58:36.765603418Z",
+      "size": 156147892
+    },
+    "redis": {
+      "ref": "redis:production",
+      "id": "sha256:e7723ff73d963f5cc6d9c4643ea3d989527a402a319239054e9472a7fb9219a2",
+      "repo_digests": [
+        "redis@sha256:e7723ff73d963f5cc6d9c4643ea3d989527a402a319239054e9472a7fb9219a2"
+      ],
+      "repo_tags": [
+        "redis:7-alpine",
+        "redis:prod-2026-11-12",
+        "redis:production",
+        "redis:working"
+      ],
+      "created": "2026-07-26T04:42:13.95278683Z",
+      "size": 16274952
+    }
+  },
+  "running_containers": [
+    {
+      "name": "pgvector-kb-prod",
+      "config_image": "pgvector/pgvector:pg16",
+      "image_id": "sha256:a36250871de0833b8757561c72f2477ef1ddd1101afa4e617fb552e0de514c6b",
+      "status": "Up 11 minutes",
+      "created": "2026-11-12T11:00:42.919128351Z"
+    },
+    {
+      "name": "redis-kb-prod",
+      "config_image": "redis:7-alpine",
+      "image_id": "sha256:e7723ff73d963f5cc6d9c4643ea3d989527a402a319239054e9472a7fb9219a2",
+      "status": "Up 11 minutes",
+      "created": "2026-11-12T11:00:42.470536841Z"
+    },
+    {
+      "name": "dana-webui-prod",
+      "config_image": "rag-webui:dana",
+      "image_id": "sha256:4e76b1243fabb207a25937387a43c0999cb9e00b99b0a4508092f5471c44b40e",
+      "status": "Up 21 minutes (healthy)",
+      "created": "2026-11-12T10:50:40.631494778Z"
+    },
+    {
+      "name": "dana-jenkins-prod",
+      "config_image": "dana-jenkins:h200",
+      "image_id": "sha256:46b04ab41fa71b05f2bb6a939a9b50f4c99b5ffe6799b42c798ea0178bdb674c",
+      "status": "Up 28 hours",
+      "created": "2026-11-11T06:59:17.024229507Z"
+    },
+    {
+      "name": "rag-embed-prod-8003",
+      "config_image": "local-h200:5000/rag-embed:b1d48b6",
+      "image_id": "sha256:b8a783f994857da754b5989742d3beea3b524bea146a3b645da4b84ccba9f001",
+      "status": "Up 3 hours (healthy)",
+      "created": "2026-11-02T07:41:10.580760013Z"
+    },
+    {
+      "name": "rag-embed-prod-8002",
+      "config_image": "local-h200:5000/rag-embed:b1d48b6",
+      "image_id": "sha256:b8a783f994857da754b5989742d3beea3b524bea146a3b645da4b84ccba9f001",
+      "status": "Up 3 hours (healthy)",
+      "created": "2026-11-02T07:41:10.282130925Z"
+    },
+    {
+      "name": "rag-embed-prod-8001",
+      "config_image": "local-h200:5000/rag-embed:b1d48b6",
+      "image_id": "sha256:b8a783f994857da754b5989742d3beea3b524bea146a3b645da4b84ccba9f001",
+      "status": "Up 3 hours (healthy)",
+      "created": "2026-11-02T07:41:10.029876323Z"
+    }
+  ],
+  "notes": [
+    "KB :8000, Orchestrator :8100, Guardrails :8200 currently run from host venv (not compose containers).",
+    "LLM Manager :9000 is host process.",
+    "Embed containers Config.Image=local-h200:5000/rag-embed:b1d48b6 but runtime Image ID sha256:b8a783f994857da754b5989742d3beea3b524bea146a3b645da4b84ccba9f001 is missing from the local image store (layers pruned); production tag points at surviving b1d48b6 digest sha256:6495b1aa7ab35e7cb019cdaff462881b1f432b01bc8d641296b919a5d6f4f4ff."
+  ]
+}
