@@ -10,7 +10,9 @@
 
 services:
   jenkins:
-    image: jenkins/jenkins:lts-jdk17
+    # Keep the plugin-rich pinned image (multibranch). Stock jenkins/jenkins:lts
+    # drops Multibranch jobs even when jenkins_home still has their config.xml.
+    image: dana-jenkins:production
     build: !reset null
     container_name: dana-jenkins-prod
     user: root
@@ -20,12 +22,16 @@ services:
       - /usr/bin/docker:/usr/bin/docker:ro
       - /usr/libexec/docker/cli-plugins:/usr/libexec/docker/cli-plugins:ro
       - /splunk-data/production/Work_Credit-RAG_Phase1:/splunk-data/production/Work_Credit-RAG_Phase1:rw
+      # Also expose Mac-path workspace used by older agent configs
+      - /splunk-data/production/Work_Credit-RAG_Phase1:/Users/alinikkhah/Documents/Work/CreditScoring/Chatbot_production_v1:rw
     environment:
       JAVA_OPTS: "-Djenkins.install.runSetupWizard=false"
       DOCKER_HOST: unix:///var/run/docker.sock
       DANA_HOST_REPO: /splunk-data/production/Work_Credit-RAG_Phase1
       DANA_HOST: gpu
       DANA_ROLE: prod
+      CI_REQUIRE_PROD_CONTROLLER: "1"
+      CI_MAIN_PROOF_POLICY: fail
       HTTP_PROXY: http://192.168.203.2:3128
       HTTPS_PROXY: http://192.168.203.2:3128
       NO_PROXY: localhost,127.0.0.1,192.168.96.82

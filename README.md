@@ -647,7 +647,72 @@ Self-hosted Gemma / TRT paths (`deploy/gpu/`, `deploy/docker/`, server-setup man
 
 **WAF / Docker CIDR:** never use `172.24.0.0/16` or `10.10.10.0/24` for Docker bridges — see [`deploy/gateway/WAF_CIDR_CLASH.md`](deploy/gateway/WAF_CIDR_CLASH.md). Jenkins `172.30.100.0/24`, stage `172.30.101.0/24`.
 
-**Snapshot / heal:** freeze at `/splunk-data/production/snapshots/`; restore with [`scripts/restore_from_snapshot.sh`](scripts/restore_from_snapshot.sh); hybrid heal uses `deploy/gpu/reconcile.sh --profile host` + `scripts/ci_rollback.sh`.
+**Snapshot / heal / health Pages:** dated freezes under `/splunk-data/production/snapshots/`; restore with [`scripts/restore_from_snapshot.sh`](scripts/restore_from_snapshot.sh); create with [`scripts/create_snapshot.sh`](scripts/create_snapshot.sh) (also via $\textcolor{red}{\textbf{[ci snapshot]}}$). Hybrid heal uses `deploy/gpu/reconcile.sh --profile host` + `scripts/ci_rollback.sh` or $\textcolor{red}{\textbf{[ci heal]}}$. Hourly health + metrics: [`deploy/monitor/README.md`](deploy/monitor/README.md) → [Pages dashboard](https://alinikkhah2001.github.io/Work_RAG_HealthCheck/).
+
+### Auto image build setup (how it works)
+
+```mermaid
+flowchart TB
+  subgraph remote [Component remotes e.g. Work_RAG-WebUI]
+    tip[main tip advances]
+  end
+  subgraph umbrella [Work_Credit-RAG_Phase1]
+    pin[gitlink components/webui]
+    commit["commit on main with ci prod / ci auto"]
+  end
+  subgraph gpu [H200 GPU Jenkins]
+    poll[pollSCM + Multibranch scan hourly]
+    watch[gpu-webui-watch.timer]
+    gate[ci_message_gate]
+    build[docker build rag-webui + others]
+    deploy[recreate dana-webui-prod]
+    snap[ci snapshot freeze]
+    heal[ci heal restore snapshot]
+  end
+  tip -.->|detected only| watch
+  tip -->|does NOT rebuild alone| pin
+  pin --> commit
+  commit --> poll
+  watch -->|scan folder only| poll
+  poll --> gate
+  gate -->|ci prod / ci auto| build
+  build --> deploy
+  gate -->|ci snapshot| snap
+  gate -->|ci heal / force-heal| heal
+```
+
+| Piece | What it does | What it does **not** do |
+|-------|----------------|-------------------------|
+| Jenkins Multibranch `dana-rag-prod` | Polls **umbrella** `main` hourly; builds/deploys when commit keys ask | Watch `Work_RAG-WebUI` directly |
+| `gpu-webui-watch.timer` | Compares umbrella gitlink vs WebUI remote tip; writes `/var/lib/dana-health/webui-watch.json`; nudges Multibranch **scan** | Auto-commit a gitlink bump or force-build old pin |
+| $\textcolor{red}{\textbf{[ci prod]}}$ / $\textcolor{red}{\textbf{[ci auto]}}$ | Build changed services (`CI_SERVICES`, e.g. `webui`) and deploy on GPU | Run without a parent commit that advances the pin |
+| $\textcolor{red}{\textbf{[ci snapshot]}}$ | Freeze current prod aliases → `snapshots/<stamp>/` + registry JSON | Replace running stack by itself |
+| $\textcolor{red}{\textbf{[ci heal]}}$ / $\textcolor{red}{\textbf{[ci force-heal]}}$ / $\textcolor{red}{\textbf{[ci heal:STAMP]}}$ | Restore tested snapshot images from **any laptop** commit (GPU controller applies) | Need GPU access on the committer machine |
+
+**WebUI / frontend path (correct sequence — required for submodule commits to build):**
+
+1. Push UI changes to [`Work_RAG-WebUI`](https://github.com/AliNikkhah2001/Work_RAG-WebUI) `main`.
+2. **On a clone of the umbrella** (laptop or GPU host), advance the gitlink and push with a deploy key:
+
+```bash
+cd Work_Credit-RAG_Phase1
+git checkout main && git pull --ff-only origin main
+git submodule sync components/webui
+git -C components/webui fetch origin
+git -C components/webui checkout origin/main   # or the exact tip SHA
+git add components/webui
+git commit -m "chore(webui): pin frontend $(git -C components/webui rev-parse --short HEAD) [ci prod]"
+git push origin main
+```
+
+3. Wait ≤1h for poll / `gpu-webui-watch` Multibranch **scan** (or click **Scan Multibranch Pipeline Now** on GPU Jenkins `:8085`).
+4. **Prove it took effect:**
+   - Jenkins `dana-rag-prod` → `main` build **SUCCESS** (Deploy prod ran)
+   - `docker inspect dana-webui-prod --format '{{.Image}} {{.Created}}'` changed
+   - `cat /var/lib/dana-health/webui-watch.json` → `"ahead": false`
+   - UI at `http://<host>:13000/` shows your change
+
+Without step 2, the watcher only logs `ahead: true` and **does not** rebuild.
 
 ### Commit-message triggers (bold + red)
 
@@ -660,6 +725,11 @@ These tokens are case-insensitive and may appear anywhere in the commit subject/
 | $\textcolor{red}{\textbf{[ci stage]}}$ | Build + **stage** deploy on `develop` — **no human approval** |
 | $\textcolor{red}{\textbf{[ci prod]}}$ | Build + **prod** deploy on `main` — **no human approval** |
 | $\textcolor{red}{\textbf{[ci auto]}}$ | Unattended: stage on `develop`, prod on `main` |
+| $\textcolor{red}{\textbf{[ci all]}}$ | Force full image matrix (ignore path filter) |
+| $\textcolor{red}{\textbf{[ci rollback]}}$ | Restore compose last-good SHA (prod controller) |
+| $\textcolor{red}{\textbf{[ci snapshot]}}$ | Freeze current prod images under `/splunk-data/production/snapshots/<stamp>/` |
+| $\textcolor{red}{\textbf{[ci heal]}}$ / $\textcolor{red}{\textbf{[ci force-heal]}}$ | Restore **latest** snapshot images (commit from any computer) |
+| $\textcolor{red}{\textbf{[ci heal:STAMP]}}$ | Restore a **specific** freeze, e.g. `[ci heal:20261115T124350Z]` |
 
 Without $\textcolor{red}{\textbf{[ci prod]}}$ / $\textcolor{red}{\textbf{[ci auto]}}$ on `main`, Jenkins still asks for a manual **Deploy** confirmation if a build was requested.
 
@@ -672,11 +742,32 @@ git push origin develop
 git commit -m "chore: release pins [ci prod]"
 git push origin main
 
+# Bump WebUI submodule then rebuild/deploy frontend on GPU
+cd components/webui && git fetch origin && git checkout origin/main && cd ../..
+git add components/webui
+git commit -m "chore(webui): pin latest frontend [ci prod]"
+git push origin main
+
+# Freeze tested images / force-heal from a laptop (no GPU needed on committer)
+git commit --allow-empty -m "chore: freeze LKG [ci snapshot]"
+git commit --allow-empty -m "chore: restore LKG [ci force-heal]"
+
 # Skip noise
 git commit -m "docs: fix typo [ci skip]"
 ```
 
 Gate logic (local test): `python3 scripts/ci_message_gate.py --self-test`
+
+### Hourly health + Jenkins image status (Pages)
+
+Same cadence as status pushes (`gpu-health-report.timer` + `gpu-webui-watch.timer`, every **1h`):
+
+- Random 10 KB FAQ QA + retrieval/generation latency → [HealthCheck Pages](https://alinikkhah2001.github.io/Work_RAG_HealthCheck/)
+- Screenshots (Jenkins signed-in, KB manager, WebUI main/alt, manager `:9000`, …)
+- Host ports / disk / RAM / GPU + Jenkins **image** freshness (`/var/lib/dana-health/jenkins-status.json`)
+- Metrics append: [`Work_RAG_Metrics`](https://github.com/AliNikkhah2001/Work_RAG_Metrics)
+
+Details: [`deploy/monitor/README.md`](deploy/monitor/README.md).
 
 ### CI architecture
 

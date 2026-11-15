@@ -938,192 +938,35 @@ for url in http://127.0.0.1:8100/ready http://127.0.0.1:8200/ready; do
 done
 
 # =============================================================================
-# SECTION 10: E2E chat QA tests (incl. OpenWebUI direct)
+# SECTION 10: E2E chat QA — random 10 KB FAQ questions + latency inspection
 # =============================================================================
-step "Running E2E chat QA tests"
+step "Running E2E random KB FAQ QA (10) + latency metrics"
 E2E="$OUT/e2e"
 QA_PASS=0
 QA_TOTAL=0
 STATUS_E2E="PASSED"
 mkdir -p "$E2E"
-: >"$E2E/summary.txt"
-
-# Container-aware POST helper: tries published localhost port first, then docker exec
-# (dev macOS does not publish container ports to 127.0.0.1, but prod Linux does)
-curl_post_svc() {
-  local port="$1" path="$2" payload="$3" outf="$4"
-  local container internal_port
-  container="$(port_to_container "$port")"
-  case "$port" in
-    8000) internal_port=8000 ;;
-    8100) internal_port=8100 ;;
-    8200) internal_port=8200 ;;
-    13000) internal_port=8080 ;;
-    *) internal_port="$port" ;;
-  esac
-  local code="000"
-  # Attempt 1: direct localhost (works on prod Linux where ports are published)
-  code="$(curl -sS -o "$outf" -w '%{http_code}' --max-time 120 \
-    -H 'Content-Type: application/json' -d "$payload" \
-    "http://127.0.0.1:$port$path" 2>/dev/null)" || code="000"
-  if [[ "$code" == "200" ]] && grep -qE '"content"|"choices"|"delta"|"final_results"|^data:' "$outf" 2>/dev/null; then
-    echo "200"; return 0
-  fi
-  # Attempt 2: docker exec (curl then python3); validate output, reject OCI/runtime errors
-  if have docker && [[ -n "$container" ]] && docker ps --format '{{.Names}}' 2>/dev/null | grep -qx "$container"; then
-    local tmp=""
-    tmp="$(docker exec "$container" curl -sS --max-time 120 \
-      -H 'Content-Type: application/json' -d "$payload" \
-      "http://localhost:$internal_port$path" 2>/dev/null || true)"
-    if ! printf '%s' "$tmp" | grep -qE '"content"|"choices"|"delta"|"final_results"|^data:'; then
-      tmp="$(docker exec -i "$container" python3 -c "
-import sys,urllib.request,urllib.error
-payload=sys.stdin.read()
-req=urllib.request.Request('http://localhost:$internal_port$path', data=payload.encode(), headers={'Content-Type':'application/json'})
-try:
-    sys.stdout.write(urllib.request.urlopen(req, timeout=120).read().decode())
-except urllib.error.HTTPError as e:
-    body=e.read().decode(errors='replace')
-    sys.stdout.write('{\"_http_status\": %d, \"_body\": %s}' % (e.code, __import__('json').dumps(body)))
-except Exception:
-    sys.exit(1)
-" <<<"$payload" 2>/dev/null || true)"
-    fi
-    if printf '%s' "$tmp" | grep -qE '"content"|"choices"|"delta"|"final_results"|^data:'; then
-      printf '%s' "$tmp" >"$outf"
-      echo "200"; return 0
-    fi
-    # Detect auth/HTTP errors so caller can classify (e.g. WebUI 401 on dev)
-    if printf '%s' "$tmp" | grep -qE 'Not authenticated|"_http_status"'; then
-      printf '%s' "$tmp" >"$outf"
-      local st
-      st="$(printf '%s' "$tmp" | grep -o '"_http_status": *[0-9]*' | grep -o '[0-9]*' | head -1)"
-      echo "${st:-401}"; return 0
-    fi
-  fi
-  # Nothing worked — write a clear marker (not a stale/error body)
-  printf '{"error":"unreachable","port":"%s","path":"%s"}' "$port" "$path" >"$outf"
-  echo "$code"
-}
-
-run_chat() {
-  local name="$1" payload="$2"
-  QA_TOTAL=$((QA_TOTAL + 1))
-  local outf="$E2E/${name}.json"
-  local code
-  code="$(curl_post_svc 8100 "/v1/chat/completions" "$payload" "$outf")"
-  echo "${name} http=$code" | tee -a "$E2E/summary.txt"
-  if [[ "$code" == "200" ]] && grep -qE '"content"|"choices"|"delta"|^data:' "$outf" 2>/dev/null; then
-    QA_PASS=$((QA_PASS + 1))
-    ok "E2E $name pass"
+RANDOM_QA_PY="$UMBRELLA/scripts/monitor/qa_random_kb.py"
+if have python3 && [[ -f "$RANDOM_QA_PY" ]]; then
+  if python3 "$RANDOM_QA_PY" --out "$OUT" --repo "$UMBRELLA" --n 10 \
+      --orch "http://127.0.0.1:8100" --kb "http://127.0.0.1:8000"; then
+    ok "random KB QA batch passed"
   else
     STATUS_E2E="FAILED"
-    fail "E2E $name fail (http=$code)"
-    head -c 400 "$outf"; echo
+    fail "random KB QA batch had failures (see e2e/random_qa.json)"
   fi
-}
-
-run_chat chat_greeting '{"model":"gemma-4-31b","messages":[{"role":"user","content":"سلام"}]}'
-run_chat chat_credit_qa '{"model":"gemma-4-31b","messages":[{"role":"user","content":"اعتبارسنجی چیست؟"}]}'
-
-# Direct OpenWebUI E2E test — sign in, discover model, chat with Bearer token.
-# OpenWebUI is NOT "down" when it returns 401; it just needs auth + the served model name.
-WEBUI_E2E_PY="$OUT/meta/webui_e2e.py"
-cat >"$WEBUI_E2E_PY" <<'PYEOF'
-import sys, json, urllib.request, urllib.error
-base = sys.argv[1].rstrip("/")
-email = sys.argv[2] if len(sys.argv) > 2 else "admin@localhost"
-password = sys.argv[3] if len(sys.argv) > 3 else "admin"
-question = sys.argv[4] if len(sys.argv) > 4 else "اعتبارسنجی چیست؟"
-
-def call(path, data=None, token=None, timeout=120):
-    headers = {"Content-Type": "application/json"}
-    if token:
-        headers["Authorization"] = "Bearer " + token
-    body = json.dumps(data).encode() if data is not None else None
-    req = urllib.request.Request(base + path, data=body, headers=headers)
-    return urllib.request.urlopen(req, timeout=timeout)
-
-res = {"signin": "none", "model": "", "chat_http": 0, "answer": "", "error": ""}
-token = ""
-# 1) sign in
-try:
-    d = json.loads(call("/api/v1/auths/signin", {"email": email, "password": password}).read().decode())
-    token = d.get("token", "")
-    res["signin"] = "ok" if token else "no-token"
-except urllib.error.HTTPError as e:
-    res["signin"] = "http-%d" % e.code
-except Exception as e:
-    res["signin"] = "err"
-    res["error"] = str(e)[:200]
-# 2) discover served model
-model = ""
-try:
-    d = json.loads(call("/api/models", token=token, timeout=30).read().decode())
-    ids = [m.get("id") for m in (d.get("data") or []) if m.get("id")]
-    if ids:
-        model = ids[0]
-except Exception:
-    pass
-if not model:
-    model = "ics-helper-agent"
-res["model"] = model
-# 3) chat
-try:
-    raw = call("/api/chat/completions",
-               {"model": model, "messages": [{"role": "user", "content": question}], "stream": False},
-               token=token).read().decode()
-    res["chat_http"] = 200
-    try:
-        d = json.loads(raw)
-        res["answer"] = ((d.get("choices") or [{}])[0].get("message") or {}).get("content", "") or raw[:2000]
-    except Exception:
-        res["answer"] = raw[:2000]
-except urllib.error.HTTPError as e:
-    res["chat_http"] = e.code
-    res["error"] = e.read().decode(errors="replace")[:300]
-except Exception as e:
-    res["error"] = str(e)[:300]
-print(json.dumps(res, ensure_ascii=False))
-PYEOF
-
-QA_TOTAL=$((QA_TOTAL + 1))
-WEBUI_JSON=""
-WEBUI_CONTAINER="$(port_to_container 13000)"
-# Try host-side first (prod publishes 127.0.0.1:13000), then inside the container (dev)
-if curl -s -o /dev/null --max-time 3 "http://127.0.0.1:13000/health" 2>/dev/null; then
-  WEBUI_JSON="$(python3 "$WEBUI_E2E_PY" "http://127.0.0.1:13000" 2>/dev/null || true)"
-elif have docker && [[ -n "$WEBUI_CONTAINER" ]] && docker ps --format '{{.Names}}' 2>/dev/null | grep -qx "$WEBUI_CONTAINER"; then
-  WEBUI_JSON="$(docker exec -i "$WEBUI_CONTAINER" python3 - "http://localhost:8080" < "$WEBUI_E2E_PY" 2>/dev/null || true)"
-fi
-[[ -z "$WEBUI_JSON" ]] && WEBUI_JSON='{"signin":"unreachable","chat_http":0,"error":"webui unreachable"}'
-printf '%s' "$WEBUI_JSON" >"$E2E/chat_webui.json"
-WEBUI_CODE="$(printf '%s' "$WEBUI_JSON" | python3 -c "import sys,json; print(json.load(sys.stdin).get('chat_http',0))" 2>/dev/null || echo 0)"
-echo "chat_webui http=$WEBUI_CODE" | tee -a "$E2E/summary.txt"
-if [[ "$WEBUI_CODE" == "200" ]] && grep -qE '"answer"' "$E2E/chat_webui.json" 2>/dev/null && ! grep -q '"answer": ""' "$E2E/chat_webui.json" 2>/dev/null; then
-  QA_PASS=$((QA_PASS + 1))
-  ok "E2E webui pass (signed in, model=$(printf '%s' "$WEBUI_JSON" | python3 -c "import sys,json; print(json.load(sys.stdin).get('model',''))" 2>/dev/null))"
+  if [[ -f "$E2E/score.txt" ]]; then
+    # shellcheck disable=SC1090
+    QA_PASS="$(awk -F'[=/]' '/qa_pass=/{print $2}' "$E2E/score.txt" | head -1)"
+    QA_TOTAL="$(awk -F'[=/]' '/qa_pass=/{print $3}' "$E2E/score.txt" | head -1)"
+  fi
+  QA_PASS="${QA_PASS:-0}"
+  QA_TOTAL="${QA_TOTAL:-0}"
 else
   STATUS_E2E="FAILED"
-  fail "E2E webui fail (http=$WEBUI_CODE)"
-  printf '%s\n' "$WEBUI_JSON" | head -c 400; echo
+  fail "qa_random_kb.py missing — cannot run random FAQ QA"
+  echo "qa_pass=0/0" | tee "$E2E/score.txt"
 fi
-
-# KB search (container-aware, with retry for transient reranker/DNS hiccups)
-KB_SEARCH_CODE="000"
-for attempt in 1 2 3; do
-  KB_SEARCH_CODE="$(curl_post_svc 8000 "/search/api" '{"query":"اعتبارسنجی چیست","top_k":3}' "$E2E/kb_search.json")"
-  if grep -q 'final_results' "$E2E/kb_search.json" 2>/dev/null; then break; fi
-  [[ "$attempt" -lt 3 ]] && { warn "kb_search attempt $attempt failed (http=$KB_SEARCH_CODE) — retrying"; sleep 3; }
-done
-echo "kb_search http=$KB_SEARCH_CODE" | tee -a "$E2E/summary.txt"
-if grep -q 'final_results' "$E2E/kb_search.json" 2>/dev/null; then
-  ok "KB search returned results"
-else
-  STATUS_E2E="FAILED"
-  fail "KB search empty/failed"
-fi
-echo "qa_pass=$QA_PASS/$QA_TOTAL" | tee "$E2E/score.txt"
 
 # =============================================================================
 # SECTION 11: Screenshots of all endpoints each service serves
@@ -1209,24 +1052,45 @@ PY
     echo "http://127.0.0.1:$port"  # fall back to logical port
   }
 
-  # Health pages (auto-resolve reachable base)
-  shoot "$(resolve_base 8000 /health)/health" "kb-health"
-  shoot "$(resolve_base 8100 /health)/health" "orch-health"
-  shoot "$(resolve_base 8200 /health)/health" "guard-health"
+  # Prefer real UIs (/docs, WebUI, Jenkins login) — raw /health is JSON on a
+  # white page and looks "blank" on the dashboard.
+  shoot "$(resolve_base 8000 /docs)/docs" "kb-manager-docs"
+  shoot "$(resolve_base 8100 /docs)/docs" "orch-docs"
+  shoot "$(resolve_base 8200 /docs)/docs" "guard-docs"
   shoot "$(resolve_base 13000 /)/" "webui-home"
+  shoot "http://127.0.0.1:8088/" "webui-alt" 2>/dev/null || true
   shoot "http://127.0.0.1:8085/login" "jenkins-login"
-  shoot "http://127.0.0.1:18000/health" "gemma-health"
-  shoot "$(resolve_base 3000 /health)/health" "collector-health"
+  shoot "http://127.0.0.1:9000/" "manager-ui" 2>/dev/null || true
+  shoot "http://127.0.0.1:9000/docs" "manager-docs" 2>/dev/null || true
+  shoot "http://127.0.0.1:18000/docs" "gemma-docs" 2>/dev/null || \
+    shoot "http://127.0.0.1:18000/health" "gemma-health" 2>/dev/null || true
 
-  # WebUI chat page (E2E visual)
-  shoot "$(resolve_base 13000 /)/" "webui-chat"
-
-  # Service endpoints screenshots
-  for p in 8000 8100 8200 13000 8085 18000; do
-    shoot "$(resolve_base "$p" /health)/health" "endpoint_${p}_health" 2>/dev/null || true
-  done
+  # Authenticated Jenkins + SPA gallery with selector waits + 10s settle
+  GALLERY_PY="$UMBRELLA/scripts/monitor/shoot_gallery.py"
+  if have python3 && [[ -f "$GALLERY_PY" ]]; then
+    step "Screenshot gallery (Jenkins login + UIs, 10s delay)"
+    python3 "$GALLERY_PY" --out "$SHOT" --delay 10 \
+      --jenkins-pass-file "${JENKINS_PASS_FILE:-/splunk-data/production/.jenkins-admin-pass}" \
+      || warn "screenshot gallery had failures (stubs written)"
+  fi
 fi
 ls -la "$SHOT" | tee "$SHOT/listing.txt"
+
+# Host inventory (ports / disk / RAM / GPU) + Jenkins image health
+step "Host inventory + Jenkins status"
+mkdir -p "$OUT/meta"
+if have python3; then
+  python3 "$UMBRELLA/scripts/monitor/host_inventory.py" --out "$OUT/meta/host_inventory.json" \
+    || warn "host_inventory failed"
+  python3 "$UMBRELLA/scripts/monitor/jenkins_status.py" --out "$OUT/meta/jenkins_status.json" \
+    || warn "jenkins_status reported degraded (recorded anyway)"
+  # Submodule watch (same hourly cadence as status push — no rebuild trigger here)
+  if [[ -x "$UMBRELLA/scripts/ci_submodule_watch.sh" ]]; then
+    bash "$UMBRELLA/scripts/ci_submodule_watch.sh" || warn "webui submodule watch failed"
+    [[ -f /var/lib/dana-health/webui-watch.json ]] \
+      && cp -a /var/lib/dana-health/webui-watch.json "$OUT/meta/webui-watch.json" || true
+  fi
+fi
 
 # =============================================================================
 # SECTION 12: Collect all ran commands, shutdown, reboot, user metadata
@@ -1714,7 +1578,7 @@ step "Publishing run record to monitoring repo"
 HEALTH_REPO="${GPU_HEALTH_REPO:-https://github.com/AliNikkhah2001/Work_RAG_HealthCheck.git}"
 HEALTH_REPO_DIR="${GPU_HEALTH_REPO_DIR:-$HOME/Work_RAG_HealthCheck}"
 HEALTH_BRANCH="${GPU_HEALTH_BRANCH:-main}"
-HEALTH_KEEP_LOGS="${GPU_HEALTH_KEEP_LOGS:-30}"
+HEALTH_KEEP_LOGS="${GPU_HEALTH_KEEP_LOGS:-48}"
 PUBLISHER="$UMBRELLA/scripts/monitor/publish_report.py"
 KB_VERSION_JSON="$OUT/kb/kb_version.json"
 STATUS_PUSH="FAILED"

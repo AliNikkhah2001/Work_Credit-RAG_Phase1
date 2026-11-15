@@ -14,6 +14,9 @@
 //   [ci auto]              → stage on develop / prod on main (still role-gated)
 //   [ci all]               → force full image set (ignore path filter)
 //   [ci rollback]          → restore deploy/compose/.last_good_sha (prod controller)
+//   [ci snapshot]          → freeze current prod images under /splunk-data/production/snapshots/<stamp>/
+//   [ci heal] / [ci force-heal] / [ci heal:STAMP]
+//                          → restore snapshot images (force-heal from any laptop via commit)
 //
 // CI_SERVICES from scripts/ci_message_gate.py: "kb", "kb guardrails", "all", or "none".
 //
@@ -85,7 +88,7 @@ pipeline {
                       python3 scripts/ci_controller_role.py --write-env .ci_role.env
                     else
                       echo "WARNING: python3 missing on agent — defaulting gate to skip"
-                      printf 'CI_SKIP=1\nCI_BUILD=0\nCI_STAGE=0\nCI_PROD=0\nCI_AUTO=0\nCI_ROLLBACK=0\nCI_HEAVY_PATHS=0\nCI_SERVICES=none\n' > .ci_gate.env
+                      printf 'CI_SKIP=1\nCI_BUILD=0\nCI_STAGE=0\nCI_PROD=0\nCI_AUTO=0\nCI_ROLLBACK=0\nCI_SNAPSHOT=0\nCI_HEAL=0\nCI_HEAL_STAMP=\nCI_HEAVY_PATHS=0\nCI_SERVICES=none\n' > .ci_gate.env
                       printf 'DANA_ROLE=stage\nCI_MAY_DEPLOY_STAGE=1\nCI_MAY_DEPLOY_PROD=0\n' > .ci_role.env
                     fi
                 '''
@@ -105,7 +108,7 @@ pipeline {
                         }
                     }
                     echo "CI controller: ROLE=${env.DANA_ROLE} MAY_STAGE=${env.CI_MAY_DEPLOY_STAGE} MAY_PROD=${env.CI_MAY_DEPLOY_PROD} HOST=${env.DANA_HOST} JOB=${env.JOB_NAME}"
-                    echo "CI gate: SKIP=${env.CI_SKIP} BUILD=${env.CI_BUILD} STAGE=${env.CI_STAGE} PROD=${env.CI_PROD} AUTO=${env.CI_AUTO} ROLLBACK=${env.CI_ROLLBACK} HEAVY=${env.CI_HEAVY_PATHS} SERVICES=${env.CI_SERVICES} BRANCH=${env.BRANCH_NAME}"
+                    echo "CI gate: SKIP=${env.CI_SKIP} BUILD=${env.CI_BUILD} STAGE=${env.CI_STAGE} PROD=${env.CI_PROD} AUTO=${env.CI_AUTO} ROLLBACK=${env.CI_ROLLBACK} SNAPSHOT=${env.CI_SNAPSHOT} HEAL=${env.CI_HEAL} STAMP=${env.CI_HEAL_STAMP} HEAVY=${env.CI_HEAVY_PATHS} SERVICES=${env.CI_SERVICES} BRANCH=${env.BRANCH_NAME}"
                 }
             }
         }
@@ -178,11 +181,57 @@ pipeline {
             }
         }
 
+        stage('Force-heal from snapshot') {
+            // Commit from any laptop with [ci heal] / [ci force-heal] / [ci heal:STAMP]
+            // on main → GPU prod controller restores tested snapshot images (no GPU needed
+            // on the committer's machine).
+            when {
+                allOf {
+                    branch 'main'
+                    expression { return env.CI_MAY_DEPLOY_PROD == '1' }
+                    expression { return env.CI_SKIP != '1' }
+                    expression { return env.CI_HEAL == '1' }
+                }
+            }
+            steps {
+                sh '''
+                    set -e
+                    chmod +x scripts/restore_from_snapshot.sh
+                    if [ -n "${CI_HEAL_STAMP:-}" ]; then
+                      bash scripts/restore_from_snapshot.sh --stamp "$CI_HEAL_STAMP" --apply
+                    else
+                      bash scripts/restore_from_snapshot.sh --apply
+                    fi
+                    bash scripts/ci_stage_evidence.sh mark heal || true
+                '''
+            }
+        }
+
+        stage('Snapshot images') {
+            when {
+                allOf {
+                    branch 'main'
+                    expression { return env.CI_MAY_DEPLOY_PROD == '1' }
+                    expression { return env.CI_SKIP != '1' }
+                    expression { return env.CI_SNAPSHOT == '1' }
+                }
+            }
+            steps {
+                sh '''
+                    set -e
+                    chmod +x scripts/create_snapshot.sh
+                    bash scripts/create_snapshot.sh
+                    bash scripts/ci_stage_evidence.sh mark snapshot || true
+                '''
+            }
+        }
+
         stage('Build images') {
             when {
                 allOf {
                     expression { return env.CI_SKIP != '1' }
                     expression { return env.CI_ROLLBACK != '1' }
+                    expression { return env.CI_HEAL != '1' }
                     anyOf {
                         // Explicit rebuild anywhere
                         expression { return env.CI_BUILD == '1' }
@@ -379,6 +428,7 @@ pipeline {
                     expression { return env.CI_MAY_DEPLOY_STAGE == '1' }
                     expression { return env.CI_SKIP != '1' }
                     expression { return env.CI_ROLLBACK != '1' }
+                    expression { return env.CI_HEAL != '1' }
                     anyOf {
                         expression { return env.CI_STAGE == '1' }
                         expression { return env.CI_AUTO == '1' }
@@ -457,6 +507,7 @@ pipeline {
                     expression { return env.CI_MAY_DEPLOY_STAGE == '1' }
                     expression { return env.CI_SKIP != '1' }
                     expression { return env.CI_ROLLBACK != '1' }
+                    expression { return env.CI_HEAL != '1' }
                     anyOf {
                         expression { return env.CI_STAGE == '1' }
                         expression { return env.CI_AUTO == '1' }
@@ -486,6 +537,7 @@ pipeline {
                     expression { return env.CI_MAY_DEPLOY_PROD == '1' }
                     expression { return env.CI_SKIP != '1' }
                     expression { return env.CI_ROLLBACK != '1' }
+                    expression { return env.CI_HEAL != '1' }
                     expression { return env.CI_PROD != '1' }
                     expression { return env.CI_AUTO != '1' }
                     anyOf {
@@ -506,6 +558,7 @@ pipeline {
                     expression { return env.CI_MAY_DEPLOY_PROD == '1' }
                     expression { return env.CI_SKIP != '1' }
                     expression { return env.CI_ROLLBACK != '1' }
+                    expression { return env.CI_HEAL != '1' }
                     anyOf {
                         expression { return env.CI_PROD == '1' }
                         expression { return env.CI_AUTO == '1' }

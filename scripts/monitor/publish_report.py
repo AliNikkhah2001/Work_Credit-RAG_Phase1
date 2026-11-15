@@ -43,8 +43,8 @@ from typing import Any, Callable
 
 RUN_SCHEMA_VERSION = "health-run/v1"
 INDEX_SCHEMA_VERSION = "health-index/v1"
-DEFAULT_KEEP_LOGS = 30
 SITE_TEMPLATE = Path(__file__).resolve().parent / "site" / "index.html"
+
 
 # Port -> service identity. Mirrors the service table in AGENTS.md and the
 # PORTS list in gpu_full_recover_report.sh.
@@ -148,6 +148,16 @@ def load_matrix(out_dir: Path) -> list[dict[str, Any]]:
     return services
 
 
+def _read_json_file(path: Path) -> dict[str, Any] | None:
+    if not path.is_file():
+        return None
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    return data if isinstance(data, dict) else None
+
+
 def load_e2e(out_dir: Path) -> dict[str, Any]:
     """Read the E2E summary/score files the report script writes."""
     summary: list[dict[str, Any]] = []
@@ -163,7 +173,7 @@ def load_e2e(out_dir: Path) -> dict[str, Any]:
             {
                 "test": name,
                 "http_code": code or None,
-                "passed": classify_http(code) == "up",
+                "passed": classify_http(code) == "up" if code else "passed=" in line,
             }
         )
     score = read_kv(out_dir / "e2e" / "score.txt")
@@ -173,6 +183,8 @@ def load_e2e(out_dir: Path) -> dict[str, Any]:
         left, _, right = raw.partition("/")
         passed = int(left) if left.isdigit() else None
         total = int(right) if right.isdigit() else None
+    latency = _read_json_file(out_dir / "e2e" / "latency_summary.json")
+    random_qa = _read_json_file(out_dir / "e2e" / "random_qa.json")
     return {
         "tests": summary,
         "passed": passed,
@@ -180,6 +192,16 @@ def load_e2e(out_dir: Path) -> dict[str, Any]:
         "kb_search_ok": next(
             (t["passed"] for t in summary if t["test"] == "kb_search"), None
         ),
+        "latency": latency,
+        "random_qa": {
+            "seed": (random_qa or {}).get("seed"),
+            "n": (random_qa or {}).get("n"),
+            "pool_size": (random_qa or {}).get("pool_size"),
+            "questions": (latency or {}).get("questions")
+            or (random_qa or {}).get("summary", {}).get("questions"),
+        }
+        if random_qa
+        else None,
     }
 
 
@@ -299,16 +321,34 @@ def build_run_record(
         "core_services_down": core_down,
         "services": services,
         "e2e": e2e,
+        "latency": e2e.get("latency"),
+        "host": _read_json_file(out_dir / "meta" / "host_inventory.json"),
+        "jenkins": _read_json_file(out_dir / "meta" / "jenkins_status.json"),
+        "webui_watch": _read_json_file(out_dir / "meta" / "webui-watch.json"),
         "gate": load_gate(out_dir),
         "kb": kb_compact,
-        "links": {
-            # Per-run detail page lives inside the retained logs dir so its
-            # ../screenshots/ links resolve; falls back to the newest snapshot.
-            "detail": (
-                f"logs/{run_id}/dashboard.html" if keep_detail else "latest/dashboard.html"
-            ),
-            "record": f"runs/{run_id}.json",
-        },
+        "links": _run_links(out_dir, run_id, keep_detail=keep_detail),
+    }
+
+
+def _run_links(out_dir: Path, run_id: str, *, keep_detail: bool) -> dict[str, Any]:
+    """Relative links + screenshot filenames for the Pages dashboard."""
+    shots: list[str] = []
+    shot_dir = out_dir / "screenshots"
+    if shot_dir.is_dir():
+        shots = sorted(p.name for p in shot_dir.glob("*.png"))
+    return {
+        # Per-run detail page lives inside the retained logs dir so its
+        # screenshots/ links resolve; falls back to the newest snapshot.
+        "detail": (
+            f"logs/{run_id}/dashboard.html" if keep_detail else "latest/dashboard.html"
+        ),
+        "record": f"runs/{run_id}.json",
+        "logs": f"logs/{run_id}/" if keep_detail else None,
+        "screenshots": shots,
+        "screenshots_dir": f"logs/{run_id}/screenshots" if shots and keep_detail else (
+            "latest/screenshots" if shots else None
+        ),
     }
 
 
@@ -449,9 +489,13 @@ LOG_EXCLUDE_PREFIXES = ("host-", "env", "docker-env")
 # The per-run detail page from the report is copied to ``logs/<run_id>/dashboard.html``
 # so its ``../screenshots/`` links resolve inside the same run directory.
 DETAIL_PAGE = Path("html") / "dashboard.html"
-# Screenshots are the heaviest part of a run (~1.5 MB). They are retained for a
-# shorter window than text logs so the repo does not grow by tens of MB/month.
-SCREENSHOT_KEEP = 7
+# Screenshots are the heaviest part of a run (~1.5 MB). With hourly publishes they
+# would dominate the HealthCheck repo and risk GitHub soft limits — keep a short
+# count window AND an age window (whichever is stricter wins).
+SCREENSHOT_KEEP = 3
+SCREENSHOT_KEEP_HOURS = 24
+DEFAULT_KEEP_LOGS = 48  # hourly → ~2 days of text logs; JSON records stay forever
+
 
 
 def _is_sensitive_name(name: str) -> bool:
@@ -527,8 +571,19 @@ def write_logs(root: Path, out_dir: Path, run_id: str, max_bytes: int = 2_000_00
             pass
     shot_dir = out_dir / "screenshots"
     if shot_dir.is_dir():
+        names: list[str] = []
         for png in sorted(shot_dir.glob("*.png")):
             copy_capped(png, dest / "screenshots" / png.name)
+            names.append(png.name)
+        if names:
+            try:
+                (dest / "screenshots" / "manifest.json").write_text(
+                    json.dumps({"files": names}, ensure_ascii=False, indent=2) + "\n",
+                    encoding="utf-8",
+                )
+                written += 1
+            except OSError:
+                pass
 
     return written
 
@@ -548,25 +603,56 @@ def prune_logs(root: Path, keep: int = DEFAULT_KEEP_LOGS) -> list[str]:
     return removed
 
 
-def prune_screenshots(root: Path, keep: int = SCREENSHOT_KEEP) -> list[str]:
-    """Drop per-run ``screenshots/`` dirs belonging to runs older than ``keep``.
+def prune_screenshots(
+    root: Path,
+    keep: int = SCREENSHOT_KEEP,
+    keep_hours: int = SCREENSHOT_KEEP_HOURS,
+) -> list[str]:
+    """Drop per-run ``screenshots/`` dirs outside the retention window.
 
-    The run record and text logs survive; only the PNGs go, because they are
-    ~100x larger than everything else per run.
+    Retention is the intersection of:
+      * newest ``keep`` runs (count), and
+      * runs newer than ``keep_hours`` (relative age from run-id / mtime).
+
+    The run JSON and text logs survive; only PNGs are removed so hourly
+    publishing does not fill the GitHub repo or trip push rate limits.
     """
     logs_dir = root / "logs"
     if not logs_dir.is_dir():
         return []
     dirs = sorted((p for p in logs_dir.iterdir() if p.is_dir()), key=lambda p: p.name)
     pruned: list[str] = []
-    if keep <= 0 or len(dirs) <= keep:
-        return pruned
-    for path in dirs[:-keep]:
+    keep_set: set[str] = set()
+    if keep > 0:
+        keep_set.update(p.name for p in dirs[-keep:])
+
+    cutoff = utc_now().timestamp() - max(0, keep_hours) * 3600
+
+    def run_ts(path: Path) -> float:
+        # Prefer run-id stamp 20261115T130124Z-…
+        name = path.name
+        stamp = name.split("-", 1)[0]
+        try:
+            dt = datetime.strptime(stamp, "%Y%m%dT%H%M%SZ").replace(tzinfo=UTC)
+            return dt.timestamp()
+        except ValueError:
+            try:
+                return path.stat().st_mtime
+            except OSError:
+                return 0.0
+
+    for path in dirs:
         shot = path / "screenshots"
-        if shot.is_dir():
-            shutil.rmtree(shot, ignore_errors=True)
-            pruned.append(path.name)
+        if not shot.is_dir():
+            continue
+        by_count = path.name in keep_set if keep > 0 else True
+        by_age = run_ts(path) >= cutoff if keep_hours > 0 else True
+        if by_count and by_age:
+            continue
+        shutil.rmtree(shot, ignore_errors=True)
+        pruned.append(path.name)
     return pruned
+
 
 
 # --------------------------------------------------------------------------- #
@@ -853,11 +939,16 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--keep-logs", type=int, default=DEFAULT_KEEP_LOGS)
     parser.add_argument("--keep-screenshots", type=int, default=SCREENSHOT_KEEP,
                         help="retain per-run screenshots for the newest N runs only")
+    parser.add_argument("--keep-screenshots-hours", type=int, default=SCREENSHOT_KEEP_HOURS,
+                        help="also drop screenshots older than this many hours")
     parser.add_argument("--retries", type=int, default=5)
     parser.add_argument("--no-push", action="store_true")
     parser.add_argument("--dry-run", action="store_true", help="Build the tree, skip all git writes")
     parser.add_argument("--no-logs", action="store_true", help="Skip copying raw logs for this run")
+    parser.add_argument("--no-metrics", action="store_true",
+                        help="skip append to Work_RAG_Metrics + metrics/ Pages copy")
     args = parser.parse_args(argv)
+
 
     out_dir = args.run_dir.resolve()
     if not out_dir.is_dir():
@@ -922,10 +1013,36 @@ def main(argv: list[str] | None = None) -> int:
     if removed:
         print(f"[publish] pruned {len(removed)} old log dirs: {', '.join(removed[:5])}"
               f"{' …' if len(removed) > 5 else ''}")
-    pruned_shots = prune_screenshots(repo, args.keep_screenshots)
+    pruned_shots = prune_screenshots(
+        repo, args.keep_screenshots, args.keep_screenshots_hours
+    )
     if pruned_shots:
-        print(f"[publish] pruned screenshots for {len(pruned_shots)} old runs "
-              f"(keep={args.keep_screenshots})")
+        print(
+            f"[publish] pruned screenshots for {len(pruned_shots)} old runs "
+            f"(keep={args.keep_screenshots}, hours={args.keep_screenshots_hours})"
+        )
+
+    # Metrics append (dedicated repo) + copy into Pages tree before the Pages push
+    # so one HealthCheck commit includes metrics/ for the dashboard.
+    if not args.no_metrics:
+        metrics_py = Path(__file__).resolve().parent / "publish_metrics.py"
+        run_json_path = repo / "runs" / f"{run_id}.json"
+        if metrics_py.is_file() and run_json_path.is_file():
+            mcmd = [
+                sys.executable,
+                str(metrics_py),
+                "--run-json",
+                str(run_json_path),
+                "--pages-repo",
+                str(repo),
+            ]
+            if args.no_push or args.dry_run:
+                mcmd.append("--no-push" if args.no_push else "--dry-run")
+            m = subprocess.run(mcmd, capture_output=True, text=True, timeout=300)
+            sys.stdout.write(m.stdout or "")
+            sys.stderr.write(m.stderr or "")
+            if m.returncode not in (0, EXIT_REFUSED):
+                print(f"[publish] WARN: metrics publisher exit {m.returncode}", file=sys.stderr)
 
     def regenerate() -> None:
         """Rebuild everything derived from the run records on disk.
@@ -935,7 +1052,7 @@ def main(argv: list[str] | None = None) -> int:
         whichever side happened to win the conflict.
         """
         prune_logs(repo, args.keep_logs)
-        prune_screenshots(repo, args.keep_screenshots)
+        prune_screenshots(repo, args.keep_screenshots, args.keep_screenshots_hours)
         again = rebuild_index(repo)
         render_site(repo)
         print(f"[publish] regenerated derived files: {again['count']} records")

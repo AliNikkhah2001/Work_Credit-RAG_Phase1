@@ -63,6 +63,12 @@
     display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
   }
   .panel-note { color: var(--muted); font-size: 12.5px; margin: 0 0 16px; }
+  h3.device-title {
+    font-size: 13px; margin: 18px 0 10px; font-weight: 650;
+    color: var(--text); letter-spacing: 0.2px;
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  }
+  h3.device-title:first-child { margin-top: 0; }
 
   .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; }
   .seg button {
@@ -114,6 +120,10 @@
   .b-match { background: #14351f; color: #67e08c; }
   .b-mismatch { background: #3a1620; color: #ff8b96; }
   .b-unknown { background: #3a2c11; color: #ffc76b; }
+  .b-env-prod { background: #143051; color: #7eb6ff; }
+  .b-env-stage { background: #3a2c11; color: #ffc76b; }
+  .b-env-dev { background: #2a2140; color: #c4a8ff; }
+  .b-env-other { background: #222a37; color: #8f9cb0; }
 
   .bar-track { background: #1b2230; border-radius: 5px; height: 8px; overflow: hidden; min-width: 90px; }
   .bar-fill { height: 100%; background: linear-gradient(90deg, #2ecc71, #4d9dff); }
@@ -129,6 +139,41 @@
   .empty { color: var(--muted); font-size: 13px; padding: 14px 0; }
   a { color: var(--accent); text-decoration: none; }
   a:hover { text-decoration: underline; }
+
+  details.fold {
+    border: 1px solid var(--line); border-radius: 10px; background: #0e121a;
+    margin-bottom: 8px; overflow: hidden;
+  }
+  details.fold > summary {
+    cursor: pointer; list-style: none; padding: 11px 14px;
+    display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center;
+    font-size: 13px; user-select: none;
+  }
+  details.fold > summary::-webkit-details-marker { display: none; }
+  details.fold > summary::before {
+    content: "▸"; color: var(--muted); font-size: 11px; width: 12px; flex: 0 0 auto;
+  }
+  details.fold[open] > summary::before { content: "▾"; }
+  details.fold > summary:hover { background: #141a26; }
+  details.fold .fold-body { padding: 4px 14px 14px; border-top: 1px solid var(--line); }
+  details.fold .fold-blurb { color: var(--muted); font-size: 12.5px; margin: 10px 0 0; line-height: 1.45; }
+  .fold-meta { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+  .shot-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 10px; margin-top: 12px;
+  }
+  .shot-card {
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: #0a0d13;
+  }
+  .shot-card a { display: block; }
+  .shot-card img {
+    display: block; width: 100%; height: 120px; object-fit: cover; background: #05070b;
+  }
+  .shot-card .cap {
+    padding: 6px 8px; font-size: 11px; color: var(--muted);
+    word-break: break-all; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  }
 
   #tooltip {
     position: fixed; pointer-events: none; z-index: 50; display: none;
@@ -161,6 +206,38 @@
 
   <div class="cards" id="cards"></div>
 
+  <section class="panel" id="status-panel">
+    <h2>Live status <span class="badge b-nodata" id="status-badge">…</span></h2>
+    <p class="panel-note">From <span class="mono">metrics/status.json</span> (synced each hourly publish). Compact series lives in <span class="mono">metrics/series.json</span> — no screenshots.</p>
+    <div class="kv" id="status-body"><div class="empty">Loading…</div></div>
+  </section>
+
+  <section class="panel">
+    <h2>Jenkins &amp; images <span class="badge b-nodata" id="jenkins-badge">…</span></h2>
+    <p class="panel-note">Authenticated Jenkins probe + production image freshness (none missing / none stale). Snapshot stamps listed when freezes exist.</p>
+    <div class="kv" id="jenkins-body"><div class="empty">Loading…</div></div>
+  </section>
+
+  <section class="panel">
+    <h2>Latency — retrieval / generation / end-to-end</h2>
+    <p class="panel-note">From random FAQ QA each hourly run (orchestrator <span class="mono">audit.stage_timing_ms</span> + KB <span class="mono">stage_ms</span>). Bars use the latest run; trend uses metrics series when present.</p>
+    <div id="latency-body"><div class="empty">Loading…</div></div>
+    <canvas id="latency-trend" width="1100" height="220" style="width:100%;max-width:1100px;margin-top:12px;background:#0a0d13;border-radius:10px;border:1px solid var(--line)"></canvas>
+  </section>
+
+  <section class="panel">
+    <h2>Host resources — ports / disk / RAM / GPU</h2>
+    <p class="panel-note">Captured each report into <span class="mono">meta/host_inventory.json</span> and published with the run.</p>
+    <div id="host-body"><div class="empty">Loading…</div></div>
+    <canvas id="host-trend" width="1100" height="180" style="width:100%;max-width:1100px;margin-top:12px;background:#0a0d13;border-radius:10px;border:1px solid var(--line)"></canvas>
+  </section>
+
+  <section class="panel">
+    <h2>Endpoints — what each check means</h2>
+    <p class="panel-note">Brief notes for every health endpoint the report probes. Expand a row for a one-line explanation. Ports shown are the usual host bindings; stage stack uses the higher aliases when present.</p>
+    <div id="endpoints-body"></div>
+  </section>
+
   <section class="panel">
     <h2>Historical uptime
       <span class="seg" id="window-seg">
@@ -170,9 +247,8 @@
         <button data-window="0" aria-pressed="false">all</button>
       </span>
     </h2>
-    <p class="panel-note">One row per service, oldest → newest. Each column is a run; hover for details.
-      Grey means no run exists for that slot — it is <em>not</em> an outage.</p>
-    <div class="heat-scroll"><div class="heat-grid" id="heatmap"></div></div>
+    <p class="panel-note">One heatmap <strong>per device</strong> (Dev / Stage / Production). Oldest → newest. Grey = no sample for that slot, not an outage.</p>
+    <div id="heatmap-by-device"></div>
     <div class="legend">
       <span><i class="swatch" style="background:var(--up)"></i>up</span>
       <span><i class="swatch" style="background:var(--down)"></i>down</span>
@@ -190,16 +266,13 @@
         <button data-window="0" aria-pressed="false">all</button>
       </span>
     </h2>
-    <p class="panel-note" id="uptime-note">Share of runs in which each service answered. Computed from the run records in this window.</p>
-    <table>
-      <thead><tr><th>Service</th><th>Uptime</th><th style="width:33%"></th><th class="num">Runs up</th><th class="num">Down</th><th class="num">Degraded</th></tr></thead>
-      <tbody id="uptime-body"></tbody>
-    </table>
+    <p class="panel-note" id="uptime-note">Share of runs in which each service answered, split by device.</p>
+    <div id="uptime-by-device"></div>
   </section>
 
   <section class="panel">
     <h2>Failures — last 24 hours <span class="badge b-nodata" id="f24-count">0</span></h2>
-    <p class="panel-note">Incidents detected in runs from the last 24 hours. Duration is measured between the first failing run and the next passing run.</p>
+    <p class="panel-note">Incidents in the last 24 hours, grouped by device. Duration is first failing run → next passing run.</p>
     <div id="f24-body"></div>
   </section>
 
@@ -225,18 +298,13 @@
   </section>
 
   <section class="panel">
-    <h2>Run log</h2>
-    <p class="panel-note">Newest first. Per-run detail pages keep logs and screenshots from the original report.</p>
-    <div style="overflow-x:auto">
-      <table>
-        <thead><tr><th>When (UTC)</th><th>Machine</th><th>Status</th><th>QA</th><th>KB</th><th>Detail</th></tr></thead>
-        <tbody id="runs-body"></tbody>
-      </table>
-    </div>
+    <h2>Single reports <span class="badge b-nodata" id="reports-count">0</span></h2>
+    <p class="panel-note">Every published run, newest first. All collapsed by default — expand one to see metrics, QA, and screenshots (when still retained).</p>
+    <div id="reports-body"></div>
   </section>
 
   <footer class="sub" style="text-align:center; margin-top:28px">
-    Static site — no backend. Data comes from <span class="mono">runs/index.json</span> and <span class="mono">runs/*.json</span> in this repo.
+    Static site — no backend. Data from <span class="mono">runs/</span> + <span class="mono">metrics/</span> (hourly). Screenshots auto-pruned after 24h / 3 newest runs.
   </footer>
 </div>
 <div id="tooltip"></div>
@@ -245,7 +313,38 @@
 "use strict";
 const CORE = ["kb", "guardrails", "orchestrator", "webui"];
 const STATUS_CLASS = { up: "b-up", down: "b-down", degraded: "b-degraded", "no-data": "b-nodata", nodata: "b-nodata" };
-const state = { records: [], index: null, heatWindow: 168, uptimeWindow: 24 };
+const state = {
+  records: [], index: null, heatWindow: 168, uptimeWindow: 24,
+  metricsStatus: null, metricsSeries: null,
+};
+
+/* Brief, plain-language notes for each probed endpoint (name and/or port). */
+const ENDPOINT_INFO = {
+  manager: { title: "Service manager", blurb: "Host control API used to start/stop/restart stack pieces and read their status." },
+  kb: { title: "Knowledge base", blurb: "RAG search API — embeddings lookup and chunk retrieval that ground chat answers." },
+  guardrails: { title: "Guardrails", blurb: "Safety / policy filter in front of the model — blocks or rewrites risky prompts and replies." },
+  orchestrator: { title: "Orchestrator", blurb: "Chat brain — routes a user message through KB, tools, and the LLM, then returns the reply." },
+  webui: { title: "Chat WebUI", blurb: "Browser chat front-end users open; talks to the orchestrator behind the scenes." },
+  jenkins: { title: "Jenkins", blurb: "CI/CD controller for builds, deploys, and heal jobs on this host." },
+  "trace-collector": { title: "Trace collector", blurb: "Receives OpenTelemetry spans from the stack so you can debug latency and failures." },
+  langfuse: { title: "Langfuse", blurb: "LLM observability UI — prompt traces, scores, and run history." },
+  gemma: { title: "Gemma / local LLM", blurb: "Local model HTTP endpoint used when the stack is configured for on-box inference." },
+  "service:8088": { title: "Open WebUI (alt)", blurb: "Alternate WebUI listen port sometimes used by compose or VIP fronting." },
+  "service-8010": { title: "Aux API :8010", blurb: "Extra HTTP service on 8010 from the health matrix (host-specific helper)." },
+  "service-8001": { title: "Aux API :8001", blurb: "Extra HTTP service on 8001 from the health matrix." },
+  "service-8002": { title: "Aux API :8002", blurb: "Extra HTTP service on 8002 from the health matrix." },
+  "service-8003": { title: "Aux API :8003", blurb: "Extra HTTP service on 8003 from the health matrix." },
+  "service:18100": { title: "Stage orchestrator", blurb: "Staging copy of the orchestrator (parallel stack; does not serve production traffic)." },
+  "service:18200": { title: "Stage guardrails", blurb: "Staging copy of guardrails for the parallel stage stack." },
+  "service:13100": { title: "Stage WebUI", blurb: "Staging chat UI for the parallel stage stack." },
+};
+const ENDPOINT_BY_PORT = {
+  9000: "manager", 8000: "kb", 8200: "guardrails", 8100: "orchestrator",
+  13000: "webui", 8085: "jenkins", 3000: "trace-collector", 3001: "langfuse",
+  18000: "gemma", 8088: "service:8088", 8010: "service-8010", 8001: "service-8001",
+  8002: "service-8002", 8003: "service-8003", 18100: "service:18100",
+  18200: "service:18200", 13100: "service:13100",
+};
 
 /* ------------------------------------------------------------------ utils */
 const $ = (id) => document.getElementById(id);
@@ -289,9 +388,6 @@ function showTip(evt, html) {
 function hideTip() { tip.style.display = "none"; }
 
 /* ------------------------------------------------------------ helpers */
-// A run record stores `services` as an array of {name,status,...}; the compact
-// index entry stores a name→status map. Normalize to the array shape so every
-// renderer only deals with one structure.
 function normServices(rec) {
   const raw = rec.services;
   if (Array.isArray(raw)) {
@@ -307,7 +403,6 @@ function normServices(rec) {
 }
 
 function serviceMatrix(records) {
-  // stable service order: core first, then alphabetical extras
   const names = new Set();
   records.forEach((r) => Object.keys(r.serviceMap || {}).forEach((n) => names.add(n)));
   const all = Array.from(names);
@@ -328,19 +423,65 @@ function statusOf(run, service) {
   return s.status === "no-data" ? "no-data" : s.status;
 }
 
+function envOf(rec) {
+  const t = String(rec.machine_type || "").toLowerCase();
+  const m = String(rec.machine || "").toLowerCase();
+  const mode = String(rec.mode || "").toLowerCase();
+  if (t.includes("stage") || m.includes("stage") || mode.includes("stage")) return "Stage";
+  if (t.includes("dev") || t.includes("laptop") || m.includes("nikkhah") || m.includes("laptop")) return "Dev";
+  if (t.includes("prod") || t.includes("gpu") || m.includes("gpu")) return "Production";
+  return "Other";
+}
+
+function envBadgeClass(env) {
+  if (env === "Production") return "b-env-prod";
+  if (env === "Stage") return "b-env-stage";
+  if (env === "Dev") return "b-env-dev";
+  return "b-env-other";
+}
+
+function deviceGroups(records) {
+  const order = { Production: 0, Stage: 1, Dev: 2, Other: 3 };
+  const map = new Map();
+  records.forEach((r) => {
+    const env = envOf(r);
+    const machine = r.machine || "unknown";
+    const key = env + "\0" + machine;
+    if (!map.has(key)) map.set(key, { env, machine, key, records: [] });
+    map.get(key).records.push(r);
+  });
+  return Array.from(map.values()).sort((a, b) => {
+    const eo = (order[a.env] ?? 9) - (order[b.env] ?? 9);
+    if (eo) return eo;
+    return String(a.machine).localeCompare(String(b.machine));
+  });
+}
+
+function endpointMeta(name, port) {
+  if (ENDPOINT_INFO[name]) return ENDPOINT_INFO[name];
+  const byPort = port != null && ENDPOINT_BY_PORT[Number(port)];
+  if (byPort && ENDPOINT_INFO[byPort]) return ENDPOINT_INFO[byPort];
+  return {
+    title: name,
+    blurb: port != null
+      ? `HTTP health probe on port ${port}. Shown when the matrix reports this listener.`
+      : "HTTP health probe reported by the matrix for this host.",
+  };
+}
+
 /* ------------------------------------------------------------ cards */
 function renderCards(records) {
   const last = records[records.length - 1];
   const day = within(records, 24);
   const dayBad = day.filter((r) => r.status !== "HEALTHY").length;
   const dayPct = day.length ? Math.round(((day.length - dayBad) / day.length) * 1000) / 10 : null;
-
   const kb = last && last.kb ? last.kb : null;
+  const devices = deviceGroups(records).length;
   const cards = [
     {
       label: "Current status",
       value: last ? last.status : "no data",
-      hint: last ? `last run ${fmtShort(last.ts)} UTC` : "no runs published yet",
+      hint: last ? `last run ${fmtShort(last.ts)} UTC · ${envOf(last)}` : "no runs published yet",
     },
     {
       label: "Uptime · last 24h",
@@ -348,9 +489,9 @@ function renderCards(records) {
       hint: day.length ? `${day.length - dayBad} healthy / ${day.length} runs` : "no runs in window",
     },
     {
-      label: "Failures · last 24h",
-      value: String(collectIncidents(day).length),
-      hint: "distinct service incidents",
+      label: "Devices",
+      value: String(devices),
+      hint: deviceGroups(records).map((g) => g.env).filter((v, i, a) => a.indexOf(v) === i).join(" · ") || "none",
     },
     {
       label: "KB version",
@@ -363,28 +504,64 @@ function renderCards(records) {
       <div class="label">${esc(c.label)}</div>
       <div class="value">${c.value}</div>
       <div class="hint">${esc(c.hint)}</div>
-    </div>`).join("<div></div>").replace(/<div><\/div>/g, "");
+    </div>`).join("");
 }
 
-/* ------------------------------------------------------------ heatmap */
-function renderHeatmap(records) {
-  const rows = serviceMatrix(records);
-  const grid = $("heatmap");
-  const visible = state.heatWindow ? records.slice(-state.heatWindow) : records;
+/* ------------------------------------------------------------ endpoints */
+function renderEndpoints(records) {
+  const byName = new Map();
+  records.forEach((r) => {
+    Object.values(r.serviceMap || {}).forEach((s) => {
+      if (!s || !s.name) return;
+      const prev = byName.get(s.name);
+      if (!prev || (s.port != null && prev.port == null)) byName.set(s.name, s);
+    });
+  });
+  // Always show the known catalog even before the first publish.
+  Object.keys(ENDPOINT_INFO).forEach((name) => {
+    if (!byName.has(name)) byName.set(name, { name, port: null, status: "no-data" });
+  });
+  const names = Array.from(byName.keys()).sort((a, b) => {
+    const ac = CORE.includes(a) ? 0 : 1;
+    const bc = CORE.includes(b) ? 0 : 1;
+    if (ac !== bc) return ac - bc;
+    return a.localeCompare(b);
+  });
+  $("endpoints-body").innerHTML = names.map((name) => {
+    const s = byName.get(name) || { name };
+    const meta = endpointMeta(name, s.port);
+    const port = s.port != null ? `:${s.port}` : "";
+    const core = CORE.includes(name) ? '<span class="badge b-up">core</span>' : "";
+    return `<details class="fold">
+      <summary>
+        <strong>${esc(meta.title)}</strong>
+        <span class="mono muted">${esc(name)}${esc(port)}</span>
+        ${core}
+      </summary>
+      <div class="fold-body"><p class="fold-blurb">${esc(meta.blurb)}</p></div>
+    </details>`;
+  }).join("");
+}
+
+/* ------------------------------------------------------------ heatmap (per device) */
+function paintHeatmap(grid, records, allRecords) {
+  const rows = serviceMatrix(records.length ? records : allRecords);
+  const visible = state.heatWindow ? records.slice(-state.heatWindow) : records.slice();
   if (!visible.length || !rows.length) {
-    grid.innerHTML = '<div class="empty">No runs published yet.</div>';
+    grid.innerHTML = '<div class="empty">No runs for this device in the selected window.</div>';
     return;
   }
   const cols = visible.length;
-  const cellW = 13, gap = 3;
+  const cellW = 13;
   grid.style.gridTemplateColumns = `max-content repeat(${cols}, ${cellW}px)`;
 
   let html = "";
-  // header: time labels (every Nth column)
   html += '<div class="heat-label axis"></div>';
   const step = Math.max(1, Math.ceil(cols / 10));
   for (let i = 0; i < cols; i++) {
-    const label = i % step === 0 ? `<div class="axis" style="writing-mode:vertical-rl;transform:rotate(180deg);height:46px;font-size:9.5px">${esc(fmtShort(visible[i].ts).slice(6))}</div>` : "<div></div>";
+    const label = i % step === 0
+      ? `<div class="axis" style="writing-mode:vertical-rl;transform:rotate(180deg);height:46px;font-size:9.5px">${esc(fmtShort(visible[i].ts).slice(6))}</div>`
+      : "<div></div>";
     html += label;
   }
   rows.forEach((svc) => {
@@ -400,7 +577,7 @@ function renderHeatmap(records) {
 
   grid.querySelectorAll(".cell").forEach((cell) => {
     cell.addEventListener("mousemove", (evt) => {
-      const run = records.find((r) => r.id === cell.dataset.run);
+      const run = allRecords.find((r) => r.id === cell.dataset.run);
       if (!run) return;
       const svc = cell.dataset.svc;
       const info = (run.serviceMap || {})[svc] || {};
@@ -408,19 +585,43 @@ function renderHeatmap(records) {
       showTip(evt, `
         <div class="tt-head">${esc(svc)} — ${esc(cell.dataset.status)}</div>
         <div class="tt-row">${esc(fmtTs(run.ts))}</div>
-        <div class="tt-row">machine: ${esc(run.machine)} · run: ${esc(run.status)}</div>
+        <div class="tt-row">${esc(envOf(run))} · ${esc(run.machine)} · run ${esc(run.status)}</div>
         ${info.http_code ? `<div class="tt-row">HTTP ${esc(info.http_code)}${info.port ? ` · port ${esc(info.port)}` : ""}</div>` : ""}
-        ${excerpt}
-        ${run.qa ? `<div class="tt-row">QA: ${esc(run.qa)}</div>` : ""}`);
+        ${excerpt}`);
     });
     cell.addEventListener("mouseleave", hideTip);
   });
 }
 
+function renderHeatmap(records) {
+  const host = $("heatmap-by-device");
+  const windowed = state.heatWindow ? within(records, state.heatWindow) : records.slice();
+  // If window filter emptied a device that still has older data, still show device
+  // groups from full history but paint only windowed samples.
+  const groups = deviceGroups(records);
+  if (!groups.length) {
+    host.innerHTML = '<div class="empty">No runs published yet.</div>';
+    return;
+  }
+  host.innerHTML = groups.map((g, i) => {
+    const subset = windowed.filter((r) => r.machine === g.machine && envOf(r) === g.env);
+    return `<div class="device-block" data-device="${esc(g.key)}">
+      <h3 class="device-title">
+        <span class="badge ${envBadgeClass(g.env)}">${esc(g.env)}</span>
+        <span>${esc(g.machine)}</span>
+        <span class="muted" style="font-size:12px">${subset.length} run(s) in window</span>
+      </h3>
+      <div class="heat-scroll"><div class="heat-grid" id="heatmap-${i}"></div></div>
+    </div>`;
+  }).join("");
+  groups.forEach((g, i) => {
+    const subset = windowed.filter((r) => r.machine === g.machine && envOf(r) === g.env);
+    paintHeatmap($(`heatmap-${i}`), subset, records);
+  });
+}
+
 /* ------------------------------------------------------------ incidents */
 function collectIncidents(records) {
-  // Walk runs in order; a service entering a non-up state opens an incident,
-  // returning to `up` closes it.
   const services = serviceMatrix(records);
   const open = {};
   const incidents = [];
@@ -428,14 +629,19 @@ function collectIncidents(records) {
     services.forEach((svc) => {
       const st = statusOf(run, svc);
       const failing = st === "down" || st === "degraded";
-      if (failing && !open[svc]) {
-        open[svc] = { service: svc, first_seen: run.ts, last_seen: run.ts, status: st, run_id: run.id, machine: run.machine, detail: (run.serviceMap || {})[svc] };
-      } else if (failing && open[svc]) {
-        open[svc].last_seen = run.ts;
-        open[svc].status = st === "down" ? "down" : open[svc].status;
-      } else if (!failing && open[svc]) {
-        incidents.push({ ...open[svc], resolved_at: run.ts });
-        delete open[svc];
+      const key = `${run.machine || ""}::${svc}`;
+      if (failing && !open[key]) {
+        open[key] = {
+          service: svc, first_seen: run.ts, last_seen: run.ts, status: st,
+          run_id: run.id, machine: run.machine, env: envOf(run),
+          detail: (run.serviceMap || {})[svc],
+        };
+      } else if (failing && open[key]) {
+        open[key].last_seen = run.ts;
+        open[key].status = st === "down" ? "down" : open[key].status;
+      } else if (!failing && open[key]) {
+        incidents.push({ ...open[key], resolved_at: run.ts });
+        delete open[key];
       }
     });
   });
@@ -446,7 +652,7 @@ function collectIncidents(records) {
 
 function renderFailures(records) {
   const day = within(records, 24);
-  const incidents = collectIncidents(day.length ? day : records);
+  const incidents = collectIncidents(day.length ? day : []);
   const badge = $("f24-count");
   badge.textContent = String(incidents.length);
   badge.className = "badge " + (incidents.length ? "b-down" : "b-up");
@@ -455,48 +661,50 @@ function renderFailures(records) {
     $("f24-body").innerHTML = '<div class="empty">No failures in the last 24 hours.</div>';
     return;
   }
-  const rows = incidents.map((inc) => {
-    const start = new Date(inc.first_seen).getTime();
-    const end = inc.resolved_at ? new Date(inc.resolved_at).getTime() : Date.now();
-    const mins = Math.max(0, Math.round((end - start) / 60000));
-    const dur = inc.resolved_at ? `${mins} min` : `${mins} min (ongoing)`;
-    const code = inc.detail && inc.detail.http_code ? inc.detail.http_code : "—";
-    const excerpt = inc.detail && inc.detail.detail ? inc.detail.detail : "";
-    return `<tr>
-      <td><strong>${esc(inc.service)}</strong></td>
-      <td><span class="badge ${STATUS_CLASS[inc.status] || "b-nodata"}">${esc(inc.status)}</span></td>
-      <td class="num">${esc(fmtTs(inc.first_seen))}</td>
-      <td class="num">${esc(dur)}</td>
-      <td class="mono">${esc(code)}</td>
-      <td class="muted">${esc(excerpt).slice(0, 120)}</td>
-    </tr>`;
+  const byDev = new Map();
+  incidents.forEach((inc) => {
+    const key = `${inc.env || "Other"}\0${inc.machine || "unknown"}`;
+    if (!byDev.has(key)) byDev.set(key, []);
+    byDev.get(key).push(inc);
+  });
+  $("f24-body").innerHTML = Array.from(byDev.entries()).map(([key, list]) => {
+    const [env, machine] = key.split("\0");
+    const rows = list.map((inc) => {
+      const start = new Date(inc.first_seen).getTime();
+      const end = inc.resolved_at ? new Date(inc.resolved_at).getTime() : Date.now();
+      const mins = Math.max(0, Math.round((end - start) / 60000));
+      const dur = inc.resolved_at ? `${mins} min` : `${mins} min (ongoing)`;
+      const code = inc.detail && inc.detail.http_code ? inc.detail.http_code : "—";
+      const excerpt = inc.detail && inc.detail.detail ? inc.detail.detail : "";
+      return `<tr>
+        <td><strong>${esc(inc.service)}</strong></td>
+        <td><span class="badge ${STATUS_CLASS[inc.status] || "b-nodata"}">${esc(inc.status)}</span></td>
+        <td class="num">${esc(fmtTs(inc.first_seen))}</td>
+        <td class="num">${esc(dur)}</td>
+        <td class="mono">${esc(code)}</td>
+        <td class="muted">${esc(excerpt).slice(0, 120)}</td>
+      </tr>`;
+    }).join("");
+    return `<h3 class="device-title"><span class="badge ${envBadgeClass(env)}">${esc(env)}</span> ${esc(machine)}</h3>
+      <table>
+        <thead><tr><th>Service</th><th>State</th><th>First seen (UTC)</th><th>Duration</th><th>HTTP</th><th>Error excerpt</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
   }).join("");
-  $("f24-body").innerHTML = `<table>
-    <thead><tr><th>Service</th><th>State</th><th>First seen (UTC)</th><th>Duration</th><th>HTTP</th><th>Error excerpt</th></tr></thead>
-    <tbody>${rows}</tbody></table>`;
 }
 
-/* ------------------------------------------------------------ uptime */
-function renderUptime(records) {
-  const win = within(records, state.uptimeWindow);
-  const rows = serviceMatrix(records);
-  const note = $("uptime-note");
-  note.textContent = win.length
-    ? `${win.length} run(s) in the selected window (${fmtTs(win[0].ts)} → ${fmtTs(win[win.length - 1].ts)}).`
-    : "No runs in the selected window.";
-
+/* ------------------------------------------------------------ uptime (per device) */
+function uptimeTableHtml(win, rows) {
   if (!win.length || !rows.length) {
-    $("uptime-body").innerHTML = '<tr><td colspan="6" class="empty">No data in this window.</td></tr>';
-    return;
+    return '<div class="empty">No data in this window for this device.</div>';
   }
   const body = rows.map((svc) => {
-    let up = 0, down = 0, degraded = 0, nodata = 0;
+    let up = 0, down = 0, degraded = 0;
     win.forEach((r) => {
       const st = statusOf(r, svc);
       if (st === "up") up++;
       else if (st === "down") down++;
       else if (st === "degraded") degraded++;
-      else nodata++;
     });
     const counted = up + down + degraded;
     const pct = counted ? Math.round((up / counted) * 1000) / 10 : null;
@@ -509,7 +717,27 @@ function renderUptime(records) {
       <td class="num">${degraded}</td>
     </tr>`;
   }).join("");
-  $("uptime-body").innerHTML = body;
+  return `<table>
+    <thead><tr><th>Service</th><th>Uptime</th><th style="width:33%"></th><th class="num">Runs up</th><th class="num">Down</th><th class="num">Degraded</th></tr></thead>
+    <tbody>${body}</tbody></table>`;
+}
+
+function renderUptime(records) {
+  const winAll = within(records, state.uptimeWindow);
+  const note = $("uptime-note");
+  note.textContent = winAll.length
+    ? `${winAll.length} run(s) in the selected window (${fmtTs(winAll[0].ts)} → ${fmtTs(winAll[winAll.length - 1].ts)}), split by device.`
+    : "No runs in the selected window.";
+  const groups = deviceGroups(records);
+  $("uptime-by-device").innerHTML = groups.map((g) => {
+    const win = winAll.filter((r) => r.machine === g.machine && envOf(r) === g.env);
+    const rows = serviceMatrix(g.records);
+    return `<h3 class="device-title">
+        <span class="badge ${envBadgeClass(g.env)}">${esc(g.env)}</span>
+        <span>${esc(g.machine)}</span>
+        <span class="muted" style="font-size:12px">${win.length} run(s)</span>
+      </h3>${uptimeTableHtml(win, rows)}`;
+  }).join("") || '<div class="empty">No devices yet.</div>';
 }
 
 /* ------------------------------------------------------------ KB */
@@ -559,7 +787,6 @@ function renderKB(records) {
     <div class="k">Pinned pack versions</div><div class="v"></div>
     ${packRows || '<div class="k">packs</div><div class="v">unknown</div>'}`;
 
-  // checks
   const checks = kb.checks || [];
   $("kb-checks").innerHTML = checks.length
     ? checks.map((c) => {
@@ -569,7 +796,6 @@ function renderKB(records) {
       }).join("")
     : '<tr><td colspan="4" class="empty">No comparable checks (values unknown).</td></tr>';
 
-  // history across runs: corpus served per run
   const hist = withKb.slice().reverse().filter((r) => r.kb.corpus_live);
   const changes = [];
   let prev = null;
@@ -587,51 +813,337 @@ function renderKB(records) {
     : '<div class="empty">No corpus change observed in the published runs yet.</div>';
 }
 
-/* ------------------------------------------------------------ run log */
-function renderRuns(records) {
-  const sorted = records.slice().sort((a, b) => new Date(b.ts) - new Date(a.ts));
-  $("runs-body").innerHTML = sorted.map((r) => {
-    const cls = r.status === "HEALTHY" ? "b-up" : r.status === "DOWN" ? "b-down" : "b-degraded";
-    const verdict = (r.kb && r.kb.verdict) || r.kb_verdict || "unknown";
-    const kbCls = verdict === "match" ? "b-match" : verdict === "mismatch" ? "b-mismatch" : "b-unknown";
-    const detail = (r.links && r.links.detail) || r.detail;
-    const qa = r.qa || ((r.e2e && r.e2e.total) ? `${r.e2e.passed}/${r.e2e.total}` : null);
+/* ------------------------------------------------------------ single reports */
+function qaText(r) {
+  if (r.qa) return String(r.qa);
+  if (r.e2e && r.e2e.total != null) return `${r.e2e.passed}/${r.e2e.total}`;
+  return "—";
+}
+
+function serviceRowsHtml(r) {
+  const list = Array.isArray(r.services)
+    ? r.services
+    : Object.values(r.serviceMap || {});
+  if (!list.length) return '<div class="empty">No service metrics in this record.</div>';
+  const rows = list.map((s) => {
+    const st = s.status || s.state || "no-data";
+    const meta = endpointMeta(s.name, s.port);
     return `<tr>
-      <td class="num">${esc(fmtTs(r.ts))}</td>
-      <td>${esc(r.machine)}<div class="muted" style="font-size:11px">${esc(r.machine_type || "")}</div></td>
-      <td><span class="badge ${cls}">${esc(r.status)}</span></td>
-      <td class="num">${esc(qa || "—")}</td>
-      <td><span class="badge ${kbCls}">${esc(verdict)}</span></td>
-      <td>${detail ? `<a href="${esc(detail)}">open</a>` : '<span class="muted">—</span>'} · <a href="runs/${esc(r.id)}.json">json</a></td>
+      <td><strong>${esc(meta.title)}</strong><div class="mono muted">${esc(s.name)}</div></td>
+      <td class="num">${s.port != null ? esc(s.port) : "—"}</td>
+      <td><span class="badge ${STATUS_CLASS[st] || "b-nodata"}">${esc(st)}</span></td>
+      <td class="mono">${esc(s.http_code != null ? s.http_code : (s.http != null ? s.http : "—"))}</td>
+      <td class="muted">${esc(s.detail || "")}</td>
     </tr>`;
   }).join("");
+  return `<table>
+    <thead><tr><th>Endpoint</th><th>Port</th><th>State</th><th>HTTP</th><th>Detail</th></tr></thead>
+    <tbody>${rows}</tbody></table>`;
+}
+
+function e2eHtml(r) {
+  const e2e = r.e2e;
+  if (!e2e) return "";
+  const tests = Array.isArray(e2e.tests) ? e2e.tests : [];
+  const head = `<div style="margin:14px 0 6px;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">QA / E2E — ${esc(e2e.passed)}/${esc(e2e.total)} passed</div>`;
+  if (!tests.length) return head;
+  return head + `<table><thead><tr><th>Test</th><th>HTTP</th><th>Result</th></tr></thead><tbody>${
+    tests.map((t) => `<tr>
+      <td class="mono">${esc(t.test || t.name || "?")}</td>
+      <td class="mono">${esc(t.http_code != null ? t.http_code : "—")}</td>
+      <td><span class="badge ${t.passed ? "b-up" : "b-down"}">${t.passed ? "pass" : "fail"}</span></td>
+    </tr>`).join("")
+  }</tbody></table>`;
+}
+
+async function resolveScreenshots(run) {
+  const links = run.links || {};
+  const dir = links.screenshots_dir || `logs/${run.id}/screenshots`;
+  let files = Array.isArray(links.screenshots) ? links.screenshots.slice() : [];
+  if (!files.length) {
+    const man = await getJSON(`${dir}/manifest.json`);
+    if (man && Array.isArray(man.files)) files = man.files;
+  }
+  if (!files.length) {
+    // Best-effort fallbacks for older publishes without a manifest.
+    const guesses = [];
+    Object.values(run.serviceMap || {}).forEach((s) => {
+      if (s && s.port != null) guesses.push(`endpoint_${s.port}_health.png`);
+    });
+    ["kb-health.png", "guard-health.png", "orch-health.png", "jenkins-login.png"].forEach((n) => guesses.push(n));
+    const found = [];
+    await Promise.all(guesses.map(async (name) => {
+      try {
+        const res = await fetch(`${dir}/${name}`, { method: "HEAD", cache: "no-store" });
+        if (res.ok) found.push(name);
+      } catch (_) { /* ignore */ }
+    }));
+    files = found;
+  }
+  return { dir, files: Array.from(new Set(files)).sort() };
+}
+
+function renderShotGallery(host, dir, files) {
+  if (!files.length) {
+    host.innerHTML = '<div class="empty">No screenshots retained for this run (pruned or never captured).</div>';
+    return;
+  }
+  host.innerHTML = `<div class="shot-grid">${files.map((name) => {
+    const src = `${dir}/${name}`;
+    return `<div class="shot-card">
+      <a href="${esc(src)}" target="_blank" rel="noopener">
+        <img src="${esc(src)}" alt="${esc(name)}" loading="lazy" onerror="this.closest('.shot-card').remove()">
+      </a>
+      <div class="cap">${esc(name)}</div>
+    </div>`;
+  }).join("")}</div>`;
+}
+
+function renderReports(records) {
+  const sorted = records.slice().sort((a, b) => new Date(b.ts) - new Date(a.ts));
+  const badge = $("reports-count");
+  badge.textContent = String(sorted.length);
+  badge.className = "badge " + (sorted.length ? "b-up" : "b-nodata");
+  if (!sorted.length) {
+    $("reports-body").innerHTML = '<div class="empty">No reports published yet.</div>';
+    return;
+  }
+  $("reports-body").innerHTML = sorted.map((r) => {
+    const env = envOf(r);
+    const cls = r.status === "HEALTHY" ? "b-up" : r.status === "DOWN" ? "b-down" : "b-degraded";
+    const verdict = (r.kb && r.kb.verdict) || "unknown";
+    const detail = (r.links && r.links.detail) || null;
+    const id = esc(r.id);
+    return `<details class="fold report-fold" data-run="${id}">
+      <summary>
+        <span class="badge ${envBadgeClass(env)}">${esc(env)}</span>
+        <strong class="mono">${esc(fmtTs(r.ts))}</strong>
+        <span>${esc(r.machine || "")}</span>
+        <span class="badge ${cls}">${esc(r.status)}</span>
+        <span class="fold-meta">
+          <span class="muted">QA ${esc(qaText(r))}</span>
+          <span class="badge ${verdict === "match" ? "b-match" : verdict === "mismatch" ? "b-mismatch" : "b-unknown"}">${esc(verdict)}</span>
+        </span>
+      </summary>
+      <div class="fold-body">
+        <div class="kv" style="margin:10px 0 14px">
+          <div class="k">Run id</div><div class="v mono">${esc(r.id)}</div>
+          <div class="k">Mode</div><div class="v">${esc(r.mode || "—")}</div>
+          <div class="k">Links</div><div class="v">
+            ${detail ? `<a href="${esc(detail)}">detail page</a> · ` : ""}
+            <a href="runs/${esc(r.id)}.json">json</a>
+          </div>
+        </div>
+        <div style="margin:0 0 6px;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Endpoint metrics</div>
+        ${serviceRowsHtml(r)}
+        ${e2eHtml(r)}
+        <div style="margin:14px 0 6px;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Screenshots</div>
+        <div class="shots-host" data-loaded="0"><div class="empty">Expand loads screenshots…</div></div>
+      </div>
+    </details>`;
+  }).join("");
+
+  $("reports-body").querySelectorAll("details.report-fold").forEach((el) => {
+    el.addEventListener("toggle", async () => {
+      if (!el.open) return;
+      const host = el.querySelector(".shots-host");
+      if (!host || host.dataset.loaded === "1") return;
+      host.dataset.loaded = "1";
+      host.innerHTML = '<div class="empty">Loading screenshots…</div>';
+      const run = state.records.find((r) => r.id === el.dataset.run);
+      if (!run) {
+        host.innerHTML = '<div class="empty">Run record not found.</div>';
+        return;
+      }
+      const { dir, files } = await resolveScreenshots(run);
+      renderShotGallery(host, dir, files);
+    });
+  });
+}
+
+/* ------------------------------------------------------------ live status (metrics/) */
+function renderMetricsStatus() {
+  const st = state.metricsStatus;
+  const badge = $("status-badge");
+  const body = $("status-body");
+  if (!st) {
+    badge.className = "badge b-nodata";
+    badge.textContent = "missing";
+    body.innerHTML = '<div class="empty">metrics/status.json not published yet — next hourly run will create it.</div>';
+    return;
+  }
+  const ok = !!st.ok || st.status === "HEALTHY";
+  badge.className = "badge " + (ok ? "b-up" : st.status === "DOWN" ? "b-down" : "b-degraded");
+  badge.textContent = st.status || (ok ? "ok" : "degraded");
+  const series = state.metricsSeries;
+  const n = series && series.count != null ? series.count : (series && series.points ? series.points.length : "—");
+  body.innerHTML = `
+    <div class="k">Updated</div><div class="v mono">${esc(fmtTs(st.updated_at))}</div>
+    <div class="k">Machine</div><div class="v">${esc(st.machine || "—")}</div>
+    <div class="k">Core services</div><div class="v mono">${esc(st.core_up)} / ${esc(st.core_total)}</div>
+    <div class="k">Run</div><div class="v mono">${esc(st.run_id || "—")}</div>
+    <div class="k">Series points</div><div class="v mono">${esc(n)} (keep ${esc(series && series.keep_days != null ? series.keep_days + "d" : "—")})</div>`;
 }
 
 /* ------------------------------------------------------------ header */
 function renderHeader(records) {
   const last = records[records.length - 1];
+  const mst = state.metricsStatus;
   $("subtitle").textContent = records.length
-    ? `${records.length} run(s) · ${fmtTs(records[0].ts)} → ${fmtTs(last.ts)}`
+    ? `${records.length} run(s) · ${fmtTs(records[0].ts)} → ${fmtTs(last.ts)} · hourly · devices separated`
     : "no runs published yet";
-  const machines = Array.from(new Set(records.map((r) => r.machine).filter(Boolean)));
-  $("machine-pill").textContent = machines.length ? machines.join(" · ") : "all machines";
+  const labels = deviceGroups(records).map((g) => `${g.env}:${g.machine}`);
+  $("machine-pill").textContent = labels.length ? labels.join(" · ") : "all machines";
   const dot = $("live-dot"), txt = $("live-text");
-  if (!last) { dot.style.background = "var(--nodata)"; txt.textContent = "no data"; return; }
-  const ageMin = (Date.now() - new Date(last.ts).getTime()) / 60000;
-  const stale = ageMin > 36 * 60;
-  dot.style.background = last.status === "HEALTHY" ? "var(--up)" : last.status === "DOWN" ? "var(--down)" : "var(--degraded)";
-  txt.textContent = `${last.status} · ${ageMin < 90 ? Math.round(ageMin) + " min ago" : Math.round(ageMin / 60) + " h ago"}${stale ? " (stale)" : ""}`;
+  const status = (mst && mst.status) || (last && last.status);
+  const ts = (mst && mst.updated_at) || (last && last.ts);
+  if (!status) { dot.style.background = "var(--nodata)"; txt.textContent = "no data"; return; }
+  const ageMin = ts ? (Date.now() - new Date(ts).getTime()) / 60000 : 9999;
+  const stale = ageMin > 150;
+  dot.style.background = status === "HEALTHY" ? "var(--up)" : status === "DOWN" ? "var(--down)" : "var(--degraded)";
+  txt.textContent = `${status} · ${ageMin < 90 ? Math.round(ageMin) + " min ago" : Math.round(ageMin / 60) + " h ago"}${stale ? " (stale)" : ""}`;
 }
 
 /* ------------------------------------------------------------ boot */
+function sparkline(canvasId, series, color) {
+  const c = $(canvasId);
+  if (!c || !c.getContext) return;
+  const ctx = c.getContext("2d");
+  const w = c.width, h = c.height;
+  ctx.clearRect(0, 0, w, h);
+  ctx.strokeStyle = "#232a38";
+  ctx.beginPath(); ctx.moveTo(40, h - 24); ctx.lineTo(w - 10, h - 24); ctx.stroke();
+  if (!series.length) {
+    ctx.fillStyle = "#8894a8";
+    ctx.fillText("no trend points yet", 48, h / 2);
+    return;
+  }
+  const vals = series.map((p) => p.v).filter((v) => v != null && !isNaN(v));
+  if (!vals.length) return;
+  const min = Math.min(...vals), max = Math.max(...vals);
+  const span = Math.max(1e-6, max - min);
+  ctx.strokeStyle = color || "#4d9dff";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  series.forEach((p, i) => {
+    if (p.v == null || isNaN(p.v)) return;
+    const x = 40 + (i / Math.max(1, series.length - 1)) * (w - 60);
+    const y = (h - 30) - ((p.v - min) / span) * (h - 50);
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+  ctx.fillStyle = "#8894a8";
+  ctx.font = "11px sans-serif";
+  ctx.fillText(String(Math.round(max)), 4, 20);
+  ctx.fillText(String(Math.round(min)), 4, h - 28);
+}
+
+function renderJenkins(records) {
+  const last = [...records].reverse().find((r) => r.jenkins) || records[records.length - 1];
+  const j = last && last.jenkins;
+  const badge = $("jenkins-badge");
+  const body = $("jenkins-body");
+  if (!j) {
+    badge.className = "badge b-nodata";
+    badge.textContent = "no data";
+    body.innerHTML = '<div class="empty">No jenkins_status.json in published runs yet — next hourly report will include it.</div>';
+    return;
+  }
+  const ok = !!j.healthy;
+  badge.className = "badge " + (ok ? "b-up" : "b-degraded");
+  badge.textContent = j.status || (ok ? "HEALTHY" : "DEGRADED");
+  const imgs = (j.images || []).map((i) =>
+    `<div class="k">${esc(i.ref)}</div><div class="v">${i.present ? `<span class="badge b-up">present</span> age ${esc(i.age_hours)}h` : '<span class="badge b-down">missing</span>'}</div>`
+  ).join("");
+  const snaps = (j.snapshots || []).slice(-5).map((s) => `<span class="mono">${esc(s)}</span>`).join(" · ") || "—";
+  const reasons = (j.reasons || []).length ? (j.reasons || []).map((r) => `<span class="badge b-degraded">${esc(r)}</span>`).join(" ") : '<span class="badge b-up">ok</span>';
+  body.innerHTML = `
+    <div class="k">Jenkins auth</div><div class="v">${(j.jenkins && j.jenkins.authenticated) ? '<span class="badge b-up">yes</span>' : '<span class="badge b-down">no</span>'}</div>
+    <div class="k">Job</div><div class="v mono">${esc((j.jenkins && j.jenkins.job) || "—")}</div>
+    <div class="k">Last build</div><div class="v">${esc(JSON.stringify(j.jenkins && j.jenkins.last_build || {}).slice(0, 180))}</div>
+    <div class="k">Reasons</div><div class="v">${reasons}</div>
+    <div class="k">Snapshots</div><div class="v">${snaps}</div>
+    ${imgs}`;
+}
+
+function renderLatency(records) {
+  const last = [...records].reverse().find((r) => r.latency || (r.e2e && r.e2e.latency));
+  const lat = (last && (last.latency || (last.e2e && last.e2e.latency))) || null;
+  const host = $("latency-body");
+  if (!lat) {
+    host.innerHTML = '<div class="empty">No latency_summary.json yet — produced by random FAQ QA each report.</div>';
+    sparkline("latency-trend", [], "#4d9dff");
+    return;
+  }
+  const stages = lat.stages || {};
+  const rows = Object.keys(stages).sort().map((k) => {
+    const s = stages[k] || {};
+    const avg = s.avg_ms;
+    return `<tr>
+      <td class="mono">${esc(k)}</td>
+      <td class="num">${avg == null ? "—" : esc(avg) + " ms"}</td>
+      <td class="num">${s.p50_ms == null ? "—" : esc(s.p50_ms)}</td>
+      <td class="num">${s.p95_ms == null ? "—" : esc(s.p95_ms)}</td>
+      <td><div class="bar-track"><div class="bar-fill" style="width:${Math.min(100, (avg || 0) / 50)}%"></div></div></td>
+    </tr>`;
+  }).join("");
+  host.innerHTML = `
+    <div class="kv" style="margin-bottom:12px">
+      <div class="k">QA</div><div class="v">${esc(lat.passed)}/${esc(lat.count)} · seed ${esc(lat.seed || (last.e2e && last.e2e.random_qa && last.e2e.random_qa.seed) || "—")}</div>
+      <div class="k">E2E p50 / p95</div><div class="v mono">${esc((lat.e2e || {}).p50_ms)} / ${esc((lat.e2e || {}).p95_ms)} ms</div>
+      <div class="k">Retrieval p50</div><div class="v mono">${esc((lat.retrieval || {}).p50_ms)} ms</div>
+      <div class="k">Generation p50</div><div class="v mono">${esc((lat.generation || {}).p50_ms)} ms</div>
+    </div>
+    <table><thead><tr><th>Stage</th><th>Avg</th><th>p50</th><th>p95</th><th></th></tr></thead><tbody>${rows || '<tr><td colspan="5" class="empty">No stage timings</td></tr>'}</tbody></table>`;
+  const trend = records.filter((r) => r.latency || (r.e2e && r.e2e.latency)).map((r) => {
+    const L = r.latency || r.e2e.latency;
+    return { v: (L.e2e || {}).p50_ms };
+  });
+  sparkline("latency-trend", trend, "#2ecc71");
+}
+
+function renderHost(records) {
+  const last = [...records].reverse().find((r) => r.host) || records[records.length - 1];
+  const h = last && last.host;
+  const body = $("host-body");
+  if (!h) {
+    body.innerHTML = '<div class="empty">No host_inventory.json yet.</div>';
+    sparkline("host-trend", [], "#f5a524");
+    return;
+  }
+  const ports = (h.ports || []).filter((p) => p.open).map((p) => p.port).join(", ") || "—";
+  const closed = (h.ports || []).filter((p) => !p.open).map((p) => p.port).join(", ") || "none";
+  const mem = h.memory || {};
+  const disk = (h.disk || []).slice(0, 4).map((d) =>
+    `<div class="k">${esc(d.mount)}</div><div class="v">${esc(d.used)} / ${esc(d.size)} (${esc(d.use_pct)}%)</div>`
+  ).join("");
+  const gpu = (h.gpu || []).map((g, i) =>
+    `<div class="k">GPU ${esc(g.index != null ? g.index : i)}</div><div class="v">${esc(g.name || g.error || "?")} · util ${esc(g.util_pct)}% · mem ${esc(g.mem_used_mb)}/${esc(g.mem_total_mb)} MiB · ${esc(g.temp_c)}°C</div>`
+  ).join("");
+  body.innerHTML = `
+    <div class="kv">
+      <div class="k">Open ports</div><div class="v mono">${esc(ports)}</div>
+      <div class="k">Closed (watched)</div><div class="v mono">${esc(closed)}</div>
+      <div class="k">RAM used</div><div class="v">${esc(mem.used_mb)} / ${esc(mem.total_mb)} MiB (avail ${esc(mem.available_mb)})</div>
+      ${disk}${gpu}
+    </div>`;
+  const trend = records.filter((r) => r.host && r.host.memory).map((r) => ({ v: r.host.memory.used_mb }));
+  sparkline("host-trend", trend, "#f5a524");
+}
+
 function renderAll() {
   renderHeader(state.records);
+  renderMetricsStatus();
   renderCards(state.records);
+  renderJenkins(state.records);
+  renderLatency(state.records);
+  renderHost(state.records);
+  renderEndpoints(state.records);
   renderHeatmap(state.records);
   renderUptime(state.records);
   renderFailures(state.records);
   renderKB(state.records);
-  renderRuns(state.records);
+  renderReports(state.records);
 }
 
 function wireSeg(id, key) {
@@ -647,7 +1159,13 @@ wireSeg("window-seg", "heatWindow");
 wireSeg("uptime-seg", "uptimeWindow");
 
 async function boot() {
-  const index = await getJSON("runs/index.json");
+  const [index, metricsStatus, metricsSeries] = await Promise.all([
+    getJSON("runs/index.json"),
+    getJSON("metrics/status.json"),
+    getJSON("metrics/series.json"),
+  ]);
+  state.metricsStatus = metricsStatus;
+  state.metricsSeries = metricsSeries;
   if (!index || !Array.isArray(index.entries)) {
     $("subtitle").textContent = "runs/index.json not found — has the first report been published?";
     renderAll();
@@ -656,8 +1174,6 @@ async function boot() {
   state.index = index;
   const entries = index.entries;
 
-  // Fetch each run record for the full per-service detail. Cap concurrency so a
-  // long history does not open hundreds of sockets at once.
   const records = [];
   const queue = entries.slice();
   const workers = Array.from({ length: Math.min(8, queue.length || 1) }, async () => {
@@ -668,10 +1184,9 @@ async function boot() {
         rec.id = rec.run_id || entry.id;
         rec.ts = rec.generated_at || entry.ts;
         rec.serviceMap = normServices(rec);
-        rec.qa = entry.qa;
+        if (entry.qa && !rec.qa) rec.qa = entry.qa;
         records.push(rec);
       } else {
-        // Fall back to the compact index entry (services map of name→status).
         const fallback = {
           id: entry.id, ts: entry.ts, machine: entry.machine, machine_type: entry.machine_type,
           status: entry.status, qa: entry.qa, origin: entry.origin,

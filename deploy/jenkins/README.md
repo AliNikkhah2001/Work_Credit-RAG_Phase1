@@ -45,6 +45,9 @@ GitHub-rendered (bold + red):
 - $\textcolor{red}{\textbf{[ci auto]}}$ — unattended: stage on `develop`, prod on `main`
 - $\textcolor{red}{\textbf{[ci all]}}$ — force full image set (ignore path filter)
 - $\textcolor{red}{\textbf{[ci rollback]}}$ — prod controller only: restore apps from `deploy/compose/.last_good_sha(.prev)` (Sprint C #10; no model rollback)
+- $\textcolor{red}{\textbf{[ci snapshot]}}$ — freeze current prod image aliases under `/splunk-data/production/snapshots/<stamp>/` (logged in `/var/lib/dana-health/snapshots.json` + health Pages)
+- $\textcolor{red}{\textbf{[ci heal]}}$ / $\textcolor{red}{\textbf{[ci force-heal]}}$ — restore latest snapshot images via `restore_from_snapshot.sh --apply` (commit from any laptop; GPU controller applies)
+- $\textcolor{red}{\textbf{[ci heal:STAMP]}}$ — restore a specific freeze, e.g. `[ci heal:20261115T124350Z]`
 
 **Path → services (Sprint B):** `components/knowledgebase`→`kb`, `guardrails`→`guardrails`, `orchestrator`→`orchestrator`, `tracing`→`tracing`, `webui`→`webui`. Changes under `deploy/compose/`, `Jenkinsfile`, or `.gitmodules` → `all`. Console shows `SERVICES=…` and `Building compose services: …`.
 
@@ -73,7 +76,27 @@ bash scripts/promote_stage_to_main.sh
 git commit --allow-empty -m "chore: break glass [ci rollback]"
 git push origin main
 # or locally: bash scripts/ci_rollback.sh --dry-run
+
+# Freeze current prod images (GPU controller)
+git commit --allow-empty -m "chore: freeze LKG images [ci snapshot]"
+git push origin main
+
+# Force-heal from latest snapshot — commit from ANY laptop (no GPU needed)
+git commit --allow-empty -m "chore: restore tested snapshot [ci force-heal]"
+git push origin main
+# Specific stamp:
+git commit --allow-empty -m "chore: restore freeze [ci heal:20261115T124350Z]"
+git push origin main
 ```
+
+### WebUI submodule → Jenkins rebuild
+
+Jenkins Multibranch polls **only** `Work_Credit-RAG_Phase1`. A push to `Work_RAG-WebUI` alone does not rebuild until the umbrella **gitlink** advances.
+
+1. Push WebUI changes to `Work_RAG-WebUI` `main`.
+2. On the umbrella: update `components/webui` submodule pin, commit on `main` with `[ci prod]` or `[ci auto]`, push.
+3. Hourly `gpu-webui-watch.timer` + Jenkins `pollSCM` detect the parent tip and build. Check `/var/lib/dana-health/webui-watch.json` for `ahead` / tip SHAs.
+
 
 ---
 

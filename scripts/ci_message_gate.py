@@ -9,6 +9,9 @@ Keys (case-insensitive):
   [ci prod]
   [ci all]              → force full image set (Sprint B)
   [ci rollback]         → restore last-good prod SHA (Sprint C #10)
+  [ci snapshot]         → freeze current prod images under snapshots/<stamp>/
+  [ci heal] / [ci force-heal] → restore from latest (or tagged) snapshot images
+  [ci heal:STAMP]       → restore a specific snapshot stamp (e.g. [ci heal:20261115T124350Z])
 
 Sprint B — CI_SERVICES:
   space-separated compose service names, or "all", or "none".
@@ -89,12 +92,21 @@ def parse(msg: str, changed: str) -> dict[str, str]:
     auto = "[ci auto]" in low
     force_all = "[ci all]" in low
     rollback = "[ci rollback]" in low
+    snapshot = "[ci snapshot]" in low
+    heal = "[ci heal]" in low or "[ci force-heal]" in low or bool(
+        re.search(r"\[ci heal:[^\]]+\]", low)
+    )
+    heal_stamp = ""
+    m_heal = re.search(r"\[ci heal:([0-9a-zT]+)\]", low)
+    if m_heal:
+        heal_stamp = m_heal.group(1)
+        heal = True
     heavy = any(HEAVY.search(line) for line in (changed or "").splitlines())
     services = "none" if skip else services_for_paths(changed, force_all)
     # Deploy keys with no service hit: keep none so Build skips; Deploy still
     # recreates/restarts from existing :local tags (--no-build).
     # Explicit [ci all] already forced "all" above.
-    if rollback:
+    if rollback or heal:
         services = "none"
     return {
         "CI_SKIP": "1" if skip else "0",
@@ -103,6 +115,9 @@ def parse(msg: str, changed: str) -> dict[str, str]:
         "CI_PROD": "1" if prod else "0",
         "CI_AUTO": "1" if auto else "0",
         "CI_ROLLBACK": "1" if rollback else "0",
+        "CI_SNAPSHOT": "1" if snapshot else "0",
+        "CI_HEAL": "1" if heal else "0",
+        "CI_HEAL_STAMP": heal_stamp,
         "CI_HEAVY_PATHS": "1" if heavy else "0",
         "CI_SERVICES": services,
     }
@@ -126,6 +141,11 @@ def self_test() -> None:
         ("ci all key", "rebuild [ci all] [ci build]", "README.md", {"CI_SERVICES": "all"}),
         ("prod jenkinsfile", "release [ci prod]", "Jenkinsfile", {"CI_PROD": "1", "CI_SERVICES": "none"}),
         ("rollback", "break glass [ci rollback]", "README.md", {"CI_ROLLBACK": "1", "CI_SERVICES": "none"}),
+        ("snapshot", "freeze [ci snapshot]", "README.md", {"CI_SNAPSHOT": "1"}),
+        ("heal", "restore [ci heal]", "README.md", {"CI_HEAL": "1", "CI_SERVICES": "none"}),
+        ("heal stamp", "restore [ci heal:20261115T124350Z]", "README.md",
+         {"CI_HEAL": "1", "CI_HEAL_STAMP": "20261115t124350z", "CI_SERVICES": "none"}),
+        ("force-heal", "break glass [ci force-heal]", "README.md", {"CI_HEAL": "1", "CI_SERVICES": "none"}),
     ]
     for name, msg, changed, expect in cases:
         got = parse(msg, changed)
