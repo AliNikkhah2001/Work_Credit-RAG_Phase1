@@ -137,15 +137,18 @@ dana_port_spec() {
       echo "postgres:15432:5432:- redis:16379:6379:- kb:8000:8000:/health guardrails:8200:8200:/health tracing:13002:3000:/api/public/health orchestrator:8100:8100:/health webui:13000:8080:/health"
       ;;
     host)
-      echo "postgres:5432:5432:- kb:8000:8000:/health guardrails:8200:8200:/health tracing:3000:3000:/api/public/health orchestrator:8100:8100:/health webui:13000:8080:/health gemma:18000:18000:/health"
+      # H200 hybrid: host uvicorn for kb/orch/guard; Docker WebUI :13000; tracing often :13002;
+      # LLM Manager :9000. Do NOT probe stage KB :18000 as "gemma" (collides with dana-stage).
+      echo "postgres:5432:5432:- kb:8000:8000:/health guardrails:8200:8200:/health tracing:13002:3000:/api/public/health orchestrator:8100:8100:/health webui:13000:8080:/health manager:9000:9000:/health"
       ;;
+
     *) return 2 ;;
   esac
 }
 
 # Critical services that must be up for the site to serve. Optional ones are
 # reported (WARN) but never fail the gate.
-dana_optional_services() { echo "tracing redis"; }
+dana_optional_services() { echo "tracing redis manager gemma"; }
 
 dana_is_optional() {
   local svc="$1" opt

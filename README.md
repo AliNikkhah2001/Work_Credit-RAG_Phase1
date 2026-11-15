@@ -4,7 +4,7 @@
 [![License](https://img.shields.io/github/license/AliNikkhah2001/Work_Credit-RAG_Phase1)](LICENSE)
 [![Branch](https://img.shields.io/badge/branch-main-blue)]()
 
-Self-hosted, Persian-capable conversational RAG platform. Production code lives in independently maintained Git submodules (orchestrator, knowledgebase, guardrails, server-setup) pinned to exact commits; the parent repo owns pins, integrated startup (`deploy/vast/`), and E2E evaluation.
+Self-hosted, Persian-capable conversational RAG platform. Production code lives in independently maintained Git submodules (orchestrator, knowledgebase, guardrails, server-setup) pinned to exact commits; the parent repo owns pins, integrated startup (`deploy/gpu/`), and E2E evaluation.
 
 > **Status:** Active on `main`. **Production pin `v1.3.0`** on H200 (`production` / `production-2026-11-12` tags). Hybrid topology: host uvicorn KB `:8000` / orch `:8100` / guard `:8200` + LLM manager `:9000`; Docker WebUI `:13000`, Jenkins, pgvector, Redis, embed `:8001-8003`. Exact image digests: [`deploy/PRODUCTION.md`](deploy/PRODUCTION.md) · [`deploy/PRODUCTION_PIN.json`](deploy/PRODUCTION_PIN.json) · Docker CIDR / WAF: [`deploy/gateway/WAF_CIDR_CLASH.md`](deploy/gateway/WAF_CIDR_CLASH.md) · Ports: [`deploy/PORT_MAP.md`](deploy/PORT_MAP.md). KB corpus `1405-08-20` (~21 docs).
 
@@ -641,7 +641,13 @@ Jenkins **polls GitHub every hour** (`pollSCM` in root [`Jenkinsfile`](Jenkinsfi
 | **stage** | `develop` | build → `dana-stage` compose (alt ports) + E2E | OpenRouter (`LLM_UPSTREAM_MODE=openrouter`) on laptop |
 | **prod** | `main` | build → `dana-prod` (laptop sim) or GPU self-hosted | OpenRouter on laptop; Gemma/Manager/TRT on H200 |
 
-Self-hosted Gemma / TRT paths (`deploy/vast/`, `deploy/docker/`, server-setup manager) are **unchanged**. Laptop OpenRouter is used **only** when `DANA_ENV=test` and `LLM_UPSTREAM_MODE=openrouter` with `compose.local.yml`.
+Self-hosted Gemma / TRT paths (`deploy/gpu/`, `deploy/docker/`, server-setup manager) are **unchanged**. Laptop OpenRouter is used **only** when `DANA_ENV=test` and `LLM_UPSTREAM_MODE=openrouter` with `compose.local.yml`.
+
+**Branches:** only `main` (prod) and `develop` (stage). Feature branches are archive-tagged then deleted (`scripts/prune_stale_branches.sh`).
+
+**WAF / Docker CIDR:** never use `172.24.0.0/16` or `10.10.10.0/24` for Docker bridges — see [`deploy/gateway/WAF_CIDR_CLASH.md`](deploy/gateway/WAF_CIDR_CLASH.md). Jenkins `172.30.100.0/24`, stage `172.30.101.0/24`.
+
+**Snapshot / heal:** freeze at `/splunk-data/production/snapshots/`; restore with [`scripts/restore_from_snapshot.sh`](scripts/restore_from_snapshot.sh); hybrid heal uses `deploy/gpu/reconcile.sh --profile host` + `scripts/ci_rollback.sh`.
 
 ### Commit-message triggers (bold + red)
 

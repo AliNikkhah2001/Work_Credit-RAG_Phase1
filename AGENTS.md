@@ -14,7 +14,7 @@ Umbrella repo; implementation lives in submodules. Do NOT duplicate component co
 | `agent-state/` | agent-state | `main` | agent working files (context, history, skills, coding standards) |
 | `api/` | parent repo | production | thin API entry points (thin wrappers → components/) |
 | `dev/` | parent repo | development | patches, ad-hoc tests, investigation scripts (NOT for production) |
-| parent root | this repo | `main` / `develop` | pins, integrated startup (`deploy/vast/`), E2E |
+| parent root | this repo | `main` / `develop` | pins, integrated startup (`deploy/gpu/`), E2E |
 
 ### Layer separation
 
@@ -55,17 +55,17 @@ require at least one code review before merging. See `agent-state/git-workflow.m
 | orchestrator | `components/orchestrator`, `work_rag_orchestrator.api:create_app --factory` | `/tmp/orch-venv` | 8100 (0.0.0.0) | `KB_BASE_URL=http://127.0.0.1:8000`, `GUARDRAILS_BASE_URL=http://127.0.0.1:8200`, `LANGFUSE_HOST=http://127.0.0.1:3001` + keys from `/tmp/opencode/langfuse.env` |
 | WebUI | `open-webui serve` | `/tmp/webui-venv` | 13000 (0.0.0.0) | `OPENAI_API_BASE_URL=http://127.0.0.1:8100/v1`, `OPENAI_API_KEY=sk-local-dev`, `WEBUI_AUTH=false`, `DATA_DIR=/tmp/webui-data` |
 | collector (fallback) | `components/tracing/app.py`, `app:app` | `/tmp/orch-venv` | 3000 (0.0.0.0) | JSONL `/tmp/langfuse_traces.jsonl` |
-| Langfuse v2 UI (real) | `/tmp/langfuse-src` (`bash deploy/vast/langfuse-v2.sh`) | node 22 | 3001 (0.0.0.0) | seeded admin + keys in `/tmp/opencode/langfuse.env` (mode 600) |
-| Studio API | `components/orchestrator` (`bash deploy/vast/studio.sh`) | `/tmp/orch-venv` | 2024 (0.0.0.0) | panel `https://smith.langchain.com/studio/?baseUrl=http://127.0.0.1:2024` |
+| Langfuse v2 UI (real) | `/tmp/langfuse-src` (`bash deploy/gpu/langfuse-v2.sh`) | node 22 | 3001 (0.0.0.0) | seeded admin + keys in `/tmp/opencode/langfuse.env` (mode 600) |
+| Studio API | `components/orchestrator` (`bash deploy/gpu/studio.sh`) | `/tmp/orch-venv` | 2024 (0.0.0.0) | panel `https://smith.langchain.com/studio/?baseUrl=http://127.0.0.1:2024` |
 | postgres 14 + pgvector | system cluster | — | 5432 | DBs `kb_manager`, `langfuse`; `KB_DB_URL` must be set explicitly or KB silently falls back to SQLite |
 
 Models cache: `/tmp/hf_clean` (Vast.ai ephemeral path; configure locally via standard cache dir). `HF_HOME` AND `HF_HUB_CACHE` must BOTH point there (hub 1.x reads `$HF_HOME/hub`). `HF_HUB_OFFLINE=1`.
 
-Full startup order: postgres → Gemma → KB → guardrails → collector → orchestrator → WebUI = `bash deploy/vast/start.sh`.
+Full startup order: postgres → Gemma → KB → guardrails → collector → orchestrator → WebUI = `bash deploy/gpu/start.sh`.
 
 ## 3. Standard workflows
 
-Health check (or `bash deploy/vast/health.sh`):
+Health check (or `bash deploy/gpu/health.sh`):
 
 ```bash
 for p in 18000 8000 8200 8100; do printf "%s: " "$p"; curl -s --max-time 8 http://127.0.0.1:$p/health | head -c 120; echo; done
@@ -92,9 +92,9 @@ curl -s http://127.0.0.1:8200/health
 Full restart:
 
 ```bash
-bash deploy/vast/stop.sh
-bash deploy/vast/start.sh
-bash deploy/vast/health.sh
+bash deploy/gpu/stop.sh
+bash deploy/gpu/start.sh
+bash deploy/gpu/health.sh
 ```
 
 E2E smoke:
@@ -123,7 +123,7 @@ curl -s -u "$LANGFUSE_INIT_PROJECT_PUBLIC_KEY:$LANGFUSE_INIT_PROJECT_SECRET_KEY"
 Studio run:
 
 ```bash
-bash deploy/vast/studio.sh  # API :2024
+bash deploy/gpu/studio.sh  # API :2024
 # panel: https://smith.langchain.com/studio/?baseUrl=http://127.0.0.1:2024
 # run input MUST include request_id: {"request_id":"studio-001","messages":[{"role":"user","content":"سلام"}]}
 ```
@@ -165,7 +165,7 @@ python scripts/gen_readme_toc.py --check     # CI guard (exit 1 if stale)
 
 ## 6. Never do
 
-- Never `pkill python` (kills everything). Use `bash deploy/vast/stop.sh` (port-scoped `fuser -k`).
+- Never `pkill python` (kills everything). Use `bash deploy/gpu/stop.sh` (port-scoped `fuser -k`).
 - Never launch gemma-manager or download another GGUF (Gemma is external `:18000`).
 - Never expose `:18000`, postgres, or redis publicly.
 - Never commit `.env` / secrets / `*.npz` / logs / venvs.

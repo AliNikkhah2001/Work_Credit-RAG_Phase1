@@ -1,9 +1,10 @@
 # Health monitoring daemon + GitHub Pages dashboard
 
-Durable uptime tracking for the Persian RAG stack. One nightly report run on the
+Durable uptime tracking for the Persian RAG stack. A **3-hour** systemd timer on the
 GPU host appends a compact record to **one** `main` branch of
 [`AliNikkhah2001/Work_RAG_HealthCheck`](https://github.com/AliNikkhah2001/Work_RAG_HealthCheck),
-and a static dashboard served by GitHub Pages renders the whole history.
+and a static dashboard served by GitHub Pages renders the whole history (prod + stage ports).
+
 
 - **Dashboard:** <https://alinikkhah2001.github.io/Work_RAG_HealthCheck/>
 - **Repo (data + site):** <https://github.com/AliNikkhah2001/Work_RAG_HealthCheck>
@@ -25,19 +26,23 @@ git submodule update --init components/knowledgebase
 # 2) validate the plan first — read-only, needs no root, changes nothing
 bash deploy/monitor/install.sh --check
 
-# 3) install the systemd timer (daily 16:00 UTC + retry every 3h on failure)
-sudo bash deploy/monitor/install.sh --machine-name gpu-prod
+# 3) install the systemd timer (every 3h primary + retry every 3h on failure)
+sudo bash deploy/monitor/install.sh --interval-hours 3 --machine-name ai-gpu1
 
 # 4) verify it is armed (two timers, both enabled)
 systemctl list-timers 'gpu-health-report*'
 
-# 5) force one run right now (do not wait for 16:00)
+# 5) force one run right now
 sudo systemctl start gpu-health-report.service
 tail -f /var/log/dana-rag/health-report.log
 ```
 
+Headless screenshots on this TUI host use snap Chromium (`/usr/local/bin/chromium`)
+and/or `/opt/dana-playwright` — see `scripts/gpu_full_recover_report.sh` `shoot()`.
+
 Then open the Pages URL above: the new run appears as a row in the heatmap, in
 the run log, and in the "last 24h failures" table if anything was down.
+
 
 ### Where to look after the forced run
 
@@ -57,10 +62,11 @@ nothing will retry — fix `GPU_HEALTH_REPO` first.
 ### Install options
 
 ```bash
-sudo bash deploy/monitor/install.sh                      # defaults: 16:00 UTC, retry 3h
-sudo bash deploy/monitor/install.sh --daily-time 04:30   # different UTC time
-sudo bash deploy/monitor/install.sh --retry-hours 1      # retry more aggressively
-sudo bash deploy/monitor/install.sh --machine-name h200-1
+sudo bash deploy/monitor/install.sh                      # defaults: every 3h + retry 3h
+sudo bash deploy/monitor/install.sh --interval-hours 3   # primary cadence (configurable)
+sudo bash deploy/monitor/install.sh --daily-time 04:30   # optional extra calendar tick
+sudo bash deploy/monitor/install.sh --retry-hours 1      # retry more aggressively on failure
+sudo bash deploy/monitor/install.sh --machine-name ai-gpu1
 sudo bash deploy/monitor/install.sh --no-push            # collect locally, publish nothing
 sudo bash deploy/monitor/install.sh --health-repo <url>  # non-default publish target
 sudo bash deploy/monitor/install.sh --health-repo-dir /srv/healthcheck
@@ -68,11 +74,8 @@ sudo bash deploy/monitor/install.sh --check              # validate the plan, ch
 sudo bash deploy/monitor/install.sh --dry-run            # print the units, change nothing
 ```
 
-Both flags are validated before anything is written: `--daily-time` must be
-`HH:MM` 24-hour and `--retry-hours` a positive integer, otherwise the installer
-exits `2`. `--check` and `--dry-run` are safe on any host (including macOS) —
-they never need root and never write a unit file. `--check` exits `0` when the
-plan is coherent, `1` when a check fails.
+`--interval-hours` / `--retry-hours` must be positive integers; optional `--daily-time`
+must be `HH:MM` 24-hour. `--check` and `--dry-run` never need root.
 
 Uninstall (never deletes published data or the repo clone):
 

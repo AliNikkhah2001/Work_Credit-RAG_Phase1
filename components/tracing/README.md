@@ -83,7 +83,7 @@ cd components/tracing
 python -m uvicorn app:app --host 0.0.0.0 --port 3000
 ```
 
-Or via parent startup: `bash deploy/vast/start.sh` (starts after guardrails)
+Or via parent startup: `bash deploy/gpu/start.sh` (starts after guardrails)
 
 ## Configuration
 
@@ -143,4 +143,4 @@ curl -s "http://127.0.0.1:3000/api/studio/result?thread_id=...&run_id=...&reques
 - [Parent README](../../README.md#observability)
 - [Documentation Index](../../docs/README.md)
 - [Historical Planning Docs](../../deprecated/plans/)
-- [Vast Deployment Scripts](../../deploy/vast/)
+- [Vast Deployment Scripts](../../deploy/gpu/)

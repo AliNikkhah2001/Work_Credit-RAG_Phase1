@@ -7,13 +7,14 @@
 | `DANA_ENV` | `LLM_UPSTREAM_MODE` | Overlay | Generation backend |
 |---|---|---|---|
 | `test` | `openrouter` | `compose.local.yml` | LiteLLM → OpenRouter (`google/gemma-4-31b-it`) |
-| `prod` | `self_hosted` | `compose.gpu.yml` or `deploy/docker/` / `deploy/vast/` | Gemma `:18000` / Manager `:9000` / TRT |
+| `prod` | `self_hosted` | `compose.gpu.yml` or `deploy/docker/` / `deploy/gpu/` | Gemma / Manager `:9000` / TRT (H200 hybrid often uses host uvicorn instead) |
 
 **Never** set `LLM_UPSTREAM_MODE=openrouter` on the GPU server. App code only sees OpenAI-compatible `UPSTREAM_LLM_*` URLs.
 
 Self-hosted Gemma/TRT paths are unchanged:
 
-- [deploy/vast/start.sh](../vast/start.sh) — llama-server `:18000`
+- [deploy/gpu/](../gpu/) — health / reconcile / rollback (H200)
+- [deploy/gateway/WAF_CIDR_CLASH.md](../gateway/WAF_CIDR_CLASH.md) — Docker CIDR pins (`172.30.x`)
 - [deploy/docker/docker-compose.yml](../docker/docker-compose.yml) — CUDA `llama-server` image
 - Server-setup manager / TRT docs under `components/server-setup/`
 
