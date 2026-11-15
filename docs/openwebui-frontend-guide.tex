@@ -1,11 +1,10 @@
 % Open WebUI Frontend Guide — Dana / ICS
-% Minimal clean article + Vazirmatn (local fonts) + XeLaTeX
+% Persian RTL (polyglossia) + Vazirmatn + XeLaTeX
 % Build: cd docs && xelatex -interaction=nonstopmode openwebui-frontend-guide.tex
 
 \documentclass[11pt,a4paper]{article}
 
 \usepackage[margin=2cm]{geometry}
-\usepackage{fontspec}
 \usepackage{xcolor}
 \usepackage{graphicx}
 \usepackage{booktabs}
@@ -19,19 +18,44 @@
 \usepackage{float}
 \usepackage{caption}
 \usepackage{tcolorbox}
+\usepackage{polyglossia}
+
+\setdefaultlanguage[numerals=western]{persian}
+\setotherlanguage{english}
 
 \graphicspath{{openwebui-frontend-guide/figures/}}
 
-% Fonts from docs/openwebui-frontend-guide/fonts (copied from Downloads/Vazirmatn/static)
-\setmainfont{Vazirmatn}[
+\newfontfamily\persianfont{Vazirmatn}[
   Path = openwebui-frontend-guide/fonts/,
   Extension = .ttf,
   UprightFont = *-Regular,
   BoldFont = *-Bold,
   ItalicFont = *-Regular,
-  BoldItalicFont = *-Bold
+  BoldItalicFont = *-Bold,
+  Script = Arabic
 ]
-\setmonofont{Vazirmatn}[
+\newfontfamily\persianfontrm{Vazirmatn}[
+  Path = openwebui-frontend-guide/fonts/,
+  Extension = .ttf,
+  UprightFont = *-Regular,
+  BoldFont = *-Bold,
+  Script = Arabic
+]
+\newfontfamily\persianfonttt{Vazirmatn}[
+  Path = openwebui-frontend-guide/fonts/,
+  Extension = .ttf,
+  UprightFont = *-Regular,
+  BoldFont = *-Bold,
+  Scale = 0.88,
+  Script = Arabic
+]
+\newfontfamily\englishfont{Vazirmatn}[
+  Path = openwebui-frontend-guide/fonts/,
+  Extension = .ttf,
+  UprightFont = *-Regular,
+  BoldFont = *-Bold
+]
+\newfontfamily\englishfonttt{Vazirmatn}[
   Path = openwebui-frontend-guide/fonts/,
   Extension = .ttf,
   UprightFont = *-Regular,
@@ -55,11 +79,11 @@
 
 \titleformat{\section}{\large\bfseries\color{accent}}{\thesection}{0.7em}{}
 \titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{0.6em}{}
-\titlespacing*{\section}{0pt}{1.2em}{0.4em}
-\titlespacing*{\subsection}{0pt}{0.85em}{0.3em}
+\titlespacing*{\section}{0pt}{1.0em}{0.35em}
+\titlespacing*{\subsection}{0pt}{0.7em}{0.25em}
 
 \lstset{
-  basicstyle=\ttfamily\footnotesize,
+  basicstyle=\englishfonttt\footnotesize,
   backgroundcolor=\color{codebg},
   frame=single,
   rulecolor=\color{codeframe},
@@ -68,8 +92,8 @@
   columns=fullflexible,
   keepspaces=true,
   showstringspaces=false,
-  aboveskip=0.45em,
-  belowskip=0.45em
+  aboveskip=0.35em,
+  belowskip=0.35em
 }
 
 \newtcolorbox{editbox}{
@@ -81,26 +105,29 @@
   fontupper=\small
 }
 
-\setlist[itemize]{leftmargin=1.15em, itemsep=0.1em, topsep=0.2em}
-\setlist[enumerate]{leftmargin=1.3em, itemsep=0.15em, topsep=0.25em}
+\setlist[itemize]{leftmargin=*, itemsep=0.1em, topsep=0.2em}
+\setlist[enumerate]{leftmargin=*, itemsep=0.15em, topsep=0.25em}
 \captionsetup{font=small, labelfont=bf}
 
 \begin{document}
 
 \begin{center}
-  {\LARGE\bfseries راهنمای فرانت‌اند Open WebUI}\\[0.3em]
-  {\large دانا / ICS --- سفارشی‌سازی رابط چت}\\[0.45em]
-  {\small مخزن اشتراکی \texttt{Work\_RAG-WebUI} \textperiodcentered\ 2026}\\[0.35em]
-  {\small عنوان محصول: \textbf{دستیار اعتباری نوین ایران} \quad|\quad تم پیش‌فرض: \texttt{ics-maroon}}
+  {\LARGE\bfseries راهنمای فرانت‌اند \textenglish{Open WebUI}}\\[0.3em]
+  {\large دانا / \textenglish{ICS} --- سفارشی‌سازی رابط چت}\\[0.4em]
+  {\small مخزن اشتراکی \textenglish{\texttt{Work\_RAG-WebUI}} \textperiodcentered\ ۲۰۲۶}\\[0.3em]
+  {\small عنوان محصول: \textbf{دستیار اعتباری نوین ایران}
+    \quad\textenglish{|}\quad
+    تم پیش‌فرض: \textenglish{\texttt{ics-maroon}}}
 \end{center}
-\vspace{0.4em}\hrule\vspace{0.85em}
+\vspace{0.35em}\hrule\vspace{0.7em}
 
 \section{مخزن و گردش کار}
 
 \begin{itemize}
   \item گیت‌هاب: \url{https://github.com/AliNikkhah2001/Work_RAG-WebUI}
-  \item در umbrella: \texttt{components/webui}
-  \item فورک/کلون کنید، از \texttt{develop} برنچ بزنید، PR به \texttt{develop} بفرستید؛ سپس به \texttt{main} پروموت می‌شود.
+  \item در umbrella: \textenglish{\texttt{components/webui}}
+  \item فورک/کلون کنید، از \textenglish{\texttt{develop}} برنچ بزنید،
+    \textenglish{PR} به \textenglish{\texttt{develop}} بفرستید؛ سپس به \textenglish{\texttt{main}} پروموت می‌شود.
 \end{itemize}
 
 \section{معماری ماژول‌ها}
@@ -109,8 +136,9 @@
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.92\textwidth]{modules.png}
-  \caption{Browser $\rightarrow$ WebUI (:13000) $\rightarrow$ Orchestrator (:8100). KB و Guardrails داخلی‌اند.}
+  \includegraphics[width=0.72\textwidth]{modules.png}
+  \caption{\textenglish{Browser $\rightarrow$ WebUI (:13000) $\rightarrow$ Orchestrator (:8100)}.
+    \textenglish{KB} و \textenglish{Guardrails} داخلی‌اند.}
 \end{figure}
 
 \begin{center}
@@ -118,41 +146,45 @@
 \toprule
 \textbf{سرویس} & \textbf{پورت محلی} & \textbf{نقش برای UI} \\
 \midrule
-WebUI (Dana) & \texttt{13000} & رابط چت \\
-Orchestrator & \texttt{8100} & \texttt{/v1/chat/completions}، \texttt{/v1/models} \\
-Stage WebUI & \texttt{13100} & استیج \\
-Stage Orchestrator & \texttt{18100} & استیج \\
+\textenglish{WebUI (Dana)} & \textenglish{\texttt{13000}} & رابط چت \\
+\textenglish{Orchestrator} & \textenglish{\texttt{8100}} &
+  \textenglish{\texttt{/v1/chat/completions}}، \textenglish{\texttt{/v1/models}} \\
+\textenglish{Stage WebUI} & \textenglish{\texttt{13100}} & استیج \\
+\textenglish{Stage Orchestrator} & \textenglish{\texttt{18100}} & استیج \\
 \bottomrule
 \end{tabular}
 \end{center}
 
 \noindent اتصال در compose:
 
+\begin{english}
 \begin{lstlisting}
 OPENAI_API_BASE_URL=http://127.0.0.1:8100/v1
 OPENAI_API_KEY=sk-local-dev
 WEBUI_NAME=دستیار اعتباری نوین ایران
 DEFAULT_INTERFACE_SETTINGS={"dana_theme_id":"ics-maroon","params":{"stream_response":true}}
 \end{lstlisting}
+\end{english}
 
-\noindent مدل: \texttt{ics-helper-agent} --- قرارداد کامل: \texttt{docs/frontend-rag-api.pdf}
+\noindent مدل: \textenglish{\texttt{ics-helper-agent}} --- قرارداد کامل:
+\textenglish{\texttt{docs/frontend-rag-api.pdf}}
 
 \section{دایرکتوری‌های مهم (هایلایت ویرایش UI)}
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=\textwidth]{dir-tree.png}
-  \caption{درخت پروژه. سبز = سطح طراحی؛ آبی = Svelte/تم.}
+  \includegraphics[width=0.82\textwidth]{dir-tree.png}
+  \caption{درخت پروژه. سبز = سطح طراحی؛ آبی = \textenglish{Svelte}/تم.}
 \end{figure}
 
 \begin{editbox}
-\textbf{فقط این‌ها را برای ظاهر چت تغییر دهید}\\[0.3em]
-\texttt{static/dana/} \quad
-\texttt{src/lib/dana/} \quad
-\texttt{src/lib/components/dana/} \quad
-\texttt{src/lib/components/chat/} \quad
-\texttt{src/app.html} \quad
-\texttt{backend/open\_webui/static/dana/} (کپی سرو)
+\textbf{فقط این‌ها را برای ظاهر چت تغییر دهید}\\[0.25em]
+\textenglish{\texttt{static/dana/}}\quad
+\textenglish{\texttt{src/lib/dana/}}\quad
+\textenglish{\texttt{src/lib/components/dana/}}\quad
+\textenglish{\texttt{src/lib/components/chat/}}\quad
+\textenglish{\texttt{src/app.html}}\quad
+\textenglish{\texttt{backend/open\_webui/static/dana/}} (کپی سرو)
 \end{editbox}
 
 \begin{center}
@@ -160,82 +192,94 @@ DEFAULT_INTERFACE_SETTINGS={"dana_theme_id":"ics-maroon","params":{"stream_respo
 \toprule
 \textbf{مسیر} & \textbf{کاربرد} \\
 \midrule
-\texttt{static/dana/themes/*.json} & رنگ، لوگو، کپی خالی، پس‌زمینه هر تم \\
-\texttt{static/dana/dana.css} & شیشه، empty-state، کروم چت \\
-\texttt{static/dana/design-gallery.html} & صفحه انتخاب تم‌ها \\
-\texttt{static/dana/ux-preview.html} & پیش‌نمایش ویجت‌ها \\
-\texttt{static/dana/brand/} & فونت RAY، موشن، آیکون \\
-\texttt{static/dana/magic-tokens.json} & توکن‌های مجاز ویجت \\
-\texttt{src/lib/dana/theme.ts} & لود تم، CSS vars، \texttt{localStorage} \\
-\texttt{src/lib/components/dana/} & پس‌زمینه چت، ThemeAdmin، magic \\
-\texttt{src/lib/components/chat/} & Placeholder، Navbar، حباب پیام \\
-\texttt{src/lib/components/admin/Settings/General.svelte} & بخش ادمین «دانا / ICS Brand» \\
-\texttt{src/app.html} & اسپلش و عنوان اولیه \\
+\textenglish{\texttt{static/dana/themes/*.json}} & رنگ، لوگو، کپی خالی، پس‌زمینه هر تم \\
+\textenglish{\texttt{static/dana/dana.css}} & شیشه، \textenglish{empty-state}، کروم چت \\
+\textenglish{\texttt{static/dana/design-gallery.html}} & صفحه انتخاب تم‌ها \\
+\textenglish{\texttt{static/dana/ux-preview.html}} & پیش‌نمایش ویجت‌ها \\
+\textenglish{\texttt{static/dana/brand/}} & فونت \textenglish{RAY}، موشن، آیکون \\
+\textenglish{\texttt{static/dana/magic-tokens.json}} & توکن‌های مجاز ویجت \\
+\textenglish{\texttt{src/lib/dana/theme.ts}} & لود تم، \textenglish{CSS vars}، \textenglish{\texttt{localStorage}} \\
+\textenglish{\texttt{src/lib/components/dana/}} & پس‌زمینه چت، \textenglish{ThemeAdmin}، \textenglish{magic} \\
+\textenglish{\texttt{src/lib/components/chat/}} & \textenglish{Placeholder}، \textenglish{Navbar}، حباب پیام \\
+\textenglish{\texttt{src/lib/components/admin/Settings/General.svelte}} &
+  بخش ادمین «دانا / \textenglish{ICS Brand}» \\
+\textenglish{\texttt{src/app.html}} & اسپلش و عنوان اولیه \\
 \bottomrule
 \end{tabularx}
 \end{center}
 
-\noindent برای UI نیاز نیست: پایتون backend (جز static)، تست‌های upstream، \texttt{node\_modules/}، \texttt{build/}.
+\noindent برای UI نیاز نیست: پایتون backend (جز static)، تست‌های upstream،
+\textenglish{\texttt{node\_modules/}}، \textenglish{\texttt{build/}}.
 
 \section{چگونه UI را روی Open WebUI ساختیم}
 
 \begin{enumerate}
-  \item پک تم JSON در \texttt{static/dana/themes/} (مثلاً \texttt{ics-maroon} سفید/روشن).
-  \item \texttt{theme.ts} پک را می‌خواند، متغیرهای \texttt{--dana-*}، RTL، نام محصول و \texttt{html.dana-theme} را ست می‌کند.
-  \item \texttt{dana.css} ظاهر شیشه‌ای و empty-state را روی برند فعال می‌کند.
-  \item \texttt{DanaChatBackground.svelte} پس‌زمینه موشن/still را از پک می‌کشد.
-  \item ویجت‌های جادویی از توکن‌های allowlist در پاسخ دستیار رندر می‌شوند.
-  \item بعد از تغییر \texttt{static/dana/}، به \texttt{backend/open\_webui/static/dana/} هم کپی کنید (یا image را rebuild کنید).
+  \item پک تم \textenglish{JSON} در \textenglish{\texttt{static/dana/themes/}}
+    (مثلاً \textenglish{\texttt{ics-maroon}} سفید/روشن).
+  \item \textenglish{\texttt{theme.ts}} پک را می‌خواند، متغیرهای \textenglish{\texttt{--dana-*}}،
+    \textenglish{RTL}، نام محصول و \textenglish{\texttt{html.dana-theme}} را ست می‌کند.
+  \item \textenglish{\texttt{dana.css}} ظاهر شیشه‌ای و \textenglish{empty-state} را روی برند فعال می‌کند.
+  \item \textenglish{\texttt{DanaChatBackground.svelte}} پس‌زمینه موشن/\textenglish{still} را از پک می‌کشد.
+  \item ویجت‌های جادویی از توکن‌های \textenglish{allowlist} در پاسخ دستیار رندر می‌شوند.
+  \item بعد از تغییر \textenglish{\texttt{static/dana/}}، به
+    \textenglish{\texttt{backend/open\_webui/static/dana/}} هم کپی کنید (یا image را rebuild کنید).
 \end{enumerate}
 
 \section{گالری تم‌ها}
 
 \begin{itemize}
   \item آدرس: \url{http://127.0.0.1:13000/static/dana/design-gallery.html}
-  \item فایل: \texttt{static/dana/design-gallery.html}
-  \item هر کارت یک \texttt{themes/<id>.json} را لود می‌کند؛ \texttt{dana.theme\_id} در \texttt{localStorage} ذخیره می‌شود؛ چت با \texttt{/?dana\_theme=<id>} باز می‌شود.
+  \item فایل: \textenglish{\texttt{static/dana/design-gallery.html}}
+  \item هر کارت یک \textenglish{\texttt{themes/<id>.json}} را لود می‌کند؛
+    \textenglish{\texttt{dana.theme\_id}} در \textenglish{\texttt{localStorage}} ذخیره می‌شود؛
+    چت با \textenglish{\texttt{/?dana\_theme=<id>}} باز می‌شود.
   \item ویجت‌ها: \url{http://127.0.0.1:13000/static/dana/ux-preview.html}
 \end{itemize}
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.95\textwidth]{gallery-full.png}
+  \includegraphics[width=0.88\textwidth]{gallery-full.png}
   \caption{گالری تم‌ها --- انتخاب و «اعمال روی چت».}
 \end{figure}
 
 \begin{figure}[H]
   \centering
   \begin{tabular}{@{}ccc@{}}
-    \includegraphics[width=0.3\textwidth]{ics-maroon.png} &
-    \includegraphics[width=0.3\textwidth]{ics-dark.png} &
-    \includegraphics[width=0.3\textwidth]{ics-mono.png} \\
-    \texttt{ics-maroon} (پیش‌فرض) & \texttt{ics-dark} & \texttt{ics-mono}
+    \includegraphics[width=0.28\textwidth]{ics-maroon.png} &
+    \includegraphics[width=0.28\textwidth]{ics-dark.png} &
+    \includegraphics[width=0.28\textwidth]{ics-mono.png} \\
+    \textenglish{\texttt{ics-maroon}} (پیش‌فرض) &
+    \textenglish{\texttt{ics-dark}} &
+    \textenglish{\texttt{ics-mono}}
   \end{tabular}
   \caption{نمونه پیش‌نمایش تم‌ها.}
 \end{figure}
 
 \section{انتخاب تم در ادمین}
 
-مسیر UI: \textbf{Admin $\rightarrow$ Settings $\rightarrow$ General $\rightarrow$ دانا / ICS Brand}
+مسیر UI: \textbf{\textenglish{Admin $\rightarrow$ Settings $\rightarrow$ General} $\rightarrow$ دانا / ICS Brand}
 
 \begin{itemize}
-  \item کامپوننت: \texttt{src/lib/components/dana/DanaThemeAdmin.svelte}
-  \item جاسازی در: \texttt{src/lib/components/admin/Settings/General.svelte}
-  \item دکمه‌ها: \texttt{ics-maroon}، \texttt{ics-dark}، \texttt{ics-gauge}، \texttt{ics-stair}، \texttt{ics-mono}، و vanilla
+  \item کامپوننت: \textenglish{\texttt{src/lib/components/dana/DanaThemeAdmin.svelte}}
+  \item جاسازی در: \textenglish{\texttt{src/lib/components/admin/Settings/General.svelte}}
+  \item دکمه‌ها: \textenglish{\texttt{ics-maroon}}، \textenglish{\texttt{ics-dark}}،
+    \textenglish{\texttt{ics-gauge}}، \textenglish{\texttt{ics-stair}}،
+    \textenglish{\texttt{ics-mono}}، و \textenglish{vanilla}
 \end{itemize}
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.88\textwidth]{admin-settings.png}
+  \includegraphics[width=0.78\textwidth]{admin-settings.png}
   \caption{صفحه تنظیمات ادمین (نقطه ورود به پوسته دانا).}
 \end{figure}
 
 \section{تست طراحی}
 
-\subsection{A --- Mock OpenAI (فقط UI)}
+\subsection{\textenglish{A} --- Mock OpenAI (فقط UI)}
 
-هر سرور سازگار با OpenAI که SSE بدهد:
+هر سرور سازگار با \textenglish{OpenAI} که \textenglish{SSE} بدهد:
 
+\begin{english}
 \begin{lstlisting}
 data: {"choices":[{"delta":{"content":"سلام "}}]}
 
@@ -243,11 +287,14 @@ data: {"choices":[{"delta":{},"finish_reason":"stop"}]}
 
 data: [DONE]
 \end{lstlisting}
+\end{english}
 
-\texttt{OPENAI\_API\_BASE\_URL} را به mock بزنید --- برای تم، RTL، empty-state، بدون RAG.
+\textenglish{\texttt{OPENAI\_API\_BASE\_URL}} را به mock بزنید --- برای تم،
+\textenglish{RTL}، \textenglish{empty-state}، بدون \textenglish{RAG}.
 
-\subsection{B --- ارکستراتور واقعی}
+\subsection{\textenglish{B} --- ارکستراتور واقعی}
 
+\begin{english}
 \begin{lstlisting}
 curl -s http://127.0.0.1:8100/health
 curl -s http://127.0.0.1:8100/v1/models
@@ -257,25 +304,29 @@ curl -s http://127.0.0.1:8100/v1/chat/completions \
   -H 'X-Request-ID: ui-1' \
   -d '{"model":"ics-helper-agent","messages":[{"role":"user","content":"سلام"}],"stream":false}'
 \end{lstlisting}
+\end{english}
 
 سپس: \url{http://127.0.0.1:13000} و گالری تم.
 
 \subsection{بازسازی محلی}
 
 \begin{itemize}
-  \item فقط CSS/JSON/HTML: کپی به کانتینر \texttt{/app/backend/open\_webui/static/dana/}
-  \item تغییر Svelte: \texttt{npm run build} سپس recreate سرویس \texttt{webui}
-  \item Hard-refresh؛ در صورت نیاز \texttt{localStorage.dana.theme\_id} را پاک کنید
+  \item فقط \textenglish{CSS/JSON/HTML}: کپی به کانتینر
+    \textenglish{\texttt{/app/backend/open\_webui/static/dana/}}
+  \item تغییر \textenglish{Svelte}: \textenglish{\texttt{npm run build}} سپس recreate سرویس
+    \textenglish{\texttt{webui}}
+  \item \textenglish{Hard-refresh}؛ در صورت نیاز
+    \textenglish{\texttt{localStorage.dana.theme\_id}} را پاک کنید
 \end{itemize}
 
 \section{چک‌لیست سرعت}
 
 \begin{itemize}
-  \item اول \texttt{ics-maroon.json} و \texttt{dana.css}
+  \item اول \textenglish{\texttt{ics-maroon.json}} و \textenglish{\texttt{dana.css}}
   \item گالری قبل از rebuild کامل
-  \item sync کردن \texttt{backend/open\_webui/static/dana/}
-  \item magic فقط از allowlist
-  \item PR روی WebUI \texttt{develop}؛ umbrella فقط pin را جلو می‌برد
+  \item sync کردن \textenglish{\texttt{backend/open\_webui/static/dana/}}
+  \item \textenglish{magic} فقط از \textenglish{allowlist}
+  \item \textenglish{PR} روی \textenglish{WebUI \texttt{develop}}؛ umbrella فقط pin را جلو می‌برد
 \end{itemize}
 
 \end{document}
