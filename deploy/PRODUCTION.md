@@ -61,3 +61,21 @@ Recorded in `PRODUCTION_PIN.json` under `git.submodules` (pre-pin HEAD was paren
 git show v1.3.0:deploy/PRODUCTION_PIN.json
 git submodule status
 ```
+
+## Docker bridge CIDR (WAF / `chat.ics24.ir`)
+
+Corporate WAF VIP for `chat.ics24.ir` is **`172.24.65.109`**. Docker must **never** claim `172.24.0.0/16` or `10.10.10.0/24` on this host.
+
+| Network | Subnet |
+|---------|--------|
+| Jenkins (`jenkins_default`) | **`172.30.100.0/24`** (pinned in `deploy/jenkins/docker-compose.yml`) |
+| Future Compose defaults | `172.30.0.0/16` pools via `/etc/docker/daemon.json` `default-address-pools` |
+
+Full incident write-up + acceptance checks: [`gateway/WAF_CIDR_CLASH.md`](gateway/WAF_CIDR_CLASH.md).
+
+Snapshot freeze (images + KB + pgvector): `/splunk-data/production/snapshots/20261115T124350Z/`.
+
+## Reserved host ports
+
+See [`PORT_MAP.md`](PORT_MAP.md). **`:8089` is forbidden** (retired `rag-public` tunnel listener).
+

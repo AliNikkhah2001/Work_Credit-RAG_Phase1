@@ -4,19 +4,22 @@
 #
 # What it installs
 #   gpu-health-report.service   oneshot: run the report once, publish to main
-#   gpu-health-report.timer     daily at 16:00 (configurable, with jitter)
-#   gpu-health-retry.timer      every 3h: re-run ONLY if the daily run failed
+#   gpu-health-report.timer     every INTERVAL_HOURS (default 3h) — primary cadence
+#   gpu-health-retry.timer      every RETRY_HOURS: re-run ONLY if the last run failed
 #                               (OnFailure-style retry without a second daemon)
+#   Optional: --daily-time also arms a calendar timer in addition to the interval
 #
 # Safe to re-run: unit files are rewritten and the timers re-armed. Use
 # ./uninstall.sh to remove everything.
 #
 # Usage (on the GPU host, from the repo root):
 #   sudo bash deploy/monitor/install.sh
-#   sudo bash deploy/monitor/install.sh --daily-time 04:30 --machine-name gpu-prod
+#   sudo bash deploy/monitor/install.sh --interval-hours 3 --machine-name gpu-prod
+#   sudo bash deploy/monitor/install.sh --daily-time 04:30 --interval-hours 3
 #   sudo bash deploy/monitor/install.sh --check            # validate the plan, change nothing
 #   sudo bash deploy/monitor/install.sh --dry-run          # print units, change nothing
 #   sudo bash deploy/monitor/install.sh --no-push          # collect locally only
+
 #
 # Exit codes: 0 ok, 1 --check failed, 2 bad arguments/missing file,
 #              3 not a Linux/systemd host.
@@ -27,7 +30,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 REPORT="$REPO_ROOT/scripts/gpu_full_recover_report.sh"
 
-DAILY_TIME="16:00"
+DAILY_TIME=""
+INTERVAL_HOURS=3
 RETRY_HOURS=3
 MACHINE_NAME=""
 DRY_RUN=0
@@ -37,6 +41,7 @@ HEALTH_REPO="https://github.com/AliNikkhah2001/Work_RAG_HealthCheck.git"
 HEALTH_REPO_DIR=""
 SERVICE_NAME="gpu-health-report"
 UNIT_DIR="${UNIT_DIR:-/etc/systemd/system}"
+
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; CYAN='\033[0;36m'; NC='\033[0m'
 ok()   { printf "%b[OK]%b   %s\n" "$GREEN" "$NC" "$*"; }
@@ -51,6 +56,7 @@ usage() {
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --daily-time)     DAILY_TIME="$2"; shift 2 ;;
+    --interval-hours) INTERVAL_HOURS="$2"; shift 2 ;;
     --retry-hours)    RETRY_HOURS="$2"; shift 2 ;;
     --machine-name)   MACHINE_NAME="$2"; shift 2 ;;
     --health-repo)    HEALTH_REPO="$2"; shift 2 ;;
@@ -62,6 +68,7 @@ while [[ $# -gt 0 ]]; do
     *) fail "Unknown option: $1"; usage; exit 2 ;;
   esac
 done
+
 
 # --- Validate environment ---------------------------------------------------
 # --dry-run and --check are read-only previews: they print what would happen and
@@ -101,15 +108,20 @@ if [[ "$PREVIEW" -eq 0 && "$EUID" -ne 0 ]]; then
   exit 2
 fi
 
-# Daily time must be HH:MM for OnCalendar
-if ! [[ "$DAILY_TIME" =~ ^([01][0-9]|2[0-3]):[0-5][0-9]$ ]]; then
+# Optional daily calendar time (HH:MM); primary cadence is INTERVAL_HOURS.
+if [[ -n "$DAILY_TIME" ]] && ! [[ "$DAILY_TIME" =~ ^([01][0-9]|2[0-3]):[0-5][0-9]$ ]]; then
   fail "invalid --daily-time '$DAILY_TIME' (expected HH:MM, 24h)"
+  exit 2
+fi
+if ! [[ "$INTERVAL_HOURS" =~ ^[0-9]+$ ]] || [[ "$INTERVAL_HOURS" -lt 1 ]]; then
+  fail "invalid --interval-hours '$INTERVAL_HOURS' (expected a positive integer)"
   exit 2
 fi
 if ! [[ "$RETRY_HOURS" =~ ^[0-9]+$ ]] || [[ "$RETRY_HOURS" -lt 1 ]]; then
   fail "invalid --retry-hours '$RETRY_HOURS' (expected a positive integer)"
   exit 2
 fi
+
 
 # --- Machine identity ------------------------------------------------------
 # Reuse the SAME dev/prod classification the report script applies, so the
@@ -145,14 +157,18 @@ MACHINE_TYPE="$(detect_machine_type)"
 
 info "repo root:      $REPO_ROOT"
 info "machine:        $MACHINE_NAME ($MACHINE_TYPE)"
-info "daily time:     $DAILY_TIME UTC"
-info "retry interval: every ${RETRY_HOURS}h while the day is failing"
+info "interval:       every ${INTERVAL_HOURS}h (primary)"
+info "daily time:     ${DAILY_TIME:-disabled} UTC"
+info "retry interval: every ${RETRY_HOURS}h while the last run is failing"
 info "publish:        $([ "$NO_PUSH" -eq 1 ] && echo 'disabled (--no-push)' || echo "main → $HEALTH_REPO")"
 info "health clone:   $HEALTH_REPO_DIR"
 echo ""
 
 # Jitter keeps a fleet of hosts from pushing to main at the same instant.
 JITTER_SEC="$(( RANDOM % 600 ))"
+DAILY_ARG=""
+[[ -n "$DAILY_TIME" ]] && DAILY_ARG=" --daily-time $DAILY_TIME"
+
 
 # --- Units -----------------------------------------------------------------
 # Marker bookkeeping and the retry decision live in two small scripts
@@ -178,7 +194,7 @@ Environment=GPU_MACHINE_NAME=$MACHINE_NAME
 Environment=GPU_MACHINE_TYPE=$MACHINE_TYPE
 Environment=GPU_HEALTH_KEEP_LOGS=30
 Environment=PYTHONUNBUFFERED=1
-ExecStart=/bin/bash $REPORT --daemon --daily-time $DAILY_TIME --retry-hours $RETRY_HOURS --machine-name $MACHINE_NAME$([[ "$NO_PUSH" -eq 1 ]] && echo ' --no-push')
+ExecStart=/bin/bash $REPORT --daemon$DAILY_ARG --retry-hours $RETRY_HOURS --machine-name $MACHINE_NAME$([[ "$NO_PUSH" -eq 1 ]] && echo ' --no-push')
 Nice=10
 TimeoutStartSec=3600
 StandardOutput=append:/var/log/dana-rag/health-report.log
@@ -191,6 +207,23 @@ ExecStopPost=/bin/bash $SCRIPT_DIR/mark-result.sh --rc \$EXIT_STATUS
 WantedBy=multi-user.target"
 
 TIMER_UNIT="[Unit]
+Description=Dana RAG health report — every ${INTERVAL_HOURS}h
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=${INTERVAL_HOURS}h
+RandomizedDelaySec=$JITTER_SEC
+AccuracySec=60s
+Persistent=true
+Unit=$SERVICE_NAME.service
+
+[Install]
+WantedBy=timers.target"
+
+# Optional extra calendar tick (in addition to the interval timer).
+DAILY_TIMER_UNIT=""
+if [[ -n "$DAILY_TIME" ]]; then
+DAILY_TIMER_UNIT="[Unit]
 Description=Dana RAG health report — daily at $DAILY_TIME UTC
 
 [Timer]
@@ -201,6 +234,8 @@ Unit=$SERVICE_NAME.service
 
 [Install]
 WantedBy=timers.target"
+fi
+
 
 # Retry timer fires every N hours but the service's own state gate decides
 # whether it actually runs the report (see gpu-health-retry.service below).
@@ -225,7 +260,7 @@ Environment=GPU_MACHINE_TYPE=$MACHINE_TYPE
 # testable and readable, and the markers are files (not transient unit results),
 # so a reboot cannot silently swallow a failed day.
 ExecCondition=/bin/bash $SCRIPT_DIR/should-retry.sh
-ExecStart=/bin/bash $REPORT --daemon --daily-time $DAILY_TIME --retry-hours $RETRY_HOURS --machine-name $MACHINE_NAME$([[ "$NO_PUSH" -eq 1 ]] && echo ' --no-push')
+ExecStart=/bin/bash $REPORT --daemon$DAILY_ARG --retry-hours $RETRY_HOURS --machine-name $MACHINE_NAME$([[ "$NO_PUSH" -eq 1 ]] && echo ' --no-push')
 Nice=10
 TimeoutStartSec=3600
 StandardOutput=append:/var/log/dana-rag/health-report.log
@@ -233,7 +268,7 @@ StandardError=append:/var/log/dana-rag/health-report.err.log
 ExecStopPost=/bin/bash $SCRIPT_DIR/mark-result.sh --rc \$EXIT_STATUS"
 
 RETRY_TIMER_UNIT="[Unit]
-Description=Dana RAG health report — retry every ${RETRY_HOURS}h if today failed
+Description=Dana RAG health report — retry every ${RETRY_HOURS}h if last run failed
 
 [Timer]
 # After boot plus the first offset, then every N hours. Persistent=true replays
@@ -252,12 +287,16 @@ if [[ "$DRY_RUN" -eq 1 ]]; then
   warn "--dry-run: printing units, not writing anything"
   echo "===== $SERVICE_NAME.service ====="; echo "$SERVICE_UNIT"
   echo; echo "===== $SERVICE_NAME.timer ====="; echo "$TIMER_UNIT"
+  if [[ -n "$DAILY_TIMER_UNIT" ]]; then
+    echo; echo "===== $SERVICE_NAME-daily.timer ====="; echo "$DAILY_TIMER_UNIT"
+  fi
   echo; echo "===== $SERVICE_NAME-retry.service ====="; echo "$RETRY_SERVICE_UNIT"
   echo; echo "===== $SERVICE_NAME-retry.timer ====="; echo "$RETRY_TIMER_UNIT"
   echo
   info "would also run: systemctl daemon-reload && systemctl enable --now $SERVICE_NAME.timer ${SERVICE_NAME}-retry.timer"
   exit 0
 fi
+
 
 # --- --check: validate the plan without changing anything --------------------
 # Everything here is read-only: assert the paths/units are coherent and that the
@@ -343,8 +382,14 @@ printf '%s\n' "$SERVICE_UNIT"       > "$UNIT_DIR/$SERVICE_NAME.service"
 printf '%s\n' "$TIMER_UNIT"         > "$UNIT_DIR/$SERVICE_NAME.timer"
 printf '%s\n' "$RETRY_SERVICE_UNIT" > "$UNIT_DIR/$SERVICE_NAME-retry.service"
 printf '%s\n' "$RETRY_TIMER_UNIT"   > "$UNIT_DIR/$SERVICE_NAME-retry.timer"
+UNIT_COUNT=4
+if [[ -n "$DAILY_TIMER_UNIT" ]]; then
+  printf '%s\n' "$DAILY_TIMER_UNIT" > "$UNIT_DIR/$SERVICE_NAME-daily.timer"
+  UNIT_COUNT=$((UNIT_COUNT + 1))
+fi
 chmod 0644 "$UNIT_DIR/$SERVICE_NAME"*.service "$UNIT_DIR/$SERVICE_NAME"*.timer
-ok "wrote 4 unit files to $UNIT_DIR"
+ok "wrote $UNIT_COUNT unit files to $UNIT_DIR"
+
 
 # Prime the health repo clone so the first run does not pay clone cost while
 # services are flapping. Non-fatal: the publisher clones on demand too.
@@ -365,19 +410,25 @@ fi
 
 systemctl daemon-reload || { fail "systemctl daemon-reload failed"; exit 1; }
 systemctl enable --now "$SERVICE_NAME.timer" >/dev/null 2>&1 \
-  && ok "enabled $SERVICE_NAME.timer" \
+  && ok "enabled $SERVICE_NAME.timer (every ${INTERVAL_HOURS}h)" \
   || { fail "could not enable $SERVICE_NAME.timer"; exit 1; }
+if [[ -n "$DAILY_TIMER_UNIT" ]]; then
+  systemctl enable --now "$SERVICE_NAME-daily.timer" >/dev/null 2>&1 \
+    && ok "enabled $SERVICE_NAME-daily.timer ($DAILY_TIME UTC)" \
+    || warn "could not enable $SERVICE_NAME-daily.timer"
+fi
 systemctl enable --now "$SERVICE_NAME-retry.timer" >/dev/null 2>&1 \
   && ok "enabled $SERVICE_NAME-retry.timer (every ${RETRY_HOURS}h)" \
   || warn "could not enable $SERVICE_NAME-retry.timer"
 
 echo ""
 echo "=== Installed ==="
-echo "  Daily:   $DAILY_TIME UTC (+ up to 10 min jitter)"
-echo "  Retry:   every ${RETRY_HOURS}h while today's run is missing or failing"
-echo "  Logs:    tail -f /var/log/dana-rag/health-report.log"
-echo "  Status:  systemctl list-timers '$SERVICE_NAME*'"
-echo "  Run now: sudo systemctl start $SERVICE_NAME.service"
+echo "  Interval: every ${INTERVAL_HOURS}h (+ up to 10 min jitter)"
+echo "  Daily:    ${DAILY_TIME:-disabled}"
+echo "  Retry:    every ${RETRY_HOURS}h while last run is missing or failing"
+echo "  Logs:     tail -f /var/log/dana-rag/health-report.log"
+echo "  Status:   systemctl list-timers '$SERVICE_NAME*'"
+echo "  Run now:  sudo systemctl start $SERVICE_NAME.service"
 echo ""
 echo "  Dashboard: https://alinikkhah2001.github.io/Work_RAG_HealthCheck/"
 echo "  (run scripts/enable_pages.sh once from your laptop to publish it)"
