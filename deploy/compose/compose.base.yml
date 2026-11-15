@@ -47,7 +47,7 @@ services:
         https_proxy: ${HTTPS_PROXY:-}
         NO_PROXY: ${NO_PROXY:-localhost,127.0.0.1}
         no_proxy: ${NO_PROXY:-localhost,127.0.0.1}
-        # Iranian / regional PyPI fallbacks (scripts/ci_apply_iran_mirrors.sh)
+        # PyPI: official index + Iranian extras (scripts/ci_apply_iran_mirrors.sh)
         PIP_INDEX_URL: ${PIP_INDEX_URL:-}
         PIP_EXTRA_INDEX_URL: ${PIP_EXTRA_INDEX_URL:-}
         PIP_TRUSTED_HOST: ${PIP_TRUSTED_HOST:-}
