@@ -50,6 +50,8 @@ Laptop Jenkins (`DANA_ROLE=stage`, job `dana-rag`) correctly refuses to call `ma
 | Preferred path | PR `develop` → `main` with title/body containing `[ci prod]`, or `bash scripts/promote_stage_to_main.sh --execute --push` |
 | WebUI pin | Bump `components/webui` gitlink on the umbrella **before** the `[ci prod]` commit — watcher alone does not advance the pin |
 | After push | Wait for hourly `pollSCM` or **Scan Multibranch Now** on `dana-rag-prod` |
+| Pin hygiene | Every gitlink SHA must exist on its GitHub remote (`git submodule update --init --recursive` green) or sync fails before build |
+| Tip without keys | A `main` merge **without** `[ci prod]` skips Build/Deploy; coverage then fails with `missing prod-deploy` — use an empty `[ci prod] [ci all]` commit to rebuild |
 
 On a real prod build, Jenkins runs `npm ci` + `npm run build` in `components/webui`, then
 `docker compose … build … webui`, and retags `rag-webui:local` → `:production` / `:dana` on deploy.

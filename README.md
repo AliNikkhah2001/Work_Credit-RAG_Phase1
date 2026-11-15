@@ -714,6 +714,27 @@ git push origin main
 
 Without step 2, the watcher only logs `ahead: true` and **does not** rebuild.
 
+### Lessons learned (2026-11-15) — why prod CI broke and how to keep it green
+
+Three separate failure modes stacked; only one was “the build itself”:
+
+| What we saw | Real cause | Fix / rule |
+|---|---|---|
+| `ci_submodule_sync: not our ref …` / GitHub 404 on a pin SHA | Umbrella gitlinks (esp. `guardrails` / `knowledgebase` from the v1.3.0 pin) pointed at **commits no longer on the remote** (force-push / never pushed). Jenkins cannot checkout ghosts. | Before every `[ci prod]`: `git submodule update --init --recursive` must succeed locally. Prefer pins that exist on `origin/main` (or `master` for KB). |
+| `CI_PROD=0` → Build/Deploy **skipped**, then coverage `missing prod-deploy` | A later merge to `main` (docs/monitor-only) had **no** `[ci prod]` / `[ci all]`. Prod controller still expects a prod-deploy when it runs coverage on `main`. | Every intentional prod rebuild needs `[ci prod]` (and `[ci all]` for a full matrix) on the **merge commit message body or title**. Empty `chore(ci): … [ci prod] [ci all]` is fine. |
+| WebUI went white without a new image digest | `recreate_dana_webui.sh` flipped `ics-mono` → `ics-maroon` + in-container `dana/themes/index.json` patch while `[ci prod]` image builds were failing. | Treat recreate/env patches as **temporary**. Ship theme defaults in the WebUI pin + successful image build; confirm digest/`Created` changed. |
+| GPU monitor stuck on old HEAD | Host umbrella **diverged** or dirty → `git merge --ff-only origin/main` fails. Jenkins still uses a clean `.ci-workspace`. | After saving anything useful: on GPU `git fetch && git reset --hard origin/main && git submodule update --init --recursive`. Do not rely on uncommitted host edits for prod. |
+| Laptop `dana-rag` / `main` red with `no prod controller` | Expected: stage controller (`DANA_ROLE=stage`) must not verify prod. | Judge prod only on GPU **`dana-rag-prod`**. |
+
+**Safe prod loop (short):**
+
+1. `git pull --ff-only origin main` on laptop; fix any unreachable pins to live remote tips.
+2. PR → `main` whose **merge message** includes `[ci prod] [ci all]` when images must rebuild.
+3. Confirm GPU `dana-rag-prod/main` ran **Build images** + **Deploy prod** (not skipped).
+4. Keep the GPU umbrella FF-clean so hourly health + pin watch see the same `main`.
+
+Health dashboard: https://alinikkhah2001.github.io/Work_RAG_HealthCheck/ (Jenkins console under each run’s `meta/jenkins/`).
+
 ### Commit-message triggers (bold + red)
 
 These tokens are case-insensitive and may appear anywhere in the commit subject/body:
