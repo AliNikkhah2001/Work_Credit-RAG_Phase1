@@ -79,3 +79,28 @@ Snapshot freeze (images + KB + pgvector): `/splunk-data/production/snapshots/202
 
 See [`PORT_MAP.md`](PORT_MAP.md). **`:8089` is forbidden** (retired `rag-public` tunnel listener).
 
+## Heal / recover from snapshot
+
+H200 hybrid is **not** full `dana-prod` compose for KB/orch (those are host uvicorn). Use:
+
+```bash
+# 1) Health gate for hybrid
+bash deploy/gpu/health.sh --profile host
+
+# 2) Image freeze restore (retag + recreate Jenkins/WebUI)
+bash scripts/restore_from_snapshot.sh --stamp 20261115T124350Z --dry-run
+bash scripts/restore_from_snapshot.sh --stamp 20261115T124350Z --apply
+
+# 3) App-image rollback from compose LKG manifest (digest retag + compose up --no-build)
+bash scripts/ci_rollback.sh --dry-run --target current
+bash scripts/ci_rollback.sh --target current
+
+# 4) Timered heal (installed as host profile)
+sudo bash deploy/heal/install.sh --profile host
+sudo systemctl start dana-gpu-reconcile.service   # or wait for timer
+```
+
+Do **not** run `reconcile.sh --profile gpu` on this hybrid host — it expects compose-published kb/orch containers and will false-red + try a bootstrap deploy.
+
+Jenkins must run **`dana-jenkins:production`** (plugins). Seed job XML: [`jenkins/jobs/dana-rag-prod.xml`](jenkins/jobs/dana-rag-prod.xml).
+

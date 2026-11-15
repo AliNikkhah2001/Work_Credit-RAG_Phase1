@@ -1,12 +1,12 @@
 # Work Credit RAG — Docker deployment (privileged CUDA host)
 
 Full-stack `docker compose` version of the platform. Mirrors
-`deploy/vast/start.sh` (same services, ports, env vars, startup order) for hosts
+`deploy/gpu/start.sh` (same services, ports, env vars, startup order) for hosts
 where Docker **and** the NVIDIA Container Toolkit are available
 (privileged host — real GPUs passed through to containers).
 
 > **Vast.ai (this project's instance is unprivileged, no Docker): use
-> `deploy/vast/*.sh` instead** (`start.sh` / `stop.sh` / `health.sh`).
+> `deploy/gpu/*.sh` instead** (`start.sh` / `stop.sh` / `health.sh`).
 > `compose.mvp.yml` (repo root) is the older Vast-MVP variant where Gemma stays
 > an external host process; this stack containerizes everything instead.
 
@@ -108,7 +108,7 @@ network; `HF_HUB_OFFLINE=0`). Once warm, you may set `HF_HUB_OFFLINE=1`
 ## Health checks
 
 ```bash
-# Container-level (mirrors deploy/vast/health.sh; needs the debug override above):
+# Container-level (mirrors deploy/gpu/health.sh; needs the debug override above):
 for p in 18000 8000 8200 8100; do printf "%s: " "$p"; curl -s --max-time 8 http://127.0.0.1:$p/health | head -c 120; echo; done
 curl -s --max-time 8 http://127.0.0.1:8100/ready | head -c 300; echo
 curl -s --max-time 8 http://127.0.0.1:8200/ready | head -c 300; echo
@@ -154,4 +154,4 @@ docker compose up -d --build llama-server   # rebuild one service (e.g. new LLAM
 - **`MODEL_FILE` path:** must be an existing host file; Compose resolves it
   relative to `deploy/docker/` if not absolute.
 - **Unprivileged hosts (no Docker / Vast.ai):** do NOT use this stack —
-  run `bash deploy/vast/start.sh`, `stop.sh`, `health.sh` on the host instead.
+  run `bash deploy/gpu/start.sh`, `stop.sh`, `health.sh` on the host instead.

@@ -29,9 +29,22 @@ On 2026-11-14 Docker also logged bind failures (`127.0.0.1:16379`, `:8200` alrea
 ## Durable fix
 
 1. Pin Jenkins default network to **`172.30.100.0/24`** in [`../jenkins/docker-compose.yml`](../jenkins/docker-compose.yml).
-2. Set Docker `default-address-pools` to **`172.30.0.0/16`** (`size: 24`) and `bip` to `172.30.0.1/24` in `/etc/docker/daemon.json` so future compose projects never land on `172.24`.
-3. Recreate `jenkins_default` after the pin (brief Jenkins downtime).
-4. Do **not** rely on `waf-route-fix` once Jenkins is off `172.24`.
+2. Set Docker `default-address-pools` to **`172.30.0.0/16`** (`size: 24`) in `/etc/docker/daemon.json` so future compose projects never land on `172.24` (takes effect on dockerd restart; explicit compose IPAM pins still required).
+3. Recreate `jenkins_default` after the pin (brief Jenkins downtime). Use image **`dana-jenkins:production`** (not a bare `jenkins/jenkins:lts` without plugins).
+4. Do **not** rely on `waf-route-fix` once Jenkins is off `172.24` (unit is masked).
+
+### Hypothesis: “Docker cached DNS renew broke chat.ics24.ir”
+
+**Verdict: PARTLY WRONG as stated — the real failure was a Docker bridge CIDR / route clash, not DNS cache.**
+
+| Claim | Result |
+|-------|--------|
+| DNS for `chat.ics24.ir` went stale / wrong | **Rejected.** Host DNS kept resolving to WAF VIP `172.24.65.109`. |
+| Something “renewed” and broke silently with no app deploy | **Accepted as timing.** Docker network create/recreate (Jenkins 2026-11-11, stage recreate 2026-11-15) auto-assigned `172.24.0.0/16`, which blackholes the VIP on the host. |
+| Cache/DNS renew inside Docker | **Rejected as primary.** Journal shows Docker *container* DNS timeouts to 1.1.1.1 from `172.24.0.2` (Jenkins outbound), unrelated to clients reaching the VIP. |
+| Fragility after a temporary fix | **Accepted.** `waf-route-fix.service` oneshot installed a `/24` via `ens35`, then stopped re-applying after churn. |
+
+So: not “DNS cache”, but **Docker IPAM claiming the same `/16` as the corporate WAF VIP**, which looks like a silent DNS/connectivity failure from outside.
 
 ### Forbidden Docker bridge ranges on this host
 

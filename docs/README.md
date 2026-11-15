@@ -31,7 +31,9 @@ Each component has its own README:
 ## Deployment
 
 - [deploy/docker/README.md](../deploy/docker/README.md) — Privileged Docker Compose
-- [deploy/vast/](../deploy/vast/) — Vast.ai host-venv scripts
+- [deploy/gpu/](../deploy/gpu/) — GPU/H200 host health, reconcile, rollback (formerly `deploy/vast/`)
+- [deploy/gateway/WAF_CIDR_CLASH.md](../deploy/gateway/WAF_CIDR_CLASH.md) — Docker vs WAF VIP (`chat.ics24.ir`)
+- [deploy/PORT_MAP.md](../deploy/PORT_MAP.md) — reserved prod/stage ports
 - [compose.mvp.yml](../compose.mvp.yml) — Vast MVP variant
 
 ## Contracts

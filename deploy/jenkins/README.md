@@ -5,6 +5,8 @@ Laptop Jenkins (`:8085`) and the same pipeline on the H200 GPU server.
 
 **Pinned prod Jenkins image:** `dana-jenkins:production` → `sha256:46b04ab41fa71b05f2bb6a939a9b50f4c99b5ffe6799b42c798ea0178bdb674c` (see [`../PRODUCTION.md`](../PRODUCTION.md)).
 
+> **Do not run a bare `jenkins/jenkins:lts` (or an unplugged `:lts` retag) on this host.** Without `workflow-multibranch` / GitHub Branch Source plugins, Multibranch jobs disappear from the UI (config.xml present but unloadable). Keep `dana-jenkins:lts` aliased to the **same digest** as `:production`. Job seed: [`jobs/dana-rag-prod.xml`](jobs/dana-rag-prod.xml).
+
 Detailed operator guide. Parent overview: repo root `README.md` → section **CI/CD & Jenkins**.
 
 ---
@@ -13,14 +15,15 @@ Detailed operator guide. Parent overview: repo root `README.md` → section **CI
 
 | Controller | Compose | Env | Multibranch job | Branches | May deploy |
 |---|---|---|---|---|---|
-| **Laptop STAGE** | `docker-compose.yml` | `DANA_ROLE=stage`, `DANA_HOST=laptop` | `dana-rag-stage` (or existing `dana-rag`) | `develop`, `feature/*` | `dana-stage` only (`[ci stage]` / `[ci auto]`) |
-| **GPU PROD** | `docker-compose.yml` + `docker-compose.gpu.yml` | `DANA_ROLE=prod`, `DANA_HOST=gpu` | `dana-rag-prod` | **`main` only** | prod / `compose.gpu` only (`[ci prod]` / `[ci auto]`) |
+| **Laptop STAGE** | `docker-compose.yml` | `DANA_ROLE=stage`, `DANA_HOST=laptop` | `dana-rag-stage` | `develop` | `dana-stage` only (`[ci stage]` / `[ci auto]`) |
+| **GPU PROD** | `docker-compose.yml` + `docker-compose.gpu.yml` | `DANA_ROLE=prod`, `DANA_HOST=gpu` | `dana-rag-prod` | **`main` only** | hybrid host + pinned images (`[ci prod]` / `[ci auto]`) |
 
 | Space | Branch | Compose stack | LLM |
 |---|---|---|---|
-| **dev** | `feature/*` / PR | build only (optional) | — |
-| **stage** | `develop` | `compose.base` + `local` + `stage` | OpenRouter via LiteLLM (`LLM_UPSTREAM_MODE=openrouter`) |
-| **prod** (GPU) | `main` | `base` + `gpu` | Self-hosted Gemma / Manager / TRT |
+| **stage** | `develop` | `compose.base` + `local` + `stage` (ports 18xxx / 13100) | OpenRouter via LiteLLM on laptop; stage containers on H200 |
+| **prod** (GPU hybrid) | `main` | host uvicorn KB/orch/guard + Docker WebUI/Jenkins | Self-hosted Gemma / Manager / TRT |
+
+Feature branches are not kept long-term — merge into `develop`/`main` then prune (`scripts/prune_stale_branches.sh`).
 
 Laptop **must not** run Deploy prod (`CI_MAY_DEPLOY_PROD=0`). GPU **must not** run Deploy stage. Role resolution: `scripts/ci_controller_role.py`.
 

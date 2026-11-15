@@ -8,21 +8,17 @@ contexts**, so required checks are possible without guessing names.
 Parent overview: `README.md` → **CI/CD & Jenkins**. Operator guide:
 `deploy/jenkins/README.md`.
 
-> **Read this before trusting a green check (audit 2026-11-14, updated 2026-11-15).**
-> The named `dana/*` contexts only exist on branches whose `Jenkinsfile` carries
-> `ghStatus()`. At audit time the parent `main` and `develop` Jenkinsfiles did
-> **not** (495 lines, `grep -c ghStatus` = 0), so the protected branches were
-> reported only by the coarse plugin status. That gap is closed in code by the
-> port described in §7.1 — but until that port is merged to `main` **and** has
-> posted one real `dana/validate` there, protection still cannot require it. The
-> audit evidence below is preserved as-is:
+> **Status (2026-11-15):** `main` / `develop` now include `ghStatus()` and the
+> `dana/*` contexts (`dana/validate`, `dana/build`, `dana/stage-deploy`,
+> `dana/stage-e2e`, `dana/prod-deploy`) via `scripts/ci_github_status.sh`.
+> The coarse plugin context `continuous-integration/jenkins/branch` still posts.
+> Historical audit below (pre-promote) is kept for forensics only — do not treat
+> it as current branch state.
 > ```bash
-> for s in $(git log --format=%H -14 origin/main); do
->   gh api repos/AliNikkhah2001/Work_Credit-RAG_Phase1/commits/$s/statuses --jq '.[].context'
-> done | sort -u
-> # continuous-integration/jenkins/branch   <- only context, 0/14 commits carry dana/*
+> # historical (before monitor/CI promote):
+> # continuous-integration/jenkins/branch   <- only context on older commits
 > ```
-> See §7 for what that means for branch protection.
+> See §7 for branch-protection wiring.
 
 ---
 
