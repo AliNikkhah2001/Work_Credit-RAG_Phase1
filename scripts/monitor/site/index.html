@@ -130,15 +130,80 @@
   .bar-fill.warn { background: linear-gradient(90deg, #f5a524, #ff8b3d); }
   .bar-fill.bad { background: linear-gradient(90deg, #ff4d5e, #ff7a5c); }
 
-  .kv { display: grid; grid-template-columns: minmax(140px, 1fr) 2fr; gap: 9px 18px; font-size: 13px; }
+  .kv { display: grid; grid-template-columns: minmax(120px, 180px) minmax(0, 1fr); gap: 9px 18px; font-size: 13px; }
   .kv .k { color: var(--muted); }
-  .kv .v { font-variant-numeric: tabular-nums; word-break: break-word; }
+  .kv .v {
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    min-width: 0;
+    max-width: 100%;
+  }
 
   .muted { color: var(--muted); }
-  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; }
+  .mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 12px;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
   .empty { color: var(--muted); font-size: 13px; padding: 14px 0; }
   a { color: var(--accent); text-decoration: none; }
   a:hover { text-decoration: underline; }
+  .scroll-box {
+    max-width: 100%; max-height: 220px; overflow: auto;
+    background: #0a0d13; border: 1px solid var(--line); border-radius: 8px;
+    padding: 8px 10px; white-space: pre-wrap; overflow-wrap: anywhere;
+  }
+  section.panel, .card, details.fold, .fold-body, td, th { min-width: 0; }
+  table { table-layout: fixed; }
+  td, th { overflow-wrap: anywhere; word-break: break-word; }
+
+  /* ---- countdown ring ---- */
+  .countdown-wrap {
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  }
+  .ring {
+    --p: 0;
+    width: 92px; height: 92px; border-radius: 50%; position: relative;
+    background:
+      radial-gradient(closest-side, var(--panel) 72%, transparent 73% 100%),
+      conic-gradient(var(--accent) calc(var(--p) * 1%), #1b2230 0);
+    display: grid; place-items: center; flex: 0 0 auto;
+  }
+  .ring-inner {
+    text-align: center; line-height: 1.15; padding: 4px;
+  }
+  .ring-inner .t {
+    font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums;
+    letter-spacing: -0.2px;
+  }
+  .ring-inner .l {
+    font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .countdown-meta { font-size: 12px; color: var(--muted); max-width: 220px; }
+
+  /* ---- resource gauges ---- */
+  .gauge-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px; margin: 4px 0 16px;
+  }
+  .gauge {
+    background: #0e121a; border: 1px solid var(--line); border-radius: 12px;
+    padding: 12px 10px 10px; text-align: center; min-width: 0;
+  }
+  .gauge .g-ring {
+    --p: 0; --c: var(--accent);
+    width: 78px; height: 78px; margin: 0 auto 8px; border-radius: 50%;
+    background:
+      radial-gradient(closest-side, #0e121a 70%, transparent 71% 100%),
+      conic-gradient(var(--c) calc(var(--p) * 1%), #1b2230 0);
+    display: grid; place-items: center;
+    font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums;
+  }
+  .gauge .g-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; }
+  .gauge .g-sub { font-size: 11px; color: var(--text); margin-top: 4px; overflow-wrap: anywhere; }
 
   details.fold {
     border: 1px solid var(--line); border-radius: 10px; background: #0e121a;
@@ -198,9 +263,22 @@
       <h1>Dana RAG — Production Health</h1>
       <div class="sub" id="subtitle">loading run history…</div>
     </div>
-    <div style="display:flex; gap:8px; flex-wrap:wrap">
-      <span class="pill"><span class="dot" id="live-dot" style="background:var(--muted)"></span><span id="live-text">checking latest run</span></span>
-      <span class="pill" id="machine-pill">all machines</span>
+    <div class="countdown-wrap" title="Hourly gpu-health-report.timer (±~10 min jitter)">
+      <div class="ring" id="countdown-ring" style="--p:0">
+        <div class="ring-inner">
+          <div class="t" id="countdown-clock">--:--:--</div>
+          <div class="l">to next</div>
+        </div>
+      </div>
+      <div class="countdown-meta">
+        <div><strong style="color:var(--text)">Next report</strong></div>
+        <div id="countdown-eta">estimating…</div>
+        <div id="countdown-last" class="mono" style="margin-top:4px">last: —</div>
+      </div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center">
+        <span class="pill"><span class="dot" id="live-dot" style="background:var(--muted)"></span><span id="live-text">checking latest run</span></span>
+        <span class="pill" id="machine-pill">all machines</span>
+      </div>
     </div>
   </header>
 
@@ -226,8 +304,9 @@
   </section>
 
   <section class="panel">
-    <h2>Host resources — ports / disk / RAM / GPU</h2>
-    <p class="panel-note">Captured each report into <span class="mono">meta/host_inventory.json</span> and published with the run.</p>
+    <h2>Host resources — load / RAM / disk / GPU</h2>
+    <p class="panel-note">From the latest run’s <span class="mono">meta/host_inventory.json</span>. Gauges use the newest sample; the sparkline tracks RAM used across published runs.</p>
+    <div class="gauge-grid" id="host-gauges"></div>
     <div id="host-body"><div class="empty">Loading…</div></div>
     <canvas id="host-trend" width="1100" height="180" style="width:100%;max-width:1100px;margin-top:12px;background:#0a0d13;border-radius:10px;border:1px solid var(--line)"></canvas>
   </section>
@@ -316,7 +395,9 @@ const STATUS_CLASS = { up: "b-up", down: "b-down", degraded: "b-degraded", "no-d
 const state = {
   records: [], index: null, heatWindow: 168, uptimeWindow: 24,
   metricsStatus: null, metricsSeries: null,
+  lastRunTs: null, nextRunTs: null, reportIntervalMs: 60 * 60 * 1000,
 };
+let _countdownTimer = null;
 
 /* Brief, plain-language notes for each probed endpoint (name and/or port). */
 const ENDPOINT_INFO = {
@@ -1069,7 +1150,7 @@ function renderJenkins(records) {
   body.innerHTML = `
     <div class="k">Jenkins auth</div><div class="v">${(j.jenkins && j.jenkins.authenticated) ? '<span class="badge b-up">yes</span>' : '<span class="badge b-down">no</span>'}</div>
     <div class="k">Job</div><div class="v mono">${esc((j.jenkins && j.jenkins.job) || "—")}</div>
-    <div class="k">Last build</div><div class="v">${esc(JSON.stringify(j.jenkins && j.jenkins.last_build || {}).slice(0, 180))}</div>
+    <div class="k">Last build</div><div class="v"><pre class="scroll-box mono" style="margin:0">${esc(JSON.stringify(j.jenkins && j.jenkins.last_build || {}, null, 2))}</pre></div>
     <div class="k">build_ok</div><div class="v">${j.build_ok ? '<span class="badge b-up">yes</span>' : '<span class="badge b-down">no</span>'}</div>
     <div class="k">Reasons</div><div class="v">${reasons}</div>
     ${labels}${tip}${consoleLink}
@@ -1113,33 +1194,166 @@ function renderLatency(records) {
   sparkline("latency-trend", trend, "#2ecc71");
 }
 
+function gaugeColor(pct) {
+  if (pct == null || isNaN(pct)) return "var(--muted)";
+  if (pct >= 90) return "var(--down)";
+  if (pct >= 75) return "var(--degraded)";
+  return "var(--up)";
+}
+
+function memUsedPct(mem) {
+  if (!mem) return null;
+  const used = Number(mem.used_mb);
+  const avail = Number(mem.available_mb);
+  const total = Number(mem.total_mb);
+  if (used > 0 && avail > 0) return Math.min(100, (used / (used + avail)) * 100);
+  if (used > 0 && total > 10) return Math.min(100, (used / total) * 100);
+  return null;
+}
+
+function fmtMiB(v) {
+  const n = Number(v);
+  if (!isFinite(n)) return "—";
+  if (n >= 1024 * 1024) return (n / (1024 * 1024)).toFixed(1) + " TiB";
+  if (n >= 1024) return (n / 1024).toFixed(1) + " GiB";
+  return Math.round(n) + " MiB";
+}
+
+function loadAvgTriplet(loadavg) {
+  if (Array.isArray(loadavg)) return loadavg.slice(0, 3).map(Number);
+  if (typeof loadavg === "string") return loadavg.trim().split(/\s+/).slice(0, 3).map(Number);
+  if (loadavg && typeof loadavg === "object") {
+    return [loadavg["1"], loadavg["5"], loadavg["15"]].map(Number);
+  }
+  return [];
+}
+
+function gaugeCard(label, pct, center, sub) {
+  const p = pct == null || isNaN(pct) ? 0 : Math.max(0, Math.min(100, pct));
+  const show = pct == null || isNaN(pct) ? "—" : Math.round(p) + "%";
+  return `<div class="gauge">
+    <div class="g-ring" style="--p:${p};--c:${gaugeColor(pct)}">${esc(center != null ? center : show)}</div>
+    <div class="g-label">${esc(label)}</div>
+    <div class="g-sub">${esc(sub || "")}</div>
+  </div>`;
+}
+
 function renderHost(records) {
   const last = [...records].reverse().find((r) => r.host) || records[records.length - 1];
   const h = last && last.host;
   const body = $("host-body");
+  const gauges = $("host-gauges");
   if (!h) {
     body.innerHTML = '<div class="empty">No host_inventory.json yet.</div>';
+    if (gauges) gauges.innerHTML = "";
     sparkline("host-trend", [], "#f5a524");
     return;
   }
   const ports = (h.ports || []).filter((p) => p.open).map((p) => p.port).join(", ") || "—";
   const closed = (h.ports || []).filter((p) => !p.open).map((p) => p.port).join(", ") || "none";
   const mem = h.memory || {};
-  const disk = (h.disk || []).slice(0, 4).map((d) =>
-    `<div class="k">${esc(d.mount)}</div><div class="v">${esc(d.used)} / ${esc(d.size)} (${esc(d.use_pct)}%)</div>`
+  const memPct = memUsedPct(mem);
+  const loads = loadAvgTriplet(h.loadavg);
+  const uniqDisk = [];
+  const seenMount = new Set();
+  (h.disk || []).forEach((d) => {
+    const m = d.mount || d.filesystem;
+    if (!m || seenMount.has(m)) return;
+    seenMount.add(m);
+    uniqDisk.push(d);
+  });
+
+  const cards = [];
+  if (loads.length) {
+    const l1 = loads[0];
+    cards.push(gaugeCard("Load 1m", Math.min(100, (l1 / 64) * 100), l1.toFixed(2), `5m ${loads[1]?.toFixed?.(2) ?? "—"} · 15m ${loads[2]?.toFixed?.(2) ?? "—"}`));
+  }
+  cards.push(gaugeCard("RAM", memPct, memPct == null ? "—" : Math.round(memPct) + "%", `${fmtMiB(mem.used_mb)} used · ${fmtMiB(mem.available_mb)} avail`));
+  uniqDisk.slice(0, 4).forEach((d) => {
+    const pct = Number(String(d.use_pct || "").replace("%", ""));
+    cards.push(gaugeCard(`Disk ${d.mount || "?"}`, pct, (isFinite(pct) ? Math.round(pct) + "%" : "—"), `${d.used || "?"} / ${d.size || "?"}`));
+  });
+  (h.gpu || []).forEach((g, i) => {
+    const idx = g.index != null ? g.index : i;
+    const memP = g.mem_total_mb ? (Number(g.mem_used_mb) / Number(g.mem_total_mb)) * 100 : null;
+    const util = Number(g.util_pct);
+    cards.push(gaugeCard(`GPU${idx} util`, util, (isFinite(util) ? Math.round(util) + "%" : "—"), g.name || ""));
+    cards.push(gaugeCard(`GPU${idx} VRAM`, memP, memP == null ? "—" : Math.round(memP) + "%", `${fmtMiB(g.mem_used_mb)} / ${fmtMiB(g.mem_total_mb)} · ${g.temp_c != null ? g.temp_c + "°C" : ""}`));
+  });
+  if (gauges) gauges.innerHTML = cards.join("") || '<div class="empty">No gaugeable host metrics.</div>';
+
+  const disk = uniqDisk.slice(0, 6).map((d) =>
+    `<div class="k">${esc(d.mount)}</div><div class="v">${esc(d.used)} / ${esc(d.size)} (${esc(d.use_pct)}%) <span class="muted mono">${esc(d.filesystem || "")}</span></div>`
   ).join("");
   const gpu = (h.gpu || []).map((g, i) =>
-    `<div class="k">GPU ${esc(g.index != null ? g.index : i)}</div><div class="v">${esc(g.name || g.error || "?")} · util ${esc(g.util_pct)}% · mem ${esc(g.mem_used_mb)}/${esc(g.mem_total_mb)} MiB · ${esc(g.temp_c)}°C</div>`
+    `<div class="k">GPU ${esc(g.index != null ? g.index : i)}</div><div class="v">${esc(g.name || g.error || "?")} · util ${esc(g.util_pct)}% · mem ${esc(fmtMiB(g.mem_used_mb))}/${esc(fmtMiB(g.mem_total_mb))} · ${esc(g.temp_c)}°C</div>`
   ).join("");
   body.innerHTML = `
     <div class="kv">
+      <div class="k">Host</div><div class="v mono">${esc(h.hostname || "—")} · ${esc(fmtTs(h.ts))}</div>
+      <div class="k">Loadavg</div><div class="v mono">${esc(loads.length ? loads.map((n) => (isFinite(n) ? n.toFixed(2) : n)).join(" / ") : (typeof h.loadavg === "string" ? h.loadavg : "—"))}</div>
       <div class="k">Open ports</div><div class="v mono">${esc(ports)}</div>
       <div class="k">Closed (watched)</div><div class="v mono">${esc(closed)}</div>
-      <div class="k">RAM used</div><div class="v">${esc(mem.used_mb)} / ${esc(mem.total_mb)} MiB (avail ${esc(mem.available_mb)})</div>
+      <div class="k">RAM</div><div class="v">${esc(fmtMiB(mem.used_mb))} used · ${esc(fmtMiB(mem.available_mb))} avail ${mem.raw ? `<div class="scroll-box mono" style="margin-top:6px;max-height:72px">${esc(mem.raw)}</div>` : ""}</div>
       ${disk}${gpu}
     </div>`;
   const trend = records.filter((r) => r.host && r.host.memory).map((r) => ({ v: r.host.memory.used_mb }));
   sparkline("host-trend", trend, "#f5a524");
+}
+
+function computeNextReportTs(lastIso) {
+  const last = lastIso ? new Date(lastIso) : null;
+  if (!last || isNaN(last)) return null;
+  const interval = state.reportIntervalMs;
+  let next = last.getTime() + interval;
+  const now = Date.now();
+  while (next < now - 30 * 1000) next += interval;
+  return next;
+}
+
+function fmtHMS(ms) {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  const pad = (n) => String(n).padStart(2, "0");
+  return h > 0 ? `${pad(h)}:${pad(m)}:${pad(sec)}` : `${pad(m)}:${pad(sec)}`;
+}
+
+function tickCountdown() {
+  const ring = $("countdown-ring");
+  const clock = $("countdown-clock");
+  const eta = $("countdown-eta");
+  const lastEl = $("countdown-last");
+  if (!ring || !clock) return;
+  if (lastEl && state.lastRunTs) lastEl.textContent = "last: " + fmtTs(state.lastRunTs);
+  if (!state.nextRunTs) {
+    clock.textContent = "--:--:--";
+    if (eta) eta.textContent = "waiting for last run timestamp";
+    ring.style.setProperty("--p", "0");
+    return;
+  }
+  const now = Date.now();
+  let next = state.nextRunTs;
+  while (next < now - 30 * 1000) next += state.reportIntervalMs;
+  state.nextRunTs = next;
+  const remain = next - now;
+  const elapsed = state.reportIntervalMs - remain;
+  const pct = Math.max(0, Math.min(100, (elapsed / state.reportIntervalMs) * 100));
+  ring.style.setProperty("--p", String(pct));
+  clock.textContent = fmtHMS(remain);
+  if (eta) {
+    const d = new Date(next);
+    eta.textContent = d.toISOString().replace("T", " ").replace(/\.\d+Z$/, "Z") + " (±10m jitter)";
+  }
+}
+
+function startCountdown(lastIso) {
+  state.lastRunTs = lastIso || state.lastRunTs;
+  state.nextRunTs = computeNextReportTs(state.lastRunTs);
+  tickCountdown();
+  if (_countdownTimer) clearInterval(_countdownTimer);
+  _countdownTimer = setInterval(tickCountdown, 1000);
 }
 
 function renderAll() {
@@ -1204,13 +1418,17 @@ async function boot() {
   renderMetricsStatus();
   renderJenkins(state.records);
 
+  const lastFromMetrics = (metricsStatus && (metricsStatus.updated_at || metricsStatus.ts)) || null;
   if (!index || !Array.isArray(index.entries)) {
     $("subtitle").textContent = "runs/index.json not found — has the first report been published?";
+    startCountdown(lastFromMetrics || (metricsStatus && metricsStatus.run_id));
     renderAll();
     return;
   }
   state.index = index;
   const entries = index.entries;
+  const lastTs = index.last_run || (entries.length ? entries[entries.length - 1].ts : null) || lastFromMetrics;
+  startCountdown(lastTs);
 
   // Progressive paint from the compact index so the page is never stuck on
   // "Single reports 0" / empty KB while 9+ full run JSON files download.
