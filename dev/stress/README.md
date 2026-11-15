@@ -17,3 +17,6 @@ python scripts/compare_stress_clarify.py
 ```
 
 Do not add new stress baselines here — commit them in Work_RAG-Evaluation_Suite.
+
+RTL full-answer compare (old vs new):
+[`components/evaluation/docs/stress_clarify_before_after_rtl.html`](../../components/evaluation/docs/stress_clarify_before_after_rtl.html)
