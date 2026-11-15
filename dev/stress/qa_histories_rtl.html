@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>تاریخچه تست‌های استرس گفتگوی طولانی</title>
+<style>
+  :root {
+    --bg: #f7f4ef;
+    --ink: #1c1917;
+    --muted: #78716c;
+    --user: #e7e5e4;
+    --bot: #ffffff;
+    --ok: #166534;
+    --err: #991b1b;
+    --clarify: #92400e;
+    --filter: #6b21a8;
+    --line: #d6d3d1;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 1.25rem 1rem 3rem;
+    font-family: "Vazirmatn", "Tahoma", "Segoe UI", sans-serif;
+    background: var(--bg); color: var(--ink); line-height: 1.7;
+  }
+  h1 { font-size: 1.4rem; margin: 0 0 .35rem; }
+  .note { color: var(--muted); font-size: .92rem; margin-bottom: 1.5rem; }
+  .run {
+    background: #fff; border: 1px solid var(--line); border-radius: 12px;
+    padding: 1rem 1rem 1.25rem; margin-bottom: 1.5rem;
+  }
+  .run h2 { margin: 0 0 .4rem; font-size: 1.15rem; }
+  .sum { color: var(--muted); font-size: .88rem; margin: 0 0 1rem; }
+  .turn {
+    border-right: 4px solid var(--ok); padding: .6rem .75rem;
+    margin: 0 0 .75rem; background: #fafaf9; border-radius: 8px;
+  }
+  .turn.err { border-right-color: var(--err); }
+  .turn.clarify { border-right-color: var(--clarify); }
+  .turn.filter { border-right-color: var(--filter); }
+  .turn header {
+    display: flex; flex-wrap: wrap; gap: .5rem 1rem;
+    justify-content: space-between; color: var(--muted); font-size: .8rem;
+    margin-bottom: .35rem;
+  }
+  .bubble {
+    padding: .55rem .7rem; border-radius: 8px; margin: .3rem 0;
+    border: 1px solid var(--line);
+  }
+  .bubble.user { background: var(--user); }
+  .bubble.bot { background: var(--bot); }
+  code { font-size: .85em; }
+  nav a { margin-left: .75rem; color: #0f766e; }
+</style>
+</head>
+<body>
+  <h1>تاریخچه تست‌های استرس گفتگوی طولانی (dev / dana-local)</h1>
+  <p class="note">
+    اجرا روی <code>http://127.0.0.1:8100</code> با استریم و <code>X-Request-ID</code> ثابت.
+    پاسخ‌ها خلاصهٔ حداکثر ~۱۸۰ کاراکتر از خروجی ذخیره‌شده‌اند.
+    در هیچ‌کدام از اجراهای ۲۰/۳۰/۴۰/۵۰ نوبتی، پیام «خطا در پردازش درخواست» دیده نشد.
+    باگ QA روی سرور GPU production گزارش شده است.
+  </p>
+  <nav class="note">
+    <a href="#r20">۲۰ نوبت</a>
+    <a href="#r30">۳۰ نوبت</a>
+    <a href="#r40">۴۰ نوبت</a>
+    <a href="#r50">۵۰ نوبت</a>
+    <a href="#smoking-guns">smoking guns</a>
+  </nav>
+
+  <section class="run" id="smoking-guns" style="border-color:#b45309">
+    <h2>نشانه‌های دود (smoking guns) برای GPU production</h2>
+    <p class="sum">عبارت درست <em>smoking gun</em> است — شواهد قوی که علت را نشان می‌دهند. روی dev/OpenRouter با ۵۰ نوبت خطا دیده نشد؛ باگ روی GPU/TRT گزارش شده.</p>
+    <ol>
+      <li><strong>فقط مسیر استریم:</strong> متن «خطا در پردازش درخواست.» فقط در
+        <code>orchestrator/api.py</code> داخل <code>except Exception</code> استریم است
+        (نه مسیر non-stream که HTTP 500 می‌دهد).</li>
+      <li><strong>Guardrails استریم بدون try/except:</strong>
+        <code>guarded_completion_stream</code> برخلاف non-stream، خطای upstream (۴۰۰ سرریز کانتکست / OOM / قطع اتصال)
+        را نمی‌گیرد → استریم می‌ترکد → همان catch-all ارکستراتور.</li>
+      <li><strong>پنجره ۸۱۹۲ توکن TRT + VRAM:</strong> بعد از چند نوبت سنگین، OOM یا
+        <code>default_max_tokens</code> منفی → هر نوبت بعدی هم همان خطا تا ری‌استارت LLM.</li>
+      <li><strong>فشرده‌سازی / بازنویسی به :۹۰۰۰:</strong> ارکستراتور
+        <code>UPSTREAM_LLM_BASE_URL</code> ندارد (پیش‌فرض <code>127.0.0.1:9000</code>)؛
+        <code>rewrite.py</code> هم همان را hardcode کرده. لاگ dev:
+        <code>Context compaction skipped</code> و <code>query rewrite failed</code>.</li>
+      <li><strong>retrieve با raise بلند:</strong> شکست KB به‌جای «یافت نشد»،
+        <code>RuntimeError</code> می‌دهد و استریم را می‌کشد.</li>
+      <li><strong>مسیر استریم از LangGraph رد نمی‌شود:</strong> validate∥retrieve موازی روی یک state
+        + بدون checkpoint END تمیز.</li>
+      <li><strong>چه چیزی در لاگ GPU ببینید:</strong>
+        <code>Streaming failed:</code> در orch،
+        <code>Upstream error</code> / HTTP 400 در guard،
+        OOM / context در llama-server یا manager :۹۰۰۰،
+        و سلامت <code>/ready</code> بعد از اولین خطا.</li>
+    </ol>
+  </section>
+
+
+    <section class="run" id="r20">
+      <h2>20-turn-local</h2>
+      <p class="sum">thread=<code>stress-20t-0d90d8ea</code> ·
+        ok=20/20 · err=0 ·
+        avg=10.65s · max=28.42s ·
+        probes: T7=stop/8.41s · T20=stop/8.25s</p>
+      
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 1</span>
+            <span class="meta">finish=stop · 0.17s · ans=217 · payload=37</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> سلام</div>
+          <div class="bubble bot"><strong>دستیار:</strong> سلام! 👋 من دانا، دستیار هوشمند شرکت اعتبارسنجی ایران، هستم. می‌توانم به سوالات شما درباره مفاهیم اعتبارسنجی، گزارش اعتبارسنجی، امتیاز و رتبه اعتباری و روش رفع دلایل کاهش امتیاز پاس…</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 2</span>
+            <span class="meta">finish=stop · 20.84s · ans=1052 · payload=352</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> گزارش اعتبارسنجی چک چیست؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> گزارش اعتبارسنجی چک ابزاری برای ارزیابی ریسک اعتباری اشخاص در حوزه صدور و مدیریت چک است. این گزارش با تمرکز بر سوابق مالی صادرکننده، تصویری از میزان مسئولیت‌پذیری او در ایفای تعهدا…</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 3</span>
+            <span class="meta">finish=stop · 5.87s · ans=287 · payload=1498</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> رتبه آبی یعنی چه؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> رتبه آبی در مدل اعتبارسنجی چک، نشان‌دهنده وضعیت ممتاز است و به افرادی تعلق می‌گیرد که در کم‌ریسک‌ترین گروه از نظر احتمال داشتن چک برگشتی قرار دارند.  این رتبه شامل بازه امتیازی ۸۵ …</div>
+        </article>
+        <article class="turn clarify">
+          <header>
+            <span class="n">نوبت 4</span>
+            <span class="meta">finish=clarify · 1.17s · ans=71 · payload=1891</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> چطور امتیاز اعتباری را بهبود دهم؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> آیا منظور شما بهبود امتیاز اعتباری برای اشخاص حقیقی است یا اشخاص حقوقی؟</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 5</span>
+            <span class="meta">finish=stop · 6.21s · ans=819 · payload=2053</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> نردبان اعتباری چیست؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> نردبان اعتباری بستری است که با هدف معرفی راهکارها و طرح‌های موجود برای بهبود وضعیت و رتبه اعتباری طراحی شده است. این سامانه به کاربران کمک می‌کند تا با طرح‌های فعال و سازمان‌های ار…</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 6</span>
+            <span class="meta">finish=stop · 7.72s · ans=550 · payload=2984</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> تسهیلات اشخاص حقیقی چه اطلاعاتی دارد؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> گزارش اعتبارسنجی تسهیلات برای اشخاص حقیقی و حقوقی شامل مجموعه‌ای از اطلاعات هویتی، امتیاز اعتباری و دلایل احتمالی کاهش این امتیاز است. همچنین سوابق مربوط به تسهیلات دریافتی، تسهیلا…</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 7</span>
+            <span class="meta">finish=stop · 8.41s · ans=923 · payload=3623</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> اعتبارسنجی چیست؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> اعتبارسنجی به معنای سنجش میزان اعتماد به اشخاص و شرکت‌ها در انجام تعاملات مالی است. در گذشته این شناخت از طریق آشنایی‌های شخصی و تجربیات فردی شکل می‌گرفت، اما با رشد جمعیت و پیچیده…</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 8</span>
+            <span class="meta">finish=stop · 8.96s · ans=775 · payload=4639</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> کفیل اعتباری کیست؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> کفیل در اصطلاح حقوقی، شخص حقیقی یا حقوقی است که به عنوان ضامن در مقابل مقام قضایی قرار می‌گیرد تا حضور متهم را در زمان‌های مورد نیاز در مراجع قضایی تضمین کند. این اقدام در قالب قرا…</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 9</span>
+            <span class="meta">finish=stop · 25.67s · ans=760 · payload=5523</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> چک برگشتی چه تاثیری روی رتبه دارد؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> برگشت خوردن چک بر اساس علت آن، تأثیرات متفاوتی بر رتبه و امتیاز اعتباری دارد. تنها چک‌هایی که به دلیل کسر موجودی (اعم از کسری بخشی یا عدم کفایت کل وجه) برگشت خورده باشند، باعث کاهش…</div>
+        </article>
+        <article class="turn clarify">
+          <header>
+            <span class="n">نوبت 10</span>
+            <span class="meta">finish=clarify · 1.98s · ans=71 · payload=6395</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> امتیاز اعتباری چگونه محاسبه می‌شود؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> آیا منظور شما نحوه محاسبه امتیاز اعتباری برای اشخاص حقیقی است یا حقوقی؟</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 11</span>
+            <span class="meta">finish=stop · 8.19s · ans=578 · payload=6567</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> تسهیلات اشخاص حقوقی شامل چیست؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> گزارش اعتبارسنجی تسهیلات برای اشخاص حقوقی و حقیقی شامل مجموعه‌ای از اطلاعات هویتی، امتیاز و رتبه اعتباری و همچنین دلایل احتمالی کاهش این امتیاز است.  علاوه بر موارد ذکر شده، این گز…</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 12</span>
+            <span class="meta">finish=stop · 16.8s · ans=855 · payload=7242</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> رتبه زرد به چه معناست؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> رنگ زرد در سیستم اعتبارسنجی نشان‌دهنده رتبه C است که سطح میانی رتبه‌بندی محسوب می‌شود. معنا و کاربرد این رتبه بسته به نوع گزارش متفاوت است:  در گزارش اعتبارسنجی چک (اشخاص حقیقی)، ر…</div>
+        </article>
+        <article class="turn filter">
+          <header>
+            <span class="n">نوبت 13</span>
+            <span class="meta">finish=content_filter · 4.09s · ans=179 · payload=8202</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> چگونه سوابق منفی را رفع کنم؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> من دستیار هوشمند شرکت اعتبارسنجی ایران هستم و فقط به سوالات مربوط به اعتبارسنجی، گزارش و امتیاز اعتباری (چک و تسهیلات بانکی) پاسخ می‌دهم. لطفاً پرسش خود را در همین حوزه مطرح کنید.</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 14</span>
+            <span class="meta">finish=stop · 14.5s · ans=853 · payload=8482</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> گزارش اعتباری مشتریان من چیست؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> گزارش اعتباری در واقع تشریحی از سوابق رفتاری یک شخص در رابطه با تعهدات مالی او است. این گزارش پس از جمع‌آوری و پردازش اطلاعات دریافتی از سازمان‌های مختلف (مانند بانک‌ها، سازمان امو…</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 15</span>
+            <span class="meta">finish=stop · 15.45s · ans=876 · payload=9444</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> تامین‌کننده اعتباری چه نقشی دارد؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> تأمین‌کنندگان اعتباری نهادهایی هستند که اطلاعات مربوط به تعهدات مالی، تسهیلات و قراردادهای اشخاص را جمع‌آوری کرده و برای محاسبه امتیاز و رتبه اعتباری در اختیار شرکت اعتبارسنجی ایرا…</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 16</span>
+            <span class="meta">finish=stop · 28.42s · ans=855 · payload=10415</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> رتبه قرمز یعنی چه؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> رتبه قرمز در سیستم اعتبارسنجی، نشان‌دهنده پایین‌ترین سطح رتبه‌بندی (گروه E) است که به افرادی یا شرکت‌هایی تعلق می‌گیرد که در گروه ریسک بسیار بالا یا بحرانی قرار دارند. این رتبه شام…</div>
+        </article>
+        <article class="turn clarify">
+          <header>
+            <span class="n">نوبت 17</span>
+            <span class="meta">finish=clarify · 0.87s · ans=55 · payload=11383</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> سابقه سفته در اعتبارسنجی ثبت می‌شود؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> آیا این سوال مربوط به تسهیلات اشخاص حقیقی است یا حقوقی؟</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 18</span>
+            <span class="meta">finish=stop · 20.67s · ans=759 · payload=11556</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> چطور می‌توانم رتبه خود را از زرد به آبی برسانم؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> برای ارتقای رتبه اعتباری از زرد به آبی، لازم است رفتار مالی خود را بهبود ببخشید تا امتیاز شما به‌تدریج افزایش یابد. این روند معمولاً تدریجی است و با ثبات در رفتارهای مثبت مالی در گ…</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 19</span>
+            <span class="meta">finish=stop · 8.79s · ans=1109 · payload=12417</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> معرفی شرکت اعتبارسنجی ایران</div>
+          <div class="bubble bot"><strong>دستیار:</strong> شرکت اعتبارسنجی ایران (ICS) یک شرکت سهامی خاص است که در آبان‌ماه ۱۳۸۵ بر اساس ماده (۵) قانون تسهیل اعطای تسهیلات بانکی تأسیس شد. این شرکت تنها مرجع رسمی و مورد تأیید بانک مرکزی جمه…</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 20</span>
+            <span class="meta">finish=stop · 8.25s · ans=779 · payload=13619</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> اعتبارسنجی چیست؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> اعتبارسنجی به معنای سنجش میزان اعتماد به اشخاص و شرکت‌ها در انجام تعاملات مالی با آن‌ها است. در گذشته این شناخت بر اساس آشنایی‌های شخصی و تجربیات فردی شکل می‌گرفت، اما با رشد جمعیت…</div>
+        </article>
+    </section>
+    <section class="run" id="r30">
+      <h2>30-turn-local</h2>
+      <p class="sum">thread=<code>stress-30t-21a3c60c</code> ·
+        ok=30/30 · err=0 ·
+        avg=6.4s · max=21.0s ·
+        probes: T7=stop/5.31s · T20=stop/10.63s · T30=stop/5.17s</p>
+      
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 1</span>
+            <span class="meta">finish=stop · 0.14s · ans=217 · payload=37</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> سلام</div>
+          <div class="bubble bot"><strong>دستیار:</strong> سلام! 👋 من دانا، دستیار هوشمند شرکت اعتبارسنجی ایران، هستم. می‌توانم به سوالات شما درباره مفاهیم اعتبارسنجی، گزارش اعتبارسنجی، امتیاز و رتبه اعتباری و روش رفع دلایل کاهش امتیاز پاس…</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 2</span>
+            <span class="meta">finish=stop · 21.0s · ans=1051 · payload=352</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> گزارش اعتبارسنجی چک چیست؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> گزارش اعتبارسنجی چک ابزاری برای سنجش اعتبار و ارزیابی ریسک اشخاص در حوزه صدور و مدیریت چک است. این گزارش با بررسی سوابق مالی صادرکننده، تصویری از مسئولیت‌پذیری مالی فرد ارائه می‌ده…</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 3</span>
+            <span class="meta">finish=stop · 3.69s · ans=420 · payload=1497</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> رتبه آبی یعنی چه؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> رتبه آبی در مدل اعتبارسنجی چک، نشان‌دهنده سطح ممتاز است و به افرادی تعلق می‌گیرد که در کم‌ریسک‌ترین گروه از نظر احتمال داشتن چک برگشتی قرار دارند. این رتبه شامل بازه امتیازی ۸۵ تا …</div>
+        </article>
+        <article class="turn clarify">
+          <header>
+            <span class="n">نوبت 4</span>
+            <span class="meta">finish=clarify · 1.42s · ans=65 · payload=2023</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> چطور امتیاز اعتباری را بهبود دهم؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> آیا منظور شما بهبود امتیاز اعتباری برای اشخاص حقیقی است یا حقوقی؟</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 5</span>
+            <span class="meta">finish=stop · 7.06s · ans=732 · payload=2179</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> نردبان اعتباری چیست؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> نردبان اعتباری بستری است که با هدف معرفی طرح‌ها و راهکارهای مرتبط با بهبود وضعیت و رتبه اعتباری طراحی شده است. این سامانه به کاربران کمک می‌کند تا با خدمات موجود برای ارتقای اعتبار…</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 6</span>
+            <span class="meta">finish=stop · 6.16s · ans=588 · payload=3023</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> تسهیلات اشخاص حقیقی چه اطلاعاتی دارد؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> گزارش اعتبارسنجی تسهیلات برای اشخاص حقیقی شامل اطلاعات هویتی (مانند نام، کد ملی و تاریخ تولد)، امتیاز اعتباری و دلایل احتمالی کاهش این امتیاز است.  علاوه بر موارد ذکر شده، سوابق مر…</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 7</span>
+            <span class="meta">finish=stop · 5.31s · ans=949 · payload=3702</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> اعتبارسنجی چیست؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> اعتبارسنجی به معنای سنجش میزان اعتماد به اشخاص و شرکت‌ها در انجام تعاملات مالی با آن‌ها است. در گذشته این شناخت بر اساس آشنایی‌های شخصی و تجربیات فردی شکل می‌گرفت، اما با رشد جمعیت…</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 8</span>
+            <span class="meta">finish=stop · 5.55s · ans=834 · payload=4744</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> کفیل اعتباری کیست؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> کفیل در اصطلاح حقوقی، شخص حقیقی یا حقوقی است که به عنوان ضامن در مقابل مقام قضایی معرفی می‌شود تا حضور متهم را در زمان‌های مورد نیاز در مراجع قضایی تضمین کند. این فرآیند تحت عنوان …</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 9</span>
+            <span class="meta">finish=stop · 8.31s · ans=729 · payload=5687</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> چک برگشتی چه تاثیری روی رتبه دارد؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> برگشت خوردن چک‌ها تأثیر مستقیم و منفی بر رتبه و امتیاز اعتباری دارد، اما این اثرگذاری تنها برای موارد خاصی است. صرفاً چک‌هایی که به دلیل کسر موجودی (چه کسری بخشی از مبلغ و چه عدم ک…</div>
+        </article>
+        <article class="turn clarify">
+          <header>
+            <span class="n">نوبت 10</span>
+            <span class="meta">finish=clarify · 1.45s · ans=59 · payload=6526</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> امتیاز اعتباری چگونه محاسبه می‌شود؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> آیا منظور شما امتیاز اعتباری برای اشخاص حقیقی است یا حقوقی؟</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 11</span>
+            <span class="meta">finish=stop · 4.38s · ans=696 · payload=6686</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> تسهیلات اشخاص حقوقی شامل چیست؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> گزارش اعتبارسنجی تسهیلات برای اشخاص حقوقی شامل مجموعه‌ای از اطلاعات هویتی، امتیاز و رتبه اعتباری و دلایل کاهش این امتیاز است. همچنین سوابق تسهیلات دریافتی، تسهیلات ضمانت شده، تعهدا…</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 12</span>
+            <span class="meta">finish=stop · 3.11s · ans=594 · payload=7479</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> رتبه زرد به چه معناست؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> رنگ زرد در سیستم اعتبارسنجی نشان‌دهنده سطح میانی رتبه‌بندی است که بسته به نوع گزارش، معانی متفاوتی دارد:  در گزارش اعتبارسنجی چک (اشخاص حقیقی)، رنگ زرد مربوط به گروه رتبه‌های C است…</div>
+        </article>
+        <article class="turn filter">
+          <header>
+            <span class="n">نوبت 13</span>
+            <span class="meta">finish=content_filter · 1.27s · ans=179 · payload=8176</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> چگونه سوابق منفی را رفع کنم؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> من دستیار هوشمند شرکت اعتبارسنجی ایران هستم و فقط به سوالات مربوط به اعتبارسنجی، گزارش و امتیاز اعتباری (چک و تسهیلات بانکی) پاسخ می‌دهم. لطفاً پرسش خود را در همین حوزه مطرح کنید.</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 14</span>
+            <span class="meta">finish=stop · 3.88s · ans=773 · payload=8456</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> گزارش اعتباری مشتریان من چیست؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> گزارش اعتباری سندی تشریحی از سوابق رفتاری یک شخص در رابطه با تعهدات مالی اوست. این گزارش از طریق جمع‌آوری و پردازش اطلاعات دریافتی از سازمان‌های مختلفی نظیر بانک‌ها، سازمان امور ما…</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 15</span>
+            <span class="meta">finish=stop · 19.15s · ans=901 · payload=9338</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> تامین‌کننده اعتباری چه نقشی دارد؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> تامین‌کنندگان اعتباری نهادهایی هستند که اطلاعات مربوط به تسهیلات، تعهدات و قراردادهای مالی اشخاص را جمع‌آوری کرده و به شرکت اعتبارسنجی ایران ارسال می‌کنند. این داده‌ها مبنای اصلی ب…</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 16</span>
+            <span class="meta">finish=stop · 17.14s · ans=849 · payload=10333</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> رتبه قرمز یعنی چه؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> رتبه قرمز در سیستم اعتبارسنجی نشان‌دهنده پایین‌ترین سطح رتبه‌بندی (گروه E) است که به افرادی یا شرکت‌هایی تعلق می‌گیرد که ریسک نکول یا احتمال داشتن چک برگشتی در آن‌ها بسیار بالا یا …</div>
+        </article>
+        <article class="turn clarify">
+          <header>
+            <span class="n">نوبت 17</span>
+            <span class="meta">finish=clarify · 0.76s · ans=61 · payload=11295</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> سابقه سفته در اعتبارسنجی ثبت می‌شود؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> آیا منظور شما سوابق سفته برای اشخاص حقیقی است یا اشخاص حقوقی؟</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 18</span>
+            <span class="meta">finish=stop · 16.44s · ans=781 · payload=11474</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> چطور می‌توانم رتبه خود را از زرد به آبی برسانم؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> برای ارتقای رتبه اعتباری از زرد به آبی، لازم است رفتار مالی خود را بهبود ببخشید تا امتیاز شما به‌تدریج افزایش یابد. این روند معمولاً تدریجی است و با ثبات در رفتار مثبت در گزارش‌های…</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 19</span>
+            <span class="meta">finish=stop · 10.47s · ans=1318 · payload=12357</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> معرفی شرکت اعتبارسنجی ایران</div>
+          <div class="bubble bot"><strong>دستیار:</strong> شرکت اعتبارسنجی ایران (ICS) یک شرکت سهامی خاص است که در آبان‌ماه سال ۱۳۸۵ بر اساس ماده (۵) قانون تسهیل اعطای تسهیلات بانکی تأسیس شد. این شرکت تنها مرجع رسمی و مورد تایید بانک مرکزی…</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 20</span>
+            <span class="meta">finish=stop · 10.63s · ans=737 · payload=13768</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> اعتبارسنجی چیست؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> اعتبارسنجی به معنای سنجش میزان اعتماد به اشخاص و شرکت‌ها در انجام تعاملات مالی با آن‌ها است. در گذشته این شناخت بر اساس آشنایی‌های شخصی و تجربیات فردی شکل می‌گرفت، اما با رشد جمعیت…</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 21</span>
+            <span class="meta">finish=stop · 4.28s · ans=594 · payload=14609</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> آیا چک صیادی در گزارش می‌آید؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> اطلاعات مربوط به چک‌های صیادی در گزارش‌های اعتبارسنجی لحاظ می‌شود. در واقع، سامانه صیاد یکی از منابع اصلی برای محاسبه امتیاز چک و ارزیابی سوابق مالی افراد است.  علاوه بر داده‌های ص…</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 22</span>
+            <span class="meta">finish=stop · 6.76s · ans=620 · payload=15314</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> تفاوت اعتبارسنجی حقیقی و حقوقی چیست؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> اعتبارسنجی اشخاص حقیقی و حقوقی (شرکت‌ها و کسب‌وکارها) با یکدیگر تفاوت دارد. این تفاوت عمدتاً در اطلاعات مورد استفاده و روش‌های محاسبه امتیاز اعتباری است که برای هر گروه به صورت مجز…</div>
+        </article>
+        <article class="turn clarify">
+          <header>
+            <span class="n">نوبت 23</span>
+            <span class="meta">finish=clarify · 0.78s · ans=57 · payload=16034</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> نمره اعتباری خوب چند است؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> آیا منظور شما نمره اعتباری برای اشخاص حقیقی است یا حقوقی؟</div>
+        </article>
+        <article class="turn clarify">
+          <header>
+            <span class="n">نوبت 24</span>
+            <span class="meta">finish=clarify · 0.81s · ans=76 · payload=16206</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> ضمانت‌نامه بانکی چه ربطی به اعتبارسنجی دارد؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> آیا منظور شما بررسی اعتبارسنجی برای دریافت تسهیلات اشخاص حقیقی است یا حقوقی؟</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 25</span>
+            <span class="meta">finish=stop · 8.54s · ans=584 · payload=16370</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> رتبه سبز یعنی چه؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> رتبه سبز در سیستم‌های اعتبارسنجی نشان‌دهنده وضعیت مطلوب و ریسک پایین است، اما تعریف دقیق آن بسته به نوع گزارش متفاوت است:  در گزارش اعتبارسنجی چک (اشخاص حقیقی)، رنگ سبز مربوط به رت…</div>
+        </article>
+        <article class="turn clarify">
+          <header>
+            <span class="n">نوبت 26</span>
+            <span class="meta">finish=clarify · 0.97s · ans=65 · payload=17062</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> چگونه بفهمم چرا امتیازم کم شده؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> آیا منظور شما دلیل کاهش امتیاز در گزارش چک است یا امتیاز تسهیلات؟</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 27</span>
+            <span class="meta">finish=stop · 7.48s · ans=563 · payload=17230</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> پنل مشتریان من چه امکاناتی دارد؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> پاسخ درباره قابلیت‌های پنل کسب‌وکار در سامانه اعتباریتو است.  پنل کسب‌وکار ابزاری است که به صاحبان کسب‌وکارهای حقیقی و حقوقی اجازه می‌دهد تا بدون نیاز به عقد قرارداد وب‌سرویس یا بر…</div>
+        </article>
+        <article class="turn clarify">
+          <header>
+            <span class="n">نوبت 28</span>
+            <span class="meta">finish=clarify · 3.96s · ans=68 · payload=17907</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> آیا تاخیر در اقساط روی رتبه اثر دارد؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> آیا منظورتان تأثیر تأخیر در اقساط تسهیلات شخصی است یا تسهیلات شرکتی؟</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 29</span>
+            <span class="meta">finish=stop · 5.92s · ans=760 · payload=18073</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> گزارش هیات مدیره شرکت چیست؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> گزارش اعتباری شرکت‌ها شامل اطلاعات هویتی، تاریخچه تسهیلات و ضمانت‌ها، وضعیت بازپرداخت اقساط در نقش متقاضی یا ضامن، وضعیت چک‌های برگشتی و صیادی، اطلاعات مالیاتی و همچنین سوابق محکوم…</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 30</span>
+            <span class="meta">finish=stop · 5.17s · ans=982 · payload=18924</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> اعتبارسنجی چیست؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> اعتبارسنجی به معنای سنجش میزان اعتماد به اشخاص و شرکت‌ها در انجام تعاملات مالی با آن‌ها است. در گذشته این شناخت بر اساس آشنایی‌های شخصی و تجربیات فردی شکل می‌گرفت، اما با پیچیده شد…</div>
+        </article>
+    </section>
+    <section class="run" id="r40">
+      <h2>40-turn-local</h2>
+      <p class="sum">thread=<code>stress-40t-78640c61</code> ·
+        ok=40/40 · err=0 ·
+        avg=4.97s · max=15.02s ·
+        probes: T7=stop/5.14s · T20=stop/10.59s · T30=stop/4.49s · T40=stop/4.03s</p>
+      
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 1</span>
+            <span class="meta">finish=stop · 0.11s · ans=217 · payload=37</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> سلام</div>
+          <div class="bubble bot"><strong>دستیار:</strong> سلام! 👋 من دانا، دستیار هوشمند شرکت اعتبارسنجی ایران، هستم. می‌توانم به سوالات شما درباره مفاهیم اعتبارسنجی، گزارش اعتبارسنجی، امتیاز و رتبه اعتباری و روش رفع دلایل کاهش امتیاز پاس…</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 2</span>
+            <span class="meta">finish=stop · 3.66s · ans=834 · payload=352</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> گزارش اعتبارسنجی چک چیست؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> گزارش اعتبارسنجی چک ابزاری برای سنجش اعتبار و ارزیابی ریسک اشخاص در حوزه صدور و مدیریت چک است. این گزارش با تمرکز تخصصی بر ابزارهای پرداخت، سوابق مربوط به چک‌های برگشتی، موارد رفع …</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 3</span>
+            <span class="meta">finish=stop · 3.9s · ans=451 · payload=1278</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> رتبه آبی یعنی چه؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> رتبه آبی در مدل اعتبارسنجی چک، نشان‌دهنده سطح ممتاز است و به افرادی تعلق می‌گیرد که در کم‌ریسک‌ترین گروه از نظر احتمال داشتن چک برگشتی قرار دارند. این رتبه در بازه امتیازی ۸۵ تا ۱۰…</div>
+        </article>
+        <article class="turn clarify">
+          <header>
+            <span class="n">نوبت 4</span>
+            <span class="meta">finish=clarify · 0.65s · ans=65 · payload=1836</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> چطور امتیاز اعتباری را بهبود دهم؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> آیا منظور شما بهبود امتیاز اعتباری برای اشخاص حقیقی است یا حقوقی؟</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 5</span>
+            <span class="meta">finish=stop · 3.19s · ans=742 · payload=1992</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> نردبان اعتباری چیست؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> نردبان اعتباری بستری است که با هدف معرفی راهکارها و طرح‌های موجود برای بهبود وضعیت و رتبه اعتباری طراحی شده است. این سامانه به کاربران کمک می‌کند تا با خدمات سازمان‌های همکار آشنا …</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 6</span>
+            <span class="meta">finish=stop · 4.31s · ans=551 · payload=2846</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> تسهیلات اشخاص حقیقی چه اطلاعاتی دارد؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> گزارش اعتبارسنجی تسهیلات برای اشخاص حقیقی شامل اطلاعات هویتی (مانند نام، کد ملی و تاریخ تولد)، امتیاز اعتباری و دلایل احتمالی کاهش این امتیاز است.  علاوه بر موارد ذکر شده، سوابق تس…</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 7</span>
+            <span class="meta">finish=stop · 5.14s · ans=904 · payload=3488</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> اعتبارسنجی چیست؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> اعتبارسنجی به معنای سنجش میزان اعتماد به اشخاص و شرکت‌ها در انجام تعاملات مالی است. در گذشته این شناخت بر اساس آشنایی‌های شخصی و تجربیات فردی شکل می‌گرفت، اما با پیچیده شدن روابط ا…</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 8</span>
+            <span class="meta">finish=stop · 3.13s · ans=764 · payload=4485</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> کفیل اعتباری کیست؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> کفیل شخصی (حقیقی یا حقوقی) است که در مقابل مقام قضایی به عنوان ضامن معرفی می‌شود تا حضور متهم را در زمان‌های مورد نیاز در مراجع قضایی تضمین کند. این اقدام در قالب قرار کفالت صورت م…</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 9</span>
+            <span class="meta">finish=stop · 15.02s · ans=802 · payload=5358</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> چک برگشتی چه تاثیری روی رتبه دارد؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> برگشت خوردن چک‌ها بر اساس دلیل برگشت، تأثیرات متفاوتی بر رتبه و امتیاز اعتباری دارد. تنها چک‌هایی که به دلیل کسر موجودی (اعم از عدم کفایت کل وجه یا کسری بخشی از مبلغ) برگشت خورده ب…</div>
+        </article>
+        <article class="turn clarify">
+          <header>
+            <span class="n">نوبت 10</span>
+            <span class="meta">finish=clarify · 2.46s · ans=59 · payload=6272</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> امتیاز اعتباری چگونه محاسبه می‌شود؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> آیا منظور شما امتیاز اعتباری برای اشخاص حقیقی است یا حقوقی؟</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 11</span>
+            <span class="meta">finish=stop · 5.29s · ans=811 · payload=6432</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> تسهیلات اشخاص حقوقی شامل چیست؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> گزارش اعتبارسنجی تسهیلات برای اشخاص حقوقی شامل مجموعه‌ای از اطلاعات هویتی، امتیاز اعتباری و دلایل مربوط به کاهش این امتیاز است. همچنین سوابق تسهیلات دریافتی، تسهیلات ضمانت شده، تعه…</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 12</span>
+            <span class="meta">finish=stop · 13.89s · ans=745 · payload=7340</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> رتبه زرد به چه معناست؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> رنگ زرد در سیستم اعتبارسنجی نشان‌دهنده سطح میانی رتبه‌بندی است که بسته به نوع گزارش، معانی متفاوتی دارد:  در گزارش اعتبارسنجی چک (اشخاص حقیقی)، رنگ زرد مربوط به رتبه C است. این رتب…</div>
+        </article>
+        <article class="turn filter">
+          <header>
+            <span class="n">نوبت 13</span>
+            <span class="meta">finish=content_filter · 1.19s · ans=179 · payload=8190</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> چگونه سوابق منفی را رفع کنم؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> من دستیار هوشمند شرکت اعتبارسنجی ایران هستم و فقط به سوالات مربوط به اعتبارسنجی، گزارش و امتیاز اعتباری (چک و تسهیلات بانکی) پاسخ می‌دهم. لطفاً پرسش خود را در همین حوزه مطرح کنید.</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 14</span>
+            <span class="meta">finish=stop · 3.5s · ans=604 · payload=8470</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> گزارش اعتباری مشتریان من چیست؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> گزارش اعتباری، سندی تشریحی از سوابق رفتاری یک شخص در رابطه با تعهدات مالی اوست. این گزارش از طریق جمع‌آوری و پردازش اطلاعات دریافتی از سازمان‌های مختلف مانند بانک‌ها، سازمان امور م…</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 15</span>
+            <span class="meta">finish=stop · 5.19s · ans=763 · payload=9182</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> تامین‌کننده اعتباری چه نقشی دارد؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> تأمین‌کنندگان اعتباری نهادهایی هستند که اطلاعات مربوط به تسهیلات، تعهدات و قراردادهای مالی اشخاص را جمع‌آوری کرده و به شرکت اعتبارسنجی ایران ارسال می‌کنند. این داده‌ها مبنای اصلی ب…</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 16</span>
+            <span class="meta">finish=stop · 5.04s · ans=795 · payload=10038</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> رتبه قرمز یعنی چه؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> رتبه قرمز نشان‌دهنده پایین‌ترین سطح رتبه‌بندی اعتباری است که در گروه‌های مختلف با میزان ریسک بالا یا بحرانی شناخته می‌شود. این رتبه شامل زیرگروه‌های E1، E2 و E3 است و به افرادی یا …</div>
+        </article>
+        <article class="turn clarify">
+          <header>
+            <span class="n">نوبت 17</span>
+            <span class="meta">finish=clarify · 0.9s · ans=61 · payload=10946</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> سابقه سفته در اعتبارسنجی ثبت می‌شود؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> آیا منظور شما سوابق سفته برای اشخاص حقیقی است یا اشخاص حقوقی؟</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 18</span>
+            <span class="meta">finish=stop · 8.09s · ans=842 · payload=11125</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> چطور می‌توانم رتبه خود را از زرد به آبی برسانم؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> برای ارتقای رتبه اعتباری از زرد به آبی، باید رفتار مالی خود را بهبود ببخشید تا امتیاز شما به‌تدریج افزایش یابد. این روند معمولاً تدریجی است و با ثبات در رفتارهای مثبت در گزارش اعتب…</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 19</span>
+            <span class="meta">finish=stop · 4.13s · ans=1178 · payload=12072</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> معرفی شرکت اعتبارسنجی ایران</div>
+          <div class="bubble bot"><strong>دستیار:</strong> شرکت اعتبارسنجی ایران (ICS) یک شرکت سهامی خاص است که در آبان‌ماه ۱۳۸۵ بر مبنای ماده (۵) قانون تسهیل اعطای تسهیلات بانکی تأسیس شد. این شرکت تنها مرجع رسمی و نهاد ملی اعتبارسنجی کشور…</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 20</span>
+            <span class="meta">finish=stop · 10.59s · ans=1026 · payload=13343</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> اعتبارسنجی چیست؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> اعتبارسنجی به معنای سنجش میزان اعتماد به اشخاص و شرکت‌ها در انجام تعاملات مالی با آن‌ها است. در گذشته این شناخت بر اساس تجربیات شخصی و آشنایی‌های فردی شکل می‌گرفت، اما با پیچیده‌تر…</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 21</span>
+            <span class="meta">finish=stop · 3.8s · ans=523 · payload=14475</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> آیا چک صیادی در گزارش می‌آید؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> اطلاعات مربوط به چک‌های صیادی در گزارش‌های اعتبارسنجی لحاظ می‌شود. در واقع، داده‌های سامانه صیاد یکی از منابع اصلی برای محاسبه امتیاز چک و ارزیابی سوابق مالی افراد است.  علاوه بر چ…</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 22</span>
+            <span class="meta">finish=stop · 6.1s · ans=817 · payload=15109</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> تفاوت اعتبارسنجی حقیقی و حقوقی چیست؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> اعتبارسنجی اشخاص حقیقی و حقوقی (شرکت‌ها و کسب‌وکارها) با یکدیگر تفاوت دارد. این تفاوت عمدتاً در نوع اطلاعات مورد استفاده و روش محاسبه امتیاز اعتباری است که برای هر یک از این دو گرو…</div>
+        </article>
+        <article class="turn clarify">
+          <header>
+            <span class="n">نوبت 23</span>
+            <span class="meta">finish=clarify · 9.49s · ans=63 · payload=16028</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> نمره اعتباری خوب چند است؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> آیا منظور شما نمره اعتباری برای اشخاص حقیقی است یا اشخاص حقوقی؟</div>
+        </article>
+        <article class="turn clarify">
+          <header>
+            <span class="n">نوبت 24</span>
+            <span class="meta">finish=clarify · 1.47s · ans=55 · payload=16206</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> ضمانت‌نامه بانکی چه ربطی به اعتبارسنجی دارد؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> آیا سوال شما مربوط به تسهیلات اشخاص حقیقی است یا حقوقی؟</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 25</span>
+            <span class="meta">finish=stop · 3.63s · ans=694 · payload=16349</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> رتبه سبز یعنی چه؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> رتبه سبز در سیستم‌های اعتبارسنجی نشان‌دهنده وضعیت مطلوب و ریسک پایین است، اما جزئیات آن بسته به نوع گزارش متفاوت است:  در گزارش اعتبارسنجی چک (اشخاص حقیقی)، رتبه سبز مربوط به گروه …</div>
+        </article>
+        <article class="turn clarify">
+          <header>
+            <span class="n">نوبت 26</span>
+            <span class="meta">finish=clarify · 1.86s · ans=45 · payload=17151</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> چگونه بفهمم چرا امتیازم کم شده؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> آیا منظورتان امتیاز چک است یا امتیاز تسهیلات؟</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 27</span>
+            <span class="meta">finish=stop · 7.68s · ans=579 · payload=17299</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> پنل مشتریان من چه امکاناتی دارد؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> پاسخ دربارهٔ امکانات پنل کسب‌وکار در سامانه اعتباریتو است.  پنل کسب‌وکار ابزاری است که به صاحبان کسب‌وکارهای حقیقی و حقوقی اجازه می‌دهد تا بدون نیاز به عقد قرارداد وب‌سرویس یا برقر…</div>
+        </article>
+        <article class="turn clarify">
+          <header>
+            <span class="n">نوبت 28</span>
+            <span class="meta">finish=clarify · 2.23s · ans=62 · payload=17992</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> آیا تاخیر در اقساط روی رتبه اثر دارد؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> آیا منظورتان تأخیر در اقساط تسهیلات شخصی است یا تسهیلات شرکتی؟</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 29</span>
+            <span class="meta">finish=stop · 6.5s · ans=905 · payload=18152</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> گزارش هیات مدیره شرکت چیست؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> گزارش اعتباری شرکت‌ها شامل اطلاعات هویتی، مالی و تعهدات است. در این گزارش، مواردی نظیر تاریخچه تسهیلات و ضمانت‌ها، وضعیت بازپرداخت اقساط در قراردادهایی که شرکت نقش متقاضی یا ضامن ر…</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 30</span>
+            <span class="meta">finish=stop · 4.49s · ans=977 · payload=19148</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> اعتبارسنجی چیست؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> اعتبارسنجی به معنای سنجش میزان اعتماد به اشخاص و شرکت‌ها در انجام تعاملات مالی با آن‌ها است. در گذشته این شناخت بر اساس آشنایی‌های شخصی و تجربیات فردی شکل می‌گرفت، اما با پیچیده شد…</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 31</span>
+            <span class="meta">finish=stop · 8.39s · ans=67 · payload=20232</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> چک مدت‌دار چگونه ارزیابی می‌شود؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> بر اساس اطلاعات موجود در پایگاه دانش، پاسخی برای این سوال یافت نشد.</div>
+        </article>
+        <article class="turn clarify">
+          <header>
+            <span class="n">نوبت 32</span>
+            <span class="meta">finish=clarify · 1.78s · ans=57 · payload=20402</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> کدهای دلیل کاهش امتیاز چه هستند؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> آیا منظور شما کدهای کاهش امتیاز چک است یا امتیاز تسهیلات؟</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 33</span>
+            <span class="meta">finish=stop · 6.93s · ans=693 · payload=20573</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> آیا می‌توانم برای وام از گزارش استفاده کنم؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> بله، شما می‌توانید برای دریافت وام از گزارش اعتباری استفاده کنید. برای دریافت این گزارش و مشاهده امتیاز اعتباری خود، می‌توانید به سامانه رسمی اعتباریتو به نشانی etebarito.ir مراجعه…</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 34</span>
+            <span class="meta">finish=stop · 5.15s · ans=550 · payload=21361</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> رتبه نارنجی یعنی چه؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> رتبه نارنجی در سیستم اعتبارسنجی نشان‌دهنده گروه حرفی D است که در سطح پایین رتبه‌بندی قرار دارد. این رتبه به افرادی تعلق می‌گیرد که از نظر احتمال داشتن چک برگشتی یا ریسک نکول، در گر…</div>
+        </article>
+        <article class="turn clarify">
+          <header>
+            <span class="n">نوبت 35</span>
+            <span class="meta">finish=clarify · 3.88s · ans=67 · payload=22015</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> چطور اعتراض به گزارش ثبت کنم؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> آیا اعتراض شما مربوط به گزارش چک است یا تسهیلات (افراد یا شرکت‌ها)؟</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 36</span>
+            <span class="meta">finish=stop · 4.76s · ans=375 · payload=22176</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> سقف چک برگشتی چقدر است؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> در مورد سقف عددی یا مبلغی برای چک‌های برگشتی در گزارش اعتبارسنجی، اطلاعاتی در پایگاه دانش موجود نیست.  اما در رابطه با تعداد چک‌های برگشتی، در گزارش‌ها عباراتی مانند «تعداد زیادی چ…</div>
+        </article>
+        <article class="turn clarify">
+          <header>
+            <span class="n">نوبت 37</span>
+            <span class="meta">finish=clarify · 3.29s · ans=63 · payload=22656</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> اعتبارسنجی برای کفالت چگونه است؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> آیا منظور شما اعتبارسنجی برای تسهیلات اشخاص حقیقی است یا حقوقی؟</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 38</span>
+            <span class="meta">finish=stop · 6.82s · ans=515 · payload=22826</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> اطلاعات هویتی در گزارش تسهیلات چیست؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> اطلاعات هویتی در گزارش اعتبارسنجی تسهیلات شامل مشخصات فردی و شناسنامه‌ای است تا هویت متقاضی به طور دقیق احراز شود.  در این بخش از گزارش، مواردی نظیر نام و نام خانوادگی، شماره ملی، …</div>
+        </article>
+        <article class="turn clarify">
+          <header>
+            <span class="n">نوبت 39</span>
+            <span class="meta">finish=clarify · 7.01s · ans=53 · payload=23445</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> آیا سابقه قضایی در گزارش هست؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> آیا منظور شما گزارش تسهیلات اشخاص حقیقی است یا حقوقی؟</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 40</span>
+            <span class="meta">finish=stop · 4.03s · ans=979 · payload=23585</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> اعتبارسنجی چیست؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> اعتبارسنجی به معنای سنجش میزان اعتماد به اشخاص و شرکت‌ها در انجام تعاملات مالی با آن‌ها است. در گذشته این شناخت بر اساس آشنایی‌های شخصی و تجربیات فردی شکل می‌گرفت، اما با پیچیده شد…</div>
+        </article>
+    </section>
+    <section class="run" id="r50">
+      <h2>50-turn-local</h2>
+      <p class="sum">thread=<code>stress-50t-1e8c3541</code> ·
+        ok=50/50 · err=0 ·
+        avg=5.33s · max=13.38s ·
+        probes: T7=stop/13.12s · T20=stop/13.38s · T30=stop/3.21s · T40=stop/3.48s · T50=stop/4.28s</p>
+      
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 1</span>
+            <span class="meta">finish=stop · 0.06s · ans=217 · payload=37</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> سلام</div>
+          <div class="bubble bot"><strong>دستیار:</strong> سلام! 👋 من دانا، دستیار هوشمند شرکت اعتبارسنجی ایران، هستم. می‌توانم به سوالات شما درباره مفاهیم اعتبارسنجی، گزارش اعتبارسنجی، امتیاز و رتبه اعتباری و روش رفع دلایل کاهش امتیاز پاس…</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 2</span>
+            <span class="meta">finish=stop · 12.91s · ans=856 · payload=352</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> گزارش اعتبارسنجی چک چیست؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> گزارش اعتبارسنجی چک ابزاری است که برای سنجش اعتبار و مسئولیت‌پذیری مالی اشخاص در حوزه صدور و مدیریت چک طراحی شده است. این گزارش با ارائه تصویری دقیق از رفتار مالی صادرکننده، به بان…</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 3</span>
+            <span class="meta">finish=stop · 6.94s · ans=577 · payload=1300</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> رتبه آبی یعنی چه؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> رتبه آبی در مدل اعتبارسنجی، نشان‌دهنده بالاترین سطح رتبه‌بندی و وضعیت ممتاز است. این رتبه به افرادی یا سازمان‌هایی تعلق می‌گیرد که در کم‌ریسک‌ترین گروه قرار دارند و احتمال نکول یا …</div>
+        </article>
+        <article class="turn clarify">
+          <header>
+            <span class="n">نوبت 4</span>
+            <span class="meta">finish=clarify · 0.99s · ans=71 · payload=1985</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> چطور امتیاز اعتباری را بهبود دهم؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> آیا منظور شما بهبود امتیاز اعتباری برای اشخاص حقیقی است یا اشخاص حقوقی؟</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 5</span>
+            <span class="meta">finish=stop · 4.89s · ans=1057 · payload=2147</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> نردبان اعتباری چیست؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> نردبان اعتباری بستری است که برای معرفی طرح‌ها و راهکارهای مرتبط با بهبود وضعیت و رتبه اعتباری طراحی شده است. هدف از راه‌اندازی این سامانه، افزایش آگاهی کاربران از روش‌های موجود برا…</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 6</span>
+            <span class="meta">finish=stop · 6.97s · ans=534 · payload=3318</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> تسهیلات اشخاص حقیقی چه اطلاعاتی دارد؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> گزارش اعتبارسنجی تسهیلات برای اشخاص حقیقی شامل اطلاعات هویتی (مانند نام، کد ملی و تاریخ تولد)، امتیاز اعتباری و دلایل احتمالی کاهش این امتیاز است.  همچنین سوابق مربوط به تسهیلات در…</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 7</span>
+            <span class="meta">finish=stop · 13.12s · ans=976 · payload=3943</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> اعتبارسنجی چیست؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> اعتبارسنجی به معنای سنجش میزان اعتماد به اشخاص و شرکت‌ها در انجام تعاملات مالی با آن‌ها است. در گذشته این شناخت بر اساس آشنایی‌های شخصی و تجربیات فردی شکل می‌گرفت، اما با رشد جمعیت…</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 8</span>
+            <span class="meta">finish=stop · 8.09s · ans=789 · payload=5012</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> کفیل اعتباری کیست؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> کفیل در اصطلاح حقوقی، شخص حقیقی یا حقوقی است که به عنوان ضامن در مقابل مقام قضایی معرفی می‌شود تا حضور متهم را در زمان‌های مورد نیاز در مراجع قضایی تضمین کند. این اقدام در قالب قرا…</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 9</span>
+            <span class="meta">finish=stop · 12.57s · ans=817 · payload=5910</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> چک برگشتی چه تاثیری روی رتبه دارد؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> برگشت خوردن چک‌ها تأثیر مستقیم و منفی بر رتبه و امتیاز اعتباری دارد، اما این اثرگذاری بسته به دلیل برگشت متفاوت است. تنها چک‌هایی که به دلیل کسری یا فقدان موجودی (اعم از کسری بخشی …</div>
+        </article>
+        <article class="turn clarify">
+          <header>
+            <span class="n">نوبت 10</span>
+            <span class="meta">finish=clarify · 1.26s · ans=59 · payload=6839</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> امتیاز اعتباری چگونه محاسبه می‌شود؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> آیا منظور شما امتیاز اعتباری برای اشخاص حقیقی است یا حقوقی؟</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 11</span>
+            <span class="meta">finish=stop · 6.62s · ans=721 · payload=6999</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> تسهیلات اشخاص حقوقی شامل چیست؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> گزارش اعتبارسنجی تسهیلات برای اشخاص حقوقی شامل مجموعه‌ای از اطلاعات هویتی، امتیاز و رتبه اعتباری و دلایل کاهش امتیاز است. همچنین سوابق تسهیلات دریافتی، تسهیلات ضمانت شده، تعهدات جا…</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 12</span>
+            <span class="meta">finish=stop · 11.17s · ans=729 · payload=7817</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> رتبه زرد به چه معناست؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> رنگ زرد در سیستم اعتبارسنجی نشان‌دهنده رتبه C است که سطح میانی رتبه‌بندی محسوب می‌شود. معنا و تفسیر این رنگ بسته به نوع گزارش متفاوت است:  در گزارش اعتبارسنجی چک (اشخاص حقیقی)، رتب…</div>
+        </article>
+        <article class="turn filter">
+          <header>
+            <span class="n">نوبت 13</span>
+            <span class="meta">finish=content_filter · 1.03s · ans=179 · payload=8649</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> چگونه سوابق منفی را رفع کنم؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> من دستیار هوشمند شرکت اعتبارسنجی ایران هستم و فقط به سوالات مربوط به اعتبارسنجی، گزارش و امتیاز اعتباری (چک و تسهیلات بانکی) پاسخ می‌دهم. لطفاً پرسش خود را در همین حوزه مطرح کنید.</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 14</span>
+            <span class="meta">finish=stop · 5.58s · ans=727 · payload=8929</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> گزارش اعتباری مشتریان من چیست؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> گزارش اعتباری در واقع تشریحی از سوابق رفتاری یک شخص در رابطه با تعهدات مالی او است. این گزارش پس از جمع‌آوری و پردازش داده‌های دریافتی از سازمان‌های مختلفی نظیر بانک‌ها، سازمان امو…</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 15</span>
+            <span class="meta">finish=stop · 10.29s · ans=985 · payload=9765</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> تامین‌کننده اعتباری چه نقشی دارد؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> تأمین‌کنندگان اعتباری نهادهایی هستند که اطلاعات مربوط به تسهیلات، تعهدات و قراردادهای مالی اشخاص را جمع‌آوری کرده و با پایگاه داده شرکت اعتبارسنجی ایران تبادل می‌کنند. این داده‌ها …</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 16</span>
+            <span class="meta">finish=stop · 4.15s · ans=877 · payload=10845</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> رتبه قرمز یعنی چه؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> رتبه قرمز در سیستم اعتبارسنجی نشان‌دهنده پایین‌ترین سطح رتبه‌بندی است که با ریسک بسیار بالا یا بحرانی همراه است. این رتبه شامل گروه حرفی E (زیرگروه‌های E1، E2 و E3) می‌شود و به افر…</div>
+        </article>
+        <article class="turn clarify">
+          <header>
+            <span class="n">نوبت 17</span>
+            <span class="meta">finish=clarify · 1.75s · ans=60 · payload=11835</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> سابقه سفته در اعتبارسنجی ثبت می‌شود؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> آیا این سوال در مورد تسهیلات اشخاص حقیقی است یا اشخاص حقوقی؟</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 18</span>
+            <span class="meta">finish=stop · 5.2s · ans=782 · payload=12013</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> چطور می‌توانم رتبه خود را از زرد به آبی برسانم؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> برای ارتقای رتبه اعتباری از وضعیت زرد به آبی، لازم است رفتار مالی خود را بهبود ببخشید تا امتیاز شما به‌تدریج افزایش یابد. این روند معمولاً تدریجی است و با ثبات در رفتارهای مثبت مال…</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 19</span>
+            <span class="meta">finish=stop · 4.21s · ans=1187 · payload=12897</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> معرفی شرکت اعتبارسنجی ایران</div>
+          <div class="bubble bot"><strong>دستیار:</strong> شرکت اعتبارسنجی ایران (ICS) یک شرکت سهامی خاص است که در آبان‌ماه ۱۳۸۵ بر اساس ماده ۵ قانون تسهیل اعطای تسهیلات بانکی تأسیس شد. این شرکت تنها مرجع رسمی و نهاد ملی اعتبارسنجی در کشور…</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 20</span>
+            <span class="meta">finish=stop · 13.38s · ans=957 · payload=14177</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> اعتبارسنجی چیست؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> اعتبارسنجی به معنای سنجش میزان اعتماد به اشخاص و شرکت‌ها در انجام تعاملات مالی با آن‌ها است. در گذشته این شناخت بر اساس آشنایی‌های شخصی و تجربیات فردی شکل می‌گرفت، اما با رشد جمعیت…</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 21</span>
+            <span class="meta">finish=stop · 5.89s · ans=588 · payload=15238</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> آیا چک صیادی در گزارش می‌آید؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> اطلاعات مربوط به چک‌های صیادی در گزارش‌های اعتبارسنجی لحاظ می‌شود. در واقع، داده‌های سامانه صیاد یکی از منابع اصلی برای محاسبه امتیاز چک و ارزیابی سوابق مالی افراد است.  علاوه بر س…</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 22</span>
+            <span class="meta">finish=stop · 9.78s · ans=773 · payload=15937</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> تفاوت اعتبارسنجی حقیقی و حقوقی چیست؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> اعتبارسنجی اشخاص حقیقی و حقوقی (شرکت‌ها و کسب‌وکارها) با یکدیگر تفاوت دارد. این تفاوت عمدتاً در نوع اطلاعات مورد استفاده و روش محاسبه امتیاز اعتباری است که برای هر گروه به صورت مجز…</div>
+        </article>
+        <article class="turn clarify">
+          <header>
+            <span class="n">نوبت 23</span>
+            <span class="meta">finish=clarify · 1.07s · ans=63 · payload=16810</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> نمره اعتباری خوب چند است؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> آیا منظور شما نمره اعتباری برای اشخاص حقیقی است یا اشخاص حقوقی؟</div>
+        </article>
+        <article class="turn clarify">
+          <header>
+            <span class="n">نوبت 24</span>
+            <span class="meta">finish=clarify · 1.53s · ans=69 · payload=16988</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> ضمانت‌نامه بانکی چه ربطی به اعتبارسنجی دارد؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> آیا منظور شما بررسی ضمانت‌نامه برای تسهیلات اشخاص حقیقی است یا حقوقی؟</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 25</span>
+            <span class="meta">finish=stop · 8.19s · ans=676 · payload=17145</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> رتبه سبز یعنی چه؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> رتبه سبز در سیستم‌های اعتبارسنجی نشان‌دهنده وضعیت مطلوب است، اما تعریف دقیق آن بسته به نوع گزارش متفاوت است:  در گزارش اعتبارسنجی چک، رتبه سبز مربوط به گروه B است که بازه امتیازی ۷…</div>
+        </article>
+        <article class="turn clarify">
+          <header>
+            <span class="n">نوبت 26</span>
+            <span class="meta">finish=clarify · 0.85s · ans=62 · payload=17929</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> چگونه بفهمم چرا امتیازم کم شده؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> آیا منظور شما امتیاز چک است یا امتیاز تسهیلات (شخصی یا شرکتی)؟</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 27</span>
+            <span class="meta">finish=stop · 3.7s · ans=582 · payload=18094</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> پنل مشتریان من چه امکاناتی دارد؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> پاسخ دربارهٔ امکانات پنل کسب‌وکار در گزارش‌های اعتبارسنجی است.  پنل کسب‌وکار اعتباریتو به صاحبان کسب‌وکارهای حقیقی و حقوقی این امکان را می‌دهد که بدون نیاز به عقد قراردادهای وب‌سرو…</div>
+        </article>
+        <article class="turn clarify">
+          <header>
+            <span class="n">نوبت 28</span>
+            <span class="meta">finish=clarify · 2.59s · ans=60 · payload=18790</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> آیا تاخیر در اقساط روی رتبه اثر دارد؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> آیا منظورتان تأثیر بر رتبه تسهیلات اشخاص حقیقی است یا حقوقی؟</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 29</span>
+            <span class="meta">finish=stop · 4.07s · ans=849 · payload=18948</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> گزارش هیات مدیره شرکت چیست؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> گزارش اعتباری شرکت‌ها شامل اطلاعات هویتی، مالی و تعهدات است. در این گزارش، مواردی نظیر تاریخچه تسهیلات و ضمانت‌ها، وضعیت بازپرداخت اقساط در نقش متقاضی یا ضامن، وضعیت چک‌های صیادی و…</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 30</span>
+            <span class="meta">finish=stop · 3.21s · ans=806 · payload=19888</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> اعتبارسنجی چیست؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> اعتبارسنجی به معنای سنجش میزان اعتماد به اشخاص و شرکت‌ها در انجام تعاملات مالی است. در گذشته این شناخت بر اساس تجربیات شخصی و آشنایی‌های فردی شکل می‌گرفت، اما با پیچیده شدن روابط ا…</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 31</span>
+            <span class="meta">finish=stop · 7.47s · ans=67 · payload=20801</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> چک مدت‌دار چگونه ارزیابی می‌شود؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> بر اساس اطلاعات موجود در پایگاه دانش، پاسخی برای این سوال یافت نشد.</div>
+        </article>
+        <article class="turn clarify">
+          <header>
+            <span class="n">نوبت 32</span>
+            <span class="meta">finish=clarify · 1.27s · ans=59 · payload=20971</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> کدهای دلیل کاهش امتیاز چه هستند؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> آیا منظور شما کدهای کاهش امتیاز در گزارش چک است یا تسهیلات؟</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 33</span>
+            <span class="meta">finish=stop · 4.15s · ans=624 · payload=21144</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> آیا می‌توانم برای وام از گزارش استفاده کنم؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> بله، شما می‌توانید برای دریافت وام از گزارش اعتباری استفاده کنید. برای این منظور باید به سامانه رسمی اعتباریتو به نشانی etebarito.ir مراجعه کرده و پس از احراز هویت و پرداخت هزینه، …</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 34</span>
+            <span class="meta">finish=stop · 4.04s · ans=530 · payload=21863</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> رتبه نارنجی یعنی چه؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> رتبه نارنجی در سیستم اعتبارسنجی نشان‌دهنده سطح ریسک بالا است و بسته به نوع گزارش، مفاهیم متفاوتی دارد:  در گزارش اعتبارسنجی چک (اشخاص حقیقی)، رتبه نارنجی مربوط به گروه D است که باز…</div>
+        </article>
+        <article class="turn clarify">
+          <header>
+            <span class="n">نوبت 35</span>
+            <span class="meta">finish=clarify · 2.73s · ans=74 · payload=22497</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> چطور اعتراض به گزارش ثبت کنم؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> آیا اعتراض شما مربوط به گزارش تسهیلات (اشخاص حقیقی/حقوقی) است یا گزارش چک؟</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 36</span>
+            <span class="meta">finish=stop · 2.81s · ans=497 · payload=22665</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> سقف چک برگشتی چقدر است؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> در سیستم اعتبارسنجی چک، سقف یا آستانه عددی مشخصی برای تعداد چک‌های برگشتی تعریف نشده است که برای همه یکسان باشد.  تعیین آستانه‌های عددی (مانند اینکه چه تعدادی از چک‌های برگشتی در ی…</div>
+        </article>
+        <article class="turn clarify">
+          <header>
+            <span class="n">نوبت 37</span>
+            <span class="meta">finish=clarify · 1.66s · ans=63 · payload=23269</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> اعتبارسنجی برای کفالت چگونه است؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> آیا منظور شما اعتبارسنجی برای تسهیلات اشخاص حقیقی است یا حقوقی؟</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 38</span>
+            <span class="meta">finish=stop · 5.31s · ans=452 · payload=23439</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> اطلاعات هویتی در گزارش تسهیلات چیست؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> اطلاعات هویتی در گزارش اعتبارسنجی تسهیلات شامل مشخصات فردی است که برای شناسایی دقیق شخص ارائه می‌شود. این موارد شامل نام و نام خانوادگی، شماره ملی، اطلاعات شناسنامه‌ای، تاریخ تولد …</div>
+        </article>
+        <article class="turn clarify">
+          <header>
+            <span class="n">نوبت 39</span>
+            <span class="meta">finish=clarify · 3.02s · ans=76 · payload=23993</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> آیا سابقه قضایی در گزارش هست؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> آیا این سوال شما مربوط به گزارش تسهیلات (اشخاص حقیقی/حقوقی) است یا گزارش چک؟</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 40</span>
+            <span class="meta">finish=stop · 3.48s · ans=932 · payload=24156</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> اعتبارسنجی چیست؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> اعتبارسنجی به معنای سنجش میزان اعتماد به اشخاص و شرکت‌ها در انجام تعاملات مالی است. در گذشته این شناخت بر اساس تجربیات شخصی و آشنایی‌های فردی شکل می‌گرفت، اما با پیچیده‌تر شدن رواب…</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 41</span>
+            <span class="meta">finish=stop · 7.4s · ans=810 · payload=25197</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> چگونه طرح‌های بهبود رتبه را ببینم؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> برای مشاهده دلایل کاهش امتیاز و شناسایی مواردی که باعث پایین آمدن رتبه شما شده است، باید بخش جزئیات دلایل کاهش امتیاز را در گزارش اعتباری خود بررسی کنید.  در مورد نحوه ارتقای رتبه،…</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 42</span>
+            <span class="meta">finish=stop · 10.05s · ans=760 · payload=26109</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> تفاوت رتبه و امتیاز چیست؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> امتیاز اعتباری یک عدد است که بر اساس تحلیل داده‌ها محاسبه می‌شود، در حالی که رتبه اعتباری نشان‌دهنده دسته‌بندی یا بازه‌ای از این امتیاز است. به عبارت ساده‌تر، امتیازها به چندین دست…</div>
+        </article>
+        <article class="turn clarify">
+          <header>
+            <span class="n">نوبت 43</span>
+            <span class="meta">finish=clarify · 3.63s · ans=57 · payload=26979</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> آیا کارت اعتباری روی رتبه اثر دارد؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> آیا منظورتان رتبه اعتباری اشخاص حقیقی است یا اشخاص حقوقی؟</div>
+        </article>
+        <article class="turn clarify">
+          <header>
+            <span class="n">نوبت 44</span>
+            <span class="meta">finish=clarify · 3.48s · ans=58 · payload=27135</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> گزارش منفی چگونه پاک می‌شود؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> آیا منظور شما پاک کردن گزارش منفی چک است یا تسهیلات بانکی؟</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 45</span>
+            <span class="meta">finish=stop · 6.28s · ans=746 · payload=27301</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> اشخاص حقوقی چگونه اعتبارسنجی می‌شوند؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> اشخاص حقوقی (شرکت‌ها و سازمان‌ها) نیز مشابه افراد حقیقی، دارای گزارش، امتیاز و رتبه اعتباری هستند. هدف از این فرآیند، ارزیابی ریسک اعتباری شرکت‌ها است تا وضعیت مالی و توانمندی آن‌ه…</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 46</span>
+            <span class="meta">finish=stop · 8.27s · ans=691 · payload=28139</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> چک ضمانتی چیست؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> چک ضمانت اسنادی است که عمدتاً برای اهدافی مانند ضمانت دریافت تسهیلات بانکی یا مدیریت تنخواه صادر می‌شود. این چک‌ها در سامانه یکپارچه چک (پیچک) به‌عنوان «چک‌های در ضمانت» ثبت می‌گرد…</div>
+        </article>
+        <article class="turn clarify">
+          <header>
+            <span class="n">نوبت 47</span>
+            <span class="meta">finish=clarify · 2.82s · ans=63 · payload=28943</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> آیا می‌توانم گزارش شخص دیگری را ببینم؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> آیا منظور شما گزارش تسهیلات (افراد یا شرکت‌ها) است یا گزارش چک؟</div>
+        </article>
+        <article class="turn filter">
+          <header>
+            <span class="n">نوبت 48</span>
+            <span class="meta">finish=content_filter · 3.91s · ans=179 · payload=29109</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> مدت نگهداری سوابق منفی چقدر است؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> من دستیار هوشمند شرکت اعتبارسنجی ایران هستم و فقط به سوالات مربوط به اعتبارسنجی، گزارش و امتیاز اعتباری (چک و تسهیلات بانکی) پاسخ می‌دهم. لطفاً پرسش خود را در همین حوزه مطرح کنید.</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 49</span>
+            <span class="meta">finish=stop · 8.35s · ans=400 · payload=29392</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> نردبان اعتباری برای چه کسانی است؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> نردبان اعتباری بستری است که برای افرادی طراحی شده است که قصد دارند وضعیت و رتبه اعتباری خود را بهبود ببخشند. این سامانه به کاربران کمک می‌کند تا با راهکارها و طرح‌های موجود برای ار…</div>
+        </article>
+        <article class="turn ok">
+          <header>
+            <span class="n">نوبت 50</span>
+            <span class="meta">finish=stop · 4.28s · ans=955 · payload=29881</span>
+          </header>
+          <div class="bubble user"><strong>کاربر:</strong> اعتبارسنجی چیست؟</div>
+          <div class="bubble bot"><strong>دستیار:</strong> اعتبارسنجی به معنای سنجش میزان اعتماد به اشخاص و شرکت‌ها در انجام تعاملات مالی با آن‌ها است. در گذشته این شناخت بر اساس آشنایی‌های شخصی و تجربیات فردی شکل می‌گرفت، اما با پیچیده شد…</div>
+        </article>
+    </section>
+</body>
+</html>
