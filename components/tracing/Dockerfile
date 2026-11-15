@@ -1,9 +1,16 @@
 FROM python:3.11-slim
 WORKDIR /app
+ARG PIP_INDEX_URL=
+ARG PIP_EXTRA_INDEX_URL=
+ARG PIP_TRUSTED_HOST=
 ENV PIP_DEFAULT_TIMEOUT=120
 # Optional host-prefetched wheels (CI copies into build context when PyPI is flaky)
 COPY wheels/ /wheels/
-RUN if ls /wheels/*.whl >/dev/null 2>&1; then \
+RUN set -e; \
+    if [ -n "$PIP_INDEX_URL" ]; then export PIP_INDEX_URL; fi; \
+    if [ -n "$PIP_EXTRA_INDEX_URL" ]; then export PIP_EXTRA_INDEX_URL; fi; \
+    if [ -n "$PIP_TRUSTED_HOST" ]; then export PIP_TRUSTED_HOST; fi; \
+    if ls /wheels/*.whl >/dev/null 2>&1; then \
       pip install --no-cache-dir --no-index --find-links=/wheels fastapi uvicorn ; \
     else \
       pip install --no-cache-dir --retries 10 --default-timeout=120 fastapi uvicorn ; \

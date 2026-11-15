@@ -47,6 +47,10 @@ services:
         https_proxy: ${HTTPS_PROXY:-}
         NO_PROXY: ${NO_PROXY:-localhost,127.0.0.1}
         no_proxy: ${NO_PROXY:-localhost,127.0.0.1}
+        # Iranian / regional PyPI fallbacks (scripts/ci_apply_iran_mirrors.sh)
+        PIP_INDEX_URL: ${PIP_INDEX_URL:-}
+        PIP_EXTRA_INDEX_URL: ${PIP_EXTRA_INDEX_URL:-}
+        PIP_TRUSTED_HOST: ${PIP_TRUSTED_HOST:-}
     image: ${REGISTRY:-}rag-kb:${TAG:-local}
     environment:
       KB_DB_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/kb_manager
@@ -101,6 +105,9 @@ services:
         https_proxy: ${HTTPS_PROXY:-}
         NO_PROXY: ${NO_PROXY:-localhost,127.0.0.1}
         no_proxy: ${NO_PROXY:-localhost,127.0.0.1}
+        PIP_INDEX_URL: ${PIP_INDEX_URL:-}
+        PIP_EXTRA_INDEX_URL: ${PIP_EXTRA_INDEX_URL:-}
+        PIP_TRUSTED_HOST: ${PIP_TRUSTED_HOST:-}
     image: ${REGISTRY:-}rag-guardrails:${TAG:-local}
     environment:
       GUARDRAILS_HOST: 0.0.0.0
@@ -134,6 +141,9 @@ services:
         https_proxy: ${HTTPS_PROXY:-}
         NO_PROXY: ${NO_PROXY:-localhost,127.0.0.1}
         no_proxy: ${NO_PROXY:-localhost,127.0.0.1}
+        PIP_INDEX_URL: ${PIP_INDEX_URL:-}
+        PIP_EXTRA_INDEX_URL: ${PIP_EXTRA_INDEX_URL:-}
+        PIP_TRUSTED_HOST: ${PIP_TRUSTED_HOST:-}
     image: ${REGISTRY:-}rag-orchestrator:${TAG:-local}
     environment:
       ORCHESTRATOR_HOST: 0.0.0.0
@@ -172,6 +182,9 @@ services:
         https_proxy: ${HTTPS_PROXY:-}
         NO_PROXY: ${NO_PROXY:-localhost,127.0.0.1}
         no_proxy: ${NO_PROXY:-localhost,127.0.0.1}
+        PIP_INDEX_URL: ${PIP_INDEX_URL:-}
+        PIP_EXTRA_INDEX_URL: ${PIP_EXTRA_INDEX_URL:-}
+        PIP_TRUSTED_HOST: ${PIP_TRUSTED_HOST:-}
     image: ${REGISTRY:-}rag-tracing:${TAG:-local}
     environment:
       TRACE_JSONL: /data/langfuse_traces.jsonl

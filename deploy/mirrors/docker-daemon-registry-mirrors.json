@@ -1,0 +1,8 @@
+{
+  "registry-mirrors": [
+    "https://docker.arvancloud.ir",
+    "https://focker.ir",
+    "https://mirror-docker.pkg.shecan.ir",
+    "https://docker-mirror.kargadan.ir"
+  ]
+}
