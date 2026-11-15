@@ -265,6 +265,10 @@ pipeline {
             steps {
                 sh '''
                     set -e
+                    # GPU Jenkins uses dash as /bin/sh — `source`/`export -f` need bash.
+                    bash -euo pipefail <<'DANA_BUILD_IMAGES'
+
+                    set -e
                     # Prefer laptop secrets from host clone (gitignored); workspace is .ci-workspace
                     HOST_REPO="${DANA_HOST_REPO:-/Users/alinikkhah/Documents/Work/CreditScoring/Chatbot_production_v1}"
                     for src in \
@@ -458,6 +462,7 @@ pipeline {
                       fi
                     done
                     bash scripts/ci_stage_evidence.sh mark build || true
+DANA_BUILD_IMAGES
                 '''
             }
             post {
