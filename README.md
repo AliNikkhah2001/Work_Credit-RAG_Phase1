@@ -897,7 +897,7 @@ See [LICENSE](LICENSE). Each submodule may also declare its own license and depe
 <!-- docs-toc:start -->
 ## Documentation Index
 
-> Auto-generated from this repository's tracked Markdown notes (**131** files). Refresh with `python scripts/gen_readme_toc.py` — the `docs-toc` workflow does this automatically on push.
+> Auto-generated from this repository's tracked Markdown notes (**135** files). Refresh with `python scripts/gen_readme_toc.py` — the `docs-toc` workflow does this automatically on push.
 
 ### Repository root
 
@@ -1031,12 +1031,15 @@ See [LICENSE](LICENSE). Each submodule may also declare its own license and depe
 
 ### `deploy/`
 
+- [Reserved port map (H200 hybrid)](deploy/PORT_MAP.md) — Fixed allocations for production and stage. Do not bind services outside these ranges without updating this file and the health-report probe list.
+- [Production pin — H200 (v1.3.0)](deploy/PRODUCTION.md) — Operational snapshot of the working production stack on the H200 host.
 - [Dana compose stack (laptop test ↔ GPU prod)](deploy/compose/README.md) — Self-hosted Gemma/TRT paths are unchanged:
 - [Work Credit RAG — Docker deployment (privileged CUDA host)](deploy/docker/README.md) — Full-stack docker compose version of the platform. Mirrors
+- [WAF VIP vs Docker bridge CIDR clash (chat.ics24.ir)](deploy/gateway/WAF_CIDR_CLASH.md) — chat.ics24.ir resolves to corporate WAF VIP 172.24.65.109. From this GPU host the VIP became unreachable (blackhole) while the local WebUI origin sta…
 - [GPU / production deploy layer](deploy/gpu/README.md) — Everything that makes the GPU production stack stay up or come back by itself.
 - [Jenkins CI/CD — Dana / Work Credit RAG](deploy/jenkins/README.md) — Laptop Jenkins (:8085) and the same pipeline on the H200 GPU server.
 - [GitHub status reporting & required status checks](deploy/jenkins/github-status.md) — How Jenkins proves what a build actually did, and how to turn that proof into
-- [Health monitoring daemon + GitHub Pages dashboard](deploy/monitor/README.md) — Durable uptime tracking for the Persian RAG stack. One nightly report run on the
+- [Health monitoring daemon + GitHub Pages dashboard](deploy/monitor/README.md) — Durable uptime tracking for the Persian RAG stack. A 3-hour systemd timer on the
 
 ### `dev/`
 
@@ -1055,6 +1058,7 @@ See [LICENSE](LICENSE). Each submodule may also declare its own license and depe
 - [Cross-Encoder Reranker Benchmark Results](docs/cross_encoder_benchmark_results.md) — Tested 7 cross-encoder reranker models on the Work Credit RAG KB (v8 pgvector, 6593 chunks, 103 docs) using 20 diverse Persian credit queries.
 - [Edge path diagnostics — capturing and publishing diagnose_edge_path.sh](docs/edge-path-diagnostics.md) — scripts/diagnose_edge_path.sh isolates which hop of the chat.ics24.ir → :13000
 - [Evaluation](docs/evaluation.md) — Canonical suite: components/evaluation (Work_RAG-Evaluation_Suite).
+- [Dana RAG Agent — Frontend API](docs/frontend-rag-api.md) — Base URL (orchestrator only):
 - [History — Code Audit 2026-09-27: 142 Errors & Anti-Patterns Found](docs/history/CODE_AUDIT_2026-09-27.md) — 1. components/knowledgebase/kb-manager — 7 Critical + 10 High (path traversal, unauth DB, unbounded disk, silent failures, ilike wildcard DoS, Vector…
 - [Comprehensive Million-User Scaling Architecture Plan](docs/plans/million-user-scale-plan.md) — This document serves as the master architectural blueprint for scaling the Knowledge Base Retrieval system to support 1,000,000+ concurrent users.
 
