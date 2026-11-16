@@ -100,7 +100,13 @@ fi
 
 if [[ "$APPLY" -eq 1 ]]; then
   echo "recreating Jenkins on pinned CIDR + production image…"
-  (cd "$ROOT/deploy/jenkins" && docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d --no-build --force-recreate)
+  # H200: always include docker-compose.h200.yml (static CLI PATH + prod mounts).
+  # Omitting it recreates Jenkins without the overlay → docker CLI / DANA_ROLE regressions.
+  _jenkins_compose=( -f docker-compose.yml -f docker-compose.gpu.yml )
+  if [[ -f "$ROOT/deploy/jenkins/docker-compose.h200.yml" ]]; then
+    _jenkins_compose+=( -f docker-compose.h200.yml )
+  fi
+  (cd "$ROOT/deploy/jenkins" && docker compose "${_jenkins_compose[@]}" up -d --no-build --force-recreate)
   if [[ -x "$ROOT/components/server-setup/deploy/recreate_dana_webui.sh" ]]; then
     echo "recreating WebUI via recreate_dana_webui.sh…"
     bash "$ROOT/components/server-setup/deploy/recreate_dana_webui.sh" || true
