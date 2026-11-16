@@ -496,9 +496,10 @@ pipeline {
                         webui) base=rag-webui ;;
                       esac
                       dst="${REGISTRY}${base}:${TAG}"
-                      # Compose may tag :${TAG} or :local depending on env; accept either.
+                      # Prefer :${TAG} (what compose just built). Preferring :local first
+                      # OVERWROTE fresh digests with stale Nov-12 :local (imagebugfix §8E).
                       src=""
-                      for cand in "${base}:local" "${base}:${TAG}"; do
+                      for cand in "${base}:${TAG}" "${base}:local"; do
                         if docker image inspect "$cand" >/dev/null 2>&1; then src="$cand"; break; fi
                       done
                       if [ -n "$src" ]; then
@@ -566,7 +567,7 @@ DANA_BUILD_IMAGES
                       esac
                       dst="${REGISTRY}${base}:${TAG}"
                       src=""
-                      for cand in "${base}:local" "${base}:${TAG}"; do
+                      for cand in "${base}:${TAG}" "${base}:local"; do
                         if docker image inspect "$cand" >/dev/null 2>&1; then src="$cand"; break; fi
                       done
                       if [ -n "$src" ]; then
