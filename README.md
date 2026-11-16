@@ -991,6 +991,24 @@ git commit -m "chore: advance orchestrator submodule"
 
 Always run health + `python components/evaluation/scripts/run_multiturn.py --only conv_cheque_02` before advancing a production pin.
 
+### Sticky multiturn stress QA (Evaluation Suite)
+
+Canonical sticky 30/40/50 clarify stress harnesses and frozen before→after
+results live in the evaluation submodule (`components/evaluation` /
+Work_RAG-Evaluation_Suite):
+
+- Harness: `components/evaluation/scripts/run_stress_clarify.py`
+- Results: `components/evaluation/datasets/stress/results/`
+- Report: [`components/evaluation/docs/STRESS_CLARIFY_BEFORE_AFTER_2026-11-16.md`](components/evaluation/docs/STRESS_CLARIFY_BEFORE_AFTER_2026-11-16.md)
+
+| Suite | avg score | content_filter | no_evidence | hard errors |
+|------:|----------:|---------------:|------------:|------------:|
+| 30 | 0.908 → 0.932 | 1 → 0 | 2 → 1 | 0 |
+| 40 | 0.904 → 0.955 | 1 → 0 | 4 → 0 | 0 |
+| 50 | 0.907 → 0.947 | 2 → 0 | 4 → 1 | 0 |
+
+`dev/stress/` remains a thin pointer only (not the source of truth).
+
 ---
 
 ## License
@@ -1005,11 +1023,12 @@ See [LICENSE](LICENSE). Each submodule may also declare its own license and depe
 - Compose: [compose.mvp.yml](compose.mvp.yml) + [deploy/docker/docker-compose.yml](deploy/docker/docker-compose.yml)
 - Guardrails allowlist: `components/guardrails/kb/hurtlex_allowlist.json`
 - Evaluation docs: [docs/evaluation.md](docs/evaluation.md) · [docs/cross_encoder_benchmark_results.md](docs/cross_encoder_benchmark_results.md)
+- Sticky stress QA: [evaluation stress README](components/evaluation/datasets/stress/README.md) · [before/after 30/40/50](components/evaluation/docs/STRESS_CLARIFY_BEFORE_AFTER_2026-11-16.md)
 
 <!-- docs-toc:start -->
 ## Documentation Index
 
-> Auto-generated from this repository's tracked Markdown notes (**135** files). Refresh with `python scripts/gen_readme_toc.py` — the `docs-toc` workflow does this automatically on push.
+> Auto-generated from this repository's tracked Markdown notes (**136** files). Refresh with `python scripts/gen_readme_toc.py` — the `docs-toc` workflow does this automatically on push.
 
 ### Repository root
 
@@ -1155,6 +1174,7 @@ See [LICENSE](LICENSE). Each submodule may also declare its own license and depe
 
 ### `dev/`
 
+- [Sticky stress QA — moved to Evaluation Suite](dev/stress/README.md) — Canonical harnesses and frozen 30/40/50 before→after results now live in the
 - [Tester Credentials — ICS RAG Evaluation](dev/tests/tester-credentials.md) — 1. Open http://127.0.0.1:13000.
 
 ### `diagrams/`

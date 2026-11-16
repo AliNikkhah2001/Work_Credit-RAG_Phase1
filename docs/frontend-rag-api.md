@@ -125,13 +125,43 @@ Model: `ics-helper-agent`
     "follow_ups": ["…"],
     "applied_subspace": "general",
     "sticky_subspace": "general",
-    "available_subspaces": null
+    "available_subspaces": null,
+    "magic": [
+      {
+        "name": "CREDIT_SCORE_GAUGE",
+        "params": {
+          "score": 610,
+          "min": 250,
+          "max": 900,
+          "model": "person",
+          "variant": "ring",
+          "band": "سبز",
+          "code": "B",
+          "codes": ["B1", "B2", "B3"],
+          "bands": [],
+          "color_mode": "stepped"
+        }
+      }
+    ]
   },
   "audit": null
 }
 ```
 
 `finish_reason`: `stop` | `clarify` | `content_filter` | `length` | `error`
+
+### Dana magic widgets (`rag.magic`) — post-hoc, outside the body
+
+Widgets are computed **after** the model answer is final. They are **not** appended into `choices[].message.content`.
+
+| Field | Meaning |
+|---|---|
+| `rag.magic` | Optional list of `{ "name": "TOKEN", "params": {…} }` |
+| `content` | Plain Persian answer only — never contains `<<<MAGIC:…>>>` |
+
+Frontend (Open WebUI / Dana): middleware reads `rag.magic` from the final SSE chunk (or non-stream body), persists `message.magic`, and emits socket `chat:message:magic`. Renderers glue widgets **beside** the text, not inside it. Legacy in-body `<<<MAGIC:…>>>` is still parsed as a fallback for old saved chats.
+
+Emit gates (orchestrator): score gauges only when the turn has an explicit cheque (0–100) / credit (250–900) number, colour tag, named band, grade code, or layout keyword; shareholders / data-providers only for شرکت اعتبارسنجی ایران; clarify cards on `finish_reason=clarify`.
 
 ### Response (`stream: true`) — SSE
 
@@ -144,14 +174,14 @@ data: {"id":"chatcmpl-…","object":"chat.completion.chunk","choices":[{"index":
 
 data: {"id":"chatcmpl-…","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"content":"فرآیندی "},"finish_reason":null}]}
 
-data: {"id":"chatcmpl-…","object":"chat.completion.chunk","choices":[{"index":0,"delta":{},"finish_reason":"stop"}],"rag":{"request_id":"…","citations":[],"follow_ups":[]}}
+data: {"id":"chatcmpl-…","object":"chat.completion.chunk","choices":[{"index":0,"delta":{},"finish_reason":"stop"}],"rag":{"request_id":"…","citations":[],"follow_ups":[],"magic":[{"name":"CREDIT_SCORE_GAUGE","params":{"score":610,"model":"person","variant":"ring"}}]}}
 
 data: [DONE]
 ```
 
 Lines starting with `:` are progress comments — ignore.  
-Append every `choices[0].delta.content`.  
-Final chunk may include `rag`.  
+Append every `choices[0].delta.content` (body only).  
+Final chunk may include `rag` — read `rag.magic` here and render widgets out-of-band.  
 End on `data: [DONE]`.
 
 ---
@@ -235,4 +265,11 @@ curl -s http://127.0.0.1:8100/v1/chat/completions \
   -H 'Authorization: Bearer sk-local-dev' \
   -H 'X-Request-ID: test-001' \
   -d '{"model":"ics-helper-agent","messages":[{"role":"user","content":"/rate 5 #ok"}],"stream":false}'
+
+# Score ask — body stays clean; widgets on rag.magic
+curl -s http://127.0.0.1:8100/v1/chat/completions \
+  -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer sk-local-dev' \
+  -d '{"model":"ics-helper-agent","messages":[{"role":"user","content":"امتیاز ۶۱۰ حقیقی در چه رنگی است؟"}],"stream":false}' \
+  | jq '{body_has_magic:(.choices[0].message.content|contains("<<<MAGIC:")), magic:.rag.magic}'
 ```
