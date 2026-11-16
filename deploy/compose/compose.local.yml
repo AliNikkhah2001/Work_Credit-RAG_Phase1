@@ -71,6 +71,15 @@ services:
       - "127.0.0.1:8000:8000"
 
   orchestrator:
+    environment:
+      UPSTREAM_LLM_BASE_URL: http://litellm:4000/v1
+      UPSTREAM_LLM_MODEL: ${UPSTREAM_LLM_MODEL:-chat-primary}
+      UPSTREAM_LLM_API_KEY: ${LITELLM_MASTER_KEY:-sk-litellm-local-dev-change-me}
+      LLM_BASE_URL: http://litellm:4000/v1
+      LLM_MODEL: ${UPSTREAM_LLM_MODEL:-chat-primary}
+    depends_on:
+      litellm:
+        condition: service_healthy
     ports:
       - "127.0.0.1:8100:8100"
 

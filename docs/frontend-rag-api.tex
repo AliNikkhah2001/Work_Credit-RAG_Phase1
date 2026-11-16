@@ -196,13 +196,43 @@ Content-Type: application/json
     "follow_ups": ["..."],
     "applied_subspace": "general",
     "sticky_subspace": "general",
-    "available_subspaces": null
+    "available_subspaces": null,
+    "magic": [
+      {
+        "name": "CREDIT_SCORE_GAUGE",
+        "params": {
+          "score": 610,
+          "min": 250,
+          "max": 900,
+          "model": "person",
+          "variant": "ring",
+          "band": "...",
+          "code": "B",
+          "codes": ["B1", "B2", "B3"],
+          "color_mode": "stepped"
+        }
+      }
+    ]
   },
   "audit": null
 }
 \end{lstlisting}
 
 \noindent\texttt{finish_reason}: \texttt{stop} $|$ \texttt{clarify} $|$ \texttt{content_filter} $|$ \texttt{length} $|$ \texttt{error}
+
+\subsection{Dana magic widgets (\texttt{rag.magic}) --- post-hoc}
+
+Widgets are computed \textbf{after} the model answer is final. They are
+\textbf{not} appended into \texttt{choices[].message.content}.
+
+\begin{itemize}
+  \item \texttt{rag.magic}: optional list of \texttt{\{ "name": "TOKEN", "params": \{\ldots\} \}}
+  \item \texttt{content}: plain Persian answer only --- never contains \texttt{<<<MAGIC:\ldots>>>}
+  \item Open WebUI / Dana: middleware reads \texttt{rag.magic} from the final SSE
+    chunk, persists \texttt{message.magic}, emits socket \texttt{chat:message:magic},
+    and renders widgets beside the text. Legacy in-body tokens remain a fallback
+    for old chats.
+\end{itemize}
 
 \subsection{Response (\texttt{stream: true}) --- SSE}
 
@@ -215,15 +245,15 @@ data: {"id":"chatcmpl-...","object":"chat.completion.chunk","choices":[{"index":
 
 data: {"id":"chatcmpl-...","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"content":"فرآیندی "},"finish_reason":null}]}
 
-data: {"id":"chatcmpl-...","object":"chat.completion.chunk","choices":[{"index":0,"delta":{},"finish_reason":"stop"}],"rag":{"request_id":"...","citations":[],"follow_ups":[]}}
+data: {"id":"chatcmpl-...","object":"chat.completion.chunk","choices":[{"index":0,"delta":{},"finish_reason":"stop"}],"rag":{"request_id":"...","citations":[],"follow_ups":[],"magic":[{"name":"CREDIT_SCORE_GAUGE","params":{"score":610,"model":"person"}}]}}
 
 data: [DONE]
 \end{lstlisting}
 
 \begin{itemize}
   \item Lines starting with \texttt{:} --- ignore
-  \item Append every \texttt{choices[0].delta.content}
-  \item Final chunk may include \texttt{rag}
+  \item Append every \texttt{choices[0].delta.content} (body only)
+  \item Final chunk may include \texttt{rag} --- read \texttt{rag.magic} out-of-band
   \item End on \texttt{data: [DONE]}
 \end{itemize}
 

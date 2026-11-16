@@ -101,13 +101,17 @@ E2E smoke:
 
 ```bash
 curl -s http://127.0.0.1:8100/v1/chat/completions -H 'Content-Type: application/json' \
-  -d '{"model":"gemma-4-31b","messages":[{"role":"user","content":"سلام"}]}' | head -c 400; echo
+ -d '{"model":"gemma-4-31b","messages":[{"role":"user","content":"سلام"}]}' | head -c 400; echo
 curl -s http://127.0.0.1:8100/v1/chat/completions -H 'Content-Type: application/json' \
-  -d '{"model":"gemma-4-31b","messages":[{"role":"user","content":"اعتبارسنجی چیست؟"}]}' | jq -c '{finish:.choices[0].finish_reason, citations:(.rag.citations|length)}'
+ -d '{"model":"gemma-4-31b","messages":[{"role":"user","content":"اعتبارسنجی چیست؟"}]}' | jq -c '{finish:.choices[0].finish_reason, citations:(.rag.citations|length), magic:(.rag.magic|length)}'
+# Score ask: body must stay MAGIC-free; widgets on rag.magic only
+curl -s http://127.0.0.1:8100/v1/chat/completions -H 'Content-Type: application/json' \
+ -d '{"model":"gemma-4-31b","messages":[{"role":"user","content":"امتیاز ۶۱۰ حقیقی در چه رنگی است؟"}]}' \
+ | jq -c '{body_has_magic:(.choices[0].message.content|contains("<<<MAGIC:")), magic:.rag.magic[0].name}'
 curl -s http://127.0.0.1:8200/v1/rails/check -H 'Content-Type: application/json' \
-  -d '{"stage":"input","text":"سلام","request_id":"t"}' | jq .
+ -d '{"stage":"input","text":"سلام","request_id":"t"}' | jq .
 curl -s http://127.0.0.1:8000/search/api -H 'Content-Type: application/json' \
-  -d '{"query":"اعتبارسنجی چیست","top_k":3}' | jq -c '.final_results[0].content_preview[0:120]'
+ -d '{"query":"اعتبارسنجی چیست","top_k":3}' | jq -c '.final_results[0].content_preview[0:120]'
 ```
 
 View traces:

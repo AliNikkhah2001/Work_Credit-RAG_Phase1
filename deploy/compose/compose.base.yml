@@ -150,7 +150,14 @@ services:
       ORCHESTRATOR_PORT: 8100
       KB_BASE_URL: http://kb:8000
       GUARDRAILS_BASE_URL: http://guardrails:8200
+      # Utility LLM for rewrite + context compaction (NOT the user-facing generate
+      # path). Without these, orch defaults to http://127.0.0.1:9000/v1 inside the
+      # container — compaction/rewrite always fail and long GPU threads overflow.
+      UPSTREAM_LLM_BASE_URL: ${UPSTREAM_LLM_BASE_URL:-http://host.docker.internal:18000/v1}
       UPSTREAM_LLM_MODEL: ${UPSTREAM_LLM_MODEL:-unsloth/gemma-4-31B-it-GGUF:UD-Q4_K_XL}
+      UPSTREAM_LLM_API_KEY: ${LLM_API_KEY:-sk-local-dev}
+      LLM_BASE_URL: ${UPSTREAM_LLM_BASE_URL:-http://host.docker.internal:18000/v1}
+      LLM_MODEL: ${UPSTREAM_LLM_MODEL:-unsloth/gemma-4-31B-it-GGUF:UD-Q4_K_XL}
       LLM_UPSTREAM_MODE: ${LLM_UPSTREAM_MODE:-self_hosted}
       DANA_ENV: ${DANA_ENV:-prod}
       REQUEST_TIMEOUT_SECONDS: ${REQUEST_TIMEOUT_SECONDS:-120}
