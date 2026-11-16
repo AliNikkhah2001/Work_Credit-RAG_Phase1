@@ -60,9 +60,36 @@
               "heading": {"type": "string"}
             }
           }
+        },
+        "supplemental": {"type": ["array", "null"]},
+        "follow_ups": {
+          "type": ["array", "null"],
+          "items": {"type": "string"}
+        },
+        "applied_subspace": {"type": ["string", "null"]},
+        "sticky_subspace": {"type": ["string", "null"]},
+        "available_subspaces": {
+          "type": ["array", "null"],
+          "items": {"type": "string"}
+        },
+        "magic": {
+          "type": ["array", "null"],
+          "description": "Post-hoc Dana widgets glued outside assistant content (never embedded as <<<MAGIC:>>> in the body).",
+          "items": {
+            "type": "object",
+            "required": ["name"],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Allowlisted token e.g. CREDIT_SCORE_GAUGE, CLARIFY_OPTIONS"
+              },
+              "params": {"type": "object"}
+            },
+            "additionalProperties": true
+          }
         }
       }
     }
   },
-  "additionalProperties": false
+  "additionalProperties": true
 }
