@@ -14,6 +14,9 @@
 //   [ci auto]              → stage on develop / prod on main (still role-gated)
 //   [ci all]               → force full image set (ignore path filter)
 //   [ci rollback]          → restore deploy/compose/.last_good_sha (prod controller)
+//   [ci snapshot]          → freeze current prod images under /splunk-data/production/snapshots/<stamp>/
+//   [ci heal] / [ci force-heal] / [ci heal:STAMP]
+//                          → restore snapshot images (force-heal from any laptop via commit)
 //
 // CI_SERVICES from scripts/ci_message_gate.py: "kb", "kb guardrails", "all", or "none".
 //
@@ -85,7 +88,7 @@ pipeline {
                       python3 scripts/ci_controller_role.py --write-env .ci_role.env
                     else
                       echo "WARNING: python3 missing on agent — defaulting gate to skip"
-                      printf 'CI_SKIP=1\nCI_BUILD=0\nCI_STAGE=0\nCI_PROD=0\nCI_AUTO=0\nCI_ROLLBACK=0\nCI_HEAVY_PATHS=0\nCI_SERVICES=none\n' > .ci_gate.env
+                      printf 'CI_SKIP=1\nCI_BUILD=0\nCI_STAGE=0\nCI_PROD=0\nCI_AUTO=0\nCI_ROLLBACK=0\nCI_SNAPSHOT=0\nCI_HEAL=0\nCI_HEAL_STAMP=\nCI_HEAVY_PATHS=0\nCI_SERVICES=none\n' > .ci_gate.env
                       printf 'DANA_ROLE=stage\nCI_MAY_DEPLOY_STAGE=1\nCI_MAY_DEPLOY_PROD=0\n' > .ci_role.env
                     fi
                 '''
@@ -105,7 +108,7 @@ pipeline {
                         }
                     }
                     echo "CI controller: ROLE=${env.DANA_ROLE} MAY_STAGE=${env.CI_MAY_DEPLOY_STAGE} MAY_PROD=${env.CI_MAY_DEPLOY_PROD} HOST=${env.DANA_HOST} JOB=${env.JOB_NAME}"
-                    echo "CI gate: SKIP=${env.CI_SKIP} BUILD=${env.CI_BUILD} STAGE=${env.CI_STAGE} PROD=${env.CI_PROD} AUTO=${env.CI_AUTO} ROLLBACK=${env.CI_ROLLBACK} HEAVY=${env.CI_HEAVY_PATHS} SERVICES=${env.CI_SERVICES} BRANCH=${env.BRANCH_NAME}"
+                    echo "CI gate: SKIP=${env.CI_SKIP} BUILD=${env.CI_BUILD} STAGE=${env.CI_STAGE} PROD=${env.CI_PROD} AUTO=${env.CI_AUTO} ROLLBACK=${env.CI_ROLLBACK} SNAPSHOT=${env.CI_SNAPSHOT} HEAL=${env.CI_HEAL} STAMP=${env.CI_HEAL_STAMP} HEAVY=${env.CI_HEAVY_PATHS} SERVICES=${env.CI_SERVICES} BRANCH=${env.BRANCH_NAME}"
                 }
             }
         }
@@ -178,11 +181,57 @@ pipeline {
             }
         }
 
+        stage('Force-heal from snapshot') {
+            // Commit from any laptop with [ci heal] / [ci force-heal] / [ci heal:STAMP]
+            // on main → GPU prod controller restores tested snapshot images (no GPU needed
+            // on the committer's machine).
+            when {
+                allOf {
+                    branch 'main'
+                    expression { return env.CI_MAY_DEPLOY_PROD == '1' }
+                    expression { return env.CI_SKIP != '1' }
+                    expression { return env.CI_HEAL == '1' }
+                }
+            }
+            steps {
+                sh '''
+                    set -e
+                    chmod +x scripts/restore_from_snapshot.sh
+                    if [ -n "${CI_HEAL_STAMP:-}" ]; then
+                      bash scripts/restore_from_snapshot.sh --stamp "$CI_HEAL_STAMP" --apply
+                    else
+                      bash scripts/restore_from_snapshot.sh --apply
+                    fi
+                    bash scripts/ci_stage_evidence.sh mark heal || true
+                '''
+            }
+        }
+
+        stage('Snapshot images') {
+            when {
+                allOf {
+                    branch 'main'
+                    expression { return env.CI_MAY_DEPLOY_PROD == '1' }
+                    expression { return env.CI_SKIP != '1' }
+                    expression { return env.CI_SNAPSHOT == '1' }
+                }
+            }
+            steps {
+                sh '''
+                    set -e
+                    chmod +x scripts/create_snapshot.sh
+                    bash scripts/create_snapshot.sh
+                    bash scripts/ci_stage_evidence.sh mark snapshot || true
+                '''
+            }
+        }
+
         stage('Build images') {
             when {
                 allOf {
                     expression { return env.CI_SKIP != '1' }
                     expression { return env.CI_ROLLBACK != '1' }
+                    expression { return env.CI_HEAL != '1' }
                     anyOf {
                         // Explicit rebuild anywhere
                         expression { return env.CI_BUILD == '1' }
@@ -216,6 +265,19 @@ pipeline {
             steps {
                 sh '''
                     set -e
+                    # Always put Docker CLI on PATH (image installs to /usr/local/bin;
+                    # some durable-task contexts only have /usr/bin:/bin).
+                    export PATH="/usr/local/bin:/usr/bin:/bin:${PATH:-}"
+                    mkdir -p .ci-evidence
+                    # GPU Jenkins uses dash as /bin/sh — bash needed for functions/flock helpers.
+                    bash -euo pipefail <<'DANA_BUILD_IMAGES'
+
+                    set -e
+                    export PATH="/usr/local/bin:/usr/bin:/bin:${PATH:-}"
+                    mkdir -p .ci-evidence
+                    chmod +x scripts/ci_resolve_docker.sh scripts/ci_capture_build_evidence.sh
+                    # shellcheck disable=SC1091
+                    source scripts/ci_resolve_docker.sh
                     # Prefer laptop secrets from host clone (gitignored); workspace is .ci-workspace
                     HOST_REPO="${DANA_HOST_REPO:-/Users/alinikkhah/Documents/Work/CreditScoring/Chatbot_production_v1}"
                     for src in \
@@ -243,6 +305,7 @@ pipeline {
                       export KB_TORCH_CHANNEL="${KB_TORCH_CHANNEL:-cpu}"
                     fi
                     echo "KB_TORCH_CHANNEL=${KB_TORCH_CHANNEL}"
+                    echo "docker=$(command -v docker || echo MISSING) DOCKER_BIN=${DOCKER_BIN:-} PATH=$PATH"
                     # BuildKit RUN (apt/pip) needs client proxy config or build-args; export for compose.
                     export HTTP_PROXY="${HTTP_PROXY:-http://192.168.203.2:3128}"
                     export HTTPS_PROXY="${HTTPS_PROXY:-http://192.168.203.2:3128}"
@@ -250,6 +313,14 @@ pipeline {
                     export https_proxy="${HTTPS_PROXY}"
                     export NO_PROXY="${NO_PROXY:-localhost,127.0.0.1,192.168.96.82,.local}"
                     export no_proxy="${NO_PROXY}"
+                    # Iranian pip/npm as FALLBACK only. Dash-safe: export-env then `.` (never `source`).
+                    chmod +x scripts/ci_apply_iran_mirrors.sh scripts/ci_capture_build_evidence.sh
+                    bash scripts/ci_apply_iran_mirrors.sh --export-env .ci_iran_mirrors.env
+                    set -a
+                    # shellcheck disable=SC1091
+                    . ./.ci_iran_mirrors.env
+                    set +a
+                    cp -f .ci_iran_mirrors.env .ci-evidence/iran_mirrors.env 2>/dev/null || true
                     SVC="${CI_SERVICES:-all}"
                     if [ "$SVC" = "none" ]; then
                       echo "CI_SERVICES=none — skipping image build (deploy will use existing :local tags)"
@@ -278,11 +349,51 @@ pipeline {
                           # Always rebuild frontend — leftover build/ from a prior SHA caused
                           # stage to ship stale Dana themes while reporting "webui Built".
                           rm -rf build .svelte-kit
-                          ONNXRUNTIME_NODE_INSTALL_CUDA=skip npm ci --force
+                          # Official npm registry first; Iranian mirrors only on failure.
+                          _npm_ok=0
+                          for _reg in ${NPM_CONFIG_REGISTRY:-https://registry.npmjs.org/} ${IRAN_NPM_REGISTRIES:-}; do
+                            [ -n "$_reg" ] || continue
+                            echo "npm ci trying registry=${_reg}"
+                            if ONNXRUNTIME_NODE_INSTALL_CUDA=skip NPM_CONFIG_REGISTRY="$_reg" npm_config_registry="$_reg" npm ci --force; then
+                              _npm_ok=1
+                              break
+                            fi
+                          done
+                          [ "$_npm_ok" = "1" ] || exit 1
                           npm run build
                           find build -type f -name '*.map' -delete || true
                         )
                         case " $BUILD_SERVICES " in *" webui "*) ;; *) BUILD_SERVICES="${BUILD_SERVICES} webui" ;; esac
+                      elif [ -f components/webui/package.json ] && command -v docker >/dev/null 2>&1; then
+                        # Agent has no host npm (GPU Jenkins #18) — build frontend in node container.
+                        echo "Building WebUI via node:20 container (npm missing on agent; primary registry=${NPM_CONFIG_REGISTRY:-https://registry.npmjs.org/})"
+                        rm -rf components/webui/build components/webui/.svelte-kit
+                        _npm_regs="${NPM_CONFIG_REGISTRY:-https://registry.npmjs.org/} ${IRAN_NPM_REGISTRIES:-}"
+                        _webui_ok=0
+                        for _reg in $_npm_regs; do
+                          [ -n "$_reg" ] || continue
+                          echo "WebUI node build trying registry=${_reg}"
+                          rm -rf components/webui/build components/webui/.svelte-kit
+                          if docker run --rm \
+                            -e HTTP_PROXY -e HTTPS_PROXY -e http_proxy -e https_proxy -e NO_PROXY -e no_proxy \
+                            -e NPM_CONFIG_REGISTRY="$_reg" -e npm_config_registry="$_reg" \
+                            -e ONNXRUNTIME_NODE_INSTALL_CUDA=skip \
+                            -e NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=8192}" \
+                            -v "$PWD/components/webui:/app" -w /app \
+                            node:20-bookworm \
+                            bash -lc 'npm ci --force && npm run build && find build -type f -name "*.map" -delete'
+                          then
+                            if [ -d components/webui/build ]; then _webui_ok=1; break; fi
+                          fi
+                          echo "WebUI node build failed for ${_reg} — next Iranian/npm fallback"
+                        done
+                        if [ "$_webui_ok" = "1" ] && [ -d components/webui/build ]; then
+                          case " $BUILD_SERVICES " in *" webui "*) ;; *) BUILD_SERVICES="${BUILD_SERVICES} webui" ;; esac
+                          echo "WebUI build/ ready via node container"
+                        else
+                          echo "WARNING: node container WebUI build produced no build/ — skipping rag-webui"
+                          BUILD_SERVICES="$(echo "$BUILD_SERVICES" | tr ' ' '\n' | grep -v '^webui$' | tr '\n' ' ')"
+                        fi
                       elif [ -d "${HOST_REPO}/components/webui/build" ]; then
                         mkdir -p components/webui
                         rm -rf components/webui/build
@@ -333,12 +444,23 @@ pipeline {
                         fi
                       }
                       ok=0
+                      : > .ci-evidence/compose-build.log
                       for attempt in 1 2 3; do
-                        echo "docker compose build attempt ${attempt}/3"
-                        if build_once; then ok=1; break; fi
-                        echo "build attempt ${attempt} failed — retrying in 20s (often PyPI ReadTimeout)"
+                        echo "docker compose build attempt ${attempt}/3 (PIP_INDEX_URL=${PIP_INDEX_URL:-default})" | tee -a .ci-evidence/compose-build.log
+                        if build_once >> .ci-evidence/compose-build.log 2>&1; then ok=1; break; fi
+                        echo "build attempt ${attempt} failed — retrying in 20s (often PyPI ReadTimeout)" | tee -a .ci-evidence/compose-build.log
                         sleep 20
                       done
+                      # Still failing: promote Iranian pip mirrors to index-url once, then retry.
+                      if [ "$ok" != "1" ]; then
+                        bash scripts/ci_apply_iran_mirrors.sh --promote-primary --export-env .ci_iran_mirrors.env || true
+                        set -a
+                        # shellcheck disable=SC1091
+                        . ./.ci_iran_mirrors.env
+                        set +a
+                        echo "docker compose build fallback attempt with Iran pip primary PIP_INDEX_URL=${PIP_INDEX_URL}" | tee -a .ci-evidence/compose-build.log
+                        if build_once >> .ci-evidence/compose-build.log 2>&1; then ok=1; fi
+                      fi
                       if [ "$ok" != "1" ]; then
                         # Laptop CI: files.pythonhosted.org often stalls via Docker Desktop proxy.
                         # Reuse existing :local images so stage deploy/E2E can still run.
@@ -347,7 +469,10 @@ pipeline {
                           ok=1
                         fi
                       fi
-                      [ "$ok" = "1" ] || exit 1
+                      if [ "$ok" != "1" ]; then
+                        bash scripts/ci_capture_build_evidence.sh .ci-evidence || true
+                        exit 1
+                      fi
                     ) 9>"$LOCK"
                     # Always publish :local → :${TAG} for the whole app matrix so path-filtered
                     # builds (SERVICES=kb) still satisfy compose image: rag-*:${TAG} on deploy.
@@ -364,11 +489,21 @@ pipeline {
                       fi
                     done
                     bash scripts/ci_stage_evidence.sh mark build || true
+DANA_BUILD_IMAGES
                 '''
             }
             post {
                 success { ghStatus('build', 'success', 'app images built') }
-                failure { ghStatus('build', 'failure', 'image build failed') }
+                failure {
+                    sh '''
+                      set +e
+                      export PATH="/usr/local/bin:/usr/bin:/bin:${PATH:-}"
+                      chmod +x scripts/ci_capture_build_evidence.sh 2>/dev/null || true
+                      bash scripts/ci_capture_build_evidence.sh .ci-evidence || true
+                    '''
+                    archiveArtifacts artifacts: '.ci-evidence/**', allowEmptyArchive: true
+                    ghStatus('build', 'failure', 'image build failed')
+                }
             }
         }
 
@@ -379,6 +514,7 @@ pipeline {
                     expression { return env.CI_MAY_DEPLOY_STAGE == '1' }
                     expression { return env.CI_SKIP != '1' }
                     expression { return env.CI_ROLLBACK != '1' }
+                    expression { return env.CI_HEAL != '1' }
                     anyOf {
                         expression { return env.CI_STAGE == '1' }
                         expression { return env.CI_AUTO == '1' }
@@ -457,6 +593,7 @@ pipeline {
                     expression { return env.CI_MAY_DEPLOY_STAGE == '1' }
                     expression { return env.CI_SKIP != '1' }
                     expression { return env.CI_ROLLBACK != '1' }
+                    expression { return env.CI_HEAL != '1' }
                     anyOf {
                         expression { return env.CI_STAGE == '1' }
                         expression { return env.CI_AUTO == '1' }
@@ -486,6 +623,7 @@ pipeline {
                     expression { return env.CI_MAY_DEPLOY_PROD == '1' }
                     expression { return env.CI_SKIP != '1' }
                     expression { return env.CI_ROLLBACK != '1' }
+                    expression { return env.CI_HEAL != '1' }
                     expression { return env.CI_PROD != '1' }
                     expression { return env.CI_AUTO != '1' }
                     anyOf {
@@ -506,6 +644,7 @@ pipeline {
                     expression { return env.CI_MAY_DEPLOY_PROD == '1' }
                     expression { return env.CI_SKIP != '1' }
                     expression { return env.CI_ROLLBACK != '1' }
+                    expression { return env.CI_HEAL != '1' }
                     anyOf {
                         expression { return env.CI_PROD == '1' }
                         expression { return env.CI_AUTO == '1' }
@@ -571,7 +710,17 @@ pipeline {
     post {
         always {
             sh '''
-                docker image prune -f || true
+                set +e
+                export PATH="/usr/local/bin:/usr/bin:/bin:${PATH:-}"
+                chmod +x scripts/ci_capture_build_evidence.sh scripts/ci_resolve_docker.sh 2>/dev/null || true
+                # dash-safe: print exports from bash helper
+                eval "$(bash scripts/ci_resolve_docker.sh --print-exports 2>/dev/null)" 2>/dev/null || true
+                bash scripts/ci_capture_build_evidence.sh .ci-evidence || true
+                if command -v docker >/dev/null 2>&1; then
+                  docker image prune -f || true
+                else
+                  echo "WARN: docker not on PATH ($PATH) — skip image prune"
+                fi
                 # True-green guard: a build that only ran Lint is not a verified
                 # build. dana-rag/main #20/#21 (and #23) went SUCCESS on the
                 # stage-only laptop controller with every build/deploy/prod stage
@@ -593,8 +742,9 @@ pipeline {
                   sed -n 's/^COVERAGE_DESCRIPTION=//p' .ci_coverage.env 2>/dev/null > .ci_coverage.desc || true
                 fi
                 rm -f .ci_commit_msg.txt .ci_changed_files.txt .ci_gate.env .ci_role.env || true
-                rm -rf .ci-evidence || true
+                # Keep .ci-evidence for archiveArtifacts / HC; prune only ephemeral gate files.
             '''
+            archiveArtifacts artifacts: '.ci-evidence/**', allowEmptyArchive: true
             script {
                 def guard = ''
                 if (fileExists('.ci_coverage.guard')) {
@@ -645,7 +795,7 @@ pipeline {
             }
         }
         failure {
-            echo 'Pipeline failed — inspect Jenkins console + docker compose logs'
+            echo 'Pipeline failed — inspect Jenkins console, archived .ci-evidence/, and HC meta/jenkins/'
         }
     }
 }

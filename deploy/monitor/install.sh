@@ -4,18 +4,22 @@
 #
 # What it installs
 #   gpu-health-report.service   oneshot: run the report once, publish to main
-#   gpu-health-report.timer     every INTERVAL_HOURS (default 3h) — primary cadence
+#   gpu-health-report.timer     every INTERVAL_HOURS (default 1h) — primary cadence
 #   gpu-health-retry.timer      every RETRY_HOURS: re-run ONLY if the last run failed
 #                               (OnFailure-style retry without a second daemon)
 #   Optional: --daily-time also arms a calendar timer in addition to the interval
+#
+# Publishes into Work_RAG_HealthCheck (Pages) and appends compact JSON into
+# Work_RAG_Metrics. Screenshots are age+count pruned so hourly pushes stay
+# under GitHub storage / rate pressure.
 #
 # Safe to re-run: unit files are rewritten and the timers re-armed. Use
 # ./uninstall.sh to remove everything.
 #
 # Usage (on the GPU host, from the repo root):
 #   sudo bash deploy/monitor/install.sh
-#   sudo bash deploy/monitor/install.sh --interval-hours 3 --machine-name gpu-prod
-#   sudo bash deploy/monitor/install.sh --daily-time 04:30 --interval-hours 3
+#   sudo bash deploy/monitor/install.sh --interval-hours 1 --machine-name gpu-prod
+#   sudo bash deploy/monitor/install.sh --daily-time 04:30 --interval-hours 1
 #   sudo bash deploy/monitor/install.sh --check            # validate the plan, change nothing
 #   sudo bash deploy/monitor/install.sh --dry-run          # print units, change nothing
 #   sudo bash deploy/monitor/install.sh --no-push          # collect locally only
@@ -31,14 +35,16 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 REPORT="$REPO_ROOT/scripts/gpu_full_recover_report.sh"
 
 DAILY_TIME=""
-INTERVAL_HOURS=3
-RETRY_HOURS=3
+INTERVAL_HOURS=1
+RETRY_HOURS=1
 MACHINE_NAME=""
 DRY_RUN=0
 CHECK_ONLY=0
 NO_PUSH=0
 HEALTH_REPO="https://github.com/AliNikkhah2001/Work_RAG_HealthCheck.git"
 HEALTH_REPO_DIR=""
+METRICS_REPO="https://github.com/AliNikkhah2001/Work_RAG_Metrics.git"
+METRICS_REPO_DIR=""
 SERVICE_NAME="gpu-health-report"
 UNIT_DIR="${UNIT_DIR:-/etc/systemd/system}"
 
@@ -61,6 +67,8 @@ while [[ $# -gt 0 ]]; do
     --machine-name)   MACHINE_NAME="$2"; shift 2 ;;
     --health-repo)    HEALTH_REPO="$2"; shift 2 ;;
     --health-repo-dir) HEALTH_REPO_DIR="$2"; shift 2 ;;
+    --metrics-repo)   METRICS_REPO="$2"; shift 2 ;;
+    --metrics-repo-dir) METRICS_REPO_DIR="$2"; shift 2 ;;
     --no-push)        NO_PUSH=1; shift ;;
     --dry-run)        DRY_RUN=1; shift ;;
     --check)          CHECK_ONLY=1; shift ;;
@@ -154,6 +162,7 @@ detect_machine_type() {
 MACHINE_TYPE="$(detect_machine_type)"
 [[ -z "$MACHINE_NAME" ]] && MACHINE_NAME="$(hostname -s 2>/dev/null || hostname)"
 [[ -z "$HEALTH_REPO_DIR" ]] && HEALTH_REPO_DIR="${HEALTH_REPO_DIR:-/var/lib/dana-health/Work_RAG_HealthCheck}"
+[[ -z "$METRICS_REPO_DIR" ]] && METRICS_REPO_DIR="${METRICS_REPO_DIR:-/var/lib/dana-health/Work_RAG_Metrics}"
 
 info "repo root:      $REPO_ROOT"
 info "machine:        $MACHINE_NAME ($MACHINE_TYPE)"
@@ -161,7 +170,9 @@ info "interval:       every ${INTERVAL_HOURS}h (primary)"
 info "daily time:     ${DAILY_TIME:-disabled} UTC"
 info "retry interval: every ${RETRY_HOURS}h while the last run is failing"
 info "publish:        $([ "$NO_PUSH" -eq 1 ] && echo 'disabled (--no-push)' || echo "main → $HEALTH_REPO")"
+info "metrics:        $([ "$NO_PUSH" -eq 1 ] && echo 'disabled (--no-push)' || echo "main → $METRICS_REPO")"
 info "health clone:   $HEALTH_REPO_DIR"
+info "metrics clone:  $METRICS_REPO_DIR"
 echo ""
 
 # Jitter keeps a fleet of hosts from pushing to main at the same instant.
@@ -190,9 +201,11 @@ WorkingDirectory=$REPO_ROOT
 Environment=DANA_HOST_REPO=$REPO_ROOT
 Environment=GPU_HEALTH_REPO=$HEALTH_REPO
 Environment=GPU_HEALTH_REPO_DIR=$HEALTH_REPO_DIR
+Environment=GPU_METRICS_REPO=$METRICS_REPO
+Environment=GPU_METRICS_REPO_DIR=$METRICS_REPO_DIR
 Environment=GPU_MACHINE_NAME=$MACHINE_NAME
 Environment=GPU_MACHINE_TYPE=$MACHINE_TYPE
-Environment=GPU_HEALTH_KEEP_LOGS=30
+Environment=GPU_HEALTH_KEEP_LOGS=48
 Environment=PYTHONUNBUFFERED=1
 ExecStart=/bin/bash $REPORT --daemon$DAILY_ARG --retry-hours $RETRY_HOURS --machine-name $MACHINE_NAME$([[ "$NO_PUSH" -eq 1 ]] && echo ' --no-push')
 Nice=10
@@ -251,11 +264,14 @@ WorkingDirectory=$REPO_ROOT
 Environment=DANA_HOST_REPO=$REPO_ROOT
 Environment=GPU_HEALTH_REPO=$HEALTH_REPO
 Environment=GPU_HEALTH_REPO_DIR=$HEALTH_REPO_DIR
+Environment=GPU_METRICS_REPO=$METRICS_REPO
+Environment=GPU_METRICS_REPO_DIR=$METRICS_REPO_DIR
 Environment=GPU_MACHINE_NAME=$MACHINE_NAME
 Environment=GPU_MACHINE_TYPE=$MACHINE_TYPE
+Environment=GPU_HEALTH_KEEP_LOGS=48
 # Only re-run when the last attempt genuinely failed (exit 1), when nothing has
 # ever succeeded, or when today's daily run was missed. A *refused* run (exit 64)
-# deliberately does NOT re-arm: retrying a bad GPU_HEALTH_REPO every 3h buries
+# deliberately does NOT re-arm: retrying a bad GPU_HEALTH_REPO every 1h buries
 # the single line an operator needs. Logic lives in should-retry.sh so it is
 # testable and readable, and the markers are files (not transient unit results),
 # so a reboot cannot silently swallow a failed day.
@@ -335,6 +351,13 @@ if [[ "$CHECK_ONLY" -eq 1 ]]; then
     *healthcheck*) chk 0 "publish target is the health-check repo" ;;
     *) chk 1 "publish target is the health-check repo" "$HEALTH_REPO (must contain 'healthcheck')" ;;
   esac
+  case "$(printf '%s' "$METRICS_REPO" | tr 'A-Z' 'a-z')" in
+    *metric*) chk 0 "metrics target is a metrics repo" ;;
+    *) chk 1 "metrics target is a metrics repo" "$METRICS_REPO (must contain 'metric')" ;;
+  esac
+  [[ -f "$REPO_ROOT/scripts/monitor/publish_metrics.py" ]] \
+    && chk 0 "publish_metrics.py present" \
+    || chk 1 "publish_metrics.py present"
 
   # Prove the retry gate: temp markers, no side effects on the real state dir.
   GATE_TMP="$(mktemp -d "${TMPDIR:-/tmp}/retry-gate.XXXXXX")" || GATE_TMP=""
@@ -391,8 +414,8 @@ chmod 0644 "$UNIT_DIR/$SERVICE_NAME"*.service "$UNIT_DIR/$SERVICE_NAME"*.timer
 ok "wrote $UNIT_COUNT unit files to $UNIT_DIR"
 
 
-# Prime the health repo clone so the first run does not pay clone cost while
-# services are flapping. Non-fatal: the publisher clones on demand too.
+# Prime the health + metrics repo clones so the first run does not pay clone
+# cost while services are flapping. Non-fatal: publishers clone on demand too.
 if [[ "$NO_PUSH" -eq 0 ]] && command -v git >/dev/null 2>&1; then
   if [[ ! -d "$HEALTH_REPO_DIR/.git" ]]; then
     if git clone "$HEALTH_REPO" "$HEALTH_REPO_DIR" >/dev/null 2>&1; then
@@ -405,6 +428,18 @@ if [[ "$NO_PUSH" -eq 0 ]] && command -v git >/dev/null 2>&1; then
     fi
   else
     ok "health repo already cloned at $HEALTH_REPO_DIR"
+  fi
+  if [[ ! -d "$METRICS_REPO_DIR/.git" ]]; then
+    if git clone "$METRICS_REPO" "$METRICS_REPO_DIR" >/dev/null 2>&1; then
+      git -C "$METRICS_REPO_DIR" checkout main >/dev/null 2>&1 \
+        || git -C "$METRICS_REPO_DIR" checkout -B main >/dev/null 2>&1 \
+        || true
+      ok "cloned metrics repo → $METRICS_REPO_DIR"
+    else
+      warn "could not pre-clone $METRICS_REPO (the metrics publisher will retry at run time)"
+    fi
+  else
+    ok "metrics repo already cloned at $METRICS_REPO_DIR"
   fi
 fi
 
@@ -421,6 +456,45 @@ systemctl enable --now "$SERVICE_NAME-retry.timer" >/dev/null 2>&1 \
   && ok "enabled $SERVICE_NAME-retry.timer (every ${RETRY_HOURS}h)" \
   || warn "could not enable $SERVICE_NAME-retry.timer"
 
+# WebUI submodule tip watcher — same hourly cadence as status pushes.
+WATCH_SH="$REPO_ROOT/scripts/ci_submodule_watch.sh"
+if [[ -f "$WATCH_SH" ]]; then
+  cat > "$UNIT_DIR/gpu-webui-watch.service" <<EOF
+[Unit]
+Description=Dana RAG — watch Work_RAG-WebUI tip vs umbrella gitlink
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=$REPO_ROOT
+Environment=JENKINS_URL=http://127.0.0.1:8085
+Environment=JENKINS_USER=admin
+Environment=JENKINS_PASS_FILE=/splunk-data/production/.jenkins-admin-pass
+ExecStart=/bin/bash $WATCH_SH
+Nice=10
+EOF
+  cat > "$UNIT_DIR/gpu-webui-watch.timer" <<EOF
+[Unit]
+Description=Dana RAG — WebUI submodule watch every ${INTERVAL_HOURS}h (aligned with health push)
+
+[Timer]
+OnBootSec=6min
+OnUnitActiveSec=${INTERVAL_HOURS}h
+AccuracySec=60s
+Persistent=true
+Unit=gpu-webui-watch.service
+
+[Install]
+WantedBy=timers.target
+EOF
+  chmod 0644 "$UNIT_DIR/gpu-webui-watch.service" "$UNIT_DIR/gpu-webui-watch.timer"
+  systemctl daemon-reload || true
+  systemctl enable --now gpu-webui-watch.timer >/dev/null 2>&1 \
+    && ok "enabled gpu-webui-watch.timer (every ${INTERVAL_HOURS}h)" \
+    || warn "could not enable gpu-webui-watch.timer"
+fi
+
 echo ""
 echo "=== Installed ==="
 echo "  Interval: every ${INTERVAL_HOURS}h (+ up to 10 min jitter)"
@@ -430,7 +504,9 @@ echo "  Logs:     tail -f /var/log/dana-rag/health-report.log"
 echo "  Status:   systemctl list-timers '$SERVICE_NAME*'"
 echo "  Run now:  sudo systemctl start $SERVICE_NAME.service"
 echo ""
+echo "  Status:    /var/lib/dana-health/status.json (written each run)"
 echo "  Dashboard: https://alinikkhah2001.github.io/Work_RAG_HealthCheck/"
-echo "  (run scripts/enable_pages.sh once from your laptop to publish it)"
+echo "  Metrics:   https://github.com/AliNikkhah2001/Work_RAG_Metrics"
+echo "  Retention: screenshots ≤3 newest runs AND ≤24h; text logs ≤48 runs"
 echo ""
 echo "  Uninstall: sudo bash $SCRIPT_DIR/uninstall.sh"

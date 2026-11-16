@@ -228,12 +228,27 @@ def _run_retention(tmp: Path) -> None:
         (d / "screenshots").mkdir(parents=True, exist_ok=True)
         (d / "run.log").write_text("x")
         (d / "screenshots" / "s.png").write_bytes(b"png")
-    pruned = pr.prune_screenshots(root, keep=1)
+    pruned = pr.prune_screenshots(root, keep=1, keep_hours=0)
     check("screenshot pruning reported", len(pruned) == 4, str(pruned))
     check("screenshots removed for old runs",
           not (root / "logs" / "run-0" / "screenshots").exists())
     check("text logs kept after screenshot pruning",
           (root / "logs" / "run-0" / "run.log").is_file())
+
+    # Age window: timestamped run ids older than keep_hours lose screenshots
+    # even when they are inside the count window.
+    for stamp, name in (
+        ("20260101T000000Z", "old"),
+        ("20990101T000000Z", "future"),
+    ):
+        d = root / "logs" / f"{stamp}-{name}"
+        (d / "screenshots").mkdir(parents=True, exist_ok=True)
+        (d / "screenshots" / "s.png").write_bytes(b"png")
+    aged = pr.prune_screenshots(root, keep=99, keep_hours=1)
+    check("age prune drops old screenshots",
+          "20260101T000000Z-old" in aged, str(aged))
+    check("age prune keeps fresh screenshots",
+          (root / "logs" / "20990101T000000Z-future" / "screenshots").is_dir())
 
 
 def _run_links(tmp: Path) -> None:
@@ -343,8 +358,10 @@ def _run_dashboard_template() -> None:
     check("template exists", tpl.is_file())
     html = tpl.read_text(encoding="utf-8")
     for panel in ("Historical uptime", "Downtime percentage", "Failures — last 24 hours",
-                  "Knowledge base version", "Run log"):
+                  "Knowledge base version", "Single reports", "Endpoints — what each check means"):
         check(f"panel present: {panel}", panel in html)
+    check("separates devices in history", "deviceGroups" in html or "per device" in html.lower())
+    check("reports default collapsed", 'details class="fold report-fold"' in html or "report-fold" in html)
     check("reads runs/index.json", 'getJSON("runs/index.json")' in html)
     check("no absolute file paths", "file://" not in html)
     check("no build step / bundler import", "import(" not in html and "require(" not in html)

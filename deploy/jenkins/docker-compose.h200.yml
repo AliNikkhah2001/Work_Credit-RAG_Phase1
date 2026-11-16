@@ -1,7 +1,12 @@
 # H200 host overlay — bind the production clone at the same absolute path
 # inside the Jenkins container (required for docker.sock + compose mounts).
-# Uses stock jenkins/jenkins:lts (custom Dockerfile apt often fails behind Squid
-# unless build-args are set); mounts host docker + compose plugins.
+#
+# Docker CLI: do NOT bind-mount the host `/usr/bin/docker`. Host CLIs are
+# dynamically linked; inside the container they fail with
+# `docker: command not found` (ENOENT on ld-linux). The image MUST provide a
+# static CLI at `/usr/local/bin/docker`:
+#   bash scripts/bootstrap_jenkins_docker_cli.sh --commit
+#   # or: docker build -f deploy/jenkins/Dockerfile.docker-cli ...
 #
 # Usage:
 #   docker compose -f deploy/jenkins/docker-compose.yml \
@@ -10,22 +15,31 @@
 
 services:
   jenkins:
-    image: jenkins/jenkins:lts-jdk17
+    # Keep the plugin-rich pinned image (multibranch). Stock jenkins/jenkins:lts
+    # drops Multibranch jobs even when jenkins_home still has their config.xml.
+    image: dana-jenkins:production
     build: !reset null
     container_name: dana-jenkins-prod
     user: root
     volumes:
       - jenkins_home:/var/jenkins_home
       - /var/run/docker.sock:/var/run/docker.sock
-      - /usr/bin/docker:/usr/bin/docker:ro
+      # Optional: host compose plugins if the image plugin dir is empty.
       - /usr/libexec/docker/cli-plugins:/usr/libexec/docker/cli-plugins:ro
       - /splunk-data/production/Work_Credit-RAG_Phase1:/splunk-data/production/Work_Credit-RAG_Phase1:rw
+      # Also expose Mac-path workspace used by older agent configs
+      - /splunk-data/production/Work_Credit-RAG_Phase1:/Users/alinikkhah/Documents/Work/CreditScoring/Chatbot_production_v1:rw
     environment:
       JAVA_OPTS: "-Djenkins.install.runSetupWizard=false"
       DOCKER_HOST: unix:///var/run/docker.sock
+      # Durable-task sh often starts with PATH=/usr/bin:/bin — put image CLI first.
+      # Keep OpenJDK on PATH (dropping it makes the controller exit 127 on start).
+      PATH: /opt/java/openjdk/bin:/usr/local/bin:/usr/bin:/bin
       DANA_HOST_REPO: /splunk-data/production/Work_Credit-RAG_Phase1
       DANA_HOST: gpu
       DANA_ROLE: prod
+      CI_REQUIRE_PROD_CONTROLLER: "1"
+      CI_MAIN_PROOF_POLICY: fail
       HTTP_PROXY: http://192.168.203.2:3128
       HTTPS_PROXY: http://192.168.203.2:3128
       NO_PROXY: localhost,127.0.0.1,192.168.96.82
