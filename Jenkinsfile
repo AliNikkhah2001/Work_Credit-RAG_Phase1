@@ -274,6 +274,9 @@ pipeline {
 
                     set -e
                     export PATH="/usr/local/bin:/usr/bin:/bin:${PATH:-}"
+                    # Jenkins may omit empty env keys; bash -u needs defaults.
+                    export REGISTRY="${REGISTRY:-}"
+                    export TAG="${TAG:-local}"
                     mkdir -p .ci-evidence
                     chmod +x scripts/ci_resolve_docker.sh scripts/ci_capture_build_evidence.sh
                     # shellcheck disable=SC1091
@@ -290,7 +293,7 @@ pipeline {
                     # mode must still call the OpenRouter rerank API.
                     chmod +x scripts/ci_laptop_rerank_env.sh
                     bash scripts/ci_laptop_rerank_env.sh ${ENV_FILE}
-                    export TAG=${TAG}
+                    export TAG="${TAG}"
                     # Slow/flaky PyPI under parallel compose builds (common on laptop CI)
                     export PIP_DEFAULT_TIMEOUT="${PIP_DEFAULT_TIMEOUT:-120}"
                     export COMPOSE_PARALLEL_LIMIT="${COMPOSE_PARALLEL_LIMIT:-1}"
@@ -476,16 +479,26 @@ pipeline {
                     ) 9>"$LOCK"
                     # Always publish :local → :${TAG} for the whole app matrix so path-filtered
                     # builds (SERVICES=kb) still satisfy compose image: rag-*:${TAG} on deploy.
+                    # REGISTRY may be empty; with bash -u it must be defaulted.
+                    REGISTRY="${REGISTRY:-}"
                     for s in kb guardrails orchestrator tracing webui; do
                       case "$s" in
-                        kb) src=rag-kb:local; dst=${REGISTRY}rag-kb:${TAG} ;;
-                        guardrails) src=rag-guardrails:local; dst=${REGISTRY}rag-guardrails:${TAG} ;;
-                        orchestrator) src=rag-orchestrator:local; dst=${REGISTRY}rag-orchestrator:${TAG} ;;
-                        tracing) src=rag-tracing:local; dst=${REGISTRY}rag-tracing:${TAG} ;;
-                        webui) src=rag-webui:local; dst=${REGISTRY}rag-webui:${TAG} ;;
+                        kb) base=rag-kb ;;
+                        guardrails) base=rag-guardrails ;;
+                        orchestrator) base=rag-orchestrator ;;
+                        tracing) base=rag-tracing ;;
+                        webui) base=rag-webui ;;
                       esac
-                      if docker image inspect "$src" >/dev/null 2>&1; then
+                      dst="${REGISTRY}${base}:${TAG}"
+                      # Compose may tag :${TAG} or :local depending on env; accept either.
+                      src=""
+                      for cand in "${base}:local" "${base}:${TAG}"; do
+                        if docker image inspect "$cand" >/dev/null 2>&1; then src="$cand"; break; fi
+                      done
+                      if [ -n "$src" ]; then
                         docker tag "$src" "$dst" || true
+                        # Keep :local alias for deploy scripts that expect it.
+                        docker tag "$src" "${base}:local" || true
                       fi
                     done
                     bash scripts/ci_stage_evidence.sh mark build || true
@@ -534,17 +547,25 @@ DANA_BUILD_IMAGES
                     chmod +x scripts/ci_laptop_rerank_env.sh
                     bash scripts/ci_laptop_rerank_env.sh ${ENV_FILE}
                     SVC="${CI_SERVICES:-all}"
+                    REGISTRY="${REGISTRY:-}"
+                    TAG="${TAG:-local}"
                     # Path-filtered / skip-build runs: compose still wants rag-*:${TAG}
                     for s in kb guardrails orchestrator tracing webui; do
                       case "$s" in
-                        kb) src=rag-kb:local; dst=${REGISTRY}rag-kb:${TAG} ;;
-                        guardrails) src=rag-guardrails:local; dst=${REGISTRY}rag-guardrails:${TAG} ;;
-                        orchestrator) src=rag-orchestrator:local; dst=${REGISTRY}rag-orchestrator:${TAG} ;;
-                        tracing) src=rag-tracing:local; dst=${REGISTRY}rag-tracing:${TAG} ;;
-                        webui) src=rag-webui:local; dst=${REGISTRY}rag-webui:${TAG} ;;
+                        kb) base=rag-kb ;;
+                        guardrails) base=rag-guardrails ;;
+                        orchestrator) base=rag-orchestrator ;;
+                        tracing) base=rag-tracing ;;
+                        webui) base=rag-webui ;;
                       esac
-                      if docker image inspect "$src" >/dev/null 2>&1; then
+                      dst="${REGISTRY}${base}:${TAG}"
+                      src=""
+                      for cand in "${base}:local" "${base}:${TAG}"; do
+                        if docker image inspect "$cand" >/dev/null 2>&1; then src="$cand"; break; fi
+                      done
+                      if [ -n "$src" ]; then
                         docker tag "$src" "$dst" || true
+                        docker tag "$src" "${base}:local" || true
                       fi
                     done
                     COMPOSE="docker compose -p dana-stage -f ${COMPOSE_BASE} -f ${COMPOSE_LOCAL} -f ${COMPOSE_STAGE} --env-file ${ENV_FILE}"
