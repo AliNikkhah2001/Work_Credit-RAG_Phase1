@@ -48,6 +48,7 @@ Laptop Jenkins (`DANA_ROLE=stage`, job `dana-rag`) correctly refuses to call `ma
 | Branch | **`main` only** on the prod controller |
 | Commit trigger | Message must include **`[ci prod]`** or **`[ci auto]`** (or heavy path changes / `[ci build]`) |
 | Preferred path | PR `develop` → `main` with title/body containing `[ci prod]`, or `bash scripts/promote_stage_to_main.sh --execute --push` |
+| H200 Jenkins recreate | Always `docker-compose.yml` + `docker-compose.gpu.yml` + `docker-compose.h200.yml`. Never omit h200 (see server-setup `imagebugfix.txt`). |
 | WebUI pin | Bump `components/webui` gitlink on the umbrella **before** the `[ci prod]` commit — watcher alone does not advance the pin |
 | After push | Wait for hourly `pollSCM` or **Scan Multibranch Now** on `dana-rag-prod` |
 | Pin hygiene | Every gitlink SHA must exist on its GitHub remote (`git submodule update --init --recursive` green) or sync fails before build |

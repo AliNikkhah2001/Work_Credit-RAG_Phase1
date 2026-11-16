@@ -705,9 +705,14 @@ else
         warn "no .env.prod/.env — cannot compose up"
       fi
       if [[ -f "$UMBRELLA/deploy/jenkins/docker-compose.gpu.yml" ]]; then
-        if docker compose -f "$UMBRELLA/deploy/jenkins/docker-compose.yml" \
-          -f "$UMBRELLA/deploy/jenkins/docker-compose.gpu.yml" \
-          up -d 2>&1 | tee -a "$RESTART_LOG"; then
+        _jcmd=( docker compose
+          -f "$UMBRELLA/deploy/jenkins/docker-compose.yml"
+          -f "$UMBRELLA/deploy/jenkins/docker-compose.gpu.yml" )
+        # H200 overlay is required on this host (static CLI PATH, DANA_ROLE=prod).
+        if [[ -f "$UMBRELLA/deploy/jenkins/docker-compose.h200.yml" ]]; then
+          _jcmd+=( -f "$UMBRELLA/deploy/jenkins/docker-compose.h200.yml" )
+        fi
+        if "${_jcmd[@]}" up -d 2>&1 | tee -a "$RESTART_LOG"; then
           ok "jenkins compose up succeeded"
         else
           warn "jenkins compose up failed"

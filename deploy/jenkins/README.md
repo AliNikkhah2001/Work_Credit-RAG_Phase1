@@ -7,28 +7,29 @@ Laptop Jenkins (`:8085`) and the same pipeline on the H200 GPU server.
 
 > **Do not run a bare `jenkins/jenkins:lts` (or an unplugged `:lts` retag) on this host.** Without `workflow-multibranch` / GitHub Branch Source plugins, Multibranch jobs disappear from the UI (config.xml present but unloadable). Keep `dana-jenkins:lts` aliased to the **same digest** as `:production`. Job seed: [`jobs/dana-rag-prod.xml`](jobs/dana-rag-prod.xml).
 
-### Docker CLI missing (`docker: command not found` in Build images)
+### Docker CLI missing (`docker: command not found` / `unknown shorthand flag: 'f'`)
 
-**Symptom (builds #21/#22):** mirrors apply OK, then every `docker compose build` dies with `docker: command not found`. `.ci-evidence/agent_context.txt` shows `which docker: MISSING` even when `PATH` includes `/usr/local/bin`.
+**Symptom (builds #21/#22):** mirrors apply OK, then every `docker compose build` dies with `docker: command not found`. Later (#23–#25): `unknown shorthand flag: 'f' in -f` when CI fetched a bare static CLI **without** the compose plugin.
 
-**Cause:** `docker-compose.h200.yml` historically bind-mounted the **host** `/usr/bin/docker` into the agent and set `build: !reset` (so the image never got a static CLI). Host Docker CLIs are dynamically linked; inside the container the ELF interpreter is missing → kernel ENOENT → bash prints `command not found`. The plugin-rich `dana-jenkins:production` pin also lacked `/usr/local/bin/docker`.
+**Cause:** `docker-compose.h200.yml` historically bind-mounted the **host** `/usr/bin/docker` into the agent and set `build: !reset`. Host CLIs are dynamically linked → ELF interpreter missing → ENOENT → bash prints `command not found`. A git pull alone does **not** recreate Jenkins; omitting `docker-compose.h200.yml` on `up -d` also skips the static-CLI overlay. Full plan: server-setup `imagebugfix.txt`.
 
-**Do not** re-add the host-binary bind-mount. Fix by putting a **static** CLI in the image:
+**Do not** re-add the host-binary bind-mount. **Do not** recreate with only `yml`+`gpu` on H200. Fix by putting a **static** CLI + compose plugin in the image:
 
 | Approach | When | Command |
 |---|---|---|
-| **A. Bootstrap (fastest)** | Container already running | `bash scripts/bootstrap_jenkins_docker_cli.sh --commit` then recreate with h200 overlay |
-| **B. Layer Dockerfile** | Prefer reproducible image | `docker build -f deploy/jenkins/Dockerfile.docker-cli --build-arg HTTP_PROXY=… --build-arg HTTPS_PROXY=… -t dana-jenkins:production deploy/jenkins/` |
-| **C. CI self-heal** | Build already on new `main` | `scripts/ci_resolve_docker.sh` fetches static CLI into `.ci-bin/` during Build images |
-| **D. Full rebuild** | New controller / lost plugins OK | `Dockerfile` with proxy build-args → tag `:lts` + `:production` (reinstall Multibranch plugins) |
+| **A. Bootstrap** | Container already running | `bash scripts/bootstrap_jenkins_docker_cli.sh --commit` (commit may fail on busy mounts → use B) |
+| **B. Layer Dockerfile** | Preferred / used on GPU | `docker build -f deploy/jenkins/Dockerfile.docker-cli …` (client-only `docker --version` verify) |
+| **C. CI self-heal** | Backup during Build images | `scripts/ci_resolve_docker.sh` fetches static CLI **and** compose plugin into `.ci-bin/` |
+| **D. Full rebuild** | New controller / lost plugins OK | `Dockerfile` with proxy build-args → tag `:lts` + `:production` |
 
-After A/B, recreate so mounts match current h200.yml (sock only, no host docker binary):
+Always recreate with **all three** compose files. Keep OpenJDK on `PATH` in h200.yml (`/opt/java/openjdk/bin:…`) or the controller exits 127:
 
 ```bash
 docker compose -f deploy/jenkins/docker-compose.yml \
   -f deploy/jenkins/docker-compose.gpu.yml \
   -f deploy/jenkins/docker-compose.h200.yml up -d
 docker exec dana-jenkins-prod /usr/local/bin/docker version
+docker exec dana-jenkins-prod docker compose version
 ```
 
 Detailed operator guide. Parent overview: repo root `README.md` → section **CI/CD & Jenkins**.
