@@ -33,7 +33,8 @@ services:
       JAVA_OPTS: "-Djenkins.install.runSetupWizard=false"
       DOCKER_HOST: unix:///var/run/docker.sock
       # Durable-task sh often starts with PATH=/usr/bin:/bin — put image CLI first.
-      PATH: /usr/local/bin:/usr/bin:/bin
+      # Keep OpenJDK on PATH (dropping it makes the controller exit 127 on start).
+      PATH: /opt/java/openjdk/bin:/usr/local/bin:/usr/bin:/bin
       DANA_HOST_REPO: /splunk-data/production/Work_Credit-RAG_Phase1
       DANA_HOST: gpu
       DANA_ROLE: prod
