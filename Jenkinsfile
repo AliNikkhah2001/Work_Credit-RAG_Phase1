@@ -702,6 +702,10 @@ DANA_BUILD_IMAGES
                       if [ -x components/server-setup/deploy/recreate_dana_webui.sh ]; then
                         docker tag "rag-webui:${TAG}" rag-webui:dana 2>/dev/null || true
                         docker tag rag-webui:local rag-webui:dana 2>/dev/null || true
+                        # Prefer the tag this build just published; probe via docker
+                        # exec / LAN (Jenkins container has no host loopback :13000).
+                        export DANA_WEBUI_IMAGE="${DANA_WEBUI_IMAGE:-rag-webui:dana}"
+                        export DANA_WEBUI_PROBE_URL="${DANA_WEBUI_PROBE_URL:-http://192.168.96.82:13000/api/config}"
                         bash components/server-setup/deploy/recreate_dana_webui.sh
                       else
                         echo "WARNING: recreate_dana_webui.sh missing — skipping webui refresh"
