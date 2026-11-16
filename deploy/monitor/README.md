@@ -1,16 +1,82 @@
 # Health monitoring daemon + GitHub Pages dashboard
 
-Durable uptime tracking for the Persian RAG stack. A **3-hour** systemd timer on the
+Durable uptime tracking for the Persian RAG stack. An **hourly** systemd timer on the
 GPU host appends a compact record to **one** `main` branch of
 [`AliNikkhah2001/Work_RAG_HealthCheck`](https://github.com/AliNikkhah2001/Work_RAG_HealthCheck),
-and a static dashboard served by GitHub Pages renders the whole history (prod + stage ports).
+appends a tiny status/series point to
+[`AliNikkhah2001/Work_RAG_Metrics`](https://github.com/AliNikkhah2001/Work_RAG_Metrics)
+(no screenshots), syncs `metrics/` into the Pages tree, and a static dashboard
+renders the history (prod + stage ports).
+
+Screenshots are auto-pruned (newest **3** runs **and** ≤ **24h**) so hourly
+publishes do not fill GitHub storage or trip soft rate limits.
+
+### What each hourly report now includes
+
+| Area | Behavior |
+|---|---|
+| **Random FAQ QA** | 10 random Q&A from the canned KB pack (`faq_shortlist`); new sample every run |
+| **Latency** | KB `stage_ms` + orchestrator `audit.stage_timing_ms` / `latency_ms` → `e2e/latency_summary.json` + Pages charts |
+| **Screenshots** | Jenkins **login → dashboard**, KB manager `/docs`, WebUI main `:13000` + alt `:8088` (+ stage `:13100`), manager `:9000`, orch/guard docs — **10s settle** between shots |
+| **Host inventory** | Open ports, disk, RAM, NVIDIA GPU → `meta/host_inventory.json` + diagrams |
+| **Jenkins status** | Auth + Multibranch job + image freshness (missing/stale) → `meta/jenkins_status.json` on Pages |
+| **Jenkins forensics** | Last build `consoleText` (tail-truncated), error/`docker`/`npm` excerpt, `wfapi`/stage dump, heuristic `diagnosis.json` → `meta/jenkins/*` (published under `logs/<run>/meta/jenkins/`) |
+| **QA samples on dashboard** | Per-run HTML reads `e2e/random_qa.json` (question + answer_preview); no longer looks for missing `random_qa_N.json` files |
+| **WebUI submodule watch** | Same hourly timer: compares `components/webui` gitlink vs `Work_RAG-WebUI` `main` tip; nudges Jenkins scan (does **not** auto-push umbrella) |
+| **KB version** | Pack pins normalized (`schemas/v1.0.1.yaml` ≡ `1.0.1`) so false “discrepancy / unknown latest” is gone when corpus matches |
 
 
 - **Dashboard:** <https://alinikkhah2001.github.io/Work_RAG_HealthCheck/>
 - **Repo (data + site):** <https://github.com/AliNikkhah2001/Work_RAG_HealthCheck>
+- **Metrics (append-only JSON):** <https://github.com/AliNikkhah2001/Work_RAG_Metrics>
+- **Host status file:** `/var/lib/dana-health/status.json`
+- **Jenkins status file:** `/var/lib/dana-health/jenkins-status.json`
+- **WebUI watch file:** `/var/lib/dana-health/webui-watch.json`
 - **No CI here.** Pages builds straight from the `main` branch root, so report
   pushes never reach Jenkins (which is a multibranch job on a different repo).
   There is no workflow file and no webhook in the HealthCheck repo by design.
+
+### How the frontend (`rag-webui`) image actually builds
+
+A red `dana/validate` / `last_build_FAILURE` on GitHub is often **not** an npm/Docker failure.
+Laptop Jenkins (`DANA_ROLE=stage`, job `dana-rag`) correctly refuses to call `main` verified
+(`main NOT verified: no prod controller`). That status does **not** rebuild prod images.
+
+| Requirement | Detail |
+|---|---|
+| Controller | GPU `dana-jenkins-prod` with `DANA_ROLE=prod` → Multibranch job **`dana-rag-prod`** |
+| Branch | **`main` only** on the prod controller |
+| Commit trigger | Message must include **`[ci prod]`** or **`[ci auto]`** (or heavy path changes / `[ci build]`) |
+| Preferred path | PR `develop` → `main` with title/body containing `[ci prod]`, or `bash scripts/promote_stage_to_main.sh --execute --push` |
+| H200 Jenkins recreate | Always `docker-compose.yml` + `docker-compose.gpu.yml` + `docker-compose.h200.yml`. Never omit h200 (see server-setup `imagebugfix.txt`). |
+| WebUI pin | Bump `components/webui` gitlink on the umbrella **before** the `[ci prod]` commit — watcher alone does not advance the pin |
+| After push | Wait for hourly `pollSCM` or **Scan Multibranch Now** on `dana-rag-prod` |
+| Pin hygiene | Every gitlink SHA must exist on its GitHub remote (`git submodule update --init --recursive` green) or sync fails before build |
+| Tip without keys | A `main` merge **without** `[ci prod]` skips Build/Deploy; coverage then fails with `missing prod-deploy` — use an empty `[ci prod] [ci all]` commit to rebuild |
+
+On a real prod build, Jenkins runs `npm ci` + `npm run build` in `components/webui`, then
+`docker compose … build … webui`, and retags `rag-webui:local` → `:production` / `:dana` on deploy.
+If the agent has no npm and no `components/webui/build`, the log says
+`Skipping rag-webui image build` — that is a real skip, visible in `meta/jenkins/console_excerpt.txt`
+after the next health publish.
+
+### How to test Jenkins sees submodule commits (no manual rebuild from this host)
+
+1. On your laptop, push WebUI changes to `Work_RAG-WebUI` `main`.
+2. **Also** bump the umbrella gitlink on `Work_Credit-RAG_Phase1` `main` and commit with `[ci prod]` or `[ci auto]` (Jenkins only polls the parent).
+3. Within ~1h the `gpu-webui-watch.timer` + Multibranch `pollSCM` pick up the parent tip and build.
+4. Confirm: `cat /var/lib/dana-health/webui-watch.json` (`ahead: true` until the pin catches up) and Jenkins job `dana-rag-prod/main`.
+
+Force-heal / snapshot from any computer (no GPU needed on the committer):
+
+```text
+git commit -m "freeze tested images [ci snapshot]"
+git commit -m "restore LKG freeze [ci heal]"
+git commit -m "restore specific freeze [ci heal:20261115T124350Z]"
+git commit -m "break-glass restore [ci force-heal]"
+```
+
+Push to `main` — the GPU Jenkins controller runs `create_snapshot.sh` / `restore_from_snapshot.sh --apply`.
 
 ---
 
@@ -26,8 +92,8 @@ git submodule update --init components/knowledgebase
 # 2) validate the plan first — read-only, needs no root, changes nothing
 bash deploy/monitor/install.sh --check
 
-# 3) install the systemd timer (every 3h primary + retry every 3h on failure)
-sudo bash deploy/monitor/install.sh --interval-hours 3 --machine-name ai-gpu1
+# 3) install the systemd timer (hourly primary + retry hourly on failure)
+sudo bash deploy/monitor/install.sh --interval-hours 1 --machine-name ai-gpu1
 
 # 4) verify it is armed (two timers, both enabled)
 systemctl list-timers 'gpu-health-report*'
@@ -53,6 +119,8 @@ the run log, and in the "last 24h failures" table if anything was down.
 | Local report + dashboard | the run prints `Output dir:` / `Report:` / `Dashboard:` paths — typically `<repo>/components/server-setup/docs/ops/gpu-recover-reports/<RUN_ID>/REPORT.md` |
 | Published record | `https://github.com/AliNikkah2001/Work_RAG_HealthCheck/tree/main/runs` → `<RUN_ID>.json` |
 | Dashboard row | <https://alinikkhah2001.github.io/Work_RAG_HealthCheck/> |
+| Live status JSON | `/var/lib/dana-health/status.json` and Pages `metrics/status.json` |
+| Metrics series | <https://github.com/AliNikkhah2001/Work_RAG_Metrics/tree/main/metrics> |
 | Retry state | `cat /var/lib/dana-health/{last-success,failing,refused} 2>/dev/null` |
 
 If `last-success` has today's timestamp the daily run is done; if `failing`
@@ -62,14 +130,15 @@ nothing will retry — fix `GPU_HEALTH_REPO` first.
 ### Install options
 
 ```bash
-sudo bash deploy/monitor/install.sh                      # defaults: every 3h + retry 3h
-sudo bash deploy/monitor/install.sh --interval-hours 3   # primary cadence (configurable)
+sudo bash deploy/monitor/install.sh                      # defaults: every 1h + retry 1h
+sudo bash deploy/monitor/install.sh --interval-hours 1   # primary cadence (configurable)
 sudo bash deploy/monitor/install.sh --daily-time 04:30   # optional extra calendar tick
-sudo bash deploy/monitor/install.sh --retry-hours 1      # retry more aggressively on failure
+sudo bash deploy/monitor/install.sh --retry-hours 1      # retry cadence while failing
 sudo bash deploy/monitor/install.sh --machine-name ai-gpu1
 sudo bash deploy/monitor/install.sh --no-push            # collect locally, publish nothing
 sudo bash deploy/monitor/install.sh --health-repo <url>  # non-default publish target
 sudo bash deploy/monitor/install.sh --health-repo-dir /srv/healthcheck
+sudo bash deploy/monitor/install.sh --metrics-repo <url> # dedicated metrics repo
 sudo bash deploy/monitor/install.sh --check              # validate the plan, change nothing
 sudo bash deploy/monitor/install.sh --dry-run            # print the units, change nothing
 ```
@@ -89,9 +158,9 @@ sudo bash deploy/monitor/uninstall.sh --purge-state    # also drop /var/lib/dana
 | Unit | Purpose |
 |---|---|
 | `gpu-health-report.service` | oneshot: run `scripts/gpu_full_recover_report.sh --daemon` and publish to `main` |
-| `gpu-health-report.timer` | daily at `--daily-time` UTC, `Persistent=true`, up to 10 min jitter |
+| `gpu-health-report.timer` | every `--interval-hours` (default 1h), `Persistent=true`, up to 10 min jitter |
 | `gpu-health-report-retry.service` | same run, but gated by `ExecCondition` |
-| `gpu-health-report-retry.timer` | every `--retry-hours` (default 3h); the gate makes it a no-op once today succeeded |
+| `gpu-health-report-retry.timer` | every `--retry-hours` (default 1h); the gate makes it a no-op once today succeeded |
 
 The retry decision comes from **marker files** rather than a transient unit
 result, so a reboot cannot silently swallow a failed day. Three markers, all
@@ -192,7 +261,8 @@ Retention keeps the repo small without losing history:
 
 - JSON records: **never pruned** (each is ~4 KB, so 3 runs/day is ~4 MB/year)
 - `logs/<RUN_ID>/`: newest **30** runs only (`--keep-logs`)
-- `screenshots/`: newest **7** runs only (`--keep-screenshots`)
+- `screenshots/`: newest **3** runs **and** ≤ **24h** (`--keep-screenshots` / `--keep-screenshots-hours`)
+- `metrics/`: `status.json` + `series.json` + `latest.json` (copied from Work_RAG_Metrics each publish)
 
 Nothing sensitive is ever published: the report redacts secrets before packing,
 and the publisher additionally refuses to copy shell history and verbose host

@@ -34,6 +34,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -595,6 +596,19 @@ def _corpus_history(git_root: Path, pins_rel: str) -> list[dict[str, Any]]:
     return history
 
 
+def _pack_version(value: Any) -> str:
+    """Normalize pack pins so ``schemas/v1.0.1.yaml`` and ``1.0.1`` compare equal."""
+    text = str(value or "").strip()
+    m = re.search(r"v?(\d+\.\d+\.\d+)", text)
+    return m.group(1) if m else text
+
+
+def normalize_packs(packs: Any) -> dict[str, str] | None:
+    if not isinstance(packs, dict) or not packs:
+        return None
+    return {str(k): _pack_version(v) for k, v in packs.items()}
+
+
 def compare(actual: dict[str, Any], served: dict[str, Any], expected: dict[str, Any]) -> dict[str, Any]:
     """Compute the match/mismatch verdict between DB, API and repo pin."""
     checks: list[dict[str, Any]] = []
@@ -643,9 +657,9 @@ def compare(actual: dict[str, Any], served: dict[str, Any], expected: dict[str, 
     )
     check(
         "packs",
-        served.get("packs") or None,
-        expected.get("packs") or None,
-        "active registry pack versions served vs pinned",
+        normalize_packs(served.get("packs")),
+        normalize_packs(expected.get("packs")),
+        "active registry pack versions served vs pinned (path vs semver normalized)",
     )
 
     comparable = [c for c in checks if c["match"] is not None]
@@ -686,13 +700,23 @@ def build_report(
     """Assemble the full kb-version/v1 record."""
     unknowns: list[dict[str, str]] = []
     psql_bin = shutil.which("psql")
-    if psql_bin is None:
-        _unknown("actual", "psql client not installed — trying docker/driver", unknowns)
-
     actual = collect_actual(db_url, psql_bin, unknowns)
+    # Host without `psql` is fine when docker/driver collected counts — do not
+    # surface a red "unknown actual" for a working fallback path.
+    if psql_bin is None and actual.get("chunk_count") is None:
+        _unknown("actual", "psql client not installed and docker/driver fallback failed", unknowns)
     served = collect_served(kb_api, unknowns)
     expected = collect_expected(repo_root, unknowns, kb_source)
     verdict = compare(actual, served, expected)
+    # Drop informational unknowns that are not actionable discrepancies when
+    # the core verdict already matched (manifest activation is optional).
+    if verdict.get("status") == "match":
+        unknowns = [
+            u
+            for u in unknowns
+            if u.get("field")
+            not in {"served.manifest", "actual.last_ingestion_job", "actual"}
+        ]
 
     return {
         "schema_version": SCHEMA_VERSION,

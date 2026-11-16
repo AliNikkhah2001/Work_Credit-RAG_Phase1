@@ -7,6 +7,31 @@ Laptop Jenkins (`:8085`) and the same pipeline on the H200 GPU server.
 
 > **Do not run a bare `jenkins/jenkins:lts` (or an unplugged `:lts` retag) on this host.** Without `workflow-multibranch` / GitHub Branch Source plugins, Multibranch jobs disappear from the UI (config.xml present but unloadable). Keep `dana-jenkins:lts` aliased to the **same digest** as `:production`. Job seed: [`jobs/dana-rag-prod.xml`](jobs/dana-rag-prod.xml).
 
+### Docker CLI missing (`docker: command not found` / `unknown shorthand flag: 'f'`)
+
+**Symptom (builds #21/#22):** mirrors apply OK, then every `docker compose build` dies with `docker: command not found`. Later (#23–#25): `unknown shorthand flag: 'f' in -f` when CI fetched a bare static CLI **without** the compose plugin.
+
+**Cause:** `docker-compose.h200.yml` historically bind-mounted the **host** `/usr/bin/docker` into the agent and set `build: !reset`. Host CLIs are dynamically linked → ELF interpreter missing → ENOENT → bash prints `command not found`. A git pull alone does **not** recreate Jenkins; omitting `docker-compose.h200.yml` on `up -d` also skips the static-CLI overlay. Full plan: server-setup `imagebugfix.txt`.
+
+**Do not** re-add the host-binary bind-mount. **Do not** recreate with only `yml`+`gpu` on H200. Fix by putting a **static** CLI + compose plugin in the image:
+
+| Approach | When | Command |
+|---|---|---|
+| **A. Bootstrap** | Container already running | `bash scripts/bootstrap_jenkins_docker_cli.sh --commit` (commit may fail on busy mounts → use B) |
+| **B. Layer Dockerfile** | Preferred / used on GPU | `docker build -f deploy/jenkins/Dockerfile.docker-cli …` (client-only `docker --version` verify) |
+| **C. CI self-heal** | Backup during Build images | `scripts/ci_resolve_docker.sh` fetches static CLI **and** compose plugin into `.ci-bin/` |
+| **D. Full rebuild** | New controller / lost plugins OK | `Dockerfile` with proxy build-args → tag `:lts` + `:production` |
+
+Always recreate with **all three** compose files. Keep OpenJDK on `PATH` in h200.yml (`/opt/java/openjdk/bin:…`) or the controller exits 127:
+
+```bash
+docker compose -f deploy/jenkins/docker-compose.yml \
+  -f deploy/jenkins/docker-compose.gpu.yml \
+  -f deploy/jenkins/docker-compose.h200.yml up -d
+docker exec dana-jenkins-prod /usr/local/bin/docker version
+docker exec dana-jenkins-prod docker compose version
+```
+
 Detailed operator guide. Parent overview: repo root `README.md` → section **CI/CD & Jenkins**.
 
 ---
@@ -45,6 +70,9 @@ GitHub-rendered (bold + red):
 - $\textcolor{red}{\textbf{[ci auto]}}$ — unattended: stage on `develop`, prod on `main`
 - $\textcolor{red}{\textbf{[ci all]}}$ — force full image set (ignore path filter)
 - $\textcolor{red}{\textbf{[ci rollback]}}$ — prod controller only: restore apps from `deploy/compose/.last_good_sha(.prev)` (Sprint C #10; no model rollback)
+- $\textcolor{red}{\textbf{[ci snapshot]}}$ — freeze current prod image aliases under `/splunk-data/production/snapshots/<stamp>/` (logged in `/var/lib/dana-health/snapshots.json` + health Pages)
+- $\textcolor{red}{\textbf{[ci heal]}}$ / $\textcolor{red}{\textbf{[ci force-heal]}}$ — restore latest snapshot images via `restore_from_snapshot.sh --apply` (commit from any laptop; GPU controller applies)
+- $\textcolor{red}{\textbf{[ci heal:STAMP]}}$ — restore a specific freeze, e.g. `[ci heal:20261115T124350Z]`
 
 **Path → services (Sprint B):** `components/knowledgebase`→`kb`, `guardrails`→`guardrails`, `orchestrator`→`orchestrator`, `tracing`→`tracing`, `webui`→`webui`. Changes under `deploy/compose/`, `Jenkinsfile`, or `.gitmodules` → `all`. Console shows `SERVICES=…` and `Building compose services: …`.
 
@@ -73,7 +101,27 @@ bash scripts/promote_stage_to_main.sh
 git commit --allow-empty -m "chore: break glass [ci rollback]"
 git push origin main
 # or locally: bash scripts/ci_rollback.sh --dry-run
+
+# Freeze current prod images (GPU controller)
+git commit --allow-empty -m "chore: freeze LKG images [ci snapshot]"
+git push origin main
+
+# Force-heal from latest snapshot — commit from ANY laptop (no GPU needed)
+git commit --allow-empty -m "chore: restore tested snapshot [ci force-heal]"
+git push origin main
+# Specific stamp:
+git commit --allow-empty -m "chore: restore freeze [ci heal:20261115T124350Z]"
+git push origin main
 ```
+
+### WebUI submodule → Jenkins rebuild
+
+Jenkins Multibranch polls **only** `Work_Credit-RAG_Phase1`. A push to `Work_RAG-WebUI` alone does not rebuild until the umbrella **gitlink** advances.
+
+1. Push WebUI changes to `Work_RAG-WebUI` `main`.
+2. On the umbrella: update `components/webui` submodule pin, commit on `main` with `[ci prod]` or `[ci auto]`, push.
+3. Hourly `gpu-webui-watch.timer` + Jenkins `pollSCM` detect the parent tip and build. Check `/var/lib/dana-health/webui-watch.json` for `ahead` / tip SHAs.
+
 
 ---
 

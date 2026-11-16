@@ -1,0 +1,59 @@
+# Layer a *static* Docker CLI + compose plugin onto an existing plugin-rich
+# Jenkins image (dana-jenkins:production) without apt-get.
+#
+# Why: GPU h200 overlay used `build: !reset` + host `/usr/bin/docker` bind-mount.
+# Host CLIs are dynamically linked → inside the container they fail with
+# `docker: command not found` (ENOENT on the ELF interpreter). The production
+# image also lacked /usr/local/bin/docker.
+#
+# Usage on the GPU host (Squid):
+#   docker build -f deploy/jenkins/Dockerfile.docker-cli \
+#     --build-arg HTTP_PROXY=http://192.168.203.2:3128 \
+#     --build-arg HTTPS_PROXY=http://192.168.203.2:3128 \
+#     --build-arg BASE_IMAGE=dana-jenkins:production \
+#     -t dana-jenkins:production deploy/jenkins/
+#   # then recreate:
+#   docker compose -f deploy/jenkins/docker-compose.yml \
+#     -f deploy/jenkins/docker-compose.gpu.yml \
+#     -f deploy/jenkins/docker-compose.h200.yml up -d
+
+ARG BASE_IMAGE=dana-jenkins:production
+FROM ${BASE_IMAGE}
+
+USER root
+
+ARG HTTP_PROXY
+ARG HTTPS_PROXY
+ARG NO_PROXY=localhost,127.0.0.1
+ENV HTTP_PROXY=${HTTP_PROXY} \
+    HTTPS_PROXY=${HTTPS_PROXY} \
+    http_proxy=${HTTP_PROXY} \
+    https_proxy=${HTTPS_PROXY} \
+    NO_PROXY=${NO_PROXY} \
+    no_proxy=${NO_PROXY}
+
+ARG DOCKER_STATIC_VER=28.3.3
+ARG COMPOSE_VER=v2.39.2
+
+# Static CLI only — no apt (Squid-safe if curl can reach download.docker.com / GitHub).
+RUN set -eux; \
+    arch="$(uname -m)"; \
+    case "$arch" in \
+      x86_64|amd64) darch=x86_64; carch=x86_64 ;; \
+      aarch64|arm64) darch=aarch64; carch=aarch64 ;; \
+      *) echo "unsupported arch: $arch" >&2; exit 1 ;; \
+    esac; \
+    curl -fsSL "https://download.docker.com/linux/static/stable/${darch}/docker-${DOCKER_STATIC_VER}.tgz" \
+      | tar -xz -C /tmp; \
+    install -m 0755 /tmp/docker/docker /usr/local/bin/docker; \
+    mkdir -p /usr/local/lib/docker/cli-plugins; \
+    curl -fsSL "https://github.com/docker/compose/releases/download/${COMPOSE_VER}/docker-compose-linux-${carch}" \
+      -o /usr/local/lib/docker/cli-plugins/docker-compose; \
+    chmod +x /usr/local/lib/docker/cli-plugins/docker-compose; \
+    rm -rf /tmp/docker; \
+    # Client-only checks — full `docker version` needs a daemon/sock (absent at image build).
+    /usr/local/bin/docker --version; \
+    /usr/local/bin/docker compose version
+
+# h200 overlay runs the controller as root for docker.sock access.
+USER root
