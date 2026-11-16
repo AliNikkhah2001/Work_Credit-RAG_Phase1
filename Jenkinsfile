@@ -13,6 +13,7 @@
 //   [ci prod]              → build + deploy prod WITHOUT manual approval (main) — prod controller only
 //   [ci auto]              → stage on develop / prod on main (still role-gated)
 //   [ci all]               → force full image set (ignore path filter)
+//   [ci nocache]           → docker compose build --no-cache (prove image layers refresh)
 //   [ci rollback]          → restore deploy/compose/.last_good_sha (prod controller)
 //   [ci snapshot]          → freeze current prod images under /splunk-data/production/snapshots/<stamp>/
 //   [ci heal] / [ci force-heal] / [ci heal:STAMP]
@@ -88,7 +89,7 @@ pipeline {
                       python3 scripts/ci_controller_role.py --write-env .ci_role.env
                     else
                       echo "WARNING: python3 missing on agent — defaulting gate to skip"
-                      printf 'CI_SKIP=1\nCI_BUILD=0\nCI_STAGE=0\nCI_PROD=0\nCI_AUTO=0\nCI_ROLLBACK=0\nCI_SNAPSHOT=0\nCI_HEAL=0\nCI_HEAL_STAMP=\nCI_HEAVY_PATHS=0\nCI_SERVICES=none\n' > .ci_gate.env
+                      printf 'CI_SKIP=1\nCI_BUILD=0\nCI_STAGE=0\nCI_PROD=0\nCI_AUTO=0\nCI_ROLLBACK=0\nCI_SNAPSHOT=0\nCI_HEAL=0\nCI_HEAL_STAMP=\nCI_HEAVY_PATHS=0\nCI_SERVICES=none\nCI_NOCACHE=0\n' > .ci_gate.env
                       printf 'DANA_ROLE=stage\nCI_MAY_DEPLOY_STAGE=1\nCI_MAY_DEPLOY_PROD=0\n' > .ci_role.env
                     fi
                 '''
@@ -108,7 +109,7 @@ pipeline {
                         }
                     }
                     echo "CI controller: ROLE=${env.DANA_ROLE} MAY_STAGE=${env.CI_MAY_DEPLOY_STAGE} MAY_PROD=${env.CI_MAY_DEPLOY_PROD} HOST=${env.DANA_HOST} JOB=${env.JOB_NAME}"
-                    echo "CI gate: SKIP=${env.CI_SKIP} BUILD=${env.CI_BUILD} STAGE=${env.CI_STAGE} PROD=${env.CI_PROD} AUTO=${env.CI_AUTO} ROLLBACK=${env.CI_ROLLBACK} SNAPSHOT=${env.CI_SNAPSHOT} HEAL=${env.CI_HEAL} STAMP=${env.CI_HEAL_STAMP} HEAVY=${env.CI_HEAVY_PATHS} SERVICES=${env.CI_SERVICES} BRANCH=${env.BRANCH_NAME}"
+                    echo "CI gate: SKIP=${env.CI_SKIP} BUILD=${env.CI_BUILD} STAGE=${env.CI_STAGE} PROD=${env.CI_PROD} AUTO=${env.CI_AUTO} ROLLBACK=${env.CI_ROLLBACK} SNAPSHOT=${env.CI_SNAPSHOT} HEAL=${env.CI_HEAL} STAMP=${env.CI_HEAL_STAMP} HEAVY=${env.CI_HEAVY_PATHS} SERVICES=${env.CI_SERVICES} NOCACHE=${env.CI_NOCACHE} BRANCH=${env.BRANCH_NAME}"
                 }
             }
         }
@@ -440,10 +441,15 @@ pipeline {
                       flock -w 2400 9
                       build_once() {
                         export DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1
+                        _nocache=""
+                        if [ "${CI_NOCACHE:-0}" = "1" ]; then
+                          _nocache="--no-cache"
+                          echo "CI_NOCACHE=1 — compose build --no-cache for: ${BUILD_SERVICES}"
+                        fi
                         if [ "${DANA_HOST:-laptop}" = "gpu" ] || [ "${DANA_ROLE:-stage}" = "prod" ]; then
-                          docker compose -f ${COMPOSE_BASE} -f ${COMPOSE_GPU} --env-file ${ENV_FILE_PROD:-${ENV_FILE}} build ${BUILD_SERVICES}
+                          docker compose -f ${COMPOSE_BASE} -f ${COMPOSE_GPU} --env-file ${ENV_FILE_PROD:-${ENV_FILE}} build ${_nocache} ${BUILD_SERVICES}
                         else
-                          docker compose -f ${COMPOSE_BASE} -f ${COMPOSE_LOCAL} --env-file ${ENV_FILE} build ${BUILD_SERVICES}
+                          docker compose -f ${COMPOSE_BASE} -f ${COMPOSE_LOCAL} --env-file ${ENV_FILE} build ${_nocache} ${BUILD_SERVICES}
                         fi
                       }
                       ok=0
