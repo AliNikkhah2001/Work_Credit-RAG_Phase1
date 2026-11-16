@@ -1,7 +1,12 @@
 # H200 host overlay — bind the production clone at the same absolute path
 # inside the Jenkins container (required for docker.sock + compose mounts).
-# Uses stock jenkins/jenkins:lts (custom Dockerfile apt often fails behind Squid
-# unless build-args are set); mounts host docker + compose plugins.
+#
+# Docker CLI: do NOT bind-mount the host `/usr/bin/docker`. Host CLIs are
+# dynamically linked; inside the container they fail with
+# `docker: command not found` (ENOENT on ld-linux). The image MUST provide a
+# static CLI at `/usr/local/bin/docker`:
+#   bash scripts/bootstrap_jenkins_docker_cli.sh --commit
+#   # or: docker build -f deploy/jenkins/Dockerfile.docker-cli ...
 #
 # Usage:
 #   docker compose -f deploy/jenkins/docker-compose.yml \
@@ -19,10 +24,6 @@ services:
     volumes:
       - jenkins_home:/var/jenkins_home
       - /var/run/docker.sock:/var/run/docker.sock
-      # Do NOT bind-mount the host docker binary over /usr/bin/docker.
-      # Host CLI is often dynamically linked; inside the container it shows up as
-      # `docker: command not found` (ENOENT on the interpreter). Use the static
-      # CLI baked into dana-jenkins:* at /usr/local/bin/docker (see Dockerfile).
       # Optional: host compose plugins if the image plugin dir is empty.
       - /usr/libexec/docker/cli-plugins:/usr/libexec/docker/cli-plugins:ro
       - /splunk-data/production/Work_Credit-RAG_Phase1:/splunk-data/production/Work_Credit-RAG_Phase1:rw
