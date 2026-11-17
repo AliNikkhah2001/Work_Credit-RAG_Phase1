@@ -1166,9 +1166,9 @@ if have python3; then
   python3 "$UMBRELLA/scripts/monitor/jenkins_status.py" --out "$OUT/meta/jenkins_status.json" \
     || warn "jenkins_status reported degraded (recorded anyway)"
   # Submodule watch (same hourly cadence as status push — no rebuild trigger here).
-  # Invoke via bash so a non-executable bit (this file is committed 100644) or a
-  # future mode change cannot silently skip the watcher — the old `[[ -x ]]`
-  # guard failed and webui-watch.json was never refreshed.
+  # Invoke via bash and guard on -f rather than -x: the script is committed
+  # executable (100755) so this is a no-op today, but it keeps the probe working
+  # if the exec bit is ever lost in a checkout or an archive.
   if [[ -f "$UMBRELLA/scripts/ci_submodule_watch.sh" ]]; then
     bash "$UMBRELLA/scripts/ci_submodule_watch.sh" || warn "webui submodule watch failed"
     [[ -f /var/lib/dana-health/webui-watch.json ]] \
