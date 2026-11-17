@@ -13,6 +13,7 @@
 //   [ci prod]              → build + deploy prod WITHOUT manual approval (main) — prod controller only
 //   [ci auto]              → stage on develop / prod on main (still role-gated)
 //   [ci all]               → force full image set (ignore path filter)
+//   [ci nocache]           → docker compose build --no-cache (prove image layers refresh)
 //   [ci rollback]          → restore deploy/compose/.last_good_sha (prod controller)
 //   [ci snapshot]          → freeze current prod images under /splunk-data/production/snapshots/<stamp>/
 //   [ci heal] / [ci force-heal] / [ci heal:STAMP]
@@ -88,7 +89,7 @@ pipeline {
                       python3 scripts/ci_controller_role.py --write-env .ci_role.env
                     else
                       echo "WARNING: python3 missing on agent — defaulting gate to skip"
-                      printf 'CI_SKIP=1\nCI_BUILD=0\nCI_STAGE=0\nCI_PROD=0\nCI_AUTO=0\nCI_ROLLBACK=0\nCI_SNAPSHOT=0\nCI_HEAL=0\nCI_HEAL_STAMP=\nCI_HEAVY_PATHS=0\nCI_SERVICES=none\n' > .ci_gate.env
+                      printf 'CI_SKIP=1\nCI_BUILD=0\nCI_STAGE=0\nCI_PROD=0\nCI_AUTO=0\nCI_ROLLBACK=0\nCI_SNAPSHOT=0\nCI_HEAL=0\nCI_HEAL_STAMP=\nCI_HEAVY_PATHS=0\nCI_SERVICES=none\nCI_NOCACHE=0\n' > .ci_gate.env
                       printf 'DANA_ROLE=stage\nCI_MAY_DEPLOY_STAGE=1\nCI_MAY_DEPLOY_PROD=0\n' > .ci_role.env
                     fi
                 '''
@@ -108,7 +109,7 @@ pipeline {
                         }
                     }
                     echo "CI controller: ROLE=${env.DANA_ROLE} MAY_STAGE=${env.CI_MAY_DEPLOY_STAGE} MAY_PROD=${env.CI_MAY_DEPLOY_PROD} HOST=${env.DANA_HOST} JOB=${env.JOB_NAME}"
-                    echo "CI gate: SKIP=${env.CI_SKIP} BUILD=${env.CI_BUILD} STAGE=${env.CI_STAGE} PROD=${env.CI_PROD} AUTO=${env.CI_AUTO} ROLLBACK=${env.CI_ROLLBACK} SNAPSHOT=${env.CI_SNAPSHOT} HEAL=${env.CI_HEAL} STAMP=${env.CI_HEAL_STAMP} HEAVY=${env.CI_HEAVY_PATHS} SERVICES=${env.CI_SERVICES} BRANCH=${env.BRANCH_NAME}"
+                    echo "CI gate: SKIP=${env.CI_SKIP} BUILD=${env.CI_BUILD} STAGE=${env.CI_STAGE} PROD=${env.CI_PROD} AUTO=${env.CI_AUTO} ROLLBACK=${env.CI_ROLLBACK} SNAPSHOT=${env.CI_SNAPSHOT} HEAL=${env.CI_HEAL} STAMP=${env.CI_HEAL_STAMP} HEAVY=${env.CI_HEAVY_PATHS} SERVICES=${env.CI_SERVICES} NOCACHE=${env.CI_NOCACHE} BRANCH=${env.BRANCH_NAME}"
                 }
             }
         }
@@ -274,6 +275,9 @@ pipeline {
 
                     set -e
                     export PATH="/usr/local/bin:/usr/bin:/bin:${PATH:-}"
+                    # Jenkins may omit empty env keys; bash -u needs defaults.
+                    export REGISTRY="${REGISTRY:-}"
+                    export TAG="${TAG:-local}"
                     mkdir -p .ci-evidence
                     chmod +x scripts/ci_resolve_docker.sh scripts/ci_capture_build_evidence.sh
                     # shellcheck disable=SC1091
@@ -290,7 +294,7 @@ pipeline {
                     # mode must still call the OpenRouter rerank API.
                     chmod +x scripts/ci_laptop_rerank_env.sh
                     bash scripts/ci_laptop_rerank_env.sh ${ENV_FILE}
-                    export TAG=${TAG}
+                    export TAG="${TAG}"
                     # Slow/flaky PyPI under parallel compose builds (common on laptop CI)
                     export PIP_DEFAULT_TIMEOUT="${PIP_DEFAULT_TIMEOUT:-120}"
                     export COMPOSE_PARALLEL_LIMIT="${COMPOSE_PARALLEL_LIMIT:-1}"
@@ -437,10 +441,15 @@ pipeline {
                       flock -w 2400 9
                       build_once() {
                         export DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1
+                        _nocache=""
+                        if [ "${CI_NOCACHE:-0}" = "1" ]; then
+                          _nocache="--no-cache"
+                          echo "CI_NOCACHE=1 — compose build --no-cache for: ${BUILD_SERVICES}"
+                        fi
                         if [ "${DANA_HOST:-laptop}" = "gpu" ] || [ "${DANA_ROLE:-stage}" = "prod" ]; then
-                          docker compose -f ${COMPOSE_BASE} -f ${COMPOSE_GPU} --env-file ${ENV_FILE_PROD:-${ENV_FILE}} build ${BUILD_SERVICES}
+                          docker compose -f ${COMPOSE_BASE} -f ${COMPOSE_GPU} --env-file ${ENV_FILE_PROD:-${ENV_FILE}} build ${_nocache} ${BUILD_SERVICES}
                         else
-                          docker compose -f ${COMPOSE_BASE} -f ${COMPOSE_LOCAL} --env-file ${ENV_FILE} build ${BUILD_SERVICES}
+                          docker compose -f ${COMPOSE_BASE} -f ${COMPOSE_LOCAL} --env-file ${ENV_FILE} build ${_nocache} ${BUILD_SERVICES}
                         fi
                       }
                       ok=0
@@ -476,16 +485,27 @@ pipeline {
                     ) 9>"$LOCK"
                     # Always publish :local → :${TAG} for the whole app matrix so path-filtered
                     # builds (SERVICES=kb) still satisfy compose image: rag-*:${TAG} on deploy.
+                    # REGISTRY may be empty; with bash -u it must be defaulted.
+                    REGISTRY="${REGISTRY:-}"
                     for s in kb guardrails orchestrator tracing webui; do
                       case "$s" in
-                        kb) src=rag-kb:local; dst=${REGISTRY}rag-kb:${TAG} ;;
-                        guardrails) src=rag-guardrails:local; dst=${REGISTRY}rag-guardrails:${TAG} ;;
-                        orchestrator) src=rag-orchestrator:local; dst=${REGISTRY}rag-orchestrator:${TAG} ;;
-                        tracing) src=rag-tracing:local; dst=${REGISTRY}rag-tracing:${TAG} ;;
-                        webui) src=rag-webui:local; dst=${REGISTRY}rag-webui:${TAG} ;;
+                        kb) base=rag-kb ;;
+                        guardrails) base=rag-guardrails ;;
+                        orchestrator) base=rag-orchestrator ;;
+                        tracing) base=rag-tracing ;;
+                        webui) base=rag-webui ;;
                       esac
-                      if docker image inspect "$src" >/dev/null 2>&1; then
+                      dst="${REGISTRY}${base}:${TAG}"
+                      # Prefer :${TAG} (what compose just built). Preferring :local first
+                      # OVERWROTE fresh digests with stale Nov-12 :local (imagebugfix §8E).
+                      src=""
+                      for cand in "${base}:${TAG}" "${base}:local"; do
+                        if docker image inspect "$cand" >/dev/null 2>&1; then src="$cand"; break; fi
+                      done
+                      if [ -n "$src" ]; then
                         docker tag "$src" "$dst" || true
+                        # Keep :local alias for deploy scripts that expect it.
+                        docker tag "$src" "${base}:local" || true
                       fi
                     done
                     bash scripts/ci_stage_evidence.sh mark build || true
@@ -534,17 +554,25 @@ DANA_BUILD_IMAGES
                     chmod +x scripts/ci_laptop_rerank_env.sh
                     bash scripts/ci_laptop_rerank_env.sh ${ENV_FILE}
                     SVC="${CI_SERVICES:-all}"
+                    REGISTRY="${REGISTRY:-}"
+                    TAG="${TAG:-local}"
                     # Path-filtered / skip-build runs: compose still wants rag-*:${TAG}
                     for s in kb guardrails orchestrator tracing webui; do
                       case "$s" in
-                        kb) src=rag-kb:local; dst=${REGISTRY}rag-kb:${TAG} ;;
-                        guardrails) src=rag-guardrails:local; dst=${REGISTRY}rag-guardrails:${TAG} ;;
-                        orchestrator) src=rag-orchestrator:local; dst=${REGISTRY}rag-orchestrator:${TAG} ;;
-                        tracing) src=rag-tracing:local; dst=${REGISTRY}rag-tracing:${TAG} ;;
-                        webui) src=rag-webui:local; dst=${REGISTRY}rag-webui:${TAG} ;;
+                        kb) base=rag-kb ;;
+                        guardrails) base=rag-guardrails ;;
+                        orchestrator) base=rag-orchestrator ;;
+                        tracing) base=rag-tracing ;;
+                        webui) base=rag-webui ;;
                       esac
-                      if docker image inspect "$src" >/dev/null 2>&1; then
+                      dst="${REGISTRY}${base}:${TAG}"
+                      src=""
+                      for cand in "${base}:${TAG}" "${base}:local"; do
+                        if docker image inspect "$cand" >/dev/null 2>&1; then src="$cand"; break; fi
+                      done
+                      if [ -n "$src" ]; then
                         docker tag "$src" "$dst" || true
+                        docker tag "$src" "${base}:local" || true
                       fi
                     done
                     COMPOSE="docker compose -p dana-stage -f ${COMPOSE_BASE} -f ${COMPOSE_LOCAL} -f ${COMPOSE_STAGE} --env-file ${ENV_FILE}"
@@ -693,6 +721,10 @@ DANA_BUILD_IMAGES
                       if [ -x components/server-setup/deploy/recreate_dana_webui.sh ]; then
                         docker tag "rag-webui:${TAG}" rag-webui:dana 2>/dev/null || true
                         docker tag rag-webui:local rag-webui:dana 2>/dev/null || true
+                        # Prefer the tag this build just published; probe via docker
+                        # exec / LAN (Jenkins container has no host loopback :13000).
+                        export DANA_WEBUI_IMAGE="${DANA_WEBUI_IMAGE:-rag-webui:dana}"
+                        export DANA_WEBUI_PROBE_URL="${DANA_WEBUI_PROBE_URL:-http://192.168.96.82:13000/api/config}"
                         bash components/server-setup/deploy/recreate_dana_webui.sh
                       else
                         echo "WARNING: recreate_dana_webui.sh missing — skipping webui refresh"
