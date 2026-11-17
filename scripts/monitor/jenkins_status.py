@@ -107,7 +107,7 @@ def image_info(ref: str) -> dict[str, Any]:
                 "inspect",
                 ref,
                 "--format",
-                "{{.Id}}|{{.Created}}|{{json .RepoTags}}",
+                "{{.Id}}|{{.Created}}|{{json .RepoTags}}|{{json .RepoDigests}}",
             ],
             capture_output=True,
             text=True,
@@ -117,7 +117,7 @@ def image_info(ref: str) -> dict[str, Any]:
         return {"ref": ref, "present": False, "error": str(e)}
     if r.returncode != 0:
         return {"ref": ref, "present": False, "error": (r.stderr or "")[:200]}
-    parts = (r.stdout or "").strip().split("|", 2)
+    parts = (r.stdout or "").strip().split("|", 3)
     created = parts[1] if len(parts) > 1 else ""
     age_h = None
     try:
@@ -143,10 +143,16 @@ def image_info(ref: str) -> dict[str, Any]:
     return {
         "ref": ref,
         "present": True,
-        "id": (parts[0][:19] if parts else ""),
+        # Keep the full sha256 id and the repo digests. The id used to be cut to
+        # 19 chars, which made the published record useless for identifying what
+        # is actually deployed (a digest is the only stable identity when an
+        # image is rebuilt without a registry push — RepoDigests is then empty).
+        "id": (parts[0] if parts else ""),
+        "id_short": (parts[0][:19] if parts else ""),
         "created": created,
         "age_hours": age_h,
         "tags": parts[2] if len(parts) > 2 else "[]",
+        "digests": parts[3] if len(parts) > 3 else "[]",
     }
 
 

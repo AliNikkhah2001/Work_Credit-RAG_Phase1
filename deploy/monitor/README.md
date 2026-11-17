@@ -317,6 +317,11 @@ Panels:
   else umbrella) so the run log answers "which build produced this run?" without
   opening the record.
 
+  The **Jenkins &amp; images** probe records each production alias' full `sha256`
+  image ID and its `RepoDigests`, so a published run can identify exactly which
+  image is deployed — a truncated ID or a bare tag cannot. Locally built images
+  (no registry push) have empty `RepoDigests`, which is why the ID is kept in full.
+
 `latest/dashboard.html` redirects to the newest run's detail page, so a stable
 URL always shows the most recent full report with logs and screenshots.
 

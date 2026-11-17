@@ -25,6 +25,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import publish_report as pr  # noqa: E402
+import jenkins_status as js  # noqa: E402
 
 FAILS: list[str] = []
 PASSES = 0
@@ -440,6 +441,50 @@ def _run_dashboard_template() -> None:
     check("no leftover placeholder domain", "placeholder" not in html.lower())
 
 
+def _run_image_identity() -> None:
+    section("image identity keeps the full digest")
+    full = "sha256:" + "6b36b439c62a1f0e9d8c7b6a5f4e3d2c1b0a99887766554433221100aabbccdd"
+    digest = "rag-kb@sha256:" + "ab" * 32
+
+    class _R:
+        returncode = 0
+        stderr = ""
+        stdout = (
+            f'{full}|2026-11-17T12:00:00.123456789Z'
+            f'|["rag-kb:local","rag-kb:production"]'
+            f'|["{digest}"]'
+        )
+
+    orig = js.subprocess.run
+    js.subprocess.run = lambda *a, **k: _R()
+    try:
+        info = js.image_info("rag-kb:local")
+    finally:
+        js.subprocess.run = orig
+
+    check("present", info.get("present") is True, info)
+    # The whole point: a truncated id cannot identify a deployed image.
+    check("full sha256 id retained (not truncated to 19)",
+          info.get("id") == full and len(info.get("id", "")) == len(full),
+          f"got {info.get('id')!r} (len {len(info.get('id',''))})")
+    check("short id still available for display",
+          info.get("id_short") == full[:19], info.get("id_short"))
+    check("repo digests captured", digest in (info.get("digests") or ""), info.get("digests"))
+    check("tags captured", "rag-kb:production" in (info.get("tags") or ""), info.get("tags"))
+
+    # A locally built image has no RepoDigests; the id must still be emitted.
+    class _R2(_R):
+        stdout = f'{full}|2026-11-17T12:00:00Z|["rag-kb:local"]|[]'
+
+    js.subprocess.run = lambda *a, **k: _R2()
+    try:
+        info2 = js.image_info("rag-kb:local")
+    finally:
+        js.subprocess.run = orig
+    check("no-digest image still identified by full id", info2.get("id") == full, info2.get("id"))
+    check("empty digests is a list, not None", info2.get("digests") == "[]", info2.get("digests"))
+
+
 def _run_run_id_time() -> None:
     section("run id → timestamp")
     dt = pr.run_id_time("20261114T145307Z-Ali-Nikkhah-4")
@@ -476,6 +521,7 @@ def main() -> int:
         _run_run_id_time()
         _run_record_schema(tmp)
         _run_deploy_fallback(tmp)
+        _run_image_identity()
         _run_status_derivation(tmp)
         _run_index(tmp)
         _run_retention(tmp)
@@ -523,6 +569,10 @@ def test_record_schema(tmp_path: Path) -> None:
 
 def test_deploy_fallback(tmp_path: Path) -> None:
     _assert_clean(_run_deploy_fallback, tmp_path)
+
+
+def test_image_identity() -> None:
+    _assert_clean(_run_image_identity)
 
 
 def test_status_derivation(tmp_path: Path) -> None:
