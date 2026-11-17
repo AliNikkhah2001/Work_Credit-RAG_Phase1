@@ -1028,7 +1028,7 @@ See [LICENSE](LICENSE). Each submodule may also declare its own license and depe
 <!-- docs-toc:start -->
 ## Documentation Index
 
-> Auto-generated from this repository's tracked Markdown notes (**136** files). Refresh with `python scripts/gen_readme_toc.py` — the `docs-toc` workflow does this automatically on push.
+> Auto-generated from this repository's tracked Markdown notes (**137** files). Refresh with `python scripts/gen_readme_toc.py` — the `docs-toc` workflow does this automatically on push.
 
 ### Repository root
 
@@ -1170,12 +1170,13 @@ See [LICENSE](LICENSE). Each submodule may also declare its own license and depe
 - [GPU / production deploy layer](deploy/gpu/README.md) — Everything that makes the GPU production stack stay up or come back by itself.
 - [Jenkins CI/CD — Dana / Work Credit RAG](deploy/jenkins/README.md) — Laptop Jenkins (:8085) and the same pipeline on the H200 GPU server.
 - [GitHub status reporting & required status checks](deploy/jenkins/github-status.md) — How Jenkins proves what a build actually did, and how to turn that proof into
-- [Health monitoring daemon + GitHub Pages dashboard](deploy/monitor/README.md) — Durable uptime tracking for the Persian RAG stack. A 3-hour systemd timer on the
+- [Package mirrors (Iran / regional) — fallback only](deploy/mirrors/README.md) — Official registries are always primary. Iranian mirrors are extras / retry
+- [Health monitoring daemon + GitHub Pages dashboard](deploy/monitor/README.md) — Durable uptime tracking for the Persian RAG stack. An hourly systemd timer on the
 
 ### `dev/`
 
 - [Sticky stress QA — moved to Evaluation Suite](dev/stress/README.md) — Canonical harnesses and frozen 30/40/50 before→after results now live in the
-- [Tester Credentials — ICS RAG Evaluation](dev/tests/tester-credentials.md) — 1. Open http://127.0.0.1:13000.
+- [Tester Credentials — ICS RAG Evaluation](dev/tester-credentials.md) — 1. Open http://127.0.0.1:13000.
 
 ### `diagrams/`
 
