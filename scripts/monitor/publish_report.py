@@ -233,6 +233,50 @@ def load_gate(out_dir: Path) -> dict[str, Any]:
     return statuses
 
 
+def load_deploy(out_dir: Path) -> dict[str, Any]:
+    """Identify *which* commit and release this run is reporting on.
+
+    Without this block the dashboard could say "Jenkins HEALTHY, images fresh"
+    while never answering "deployed at which commit / release tag" — the first
+    question an operator asks after a promote.
+
+    Two sources, most specific first:
+
+    * ``meta/deploy.json`` — ``deploy-state/v1`` written by the report script
+      (umbrella/server-setup SHAs + the release tag whose commit is checked out).
+    * ``meta/host_metadata.txt`` — the legacy ``key=value`` block, which has
+      carried ``git_umbrella`` / ``git_ss`` / ``last_good`` / ``deployed`` all
+      along but was previously read for ``hostname`` only.
+
+    ``.deployed_sha`` is normally ``none`` (only rollback writes it), so the
+    last-known-good SHA is the authoritative "what is running" value.
+    """
+    meta = read_kv(out_dir / "meta" / "host_metadata.txt")
+    raw = _read_json_file(out_dir / "meta" / "deploy.json") or {}
+    release = raw.get("release") if isinstance(raw.get("release"), dict) else {}
+
+    def pick(*values: Any) -> Any:
+        for value in values:
+            if isinstance(value, str):
+                if value and value != "none":
+                    return value
+            elif value is not None:
+                return value
+        return None
+
+    deploy = {
+        "umbrella_sha": pick(raw.get("umbrella_sha"), meta.get("git_umbrella")),
+        "server_setup_sha": pick(raw.get("server_setup_sha"), meta.get("git_ss")),
+        "last_good_sha": pick(raw.get("last_good_sha"), meta.get("last_good")),
+        "deployed_sha": pick(raw.get("deployed_sha"), meta.get("deployed")),
+        "release_tag": pick(release.get("tag")),
+        "release_sha": pick(release.get("sha")),
+        "release_on_umbrella": release.get("on_umbrella"),
+        "describe": pick(release.get("describe")),
+    }
+    return {k: v for k, v in deploy.items() if v is not None}
+
+
 def load_links(out_dir: Path, run_id: str, keep_logs: bool) -> dict[str, Any]:
     """Build the relative links a dashboard row needs."""
     screenshots: list[str] = []
@@ -346,6 +390,7 @@ def build_run_record(
         "webui_watch": _read_json_file(out_dir / "meta" / "webui-watch.json"),
         "gate": load_gate(out_dir),
         "kb": kb_compact,
+        "deploy": load_deploy(out_dir),
         "links": _run_links(out_dir, run_id, keep_detail=keep_detail),
     }
 
@@ -399,6 +444,7 @@ def _run_links(out_dir: Path, run_id: str, *, keep_detail: bool) -> dict[str, An
 def compact_entry(record: dict[str, Any]) -> dict[str, Any]:
     """One row of ``runs/index.json`` — deliberately small (never embeds logs)."""
     kb = record.get("kb") or {}
+    deploy = record.get("deploy") or {}
     return {
         "id": record.get("run_id"),
         "ts": record.get("generated_at"),
@@ -418,7 +464,10 @@ def compact_entry(record: dict[str, Any]) -> dict[str, Any]:
         "kb_verdict": kb.get("verdict"),
         "kb_chunks": kb.get("chunks_in_db"),
         "kb_corpus": kb.get("corpus_live"),
-        "kb_lagging": kb.get("corpus_lagging"),    }
+        "kb_lagging": kb.get("corpus_lagging"),
+        "release": deploy.get("release_tag"),
+        "sha": deploy.get("last_good_sha") or deploy.get("umbrella_sha"),
+    }
 
 
 def rebuild_index(root: Path) -> dict[str, Any]:
