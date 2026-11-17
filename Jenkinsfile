@@ -607,6 +607,18 @@ DANA_BUILD_IMAGES
                     curl -sf --max-time 90 http://127.0.0.1:18100/v1/chat/completions \
                       -H 'Content-Type: application/json' \
                       -d '{"model":"chat-primary","messages":[{"role":"user","content":"سلام"}]}' | head -c 500; echo
+
+                    # Canonical suite run: the registry in components/evaluation owns
+                    # every test. The staleness gate fails the build if the suites
+                    # were pinned to a different KB snapshot than the one deployed.
+                    if [ -f components/evaluation/scripts/run_suite.py ]; then
+                      export KB_BASE_URL=http://127.0.0.1:8000
+                      export ORCH_BASE_URL=http://127.0.0.1:18100
+                      python3 components/evaluation/scripts/run_suite.py --kind e2e \
+                        --out artifacts/e2e_suite_latest.json || exit 1
+                    else
+                      echo "WARNING: evaluation submodule not checked out — skipping registered E2E suites"
+                    fi
                     bash scripts/ci_stage_evidence.sh mark stage-e2e || true
                 '''
             }
