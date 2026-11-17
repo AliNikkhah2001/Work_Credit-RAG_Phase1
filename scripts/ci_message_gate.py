@@ -8,6 +8,7 @@ Keys (case-insensitive):
   [ci auto]
   [ci prod]
   [ci all]              → force full image set (Sprint B)
+  [ci nocache]          → docker compose build --no-cache (prove layers refresh)
   [ci rollback]         → restore last-good prod SHA (Sprint C #10)
   [ci snapshot]         → freeze current prod images under snapshots/<stamp>/
   [ci heal] / [ci force-heal] → restore from latest (or tagged) snapshot images
@@ -91,6 +92,7 @@ def parse(msg: str, changed: str) -> dict[str, str]:
     prod = "[ci prod]" in low
     auto = "[ci auto]" in low
     force_all = "[ci all]" in low
+    nocache = "[ci nocache]" in low or "[ci no-cache]" in low
     rollback = "[ci rollback]" in low
     snapshot = "[ci snapshot]" in low
     heal = "[ci heal]" in low or "[ci force-heal]" in low or bool(
@@ -120,6 +122,7 @@ def parse(msg: str, changed: str) -> dict[str, str]:
         "CI_HEAL_STAMP": heal_stamp,
         "CI_HEAVY_PATHS": "1" if heavy else "0",
         "CI_SERVICES": services,
+        "CI_NOCACHE": "1" if nocache else "0",
     }
 
 
@@ -146,6 +149,8 @@ def self_test() -> None:
         ("heal stamp", "restore [ci heal:20261115T124350Z]", "README.md",
          {"CI_HEAL": "1", "CI_HEAL_STAMP": "20261115t124350z", "CI_SERVICES": "none"}),
         ("force-heal", "break glass [ci force-heal]", "README.md", {"CI_HEAL": "1", "CI_SERVICES": "none"}),
+        ("nocache", "rebuild layers [ci nocache] [ci all] [ci prod]", "README.md",
+         {"CI_NOCACHE": "1", "CI_SERVICES": "all", "CI_PROD": "1"}),
     ]
     for name, msg, changed, expect in cases:
         got = parse(msg, changed)

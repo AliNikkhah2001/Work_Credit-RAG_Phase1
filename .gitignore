@@ -205,6 +205,11 @@ deploy/docker/.env
 # umbrella repo (they contain shell history and multi-MB logs).
 reports/
 
+# Never nest Work_RAG_HealthCheck inside this umbrella (clone conflicts with
+# submodule/layout). Keep that repo at ~/Work_RAG_HealthCheck or elsewhere.
+Work_RAG_HealthCheck/
+Work_RAG_HealthCheck-*/
+
 # Cursor agent tooling (MCP server builds, machine-local settings) — 100s of MB
 # local-only, never part of the deployable platform.
 .cursor/tools/
