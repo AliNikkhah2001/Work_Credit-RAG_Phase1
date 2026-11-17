@@ -67,6 +67,20 @@ def make_fixture(root: Path, run_id: str, *, down: tuple[str, ...] = ()) -> Path
     )
     (out / "e2e" / "score.txt").write_text("qa_pass=3/3\n")
     (out / "meta" / "host_metadata.txt").write_text("hostname=test-host.local\nmachine_type=production_gpu\n")
+    (out / "meta" / "deploy.json").write_text(json.dumps({
+        "schema_version": "deploy-state/v1",
+        "umbrella_sha": "1ae80237341868618992c7bd229fd205febc105d",
+        "umbrella_sha_short": "1ae8023",
+        "server_setup_sha": "005dbda",
+        "last_good_sha": "1ae80237341868618992c7bd229fd205febc105d",
+        "deployed_sha": None,
+        "release": {
+            "tag": "v1.4.0",
+            "sha": "1ae80237341868618992c7bd229fd205febc105d",
+            "on_umbrella": True,
+            "describe": "v1.4.0",
+        },
+    }))
     (out / "run.log").write_text("log line\n" * 50)
     (out / "REPORT.md").write_text("# Report\n")
     (out / "html" / "dashboard.html").write_text(
@@ -136,7 +150,7 @@ def _run_record_schema(tmp: Path) -> dict:
     required = {
         "schema_version", "run_id", "generated_at", "machine", "machine_type",
         "host", "mode", "origin", "status", "core_services_down", "services",
-        "e2e", "gate", "kb", "links",
+        "e2e", "gate", "kb", "deploy", "links",
     }
     check("all required top-level keys", required <= set(rec), f"missing {required - set(rec)}")
     check("schema_version pinned", rec["schema_version"] == "health-run/v1")
@@ -153,12 +167,43 @@ def _run_record_schema(tmp: Path) -> dict:
     check("kb verdict propagated", rec["kb"]["verdict"] == "mismatch")
     check("kb checks preserved", len(rec["kb"]["checks"]) == 1)
     check("kb unknown fields listed", rec["kb"]["unknown"] == ["served.manifest"])
+    # Deploy identity: the dashboard must be able to name the commit + release.
+    check("deploy block published", rec["deploy"]["release_tag"] == "v1.4.0", rec["deploy"])
+    check("deploy carries umbrella sha", rec["deploy"]["umbrella_sha"].startswith("1ae8023"))
+    check("deploy release tagged on umbrella", rec["deploy"]["release_on_umbrella"] is True)
+    check("absent deployed_sha omitted, not faked", "deployed_sha" not in rec["deploy"],
+          rec["deploy"])
     check("no raw logs embedded in record",
           "CONTAINER" not in json.dumps(rec) and len(json.dumps(rec)) < 20000,
           f"{len(json.dumps(rec))} bytes")
     check("detail link is relative", not rec["links"]["detail"].startswith(("/", "http")),
           rec["links"]["detail"])
     return rec
+
+
+def _run_deploy_fallback(tmp: Path) -> None:
+    section("deploy identity falls back to host_metadata.txt")
+    out = make_fixture(tmp, "20261114T163000Z-legacy")
+    # A pre-deploy.json run: only the legacy key=value block is on disk.
+    (out / "meta" / "deploy.json").unlink()
+    (out / "meta" / "host_metadata.txt").write_text(
+        "hostname=test-host.local\n"
+        "git_umbrella=f0c47ca\n"
+        "git_ss=005dbda\n"
+        "last_good=f0c47cad2a280aab7407cd68565b9dbd12bec56c\n"
+        "deployed=none\n"
+    )
+    d = pr.load_deploy(out)
+    check("umbrella sha read from legacy block", d.get("umbrella_sha") == "f0c47ca", d)
+    check("server-setup sha read from legacy block", d.get("server_setup_sha") == "005dbda", d)
+    check("last_good read from legacy block",
+          d.get("last_good_sha") == "f0c47cad2a280aab7407cd68565b9dbd12bec56c", d)
+    check("legacy 'none' is dropped, not published", "deployed_sha" not in d, d)
+    check("no release tag in a legacy run", "release_tag" not in d, d)
+    # Empty meta dir must yield an empty block, never a fabricated sha.
+    empty = tmp / "empty-meta"
+    (empty / "meta").mkdir(parents=True)
+    check("no meta → empty deploy block", pr.load_deploy(empty) == {}, pr.load_deploy(empty))
 
 
 def _run_status_derivation(tmp: Path) -> None:
@@ -201,12 +246,33 @@ def _run_index(tmp: Path) -> None:
     check("entries sorted by time",
           [e["ts"] for e in idx["entries"]] == sorted(e["ts"] for e in idx["entries"]))
     check("index file written", (root / "runs" / "index.json").is_file())
+    check("index rows carry release/sha keys",
+          all({"release", "sha"} <= set(e) for e in idx["entries"]),
+          "run log cannot show the deployed release without these")
 
     # Deleting a record and re-running must drop it (self-healing, not append-only-stale).
     (root / "runs" / "20261110T160000Z-host.json").unlink()
     idx2 = pr.rebuild_index(root)
     check("deleted record disappears from index", idx2["count"] == 2, str(idx2["count"]))
     check("machines deduplicated", idx2["machines"] == ["host"], str(idx2["machines"]))
+
+    # A record with a deploy block must surface its release in the index row.
+    (root / "runs" / "20261114T160000Z-tagged.json").write_text(json.dumps({
+        "schema_version": "health-run/v1", "run_id": "20261114T160000Z-tagged",
+        "generated_at": "2026-11-14T16:00:00Z", "machine": "host",
+        "machine_type": "production_gpu", "status": "HEALTHY",
+        "services": [{"name": "kb", "status": "up"}], "e2e": {"passed": 3, "total": 3},
+        "kb": {"verdict": "match"},
+        "deploy": {"release_tag": "v1.4.0", "last_good_sha": "1ae8023", "umbrella_sha": "1ae8023"},
+    }))
+    idx3 = pr.rebuild_index(root)
+    row = next(e for e in idx3["entries"] if e["id"] == "20261114T160000Z-tagged")
+    check("release propagated to index row", row["release"] == "v1.4.0", str(row.get("release")))
+    check("sha propagated to index row", row["sha"] == "1ae8023", str(row.get("sha")))
+    # A record without a deploy block must leave the fields null, not guess them.
+    plain = next(e for e in idx3["entries"] if e["id"] == "20261111T160000Z-host")
+    check("no deploy block → null release (never invented)",
+          plain["release"] is None and plain["sha"] is None, str(plain))
 
 
 def _run_retention(tmp: Path) -> None:
@@ -358,8 +424,11 @@ def _run_dashboard_template() -> None:
     check("template exists", tpl.is_file())
     html = tpl.read_text(encoding="utf-8")
     for panel in ("Historical uptime", "Downtime percentage", "Failures — last 24 hours",
-                  "Knowledge base version", "Single reports", "Endpoints — what each check means"):
+                  "Knowledge base version", "Single reports", "Endpoints — what each check means",
+                  "Deploy &amp; release"):
         check(f"panel present: {panel}", panel in html)
+    check("deploy panel is wired to the renderer",
+          'id="deploy-body"' in html and "renderDeploy(state.records)" in html)
     check("separates devices in history", "deviceGroups" in html or "per device" in html.lower())
     check("reports default collapsed", 'details class="fold report-fold"' in html or "report-fold" in html)
     check("reads runs/index.json", 'getJSON("runs/index.json")' in html)
@@ -406,6 +475,7 @@ def main() -> int:
     try:
         _run_run_id_time()
         _run_record_schema(tmp)
+        _run_deploy_fallback(tmp)
         _run_status_derivation(tmp)
         _run_index(tmp)
         _run_retention(tmp)
@@ -449,6 +519,10 @@ def test_run_id_parsing() -> None:
 
 def test_record_schema(tmp_path: Path) -> None:
     _assert_clean(_run_record_schema, tmp_path)
+
+
+def test_deploy_fallback(tmp_path: Path) -> None:
+    _assert_clean(_run_deploy_fallback, tmp_path)
 
 
 def test_status_derivation(tmp_path: Path) -> None:

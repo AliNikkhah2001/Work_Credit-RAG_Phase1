@@ -304,13 +304,18 @@ serves.
 
 Panels:
 
-| Panel | Reading |
-|---|---|
-| **Historical uptime** | one row per service, one cell per run; green up, red down, amber degraded, grey no-data. Hover for timestamp, HTTP code, and detail. Window selector: 24h / 7d / 30d / all |
-| **Downtime percentage** | per-service and overall uptime % for the selected window, plus run counts (up/degraded/down) |
-| **Failures — last 24 hours** | incident count; each incident lists service, first seen, last seen, duration, and the error/detail excerpt |
-| **Knowledge base version** | ingested (live DB) vs expected (repo pin) side by side, match/mismatch badge, per-check matrix, and the corpus change history |
-| **Run log** | newest first; status, QA pass count, KB verdict, link to the per-run detail page |
+  | Panel | Reading |
+  |---|---|
+  | **Deploy &amp; release** | which commit/release this run reports on: release tag (highest `vX.Y.Z` pointing at the checked-out commit), umbrella SHA, last-known-good SHA, rollback target, server-setup SHA. Reads `meta/deploy.json` (`deploy-state/v1`); falls back to the legacy `meta/host_metadata.txt` `key=value` block. An untagged commit shows *untagged*, and a missing state file shows *unknown* — never a fabricated SHA |
+  | **Historical uptime** | one row per service, one cell per run; green up, red down, amber degraded, grey no-data. Hover for timestamp, HTTP code, and detail. Window selector: 24h / 7d / 30d / all |
+  | **Downtime percentage** | per-service and overall uptime % for the selected window, plus run counts (up/degraded/down) |
+  | **Failures — last 24 hours** | incident count; each incident lists service, first seen, last seen, duration, and the error/detail excerpt |
+  | **Knowledge base version** | ingested (live DB) vs expected (repo pin) side by side, match/mismatch badge, per-check matrix, and the corpus change history |
+  | **Run log** | newest first; status, QA pass count, KB verdict, release tag, deployed SHA, link to the per-run detail page |
+
+  The `runs/index.json` row also carries `release` and `sha` (last-known-good,
+  else umbrella) so the run log answers "which build produced this run?" without
+  opening the record.
 
 `latest/dashboard.html` redirects to the newest run's detail page, so a stable
 URL always shows the most recent full report with logs and screenshots.

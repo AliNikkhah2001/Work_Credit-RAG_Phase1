@@ -322,6 +322,68 @@ step "Collecting host metadata"
   echo "git_ss=$(git -C "$SS_REPO" rev-parse --short HEAD 2>/dev/null || echo n/a)"
   echo "last_good=$(cat "$UMBRELLA/deploy/compose/.last_good_sha" 2>/dev/null || echo none)"
   echo "deployed=$(cat "$UMBRELLA/deploy/compose/.deployed_sha" 2>/dev/null || echo none)"
+  echo "--- release / deploy identity ---"
+  {
+    UMB_SHA="$(git -C "$UMBRELLA" rev-parse HEAD 2>/dev/null || echo '')"
+    UMB_SHORT="$(git -C "$UMBRELLA" rev-parse --short HEAD 2>/dev/null || echo '')"
+    SS_SHA="$(git -C "$SS_REPO" rev-parse --short HEAD 2>/dev/null || echo '')"
+    LAST_GOOD="$(cat "$UMBRELLA/deploy/compose/.last_good_sha" 2>/dev/null || echo '')"
+    DEPLOYED="$(cat "$UMBRELLA/deploy/compose/.deployed_sha" 2>/dev/null || echo '')"
+    # The release tag whose commit is checked out (v1.4.0 / production / …).
+    # Several tags can point at the same promotion tip (v1.4.0 AND production
+    # both did), so prefer the highest semver tag — `-v:refname` is git's own
+    # version sort, which orders v1.10 above v1.9 correctly.
+    REL_TAG="$(git -C "$UMBRELLA" tag --points-at HEAD --sort=-v:refname 2>/dev/null \
+      | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+' | head -1 || true)"
+    if [[ -z "$REL_TAG" ]]; then
+      # No semver tag: fall back to any exact tag so a `production`-only pin
+      # still shows up rather than reporting untagged.
+      REL_TAG="$(git -C "$UMBRELLA" describe --tags --exact-match 2>/dev/null || echo '')"
+    fi
+    REL_SHA=""
+    REL_ON_UMB=false
+    if [[ -n "$REL_TAG" ]]; then
+      REL_SHA="$(git -C "$UMBRELLA" rev-list -n1 "$REL_TAG" 2>/dev/null || echo '')"
+      [[ "$REL_SHA" == "$UMB_SHA" ]] && REL_ON_UMB=true
+    fi
+    # Compact `git describe` fallback: e.g. v1.4.0-0-g1ae8023.
+    DESCRIBE="$(git -C "$UMBRELLA" describe --tags --always 2>/dev/null || echo '')"
+    mkdir -p "$OUT/meta"
+    if have python3; then
+      UMB_SHA="$UMB_SHA" UMB_SHORT="$UMB_SHORT" SS_SHA="$SS_SHA" \
+      LAST_GOOD="$LAST_GOOD" DEPLOYED="$DEPLOYED" \
+      REL_TAG="$REL_TAG" REL_SHA="$REL_SHA" REL_ON_UMB="$REL_ON_UMB" \
+      DESCRIBE="$DESCRIBE" DEPLOY_OUT="$OUT/meta/deploy.json" \
+      python3 - <<'PYDEPLOY' || echo "deploy.json unavailable (python3)"
+import json, os
+from pathlib import Path
+
+# `none` / empty is what the shell writes when a state file is absent; never
+# publish it as a value, so the dashboard renders "unknown" instead of a fake sha.
+def clean(v):
+    v = (v or "").strip()
+    return None if v in ("", "none", "n/a") else v
+
+data = {
+    "schema_version": "deploy-state/v1",
+    "umbrella_sha": clean(os.environ.get("UMB_SHA")),
+    "umbrella_sha_short": clean(os.environ.get("UMB_SHORT")),
+    "server_setup_sha": clean(os.environ.get("SS_SHA")),
+    "last_good_sha": clean(os.environ.get("LAST_GOOD")),
+    "deployed_sha": clean(os.environ.get("DEPLOYED")),
+    "release": {
+        "tag": clean(os.environ.get("REL_TAG")),
+        "sha": clean(os.environ.get("REL_SHA")),
+        "on_umbrella": os.environ.get("REL_ON_UMB") == "true",
+        "describe": clean(os.environ.get("DESCRIBE")),
+    },
+}
+out = os.environ.get("DEPLOY_OUT")
+if out:
+    Path(out).write_text(json.dumps(data, indent=2) + "\n")
+PYDEPLOY
+    fi
+  } 2>&1 || true
   echo "--- last reboots/shutdowns ---"
   { have last && last -x | head -n 30 || echo "last unavailable"; } 2>&1 || true
   echo "--- detected stack mode ---"
@@ -1103,8 +1165,11 @@ if have python3; then
     || warn "host_inventory failed"
   python3 "$UMBRELLA/scripts/monitor/jenkins_status.py" --out "$OUT/meta/jenkins_status.json" \
     || warn "jenkins_status reported degraded (recorded anyway)"
-  # Submodule watch (same hourly cadence as status push — no rebuild trigger here)
-  if [[ -x "$UMBRELLA/scripts/ci_submodule_watch.sh" ]]; then
+  # Submodule watch (same hourly cadence as status push — no rebuild trigger here).
+  # Invoke via bash so a non-executable bit (this file is committed 100644) or a
+  # future mode change cannot silently skip the watcher — the old `[[ -x ]]`
+  # guard failed and webui-watch.json was never refreshed.
+  if [[ -f "$UMBRELLA/scripts/ci_submodule_watch.sh" ]]; then
     bash "$UMBRELLA/scripts/ci_submodule_watch.sh" || warn "webui submodule watch failed"
     [[ -f /var/lib/dana-health/webui-watch.json ]] \
       && cp -a /var/lib/dana-health/webui-watch.json "$OUT/meta/webui-watch.json" || true

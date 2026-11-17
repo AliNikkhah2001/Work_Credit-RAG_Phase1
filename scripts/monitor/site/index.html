@@ -291,6 +291,12 @@
   </section>
 
   <section class="panel">
+    <h2>Deploy &amp; release <span class="badge b-nodata" id="deploy-badge">…</span></h2>
+    <p class="panel-note">Which commit and release tag this run is reporting on — umbrella &amp; server-setup SHAs, last-known-good, and the checked-out release tag. Populated from <span class="mono">meta/deploy.json</span> (legacy <span class="mono">host_metadata.txt</span> fallback).</p>
+    <div class="kv" id="deploy-body"><div class="empty">Loading…</div></div>
+  </section>
+
+  <section class="panel">
     <h2>Jenkins &amp; images <span class="badge b-nodata" id="jenkins-badge">…</span></h2>
     <p class="panel-note">Authenticated Jenkins probe + production image freshness (none missing / none stale). Snapshot stamps listed when freezes exist.</p>
     <div class="kv" id="jenkins-body"><div class="empty">Loading…</div></div>
@@ -1010,6 +1016,8 @@ function renderReports(records) {
         <div class="kv" style="margin:10px 0 14px">
           <div class="k">Run id</div><div class="v mono">${esc(r.id)}</div>
           <div class="k">Mode</div><div class="v">${esc(r.mode || "—")}</div>
+          <div class="k">Release</div><div class="v">${r.release ? `<span class="badge b-up">${esc(r.release)}</span>` : '<span class="muted">untagged</span>'}</div>
+          <div class="k">Deployed SHA</div><div class="v mono">${r.sha ? esc(String(r.sha).slice(0, 12)) : '<span class="muted">unknown</span>'}</div>
           <div class="k">Links</div><div class="v">
             ${detail ? `<a href="${esc(detail)}">detail page</a> · ` : ""}
             <a href="runs/${esc(r.id)}.json">json</a>
@@ -1117,6 +1125,40 @@ function sparkline(canvasId, series, color) {
   ctx.font = "11px sans-serif";
   ctx.fillText(String(Math.round(max)), 4, 20);
   ctx.fillText(String(Math.round(min)), 4, h - 28);
+}
+
+function renderDeploy(records) {
+  const badge = $("deploy-badge");
+  const body = $("deploy-body");
+  if (!badge || !body) return;
+  // Prefer a record that actually carries deploy identity (older published runs
+  // predate it and would otherwise render an empty panel). Two shapes exist:
+  // the full record's nested `deploy` block, and the compact index row's
+  // flat `release` / `sha` fields used for the first paint.
+  const hasId = (r) => (r && (r.deploy || r.release || r.sha));
+  const last = [...records].reverse().find(hasId) || records[records.length - 1];
+  const d = last && (last.deploy || (last.release || last.sha
+    ? { release_tag: last.release, last_good_sha: last.sha }
+    : null));
+  if (!d) {
+    badge.className = "badge b-nodata";
+    badge.textContent = "no data";
+    body.innerHTML = '<div class="empty">No deploy identity published yet — the next hourly report on the GPU host will include it.</div>';
+    return;
+  }
+  const sha = (v) => (v ? `<span class="mono">${esc(String(v).slice(0, 12))}</span>` : '<span class="muted">unknown</span>');
+  const rel = d.release_tag;
+  // A release tag that does not point at the checked-out umbrella commit means
+  // the host is running code that is not the tagged release — worth flagging.
+  const relOk = rel && d.release_on_umbrella !== false;
+  badge.className = "badge " + (rel ? (relOk ? "b-up" : "b-degraded") : "b-nodata");
+  badge.textContent = rel || "untagged";
+  body.innerHTML = `
+    <div class="k">Release</div><div class="v">${rel ? `<span class="badge ${relOk ? "b-up" : "b-degraded"}">${esc(rel)}</span>` : '<span class="muted">no exact tag on this commit</span>'}${d.describe ? ` <span class="muted mono">${esc(d.describe)}</span>` : ""}</div>
+    <div class="k">Umbrella commit</div><div class="v">${sha(d.umbrella_sha)}</div>
+    <div class="k">Last known good</div><div class="v">${sha(d.last_good_sha)}</div>
+    <div class="k">Rolled back to</div><div class="v">${d.deployed_sha ? `<span class="badge b-degraded">${esc(String(d.deployed_sha).slice(0, 12))}</span>` : '<span class="muted">not rolled back</span>'}</div>
+    <div class="k">server-setup</div><div class="v">${sha(d.server_setup_sha)}</div>`;
 }
 
 function renderJenkins(records) {
@@ -1360,6 +1402,7 @@ function renderAll() {
   renderHeader(state.records);
   renderMetricsStatus();
   renderCards(state.records);
+  renderDeploy(state.records);
   renderJenkins(state.records);
   renderLatency(state.records);
   renderHost(state.records);
@@ -1400,6 +1443,11 @@ function entryToRecord(entry) {
       corpus_live: entry.kb_corpus,
       corpus_lagging: entry.kb_lagging,
     },
+    // Compact-index fields, so the Deploy panel and run log are populated on the
+    // first paint instead of waiting for every full record to download. The full
+    // record replaces this with the authoritative nested `deploy` block.
+    release: entry.release,
+    sha: entry.sha,
     links: { detail: `logs/${entry.id}/dashboard.html` },
   };
   fallback.serviceMap = normServices(fallback);
@@ -1416,6 +1464,7 @@ async function boot() {
   state.metricsSeries = metricsSeries;
   // Paint metrics panels immediately (do not wait on per-run JSON).
   renderMetricsStatus();
+  renderDeploy(state.records);
   renderJenkins(state.records);
 
   const lastFromMetrics = (metricsStatus && (metricsStatus.updated_at || metricsStatus.ts)) || null;
