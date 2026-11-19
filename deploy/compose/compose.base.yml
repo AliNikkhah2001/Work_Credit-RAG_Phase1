@@ -73,6 +73,8 @@ services:
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
       KB_OPENROUTER_API_KEY: ${KB_OPENROUTER_API_KEY:-${OPENROUTER_API_KEY:-}}
       KB_OPENROUTER_BASE_URL: ${KB_OPENROUTER_BASE_URL:-https://openrouter.ai/api/v1}
+      # KB API key gate (opt-in) — set via KB_API_KEY in .env (gitignored).
+      KB_API_KEY: ${KB_API_KEY:-}
       # Local/CPU: prefer python BM25 unless tantivy wheel is installed in image
       KB_USE_TANTIVY: ${KB_USE_TANTIVY:-false}
       HF_HOME: /models
@@ -164,6 +166,8 @@ services:
       RETRIEVAL_TOP_K: ${RETRIEVAL_TOP_K:-5}
       TRACE_ENABLED: ${TRACE_ENABLED:-false}
       LANGFUSE_HOST: ${LANGFUSE_HOST:-http://tracing:3000}
+      # Forward the KB API key to the KB service (matches KB_API_KEY on KB).
+      KB_API_KEY: ${KB_API_KEY:-}
     depends_on:
       kb:
         condition: service_healthy
